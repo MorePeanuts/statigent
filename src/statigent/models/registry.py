@@ -1,18 +1,12 @@
-from __future__ import annotations
-
 import tomllib
 from importlib.resources import files
-from typing import TYPE_CHECKING, Any, cast
+from pathlib import Path
+from typing import Any, cast
 
-from langchain.chat_models import init_chat_model
+from langchain.chat_models import BaseChatModel, init_chat_model
 from loguru import logger
 
 from statigent.errors import StatigentModelError
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    from langchain_core.language_models import BaseChatModel
 
 
 class ModelRegistry:
@@ -22,7 +16,7 @@ class ModelRegistry:
         self._profiles = profiles
 
     @classmethod
-    def load_registry(cls, path: str | Path | None = None) -> ModelRegistry:
+    def load_registry(cls, path: str | Path | None = None) -> "ModelRegistry":
         """Load model configs from a TOML file.
 
         If path is None, load bundled defaults.toml.
@@ -33,7 +27,7 @@ class ModelRegistry:
         return cls._load_from_path(str(path))
 
     @classmethod
-    def _load_from_path(cls, path: str) -> ModelRegistry:
+    def _load_from_path(cls, path: str) -> "ModelRegistry":
         try:
             with open(path, "rb") as f:
                 data = tomllib.load(f)
