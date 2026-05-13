@@ -33,3 +33,6 @@ coverage/
 
 # uv
 uv.lock
+
+# Superpowers specs (local only)
+docs/superpowers/
