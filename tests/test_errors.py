@@ -10,5 +10,5 @@ def test_statigent_model_error_is_statigent_error():
 
 
 def test_statigent_model_error_message():
-    err = StatigentModelError('test message')
-    assert str(err) == 'test message'
+    err = StatigentModelError("test message")
+    assert str(err) == "test message"
