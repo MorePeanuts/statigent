@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import tomllib
 from importlib.resources import files
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
+from langchain.chat_models import init_chat_model
 from loguru import logger
 
 from statigent.errors import StatigentModelError
@@ -47,7 +48,19 @@ class ModelRegistry:
 
     def get_model(self, name: str) -> BaseChatModel:
         """Return a BaseChatModel for the named profile."""
-        raise NotImplementedError
+        if name not in self._profiles:
+            available = ", ".join(self._profiles.keys()) or "(none)"
+            raise StatigentModelError(f"Unknown model '{name}'. Available: {available}")
+        kwargs: dict[str, Any] = dict(self._profiles[name])
+        api_key = kwargs.pop("api_key", None)
+        if api_key:
+            kwargs["api_key"] = api_key
+        try:
+            return cast("BaseChatModel", init_chat_model(**kwargs))
+        except Exception as e:
+            raise StatigentModelError(
+                f"Failed to initialize model '{name}': {e}"
+            ) from e
 
     def list_models(self) -> list[str]:
         """Return available profile names."""

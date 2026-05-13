@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -55,3 +56,100 @@ class TestHasModel:
         )
         registry = ModelRegistry.load_registry(config)
         assert registry.has_model("other-model") is False
+
+
+class TestGetModel:
+    @patch("statigent.models.registry.init_chat_model")
+    def test_get_model_returns_base_chat_model(self, mock_init: patch, tmp_path: Path):
+        mock_model = object()
+        mock_init.return_value = mock_model
+        config = _write_toml(
+            tmp_path,
+            "[my-model]\n"
+            'model = "deepseek-v4-flash"\n'
+            'model_provider = "deepseek"\n'
+            "temperature = 0.5\n",
+        )
+        registry = ModelRegistry.load_registry(config)
+        result = registry.get_model("my-model")
+        assert result is mock_model
+        mock_init.assert_called_once_with(
+            model="deepseek-v4-flash",
+            model_provider="deepseek",
+            temperature=0.5,
+        )
+
+    @patch("statigent.models.registry.init_chat_model")
+    def test_get_model_unknown_name_raises(self, mock_init: patch, tmp_path: Path):
+        config = _write_toml(
+            tmp_path,
+            '[my-model]\nmodel = "deepseek-v4-flash"\n',
+        )
+        registry = ModelRegistry.load_registry(config)
+        with pytest.raises(StatigentModelError, match="Unknown model"):
+            registry.get_model("nonexistent")
+
+    @patch("statigent.models.registry.init_chat_model")
+    def test_get_model_init_failure_raises(self, mock_init: patch, tmp_path: Path):
+        mock_init.side_effect = ValueError("bad provider")
+        config = _write_toml(
+            tmp_path,
+            '[my-model]\nmodel = "bad-model"\n',
+        )
+        registry = ModelRegistry.load_registry(config)
+        with pytest.raises(StatigentModelError, match="Failed to initialize"):
+            registry.get_model("my-model")
+
+    @patch("statigent.models.registry.init_chat_model")
+    def test_get_model_api_key_from_config(self, mock_init: patch, tmp_path: Path):
+        mock_init.return_value = object()
+        config = _write_toml(
+            tmp_path,
+            '[my-model]\nmodel = "deepseek-v4-flash"\napi_key = "sk-test-123"\n',
+        )
+        registry = ModelRegistry.load_registry(config)
+        registry.get_model("my-model")
+        mock_init.assert_called_once_with(
+            model="deepseek-v4-flash",
+            api_key="sk-test-123",
+        )
+
+    @patch("statigent.models.registry.init_chat_model")
+    def test_get_model_api_key_empty_not_passed(self, mock_init: patch, tmp_path: Path):
+        mock_init.return_value = object()
+        config = _write_toml(
+            tmp_path,
+            '[my-model]\nmodel = "deepseek-v4-flash"\napi_key = ""\n',
+        )
+        registry = ModelRegistry.load_registry(config)
+        registry.get_model("my-model")
+        mock_init.assert_called_once_with(model="deepseek-v4-flash")
+
+    @patch("statigent.models.registry.init_chat_model")
+    def test_get_model_no_api_key_not_passed(self, mock_init: patch, tmp_path: Path):
+        mock_init.return_value = object()
+        config = _write_toml(
+            tmp_path,
+            '[my-model]\nmodel = "deepseek-v4-flash"\n',
+        )
+        registry = ModelRegistry.load_registry(config)
+        registry.get_model("my-model")
+        mock_init.assert_called_once_with(model="deepseek-v4-flash")
+
+    @patch("statigent.models.registry.init_chat_model")
+    def test_get_model_kwargs_forwarded(self, mock_init: patch, tmp_path: Path):
+        mock_init.return_value = object()
+        config = _write_toml(
+            tmp_path,
+            "[deepseek-v4-flash-thinking]\n"
+            'model = "deepseek-v4-flash"\n'
+            'model_provider = "deepseek"\n'
+            'reasoning_effort = "high"\n',
+        )
+        registry = ModelRegistry.load_registry(config)
+        registry.get_model("deepseek-v4-flash-thinking")
+        mock_init.assert_called_once_with(
+            model="deepseek-v4-flash",
+            model_provider="deepseek",
+            reasoning_effort="high",
+        )
