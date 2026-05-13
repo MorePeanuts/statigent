@@ -1,0 +1,9 @@
+[submodule "benchmarks/InfiAgent-DABench"]
+	path = benchmarks/InfiAgent-DABench
+	url = https://github.com/InfiAgent/InfiAgent.git
+[submodule "benchmarks/DSBench"]
+	path = benchmarks/DSBench
+	url = https://github.com/LiqiangJing/DSBench.git
+[submodule "benchmarks/MLE-Bench"]
+	path = benchmarks/MLE-Bench
+	url = https://github.com/openai/mle-bench.git
