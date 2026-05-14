@@ -79,7 +79,8 @@ def python_repl(code: str) -> str:
     warning = _check_code_safety(code)
     if warning:
         return warning
-    return _python_repl.run(code)
+    output = _python_repl.run(code)
+    return _truncate_content(output)
 
 
 _MAX_FILE_CHARS = 10_000
