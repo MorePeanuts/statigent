@@ -11,11 +11,10 @@ from statigent.benchmarks.base import (
     DataScienceAgent,
     EvalResult,
 )
-from statigent.benchmarks.persistence import save_eval_result
 from statigent.errors import StatigentBenchmarkError
 
 
-class TestSaveEvalResult:
+class TestPersist:
     def test_creates_directory_structure(self, tmp_path: Path) -> None:
         result = EvalResult(
             score=0.85,
@@ -24,7 +23,7 @@ class TestSaveEvalResult:
             model_name="deepseek-v4-flash",
             benchmark_name="dabench",
         )
-        output_dir = save_eval_result(result, predictions=[], base_dir=tmp_path)
+        output_dir = BenchmarkAdapter.persist(result, predictions=[], base_dir=tmp_path)
         assert output_dir.exists()
         assert (output_dir / "meta.json").exists()
         assert (output_dir / "predictions" / "responses.jsonl").exists()
@@ -38,7 +37,7 @@ class TestSaveEvalResult:
             model_name="deepseek-v4-flash",
             benchmark_name="dabench",
         )
-        output_dir = save_eval_result(result, predictions=[], base_dir=tmp_path)
+        output_dir = BenchmarkAdapter.persist(result, predictions=[], base_dir=tmp_path)
         meta = json.loads((output_dir / "meta.json").read_text())
         assert meta["agent_name"] == "react-baseline"
         assert meta["model_name"] == "deepseek-v4-flash"
@@ -57,7 +56,7 @@ class TestSaveEvalResult:
             {"id": 0, "response": "@count[891]"},
             {"id": 1, "response": "@mean[34.5]"},
         ]
-        output_dir = save_eval_result(
+        output_dir = BenchmarkAdapter.persist(
             result, predictions=predictions, base_dir=tmp_path
         )
         pred_file = output_dir / "predictions" / "responses.jsonl"
@@ -74,10 +73,8 @@ class TestSaveEvalResult:
             model_name="test-model",
             benchmark_name="dsbench-da",
         )
-        output_dir = save_eval_result(result, predictions=[], base_dir=tmp_path)
-        scores = json.loads(
-            (output_dir / "evaluation" / "scores.json").read_text()
-        )
+        output_dir = BenchmarkAdapter.persist(result, predictions=[], base_dir=tmp_path)
+        scores = json.loads((output_dir / "evaluation" / "scores.json").read_text())
         assert scores["score"] == 0.75
         assert scores["details"]["abq"] == 0.75
         assert scores["benchmark_name"] == "dsbench-da"
@@ -90,7 +87,7 @@ class TestSaveEvalResult:
             model_name="deepseek-v4-flash",
             benchmark_name="dabench",
         )
-        output_dir = save_eval_result(result, predictions=[], base_dir=tmp_path)
+        output_dir = BenchmarkAdapter.persist(result, predictions=[], base_dir=tmp_path)
         dir_name = output_dir.name
         assert dir_name.startswith("react-baseline-deepseek-v4-flash-dabench-")
 
@@ -105,7 +102,7 @@ class TestSaveEvalResult:
         # Make base_dir a file instead of directory to trigger OSError
         (tmp_path / "blocker").write_text("not a dir")
         with pytest.raises(StatigentBenchmarkError, match="Failed to persist"):
-            save_eval_result(
+            BenchmarkAdapter.persist(
                 result,
                 predictions=[],
                 base_dir=tmp_path / "blocker" / "nested",
@@ -146,7 +143,7 @@ class TestSaveEvalResult:
                 {"role": "assistant", "content": "There are 10 rows."},
             ],
         }
-        output_dir = save_eval_result(
+        output_dir = BenchmarkAdapter.persist(
             result, predictions=[], traces=traces, base_dir=tmp_path
         )
         trace_dir = output_dir / "traces"
@@ -171,7 +168,7 @@ class TestSaveEvalResult:
             model_name="test",
             benchmark_name="test",
         )
-        output_dir = save_eval_result(
+        output_dir = BenchmarkAdapter.persist(
             result, predictions=[], traces=None, base_dir=tmp_path
         )
         assert not (output_dir / "traces").exists()
