@@ -35,6 +35,18 @@ class TestReadFileTool:
         with pytest.raises(FileNotFoundError):
             read_file.invoke({"file_path": "/nonexistent/file.csv"})
 
+    def test_max_lines_limits_output(self, tmp_path: Path) -> None:
+        f = tmp_path / "data.csv"
+        f.write_text("h1,h2\n" + "\n".join(f"v{i},w{i}" for i in range(100)))
+        result = read_file.invoke({"file_path": str(f), "max_lines": 5})
+        assert result.count("\n") == 4  # 5 lines -> 4 newlines
+
+    def test_max_lines_zero_reads_all(self, tmp_path: Path) -> None:
+        f = tmp_path / "data.csv"
+        f.write_text("h1,h2\nv1,w1\nv2,w2\n")
+        result = read_file.invoke({"file_path": str(f), "max_lines": 0})
+        assert "v1" in result and "v2" in result
+
 
 class TestReactBaselineAgentInit:
     @patch("statigent.baseline.react.get_model")

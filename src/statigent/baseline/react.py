@@ -54,12 +54,16 @@ def python_repl(code: str) -> str:
 
 
 @tool
-def read_file(file_path: str) -> str:
+def read_file(file_path: str, max_lines: int = 0) -> str:
     """Read the contents of a file.
 
     Use this to read CSV data files, task descriptions, or other text files.
+    Set max_lines to read only the first N lines (0 = entire file).
     """
-    return Path(file_path).read_text()
+    lines = Path(file_path).read_text().splitlines()
+    if max_lines > 0:
+        lines = lines[:max_lines]
+    return "\n".join(lines)
 
 
 _SYSTEM_PROMPT = """You are a data science assistant with access to the following tools:
@@ -67,6 +71,8 @@ _SYSTEM_PROMPT = """You are a data science assistant with access to the followin
 2. python_repl — Execute Python code (pandas, numpy, scikit-learn, etc.)
 
 General guidelines:
+- Data files can be very large. Always use read_file with max_lines=5 first to preview \
+the structure and column names before loading with Python.
 - Read relevant data files before attempting analysis
 - Write and execute Python code to perform computations
 - Print results clearly so they can be captured
