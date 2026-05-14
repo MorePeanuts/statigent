@@ -1,5 +1,6 @@
 """React baseline agent with built-in tools."""
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,29 @@ from statigent.benchmarks.base import AgentTrace
 from statigent.models import get_model
 
 _python_repl = PythonREPL()
+
+_DANGEROUS_PATTERNS: list[re.Pattern[str]] = [
+    re.compile(r"\bos\.system\b"),
+    re.compile(r"\bsubprocess\b"),
+    re.compile(r"\bshutil\.rmtree\b"),
+    re.compile(r"\bos\.remove\b"),
+    re.compile(r"\bos\.unlink\b"),
+    re.compile(r"\brm\s+-rf\b"),
+    re.compile(r'\bopen\s*\([^)]*["\']w'),
+    re.compile(r"\b__import__\b"),
+    re.compile(r"\beval\b"),
+    re.compile(r"\bexec\b"),
+    re.compile(r"\bcompile\b"),
+]
+
+
+def _check_code_safety(code: str) -> str | None:
+    """Return a warning message if code contains dangerous patterns, else None."""
+    for pattern in _DANGEROUS_PATTERNS:
+        match = pattern.search(code)
+        if match:
+            return f"Blocked: dangerous pattern '{match.group()}' detected in code."
+    return None
 
 
 def _serialize_messages(messages: list[AnyMessage]) -> AgentTrace:
@@ -46,10 +70,14 @@ def _serialize_messages(messages: list[AnyMessage]) -> AgentTrace:
 def python_repl(code: str) -> str:
     """Execute Python code and return the output.
 
-    Use this to run data analysis code (pandas, numpy, etc.).
+    Use this to run data analysis code. Available packages: pandas, numpy,
+    scikit-learn, torch, scipy, matplotlib, seaborn.
     If you want to see the output of a value, use print(...) in your code.
     The current working directory and any provided files are accessible.
     """
+    warning = _check_code_safety(code)
+    if warning:
+        return warning
     return _python_repl.run(code)
 
 

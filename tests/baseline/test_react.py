@@ -7,6 +7,7 @@ from langchain.messages import AIMessage, HumanMessage, ToolMessage
 from statigent.baseline.react import (
     _SYSTEM_PROMPT,
     ReactBaselineAgent,
+    _check_code_safety,
     _serialize_messages,
     python_repl,
     read_file,
@@ -22,6 +23,30 @@ class TestPythonReplTool:
         result = python_repl.invoke({"code": "print('hello')"})
         assert isinstance(result, str)
         assert "hello" in result
+
+    def test_blocks_os_system(self) -> None:
+        result = python_repl.invoke({"code": "os.system('rm -rf /')"})
+        assert "Blocked" in result
+
+    def test_blocks_subprocess(self) -> None:
+        result = python_repl.invoke({"code": "import subprocess"})
+        assert "Blocked" in result
+
+    def test_blocks_shutil_rmtree(self) -> None:
+        result = python_repl.invoke({"code": "shutil.rmtree('/tmp')"})
+        assert "Blocked" in result
+
+    def test_blocks_eval(self) -> None:
+        result = python_repl.invoke({"code": "eval('1+1')"})
+        assert "Blocked" in result
+
+    def test_blocks_exec(self) -> None:
+        result = python_repl.invoke({"code": "exec('print(1)')"})
+        assert "Blocked" in result
+
+    def test_allows_safe_code(self) -> None:
+        assert _check_code_safety("import pandas as pd") is None
+        assert _check_code_safety("df = pd.read_csv('data.csv')") is None
 
 
 class TestReadFileTool:

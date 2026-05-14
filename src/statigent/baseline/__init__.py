@@ -2,4 +2,4 @@
 
 from statigent.baseline.react import ReactBaselineAgent
 
-__all__ = ['ReactBaselineAgent']
+__all__ = ["ReactBaselineAgent"]
