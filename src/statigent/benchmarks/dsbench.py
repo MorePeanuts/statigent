@@ -50,7 +50,6 @@ class DSBenchAdapter(BenchmarkAdapter):
         data_dir: Path | None = None,
         task: TaskType = "data_analysis",
         judge_model_name: str = "deepseek-v4-flash",
-        skip_prepare: bool = False,
     ) -> None:
         if task not in ("data_analysis", "data_modeling"):
             raise ValueError(
@@ -61,7 +60,6 @@ class DSBenchAdapter(BenchmarkAdapter):
         self.name = f"dsbench-{abbrev}"
         self.data_dir = data_dir or _DSBENCH_DATA_DIR
         self.judge_model_name = judge_model_name
-        self.skip_prepare = skip_prepare
         self._samples: list[dict[str, Any]] = []
 
     def prepare(self) -> None:
@@ -70,9 +68,6 @@ class DSBenchAdapter(BenchmarkAdapter):
         If the data directory does not exist, downloads the pre-processed
         dataset from HuggingFace and extracts it into ``self.data_dir``.
         """
-        if self.skip_prepare:
-            logger.info("DSBench prepare skipped (skip_prepare=True)")
-            return
 
         task_dir = self.data_dir / self.task
         data_path = task_dir / "data.json"
@@ -98,12 +93,13 @@ class DSBenchAdapter(BenchmarkAdapter):
     def _download_and_extract(self, task_dir: Path) -> None:
         """Download the pre-processed zip from HuggingFace and extract it."""
         url = _HF_DATA_URLS[self.task]
-        zip_path = task_dir / "data.zip"
-
         task_dir.mkdir(parents=True, exist_ok=True)
 
+        zip_path = task_dir / "data.zip"
         try:
-            with httpx.stream("GET", url, follow_redirects=True) as resp:
+            with httpx.stream(
+                "GET", url, follow_redirects=True, timeout=120.0
+            ) as resp:
                 resp.raise_for_status()
                 total = resp.headers.get("content-length")
                 total_mb = f"{int(total) / 1e6:.1f} MB" if total else "unknown size"
@@ -121,10 +117,10 @@ class DSBenchAdapter(BenchmarkAdapter):
         logger.info("Extracting DSBench {} data ...", self.task)
         try:
             with zipfile.ZipFile(zip_path) as zf:
-                zf.extractall(task_dir)
-        except zipfile.BadZipFile as exc:
+                self._safe_extract(zf, task_dir)
+        except (zipfile.BadZipFile, OSError, RuntimeError) as exc:
             raise StatigentBenchmarkError(
-                f"Downloaded DSBench {self.task} zip is corrupted: {exc}"
+                f"Failed to extract DSBench {self.task} data: {exc}"
             ) from exc
         finally:
             zip_path.unlink(missing_ok=True)
@@ -136,6 +132,18 @@ class DSBenchAdapter(BenchmarkAdapter):
                 shutil.copy2(repo_json, task_dir / "data.json")
 
         logger.info("DSBench {} data ready at {}", self.task, task_dir)
+
+    @staticmethod
+    def _safe_extract(zf: zipfile.ZipFile, dest: Path) -> None:
+        """Extract zip, validating that no member escapes the target directory."""
+        dest_resolved = dest.resolve()
+        for member in zf.infolist():
+            member_path = (dest / member.filename).resolve()
+            if not str(member_path).startswith(str(dest_resolved)):
+                raise StatigentBenchmarkError(
+                    f"Zip entry '{member.filename}' escapes target directory"
+                )
+        zf.extractall(dest)
 
     def _load_samples(self, data_path: Path) -> None:
         with open(data_path) as f:

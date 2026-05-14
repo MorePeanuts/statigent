@@ -1,4 +1,6 @@
+import io
 import json
+import zipfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -68,12 +70,61 @@ class TestDSBenchAdapterDA:
         adapter = DSBenchAdapter(data_dir=base, task="data_analysis")
         adapter.prepare()
 
+    @pytest.mark.integration
     def test_prepare_downloads_when_missing(self, tmp_path: Path) -> None:
         adapter = DSBenchAdapter(
             data_dir=tmp_path / "nonexistent", task="data_analysis"
         )
         adapter.prepare()
         assert len(adapter._samples) > 0
+
+    def test_prepare_downloads_with_mock(self, tmp_path: Path) -> None:
+        """Unit test for download+extract using a mocked in-memory zip."""
+        adapter = DSBenchAdapter(
+            data_dir=tmp_path / "dsbench", task="data_analysis"
+        )
+
+        buf = io.BytesIO()
+        sample_json = json.dumps(
+            {
+                "id": "00000001",
+                "name": "test",
+                "url": "",
+                "txt": "",
+                "questions": ["question1"],
+                "answers": ["A"],
+                "year": 2024,
+            }
+        )
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("data/00000001/introduction.txt", "Test intro")
+            zf.writestr("data/00000001/question1.txt", "Test question")
+            zf.writestr("data.json", sample_json + "\n")
+        buf.seek(0)
+        zip_bytes = buf.read()
+
+        mock_response = MagicMock()
+        mock_response.headers = {"content-length": str(len(zip_bytes))}
+        mock_response.raise_for_status = MagicMock()
+        mock_response.iter_bytes = MagicMock(
+            return_value=[
+                zip_bytes[i : i + 8192]
+                for i in range(0, len(zip_bytes), 8192)
+            ]
+        )
+        mock_stream = MagicMock()
+        mock_stream.__enter__ = MagicMock(return_value=mock_response)
+        mock_stream.__exit__ = MagicMock(return_value=False)
+
+        with patch(
+            "statigent.benchmarks.dsbench.httpx.stream",
+            return_value=mock_stream,
+        ), patch(
+            "statigent.benchmarks.dsbench._DSBENCH_REPO_DIR",
+            tmp_path / "repo",
+        ):
+            adapter.prepare()
+        assert len(adapter._samples) == 1
 
     def test_prepare_raises_on_download_failure(self, tmp_path: Path) -> None:
         adapter = DSBenchAdapter(
@@ -82,18 +133,8 @@ class TestDSBenchAdapterDA:
         with patch(
             "statigent.benchmarks.dsbench.httpx.stream",
             side_effect=httpx.HTTPError("network error"),
-        ):
-            with pytest.raises(StatigentBenchmarkError, match="Failed to download"):
-                adapter.prepare()
-
-    def test_prepare_skip_skips_download(self, tmp_path: Path) -> None:
-        adapter = DSBenchAdapter(
-            data_dir=tmp_path / "nonexistent",
-            task="data_analysis",
-            skip_prepare=True,
-        )
-        adapter.prepare()
-        assert len(adapter._samples) == 0
+        ), pytest.raises(StatigentBenchmarkError, match="Failed to download"):
+            adapter.prepare()
 
     @patch("statigent.benchmarks.evaluators.get_model")
     def test_evaluate_data_analysis(
