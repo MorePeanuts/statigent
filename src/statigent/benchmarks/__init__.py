@@ -1,5 +1,8 @@
 """Benchmark evaluation adapters for data science agents."""
 
+from collections.abc import Callable
+from functools import partial
+
 from statigent.benchmarks.base import (
     BenchmarkAdapter,
     DataScienceAgent,
@@ -11,8 +14,10 @@ from statigent.benchmarks.dabench import DABenchAdapter
 from statigent.benchmarks.dsbench import DSBenchAdapter
 from statigent.benchmarks.mlebench import MLEBenchAdapter
 
-_REGISTRY: dict[str, type[BenchmarkAdapter]] = {
+_REGISTRY: dict[str, Callable[..., BenchmarkAdapter]] = {
     "dabench": DABenchAdapter,
+    "dsbench-da": partial(DSBenchAdapter, task="data_analysis"),
+    "dsbench-dm": partial(DSBenchAdapter, task="data_modeling"),
     "mlebench": MLEBenchAdapter,
 }
 
@@ -24,14 +29,8 @@ def list_benchmarks() -> list[str]:
 
 def get_benchmark(name: str, **kwargs: object) -> BenchmarkAdapter:
     """Get a benchmark adapter by name."""
-    # DSBench requires task parameter — construct directly
-    if name == "dsbench-da":
-        return DSBenchAdapter(task="data_analysis", **kwargs)  # type: ignore[arg-type]
-    if name == "dsbench-dm":
-        return DSBenchAdapter(task="data_modeling", **kwargs)  # type: ignore[arg-type]
-
     if name not in _REGISTRY:
-        available = ", ".join([*_REGISTRY.keys(), "dsbench-da", "dsbench-dm"])
+        available = ", ".join(_REGISTRY.keys())
         raise ValueError(f"Unknown benchmark '{name}'. Available: {available}")
     factory = _REGISTRY[name]
     return factory(**kwargs)
