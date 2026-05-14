@@ -81,17 +81,38 @@ def python_repl(code: str) -> str:
     return _python_repl.run(code)
 
 
+_MAX_FILE_CHARS = 10_000
+_TRUNCATION_OVERHEAD = 200  # budget for the ellipsis marker
+
+
+def _truncate_content(content: str, max_chars: int = _MAX_FILE_CHARS) -> str:
+    """Truncate content by keeping head and tail, replacing middle with an ellipsis."""
+    if len(content) <= max_chars:
+        return content
+    tail_budget = max_chars // 3
+    head_budget = max_chars - tail_budget - _TRUNCATION_OVERHEAD
+    head = content[:head_budget]
+    tail = content[-tail_budget:]
+    head_lines = head.count("\n") + 1
+    tail_lines = tail.count("\n") + 1
+    total_lines = content.count("\n") + 1
+    omitted = total_lines - head_lines - tail_lines
+    return f'{head}\n\n... [{omitted} lines omitted] ...\n\n{tail}'
+
+
 @tool
 def read_file(file_path: str, max_lines: int = 0) -> str:
     """Read the contents of a file.
 
     Use this to read CSV data files, task descriptions, or other text files.
     Set max_lines to read only the first N lines (0 = entire file).
+    Very long files are automatically truncated with the middle omitted.
     """
     lines = Path(file_path).read_text().splitlines()
     if max_lines > 0:
         lines = lines[:max_lines]
-    return "\n".join(lines)
+    content = "\n".join(lines)
+    return _truncate_content(content)
 
 
 _SYSTEM_PROMPT = """You are a data science assistant with access to the following tools:
