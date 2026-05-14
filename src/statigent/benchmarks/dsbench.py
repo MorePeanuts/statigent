@@ -290,6 +290,7 @@ class DSBenchAdapter(BenchmarkAdapter):
         model_name: str,
     ) -> EvalResult:
         """Evaluate data analysis predictions using LLM judge."""
+        pred_ids = {p["id"] for p in predictions}
         refs: list[dict[str, Any]] = []
         for sample in self._samples:
             for qname, answer in zip(
@@ -297,6 +298,9 @@ class DSBenchAdapter(BenchmarkAdapter):
                 sample.get("answers", []),
                 strict=True,
             ):
+                qid = f"{sample['id']}/{qname}"
+                if qid not in pred_ids:
+                    continue
                 q_path = (
                     self.data_dir
                     / "data_analysis"
@@ -307,7 +311,7 @@ class DSBenchAdapter(BenchmarkAdapter):
                 question = q_path.read_text() if q_path.exists() else ""
                 refs.append(
                     {
-                        "id": f"{sample['id']}/{qname}",
+                        "id": qid,
                         "question": question,
                         "answer": answer,
                     }

@@ -11,28 +11,33 @@ from statigent.benchmarks.dsbench import DSBenchAdapter
 from statigent.errors import StatigentBenchmarkError
 
 
-def _write_da_test_data(tmp_path: Path) -> Path:
+def _write_da_test_data(tmp_path: Path, num_samples: int = 1) -> Path:
     """Write minimal DSBench data_analysis test data."""
     base = tmp_path / "DSBench" / "data_analysis"
     data_dir = base / "data"
     data_dir.mkdir(parents=True)
 
-    challenge_dir = data_dir / "00000001"
-    challenge_dir.mkdir()
-    (challenge_dir / "introduction.txt").write_text("Financial modeling challenge")
-    (challenge_dir / "question1.txt").write_text("What is the total revenue?")
+    data: list[dict] = []
+    for i in range(1, num_samples + 1):
+        sid = f"{i:08d}"
+        challenge_dir = data_dir / sid
+        challenge_dir.mkdir()
+        (challenge_dir / "introduction.txt").write_text("Financial modeling challenge")
+        (challenge_dir / "question1.txt").write_text(
+            f"What is the total revenue for {sid}?"
+        )
+        data.append(
+            {
+                "id": sid,
+                "name": f"test-challenge-{sid}",
+                "url": "",
+                "txt": "",
+                "questions": ["question1"],
+                "answers": [f"answer-{sid}"],
+                "year": 2024,
+            }
+        )
 
-    data = [
-        {
-            "id": "00000001",
-            "name": "test-challenge",
-            "url": "",
-            "txt": "",
-            "questions": ["question1"],
-            "answers": ["1000000"],
-            "year": 2024,
-        }
-    ]
     with open(base / "data.json", "w") as f:
         for d in data:
             f.write(json.dumps(d) + "\n")
@@ -163,6 +168,37 @@ class TestDSBenchAdapterDA:
         )
         assert result.benchmark_name == "dsbench-da"
         assert result.score > 0
+
+    @patch("statigent.benchmarks.evaluators.get_model")
+    def test_evaluate_only_judges_predicted_ids(
+        self, mock_get_model: MagicMock, tmp_path: Path
+    ) -> None:
+        """When limit reduces predictions, evaluate must only judge those IDs."""
+        from statigent.benchmarks.evaluators import JudgeVerdict
+
+        mock_llm = MagicMock()
+        mock_structured = MagicMock()
+        mock_structured.invoke.return_value = JudgeVerdict(is_correct=True)
+        mock_llm.with_structured_output.return_value = mock_structured
+        mock_get_model.return_value = mock_llm
+
+        base = _write_da_test_data(tmp_path, num_samples=3)
+        adapter = DSBenchAdapter(data_dir=base, task="data_analysis")
+        adapter.prepare()
+        assert len(adapter._samples) == 3
+
+        # Simulate running with limit=1: only first sample has a prediction
+        predictions = [
+            {"id": "00000001/question1", "response": "The revenue is 1000000"}
+        ]
+        result = adapter.evaluate(
+            predictions, agent_name="test", model_name="test-model"
+        )
+
+        # The judge should only be called once (for the single predicted ID),
+        # not 3 times (once per all samples).
+        assert mock_structured.invoke.call_count == 1
+        assert result.details["total"] == 1
 
 
 class TestDSBenchAdapterDM:

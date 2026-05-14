@@ -156,11 +156,12 @@ class LLMJudgeEvaluator(Evaluator):
         details: list[dict[str, Any]] = []
         for ref in refs:
             qid = ref["id"]
-            prediction = pred_map.get(qid, "")
+            if qid not in pred_map:
+                continue
             prompt = _JUDGE_PROMPT.format(
                 question=ref["question"],
                 answer=ref["answer"],
-                prediction=prediction,
+                prediction=pred_map[qid],
             )
             is_correct = False
             text = ""
