@@ -171,8 +171,8 @@ class DSBenchAdapter(BenchmarkAdapter):
 
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score DSBench predictions."""
-        agent_name = kwargs.get("agent_name", "unknown")
-        model_name = kwargs.get("model_name", "unknown")
+        agent_name = kwargs["agent_name"]
+        model_name = kwargs["model_name"]
 
         if self.task == "data_analysis":
             return self._evaluate_data_analysis(predictions, agent_name, model_name)

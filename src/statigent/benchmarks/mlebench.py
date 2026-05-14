@@ -120,15 +120,15 @@ class MLEBenchAdapter(BenchmarkAdapter):
 
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score MLE-Bench predictions using mlebench grade."""
-        agent_name = kwargs.get("agent_name", "unknown")
-        model_name = kwargs.get("model_name", "unknown")
+        agent_name = kwargs["agent_name"]
+        model_name = kwargs["model_name"]
 
         if not predictions:
             return EvalResult(
                 score=0.0,
                 details={},
-                agent_name=str(agent_name),
-                model_name=str(model_name),
+                agent_name=agent_name,
+                model_name=model_name,
                 benchmark_name=self.name,
             )
 
@@ -182,8 +182,8 @@ class MLEBenchAdapter(BenchmarkAdapter):
         )
         return EvalResult.from_score_result(
             ScoreResult(score=round(score, 4), details={"per_competition": results}),
-            agent_name=str(agent_name),
-            model_name=str(model_name),
+            agent_name=agent_name,
+            model_name=model_name,
             benchmark_name=self.name,
         )
 

@@ -87,8 +87,8 @@ class DABenchAdapter(BenchmarkAdapter):
 
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score DABench predictions."""
-        agent_name = kwargs.get("agent_name", "unknown")
-        model_name = kwargs.get("model_name", "unknown")
+        agent_name = kwargs["agent_name"]
+        model_name = kwargs["model_name"]
 
         responses = predictions
         if self.reformat:

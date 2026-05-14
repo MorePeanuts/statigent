@@ -64,16 +64,33 @@ class BenchmarkAdapter(ABC):
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score predictions against ground truth."""
 
-    def execute(self, agent: "DataScienceAgent", **kwargs: Any) -> EvalResult:
-        """Full pipeline: prepare -> run -> evaluate."""
+    def execute(
+        self, agent: "DataScienceAgent", **kwargs: Any
+    ) -> EvalResult:
+        """Full pipeline: prepare -> run -> evaluate -> persist."""
+        from statigent.benchmarks.persistence import save_eval_result
+
         self.prepare()
         predictions = self.run(agent, **kwargs)
-        return self.evaluate(
+        result = self.evaluate(
             predictions,
             agent_name=agent.name,
             model_name=agent.model_name,
             **kwargs,
         )
+
+        output_dir = kwargs.get("output_dir")
+        if output_dir is not None:
+            save_eval_result(
+                result,
+                predictions=predictions,
+                base_dir=Path(output_dir),
+            )
+        else:
+            # Default: save to ./evaluations/
+            save_eval_result(result, predictions=predictions)
+
+        return result
 
 
 class DataScienceAgent(Protocol):
