@@ -1,12 +1,36 @@
-"""React baseline agent implementing the DataScienceAgent protocol."""
+"""React baseline agent with built-in tools."""
 
 from pathlib import Path
 
 from langchain.agents import create_agent
+from langchain.tools import tool
+from langchain_experimental.utilities import PythonREPL
 from loguru import logger
-from tools import python_repl, read_file
 
 from statigent.models import get_model
+
+_python_repl = PythonREPL()
+
+
+@tool
+def python_repl(code: str) -> str:
+    """Execute Python code and return the output.
+
+    Use this to run data analysis code (pandas, numpy, etc.).
+    If you want to see the output of a value, use print(...) in your code.
+    The current working directory and any provided files are accessible.
+    """
+    return _python_repl.run(code)
+
+
+@tool
+def read_file(file_path: str) -> str:
+    """Read the contents of a file.
+
+    Use this to read CSV data files, task descriptions, or other text files.
+    """
+    return Path(file_path).read_text()
+
 
 _SYSTEM_PROMPT = """You are a data science assistant with access to the following tools:
 1. read_file — Read the contents of a file (CSV, text, etc.)
@@ -57,7 +81,7 @@ class ReactBaselineAgent:
         result = self.agent.invoke(
             {"messages": [{"role": "user", "content": "\n\n".join(parts)}]}
         )
-        response = result["messages"][-1].content
+        response: str = result["messages"][-1].content
         logger.debug("ReactBaselineAgent response: {}...", response[:100])
         return response
 
