@@ -1,7 +1,5 @@
 """Benchmark evaluation adapters for data science agents."""
 
-from __future__ import annotations
-
 from statigent.benchmarks.base import (
     BenchmarkAdapter,
     DataScienceAgent,

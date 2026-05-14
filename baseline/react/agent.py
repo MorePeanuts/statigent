@@ -1,16 +1,11 @@
 """React baseline agent implementing the DataScienceAgent protocol."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 from langchain.agents import create_agent
 from loguru import logger
 
 from statigent.models import get_model
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 from .tools import python_repl, read_file
 

@@ -1,11 +1,7 @@
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from pathlib import Path
+from typing import Any, Protocol, Self
 
 
 @dataclass
@@ -33,7 +29,7 @@ class EvalResult:
         agent_name: str,
         model_name: str,
         benchmark_name: str,
-    ) -> EvalResult:
+    ) -> Self:
         """Create EvalResult from a ScoreResult plus context."""
         return cls(
             score=score_result.score,
@@ -61,14 +57,14 @@ class BenchmarkAdapter(ABC):
         """Download/verify benchmark data."""
 
     @abstractmethod
-    def run(self, agent: DataScienceAgent, **kwargs: Any) -> Any:
+    def run(self, agent: "DataScienceAgent", **kwargs: Any) -> Any:
         """Run agent on benchmark tasks, return raw predictions."""
 
     @abstractmethod
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score predictions against ground truth."""
 
-    def execute(self, agent: DataScienceAgent, **kwargs: Any) -> EvalResult:
+    def execute(self, agent: "DataScienceAgent", **kwargs: Any) -> EvalResult:
         """Full pipeline: prepare -> run -> evaluate."""
         self.prepare()
         predictions = self.run(agent, **kwargs)

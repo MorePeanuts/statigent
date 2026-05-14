@@ -1,15 +1,11 @@
-from __future__ import annotations
-
 import re
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
+from langchain.chat_models import BaseChatModel
 from loguru import logger
 
 from statigent.benchmarks.base import Evaluator, ScoreResult
 from statigent.models import get_model
-
-if TYPE_CHECKING:
-    from langchain.chat_models import BaseChatModel
 
 _ANSWER_PATTERN = re.compile(r"@(\w+)\[(.*?)\]")
 

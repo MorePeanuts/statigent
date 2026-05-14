@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -15,6 +13,7 @@ from statigent.errors import StatigentBenchmarkError
 
 if TYPE_CHECKING:
     from statigent.benchmarks.base import DataScienceAgent
+
 
 def _default_data_dir() -> Path:
     return Path(__file__).resolve().parents[4] / "benchmarks" / "data" / "MLE-Bench"
@@ -73,7 +72,7 @@ class MLEBenchAdapter(BenchmarkAdapter):
 
         logger.info("MLE-Bench prepared: data_dir={}", self.data_dir)
 
-    def run(self, agent: DataScienceAgent, **kwargs: Any) -> list[dict[str, Any]]:
+    def run(self, agent: "DataScienceAgent", **kwargs: Any) -> list[dict[str, Any]]:
         """Run agent on MLE-Bench competitions."""
         limit = kwargs.get("limit")
 
@@ -200,8 +199,11 @@ class MLEBenchAdapter(BenchmarkAdapter):
 
     def _get_competition_ids(self) -> list[str]:
         """Get competition IDs from the lite or full split."""
-        split_file = self.repo_dir / "experiments" / "splits" / (
-            "low.txt" if self.lite else "all.txt"
+        split_file = (
+            self.repo_dir
+            / "experiments"
+            / "splits"
+            / ("low.txt" if self.lite else "all.txt")
         )
         if split_file.exists():
             return [
@@ -221,7 +223,5 @@ class MLEBenchAdapter(BenchmarkAdapter):
                 return registry.get_lite_competition_ids()  # type: ignore[no-any-return]
             return registry.list_competition_ids()  # type: ignore[no-any-return]
         except ImportError:
-            logger.warning(
-                "mlebench not importable, returning empty competition list"
-            )
+            logger.warning("mlebench not importable, returning empty competition list")
             return []

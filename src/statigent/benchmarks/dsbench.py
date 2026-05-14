@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -60,19 +58,17 @@ class DSBenchAdapter(BenchmarkAdapter):
             raise FileNotFoundError(f"DSBench data directory not found: {data_dir}")
 
         with open(data_path) as f:
-            self._samples = [
-                json.loads(line.strip()) for line in f if line.strip()
-            ]
+            self._samples = [json.loads(line.strip()) for line in f if line.strip()]
         logger.info("DSBench {} prepared: {} samples", self.task, len(self._samples))
 
-    def run(self, agent: DataScienceAgent, **kwargs: Any) -> list[dict[str, Any]]:
+    def run(self, agent: "DataScienceAgent", **kwargs: Any) -> list[dict[str, Any]]:
         """Run agent on DSBench tasks."""
         if self.task == "data_analysis":
             return self._run_data_analysis(agent, **kwargs)
         return self._run_data_modeling(agent, **kwargs)
 
     def _run_data_analysis(
-        self, agent: DataScienceAgent, **kwargs: Any
+        self, agent: "DataScienceAgent", **kwargs: Any
     ) -> list[dict[str, Any]]:
         """Run data analysis task."""
         limit = kwargs.get("limit")
@@ -94,14 +90,12 @@ class DSBenchAdapter(BenchmarkAdapter):
                 prompt = f"{introduction}\n\n{question}"
                 response = agent.run_analysis_for_eval(prompt)
                 predictions.append({"id": sid, "response": response})
-                logger.debug(
-                    "DSBench DA id={} q={}: response received", sid, qname
-                )
+                logger.debug("DSBench DA id={} q={}: response received", sid, qname)
 
         return predictions
 
     def _run_data_modeling(
-        self, agent: DataScienceAgent, **kwargs: Any
+        self, agent: "DataScienceAgent", **kwargs: Any
     ) -> list[dict[str, Any]]:
         """Run data modeling task."""
         limit = kwargs.get("limit")
@@ -141,9 +135,7 @@ class DSBenchAdapter(BenchmarkAdapter):
             )
 
             if not train_path.exists():
-                logger.warning(
-                    "DSBench DM skipping {}: train.csv not found", name
-                )
+                logger.warning("DSBench DM skipping {}: train.csv not found", name)
                 continue
 
             pred_path = agent.run_modeling_for_eval(
