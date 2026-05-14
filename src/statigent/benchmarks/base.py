@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol, Self
 
@@ -137,7 +137,7 @@ class BenchmarkAdapter(ABC):
         if base_dir is None:
             base_dir = Path("evaluations")
 
-        timestamp = datetime.now(tz=timezone.utc).strftime("%Y%m%dT%H%M%SZ")  # noqa: UP017
+        timestamp = datetime.now().strftime('%Y%m%dT%H%M%S')
         parts = [result.agent_name, result.model_name, result.benchmark_name, timestamp]
         dir_name = "-".join(parts)
         output_dir = base_dir / dir_name
