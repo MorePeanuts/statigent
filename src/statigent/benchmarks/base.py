@@ -67,9 +67,10 @@ class BenchmarkAdapter(ABC):
     def execute(
         self, agent: "DataScienceAgent", **kwargs: Any
     ) -> EvalResult:
-        """Full pipeline: prepare -> run -> evaluate -> persist."""
-        from statigent.benchmarks.persistence import save_eval_result
+        """Full pipeline: prepare -> run -> evaluate.
 
+        If output_dir is provided in kwargs, persists results to disk.
+        """
         self.prepare()
         predictions = self.run(agent, **kwargs)
         result = self.evaluate(
@@ -81,14 +82,13 @@ class BenchmarkAdapter(ABC):
 
         output_dir = kwargs.get("output_dir")
         if output_dir is not None:
+            from statigent.benchmarks.persistence import save_eval_result
+
             save_eval_result(
                 result,
                 predictions=predictions,
                 base_dir=Path(output_dir),
             )
-        else:
-            # Default: save to ./evaluations/
-            save_eval_result(result, predictions=predictions)
 
         return result
 

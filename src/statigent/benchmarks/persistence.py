@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from statigent.benchmarks.base import EvalResult
+from statigent.errors import StatigentBenchmarkError
 
 
 def save_eval_result(
@@ -36,36 +37,42 @@ def save_eval_result(
     parts = [result.agent_name, result.model_name, result.benchmark_name, timestamp]
     dir_name = "-".join(parts)
     output_dir = base_dir / dir_name
-    output_dir.mkdir(parents=True, exist_ok=True)
 
-    # meta.json
-    meta: dict[str, Any] = {
-        "agent_name": result.agent_name,
-        "model_name": result.model_name,
-        "benchmark_name": result.benchmark_name,
-        "timestamp": timestamp,
-    }
-    (output_dir / "meta.json").write_text(json.dumps(meta, indent=2))
+    try:
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-    # predictions/responses.jsonl
-    pred_dir = output_dir / "predictions"
-    pred_dir.mkdir(exist_ok=True)
-    if predictions:
-        lines = [json.dumps(p) for p in predictions]
-        (pred_dir / "responses.jsonl").write_text("\n".join(lines) + "\n")
-    else:
-        (pred_dir / "responses.jsonl").write_text("")
+        # meta.json
+        meta: dict[str, Any] = {
+            "agent_name": result.agent_name,
+            "model_name": result.model_name,
+            "benchmark_name": result.benchmark_name,
+            "timestamp": timestamp,
+        }
+        (output_dir / "meta.json").write_text(json.dumps(meta, indent=2))
 
-    # evaluation/scores.json
-    eval_dir = output_dir / "evaluation"
-    eval_dir.mkdir(exist_ok=True)
-    scores: dict[str, Any] = {
-        "score": result.score,
-        "details": result.details,
-        "agent_name": result.agent_name,
-        "model_name": result.model_name,
-        "benchmark_name": result.benchmark_name,
-    }
-    (eval_dir / "scores.json").write_text(json.dumps(scores, indent=2))
+        # predictions/responses.jsonl
+        pred_dir = output_dir / "predictions"
+        pred_dir.mkdir(exist_ok=True)
+        if predictions:
+            lines = [json.dumps(p) for p in predictions]
+            (pred_dir / "responses.jsonl").write_text("\n".join(lines) + "\n")
+        else:
+            (pred_dir / "responses.jsonl").write_text("")
+
+        # evaluation/scores.json
+        eval_dir = output_dir / "evaluation"
+        eval_dir.mkdir(exist_ok=True)
+        scores: dict[str, Any] = {
+            "score": result.score,
+            "details": result.details,
+            "agent_name": result.agent_name,
+            "model_name": result.model_name,
+            "benchmark_name": result.benchmark_name,
+        }
+        (eval_dir / "scores.json").write_text(json.dumps(scores, indent=2))
+    except (OSError, TypeError) as exc:
+        raise StatigentBenchmarkError(
+            f"Failed to persist evaluation results to {output_dir}: {exc}"
+        ) from exc
 
     return output_dir
