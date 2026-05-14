@@ -70,12 +70,16 @@ class TestDABenchAdapter:
         mock_agent = MagicMock()
         mock_agent.name = "test-agent"
         mock_agent.model_name = "test-model"
-        mock_agent.run_analysis_for_eval.return_value = "@mean_age[27.5]"
+        mock_agent.run_analysis_for_eval.return_value = (
+            "@mean_age[27.5]",
+            [{"role": "user", "content": "test"}],
+        )
 
-        predictions = adapter.run(mock_agent, limit=1)
-        assert len(predictions) == 1
-        assert predictions[0]["id"] == 0
-        assert "mean_age" in predictions[0]["response"]
+        run_result = adapter.run(mock_agent, limit=1)
+        assert len(run_result.predictions) == 1
+        assert run_result.predictions[0]["id"] == 0
+        assert "mean_age" in run_result.predictions[0]["response"]
+        assert "0" in run_result.traces
 
     def test_evaluate_scores_correct_predictions(self, tmp_path: Path) -> None:
         data_dir = _write_test_data(tmp_path)

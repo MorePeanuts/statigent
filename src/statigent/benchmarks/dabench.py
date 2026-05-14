@@ -6,6 +6,7 @@ from loguru import logger
 
 from statigent.benchmarks.base import (
     BenchmarkAdapter,
+    BenchmarkRunResult,
     DataScienceAgent,
     EvalResult,
 )
@@ -58,12 +59,13 @@ class DABenchAdapter(BenchmarkAdapter):
             len(self._labels),
         )
 
-    def run(self, agent: DataScienceAgent, **kwargs: Any) -> list[dict[str, Any]]:
+    def run(self, agent: DataScienceAgent, **kwargs: Any) -> BenchmarkRunResult:
         """Run agent on DABench questions."""
         limit = kwargs.get("limit")
         questions = self._questions[:limit] if limit else self._questions
 
         predictions: list[dict[str, Any]] = []
+        traces: dict[str, list[dict[str, Any]]] = {}
         for q in questions:
             csv_path = self.data_dir / "da-dev-tables" / q["file_name"]
             task_instructions = (
@@ -77,13 +79,14 @@ class DABenchAdapter(BenchmarkAdapter):
                 "- For numerical answers, print the number clearly\n"
             )
             prompt = f"Question: {q['question']}\n\nData file: {csv_path}"
-            response = agent.run_analysis_for_eval(
+            response, trace = agent.run_analysis_for_eval(
                 prompt, files=[csv_path], task_instructions=task_instructions
             )
             predictions.append({"id": q["id"], "response": response})
+            traces[str(q["id"])] = trace
             logger.debug("DABench question id={}: response received", q["id"])
 
-        return predictions
+        return BenchmarkRunResult(predictions=predictions, traces=traces)
 
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score DABench predictions."""

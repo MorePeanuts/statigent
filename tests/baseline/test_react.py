@@ -2,10 +2,12 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from langchain.messages import AIMessage, HumanMessage, ToolMessage
 
 from statigent.baseline.react import (
     _SYSTEM_PROMPT,
     ReactBaselineAgent,
+    _serialize_messages,
     python_repl,
     read_file,
 )
@@ -80,19 +82,25 @@ class TestReactBaselineAgentInit:
 class TestRunAnalysisForEval:
     @patch("statigent.baseline.react.get_model")
     @patch("statigent.baseline.react.create_agent")
-    def test_returns_response_content(
+    def test_returns_response_and_trace(
         self, mock_create_agent: MagicMock, mock_get_model: MagicMock
     ) -> None:
         mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
         mock_agent.invoke.return_value = {
-            "messages": [MagicMock(content="The mean age is 30")]
+            "messages": [
+                HumanMessage(content="What is the mean age?"),
+                AIMessage(content="The mean age is 30"),
+            ]
         }
         mock_create_agent.return_value = mock_agent
 
         agent = ReactBaselineAgent()
-        result = agent.run_analysis_for_eval("What is the mean age?")
-        assert result == "The mean age is 30"
+        response, trace = agent.run_analysis_for_eval("What is the mean age?")
+        assert response == "The mean age is 30"
+        assert len(trace) == 2
+        assert trace[0]["role"] == "user"
+        assert trace[1]["role"] == "assistant"
 
     @patch("statigent.baseline.react.get_model")
     @patch("statigent.baseline.react.create_agent")
@@ -101,7 +109,9 @@ class TestRunAnalysisForEval:
     ) -> None:
         mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
-        mock_agent.invoke.return_value = {"messages": [MagicMock(content="answer")]}
+        mock_agent.invoke.return_value = {
+            "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
+        }
         mock_create_agent.return_value = mock_agent
 
         agent = ReactBaselineAgent()
@@ -120,7 +130,9 @@ class TestRunAnalysisForEval:
     ) -> None:
         mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
-        mock_agent.invoke.return_value = {"messages": [MagicMock(content="answer")]}
+        mock_agent.invoke.return_value = {
+            "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
+        }
         mock_create_agent.return_value = mock_agent
 
         agent = ReactBaselineAgent()
@@ -138,7 +150,9 @@ class TestRunAnalysisForEval:
     ) -> None:
         mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
-        mock_agent.invoke.return_value = {"messages": [MagicMock(content="answer")]}
+        mock_agent.invoke.return_value = {
+            "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
+        }
         mock_create_agent.return_value = mock_agent
 
         agent = ReactBaselineAgent()
@@ -151,7 +165,7 @@ class TestRunAnalysisForEval:
 class TestRunModelingForEval:
     @patch("statigent.baseline.react.get_model")
     @patch("statigent.baseline.react.create_agent")
-    def test_returns_output_path(
+    def test_returns_output_path_and_trace(
         self,
         mock_create_agent: MagicMock,
         mock_get_model: MagicMock,
@@ -159,6 +173,12 @@ class TestRunModelingForEval:
     ) -> None:
         mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
+        mock_agent.invoke.return_value = {
+            "messages": [
+                HumanMessage(content="Build a model"),
+                AIMessage(content="Done"),
+            ]
+        }
         mock_create_agent.return_value = mock_agent
 
         train = tmp_path / "train.csv"
@@ -169,13 +189,14 @@ class TestRunModelingForEval:
         sample.write_text("x,y\n3,0\n")
 
         agent = ReactBaselineAgent()
-        result = agent.run_modeling_for_eval(
+        result_path, trace = agent.run_modeling_for_eval(
             "Build a model",
             train_path=train,
             test_path=test,
             sample_submission_path=sample,
         )
-        assert result == tmp_path / "submission.csv"
+        assert result_path == tmp_path / "submission.csv"
+        assert len(trace) == 2
 
     @patch("statigent.baseline.react.get_model")
     @patch("statigent.baseline.react.create_agent")
@@ -187,6 +208,9 @@ class TestRunModelingForEval:
     ) -> None:
         mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
+        mock_agent.invoke.return_value = {
+            "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
+        }
         mock_create_agent.return_value = mock_agent
 
         train = tmp_path / "train.csv"
@@ -219,6 +243,9 @@ class TestRunModelingForEval:
     ) -> None:
         mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
+        mock_agent.invoke.return_value = {
+            "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
+        }
         mock_create_agent.return_value = mock_agent
 
         train = tmp_path / "train.csv"
@@ -249,6 +276,9 @@ class TestRunModelingForEval:
     ) -> None:
         mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
+        mock_agent.invoke.return_value = {
+            "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
+        }
         mock_create_agent.return_value = mock_agent
 
         train = tmp_path / "train.csv"
@@ -260,14 +290,70 @@ class TestRunModelingForEval:
 
         agent = ReactBaselineAgent()
         with patch("statigent.baseline.react.logger") as mock_logger:
-            result = agent.run_modeling_for_eval(
+            result_path, _trace = agent.run_modeling_for_eval(
                 "Build a model",
                 train_path=train,
                 test_path=test,
                 sample_submission_path=sample,
             )
             mock_logger.warning.assert_called_once()
-        assert not result.exists()
+        assert not result_path.exists()
+
+
+class TestSerializeMessages:
+    def test_serializes_human_message(self) -> None:
+        msgs = [HumanMessage(content="What is the mean?")]
+        trace = _serialize_messages(msgs)
+        assert trace[0] == {"role": "user", "content": "What is the mean?"}
+
+    def test_serializes_ai_message_with_tool_calls(self) -> None:
+        msgs = [
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {"name": "python_repl", "args": {"code": "print(1)"}, "id": "tc1"}
+                ],
+            )
+        ]
+        trace = _serialize_messages(msgs)
+        assert trace[0]["role"] == "assistant"
+        assert trace[0]["content"] == ""
+        assert len(trace[0]["tool_calls"]) == 1
+        assert trace[0]["tool_calls"][0]["name"] == "python_repl"
+
+    def test_serializes_tool_message(self) -> None:
+        msgs = [ToolMessage(content="42", name="python_repl", tool_call_id="tc1")]
+        trace = _serialize_messages(msgs)
+        assert trace[0] == {
+            "role": "tool",
+            "name": "python_repl",
+            "content": "42",
+            "tool_call_id": "tc1",
+        }
+
+    def test_serializes_full_conversation(self) -> None:
+        msgs = [
+            HumanMessage(content="Analyze this"),
+            AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "read_file",
+                        "args": {"file_path": "/data.csv"},
+                        "id": "tc1",
+                    }
+                ],
+            ),
+            ToolMessage(content="a,b\n1,2", name="read_file", tool_call_id="tc1"),
+            AIMessage(content="The answer is 3"),
+        ]
+        trace = _serialize_messages(msgs)
+        assert len(trace) == 4
+        assert trace[0]["role"] == "user"
+        assert trace[1]["role"] == "assistant"
+        assert trace[2]["role"] == "tool"
+        assert trace[3]["role"] == "assistant"
+        assert trace[3]["content"] == "The answer is 3"
 
 
 class TestProtocolConformance:

@@ -6,6 +6,7 @@ from loguru import logger
 
 from statigent.benchmarks.base import (
     BenchmarkAdapter,
+    BenchmarkRunResult,
     EvalResult,
 )
 from statigent.benchmarks.evaluators import LLMJudgeEvaluator
@@ -61,7 +62,7 @@ class DSBenchAdapter(BenchmarkAdapter):
             self._samples = [json.loads(line.strip()) for line in f if line.strip()]
         logger.info("DSBench {} prepared: {} samples", self.task, len(self._samples))
 
-    def run(self, agent: "DataScienceAgent", **kwargs: Any) -> list[dict[str, Any]]:
+    def run(self, agent: "DataScienceAgent", **kwargs: Any) -> BenchmarkRunResult:
         """Run agent on DSBench tasks."""
         if self.task == "data_analysis":
             return self._run_data_analysis(agent, **kwargs)
@@ -76,12 +77,13 @@ class DSBenchAdapter(BenchmarkAdapter):
 
     def _run_data_analysis(
         self, agent: "DataScienceAgent", **kwargs: Any
-    ) -> list[dict[str, Any]]:
+    ) -> BenchmarkRunResult:
         """Run data analysis task."""
         limit = kwargs.get("limit")
         samples = self._samples[:limit] if limit else self._samples
 
         predictions: list[dict[str, Any]] = []
+        traces: dict[str, list[dict[str, Any]]] = {}
         for sample in samples:
             if not sample.get("questions"):
                 continue
@@ -95,13 +97,14 @@ class DSBenchAdapter(BenchmarkAdapter):
                 q_path = data_base / f"{qname}.txt"
                 question = q_path.read_text() if q_path.exists() else ""
                 prompt = f"{introduction}\n\n{question}"
-                response = agent.run_analysis_for_eval(
+                response, trace = agent.run_analysis_for_eval(
                     prompt, task_instructions=self._DA_TASK_INSTRUCTIONS
                 )
                 predictions.append({"id": sid, "response": response})
+                traces[str(sid)] = trace
                 logger.debug("DSBench DA id={} q={}: response received", sid, qname)
 
-        return predictions
+        return BenchmarkRunResult(predictions=predictions, traces=traces)
 
     _DM_TASK_INSTRUCTIONS = (
         "## Task Instructions\n"
@@ -115,12 +118,13 @@ class DSBenchAdapter(BenchmarkAdapter):
 
     def _run_data_modeling(
         self, agent: "DataScienceAgent", **kwargs: Any
-    ) -> list[dict[str, Any]]:
+    ) -> BenchmarkRunResult:
         """Run data modeling task."""
         limit = kwargs.get("limit")
         samples = self._samples[:limit] if limit else self._samples
 
         predictions: list[dict[str, Any]] = []
+        traces: dict[str, list[dict[str, Any]]] = {}
         for sample in samples:
             name = sample["name"]
             task_path = (
@@ -157,7 +161,7 @@ class DSBenchAdapter(BenchmarkAdapter):
                 logger.warning("DSBench DM skipping {}: train.csv not found", name)
                 continue
 
-            pred_path = agent.run_modeling_for_eval(
+            pred_path, trace = agent.run_modeling_for_eval(
                 description,
                 train_path=train_path,
                 test_path=test_path,
@@ -165,9 +169,10 @@ class DSBenchAdapter(BenchmarkAdapter):
                 task_instructions=self._DM_TASK_INSTRUCTIONS,
             )
             predictions.append({"name": name, "prediction_path": str(pred_path)})
+            traces[name] = trace
             logger.debug("DSBench DM {}: prediction saved", name)
 
-        return predictions
+        return BenchmarkRunResult(predictions=predictions, traces=traces)
 
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score DSBench predictions."""

@@ -3,28 +3,33 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from statigent.benchmarks.base import EvalResult
+from statigent.benchmarks.base import AgentTrace, EvalResult
 from statigent.errors import StatigentBenchmarkError
 
 
 def save_eval_result(
     result: EvalResult,
     predictions: list[dict[str, Any]],
+    traces: dict[str, AgentTrace] | None = None,
     base_dir: Path | None = None,
 ) -> Path:
-    """Persist evaluation result and predictions to disk.
+    """Persist evaluation result, predictions, and traces to disk.
 
     Creates:
         {base_dir}/{agent_name}-{model_name}-{benchmark_name}-{timestamp}/
         ├── meta.json
         ├── predictions/
         │   └── responses.jsonl
+        ├── traces/
+        │   ├── {question_id}.jsonl
+        │   └── ...
         └── evaluation/
             └── scores.json
 
     Args:
         result: The evaluation result to persist.
         predictions: The raw agent predictions.
+        traces: Optional mapping of question_id -> serialized message trace.
         base_dir: Base directory for output. Defaults to ./evaluations/
 
     Returns:
@@ -70,6 +75,14 @@ def save_eval_result(
             "benchmark_name": result.benchmark_name,
         }
         (eval_dir / "scores.json").write_text(json.dumps(scores, indent=2))
+
+        # traces/{question_id}.jsonl
+        if traces:
+            trace_dir = output_dir / "traces"
+            trace_dir.mkdir(exist_ok=True)
+            for qid, trace in traces.items():
+                lines = [json.dumps(msg) for msg in trace]
+                (trace_dir / f"{qid}.jsonl").write_text("\n".join(lines) + "\n")
     except (OSError, TypeError) as exc:
         raise StatigentBenchmarkError(
             f"Failed to persist evaluation results to {output_dir}: {exc}"

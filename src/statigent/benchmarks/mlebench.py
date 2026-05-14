@@ -6,6 +6,7 @@ from loguru import logger
 
 from statigent.benchmarks.base import (
     BenchmarkAdapter,
+    BenchmarkRunResult,
     EvalResult,
     ScoreResult,
 )
@@ -82,7 +83,7 @@ class MLEBenchAdapter(BenchmarkAdapter):
 
         logger.info("MLE-Bench prepared: data_dir={}", self.data_dir)
 
-    def run(self, agent: "DataScienceAgent", **kwargs: Any) -> list[dict[str, Any]]:
+    def run(self, agent: "DataScienceAgent", **kwargs: Any) -> BenchmarkRunResult:
         """Run agent on MLE-Bench competitions."""
         limit = kwargs.get("limit")
 
@@ -91,6 +92,7 @@ class MLEBenchAdapter(BenchmarkAdapter):
             competition_ids = competition_ids[: int(limit)]
 
         predictions: list[dict[str, Any]] = []
+        traces: dict[str, list[dict[str, Any]]] = {}
         for comp_id in competition_ids:
             comp_dir = self.data_dir / comp_id / "prepared" / "public"
             desc_path = (
@@ -104,7 +106,7 @@ class MLEBenchAdapter(BenchmarkAdapter):
             description = desc_path.read_text() if desc_path.exists() else ""
             sample_sub = comp_dir / "sample_submission.csv"
 
-            pred_path = agent.run_modeling_for_eval(
+            pred_path, trace = agent.run_modeling_for_eval(
                 description,
                 train_path=comp_dir,
                 test_path=comp_dir,
@@ -114,9 +116,10 @@ class MLEBenchAdapter(BenchmarkAdapter):
             predictions.append(
                 {"competition_id": comp_id, "submission_path": str(pred_path)}
             )
+            traces[comp_id] = trace
             logger.debug("MLE-Bench {}: submission created", comp_id)
 
-        return predictions
+        return BenchmarkRunResult(predictions=predictions, traces=traces)
 
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score MLE-Bench predictions using mlebench grade."""

@@ -3,6 +3,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol, Self
 
+AgentTrace = list[dict[str, Any]]
+"""Serialized execution trace: each dict is one message with role, content, etc."""
+
+
+@dataclass
+class BenchmarkRunResult:
+    """Result from running an agent on a benchmark."""
+
+    predictions: list[dict[str, Any]]
+    traces: dict[str, AgentTrace]
+
 
 @dataclass
 class ScoreResult:
@@ -57,8 +68,8 @@ class BenchmarkAdapter(ABC):
         """Download/verify benchmark data."""
 
     @abstractmethod
-    def run(self, agent: "DataScienceAgent", **kwargs: Any) -> Any:
-        """Run agent on benchmark tasks, return raw predictions."""
+    def run(self, agent: "DataScienceAgent", **kwargs: Any) -> BenchmarkRunResult:
+        """Run agent on benchmark tasks, return predictions and traces."""
 
     @abstractmethod
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
@@ -72,9 +83,9 @@ class BenchmarkAdapter(ABC):
         If output_dir is provided in kwargs, persists results to disk.
         """
         self.prepare()
-        predictions = self.run(agent, **kwargs)
+        run_result = self.run(agent, **kwargs)
         result = self.evaluate(
-            predictions,
+            run_result.predictions,
             agent_name=agent.name,
             model_name=agent.model_name,
             **kwargs,
@@ -86,7 +97,8 @@ class BenchmarkAdapter(ABC):
 
             save_eval_result(
                 result,
-                predictions=predictions,
+                predictions=run_result.predictions,
+                traces=run_result.traces,
                 base_dir=Path(output_dir),
             )
 
@@ -105,8 +117,8 @@ class DataScienceAgent(Protocol):
         *,
         files: list[Path] | None = None,
         task_instructions: str = "",
-    ) -> str:
-        """Run agent on an analysis task, return text response.
+    ) -> tuple[str, AgentTrace]:
+        """Run agent on an analysis task, return text response and trace.
 
         Args:
             prompt: The task prompt from the benchmark adapter.
@@ -124,8 +136,8 @@ class DataScienceAgent(Protocol):
         test_path: Path,
         sample_submission_path: Path,
         task_instructions: str = "",
-    ) -> Path:
-        """Run agent on a modeling task, return path to prediction CSV.
+    ) -> tuple[Path, AgentTrace]:
+        """Run agent on a modeling task, return path to prediction CSV and trace.
 
         Args:
             prompt: The task prompt from the benchmark adapter.

@@ -5,7 +5,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from statigent.benchmarks.base import BenchmarkAdapter, DataScienceAgent, EvalResult
+from statigent.benchmarks.base import (
+    BenchmarkAdapter,
+    BenchmarkRunResult,
+    DataScienceAgent,
+    EvalResult,
+)
 from statigent.benchmarks.persistence import save_eval_result
 from statigent.errors import StatigentBenchmarkError
 
@@ -106,6 +111,71 @@ class TestSaveEvalResult:
                 base_dir=tmp_path / "blocker" / "nested",
             )
 
+    def test_traces_saved_as_jsonl(self, tmp_path: Path) -> None:
+        result = EvalResult(
+            score=1.0,
+            details={},
+            agent_name="test-agent",
+            model_name="test-model",
+            benchmark_name="dabench",
+        )
+        traces = {
+            "0": [
+                {"role": "user", "content": "What is the mean?"},
+                {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "name": "python_repl",
+                            "args": {"code": "print(42)"},
+                            "id": "tc1",
+                        }
+                    ],
+                },
+                {
+                    "role": "tool",
+                    "name": "python_repl",
+                    "content": "42",
+                    "tool_call_id": "tc1",
+                },
+                {"role": "assistant", "content": "The mean is 42."},
+            ],
+            "1": [
+                {"role": "user", "content": "How many rows?"},
+                {"role": "assistant", "content": "There are 10 rows."},
+            ],
+        }
+        output_dir = save_eval_result(
+            result, predictions=[], traces=traces, base_dir=tmp_path
+        )
+        trace_dir = output_dir / "traces"
+        assert trace_dir.exists()
+
+        trace_0 = trace_dir / "0.jsonl"
+        assert trace_0.exists()
+        lines_0 = trace_0.read_text().strip().split("\n")
+        assert len(lines_0) == 4
+        assert json.loads(lines_0[0])["role"] == "user"
+
+        trace_1 = trace_dir / "1.jsonl"
+        assert trace_1.exists()
+        lines_1 = trace_1.read_text().strip().split("\n")
+        assert len(lines_1) == 2
+
+    def test_no_traces_dir_when_traces_none(self, tmp_path: Path) -> None:
+        result = EvalResult(
+            score=0.5,
+            details={},
+            agent_name="test",
+            model_name="test",
+            benchmark_name="test",
+        )
+        output_dir = save_eval_result(
+            result, predictions=[], traces=None, base_dir=tmp_path
+        )
+        assert not (output_dir / "traces").exists()
+
 
 class TestExecutePersistence:
     def test_execute_persists_when_output_dir_provided(self, tmp_path: Path) -> None:
@@ -115,8 +185,11 @@ class TestExecutePersistence:
             def prepare(self) -> None:
                 pass
 
-            def run(self, agent: DataScienceAgent, **kwargs: Any) -> Any:
-                return [{"id": 0, "response": "test"}]
+            def run(self, agent: DataScienceAgent, **kwargs: Any) -> BenchmarkRunResult:
+                return BenchmarkRunResult(
+                    predictions=[{"id": 0, "response": "test"}],
+                    traces={"0": [{"role": "user", "content": "test"}]},
+                )
 
             def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
                 return EvalResult(
@@ -141,6 +214,7 @@ class TestExecutePersistence:
         assert len(dirs) == 1
         assert (dirs[0] / "meta.json").exists()
         assert (dirs[0] / "evaluation" / "scores.json").exists()
+        assert (dirs[0] / "traces" / "0.jsonl").exists()
 
     def test_execute_no_persist_without_output_dir(self, tmp_path: Path) -> None:
         class StubAdapter(BenchmarkAdapter):
@@ -149,8 +223,8 @@ class TestExecutePersistence:
             def prepare(self) -> None:
                 pass
 
-            def run(self, agent: DataScienceAgent, **kwargs: Any) -> Any:
-                return []
+            def run(self, agent: DataScienceAgent, **kwargs: Any) -> BenchmarkRunResult:
+                return BenchmarkRunResult(predictions=[], traces={})
 
             def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
                 return EvalResult(

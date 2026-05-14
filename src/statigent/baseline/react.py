@@ -1,15 +1,45 @@
 """React baseline agent with built-in tools."""
 
 from pathlib import Path
+from typing import Any
 
 from langchain.agents import create_agent
+from langchain.messages import AIMessage, AnyMessage, HumanMessage, ToolMessage
 from langchain.tools import tool
 from langchain_experimental.utilities import PythonREPL
 from loguru import logger
 
+from statigent.benchmarks.base import AgentTrace
 from statigent.models import get_model
 
 _python_repl = PythonREPL()
+
+
+def _serialize_messages(messages: list[AnyMessage]) -> AgentTrace:
+    """Convert langchain message objects to JSON-serializable dicts."""
+    trace: AgentTrace = []
+    for msg in messages:
+        entry: dict[str, Any] = {"role": msg.type}
+        if isinstance(msg, HumanMessage):
+            entry["role"] = "user"
+            entry["content"] = msg.content
+        elif isinstance(msg, AIMessage):
+            entry["role"] = "assistant"
+            entry["content"] = msg.content
+            if msg.tool_calls:
+                entry["tool_calls"] = [
+                    {"name": tc["name"], "args": tc["args"], "id": tc.get("id", "")}
+                    for tc in msg.tool_calls
+                ]
+        elif isinstance(msg, ToolMessage):
+            entry["role"] = "tool"
+            entry["name"] = msg.name or ""
+            entry["content"] = msg.content
+            entry["tool_call_id"] = msg.tool_call_id
+        else:
+            entry["content"] = msg.content
+        trace.append(entry)
+    return trace
 
 
 @tool
@@ -64,8 +94,8 @@ class ReactBaselineAgent:
         *,
         files: list[Path] | None = None,
         task_instructions: str = "",
-    ) -> str:
-        """Run agent on an analysis task, return text response."""
+    ) -> tuple[str, AgentTrace]:
+        """Run agent on an analysis task, return text response and trace."""
         file_info = ""
         if files:
             file_info = "\n\nAvailable data files:\n" + "\n".join(
@@ -82,8 +112,9 @@ class ReactBaselineAgent:
             {"messages": [{"role": "user", "content": "\n\n".join(parts)}]}
         )
         response: str = result["messages"][-1].content
+        trace = _serialize_messages(result["messages"])
         logger.debug("ReactBaselineAgent response: {}...", response[:100])
-        return response
+        return response, trace
 
     def run_modeling_for_eval(
         self,
@@ -93,8 +124,8 @@ class ReactBaselineAgent:
         test_path: Path,
         sample_submission_path: Path,
         task_instructions: str = "",
-    ) -> Path:
-        """Run agent on a modeling task, return path to prediction CSV."""
+    ) -> tuple[Path, AgentTrace]:
+        """Run agent on a modeling task, return path to prediction CSV and trace."""
         output_path = train_path.parent / "submission.csv"
         parts = []
         if task_instructions:
@@ -110,10 +141,11 @@ class ReactBaselineAgent:
             f"the sample submission format to {output_path}."
         )
 
-        self.agent.invoke(
+        result = self.agent.invoke(
             {"messages": [{"role": "user", "content": "\n\n".join(parts)}]}
         )
+        trace = _serialize_messages(result["messages"])
 
         if not output_path.exists():
             logger.warning("Submission file not created at {}", output_path)
-        return output_path
+        return output_path, trace
