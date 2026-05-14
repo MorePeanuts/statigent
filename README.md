@@ -2,13 +2,63 @@
 
 A data science agent for automated analysis, feature engineering, model building, and insight generation.
 
-## Setup
+## Prerequisites
 
-Set the `DEEPSEEK_API_KEY` environment variable to use the default model profiles (deepseek-v4-flash):
+### Install
+
+[uv](https://docs.astral.sh/uv/) is the package manager. Install it first if you haven't:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Clone and install the project:
+
+```bash
+git clone --recurse-submodules <repo-url> && cd statigent
+uv sync
+```
+
+If you already cloned without `--recurse-submodules`, initialize them with:
+
+```bash
+git submodule update --init
+```
+
+Optional dependency groups:
+
+- **datascience** — numpy, pandas, scikit-learn, torch, etc. Required for agent data analysis and modeling
+- **benchmark** — mlebench. Required for MLE-Bench evaluation
+
+```bash
+uv sync --group datascience
+uv sync --group benchmark
+uv sync --all-groups          # Install all groups
+```
+
+### API Keys
+
+Model access is configured via environment variables. LangChain auto-discovers keys by provider name:
+
+| Variable | Provider | Required for |
+|---|---|---|
+| `DEEPSEEK_API_KEY` | DeepSeek | Default model profiles |
+| `OPENAI_API_KEY` | OpenAI | GPT models |
+| `ANTHROPIC_API_KEY` | Anthropic | Claude models |
+
+Set them in your shell or a `.env` file at the project root:
 
 ```bash
 export DEEPSEEK_API_KEY="your-api-key-here"
 ```
+
+### Kaggle API (MLE-Bench only)
+
+MLE-Bench downloads datasets from Kaggle, which requires API credentials:
+
+1. Go to https://www.kaggle.com → Settings → API → Create New Token
+2. Place the downloaded `kaggle.json` in `~/.kaggle/`
+3. Restrict permissions: `chmod 600 ~/.kaggle/kaggle.json`
 
 ## Evaluation
 

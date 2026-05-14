@@ -238,9 +238,10 @@ result = adapter.execute(agent)
 adapter = MLEBenchAdapter(lite=False)
 result = adapter.execute(agent)
 
-# Skip data download if already prepared
-adapter = MLEBenchAdapter(lite=True, skip_prepare=True)
-result = adapter.execute(agent)
+# Skip data download if already prepared — just don't call prepare()
+adapter = MLEBenchAdapter(lite=True)
+run_result = adapter.run(agent)
+result = adapter.evaluate(run_result.predictions, agent_name=agent.name, model_name=agent.model_name)
 ```
 
 **Violation detection** (stub, not fully implemented):

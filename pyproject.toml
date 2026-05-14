@@ -25,6 +25,9 @@ dependencies = [
 ]
 
 [dependency-groups]
+benchmark = [
+    "mlebench",
+]
 datascience = [
     "matplotlib>=3.10.9",
     "numpy>=2.4.4",
@@ -79,7 +82,7 @@ show_column_numbers = true
 pretty = true
 
 [[tool.mypy.overrides]]
-module = ["langchain.*", "langgraph.*", "deepagents.*", "loguru"]
+module = ["langchain.*", "langgraph.*", "deepagents.*", "loguru", "mlebench.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -98,3 +101,11 @@ branch = true
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
+
+[tool.uv.workspace]
+members = [
+    "benchmarks/MLE-Bench",
+]
+
+[tool.uv.sources]
+mlebench = { workspace = true, editable = true }

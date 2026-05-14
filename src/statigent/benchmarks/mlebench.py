@@ -1,6 +1,5 @@
-import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from loguru import logger
 
@@ -10,9 +9,10 @@ from statigent.benchmarks.base import (
     EvalResult,
     ScoreResult,
 )
-from statigent.errors import StatigentBenchmarkError
 
 if TYPE_CHECKING:
+    from mlebench.registry import Competition, Registry
+
     from statigent.benchmarks.base import DataScienceAgent
 
 
@@ -20,8 +20,10 @@ def _default_data_dir() -> Path:
     return Path(__file__).resolve().parents[3] / "benchmarks" / "data" / "MLE-Bench"
 
 
-def _default_repo_dir() -> Path:
-    return Path(__file__).resolve().parents[3] / "benchmarks" / "MLE-Bench"
+def _get_registry(data_dir: Path) -> "Registry":
+    from mlebench.registry import Registry
+
+    return Registry(data_dir=data_dir)
 
 
 class MLEBenchAdapter(BenchmarkAdapter):
@@ -42,44 +44,26 @@ class MLEBenchAdapter(BenchmarkAdapter):
     def __init__(
         self,
         data_dir: Path | None = None,
-        repo_dir: Path | None = None,
         lite: bool = True,
-        skip_prepare: bool = False,
     ) -> None:
         self.data_dir = data_dir or _default_data_dir()
-        self.repo_dir = repo_dir or _default_repo_dir()
         self.lite = lite
-        self.skip_prepare = skip_prepare
-        self._competition_ids: list[str] = []
+        self._registry: Registry | None = None
+
+    @property
+    def registry(self) -> "Registry":
+        if self._registry is None:
+            self._registry = _get_registry(self.data_dir)
+        return self._registry
 
     def prepare(self) -> None:
-        """Verify or download MLE-Bench data via mlebench prepare."""
-        if self.skip_prepare:
-            logger.info("MLE-Bench prepare skipped (skip_prepare=True)")
-            return
+        """Verify or download MLE-Bench data."""
+        from mlebench.data import download_and_prepare_dataset
 
-        try:
-            result = subprocess.run(
-                [
-                    "mlebench",
-                    "prepare",
-                    "--lite" if self.lite else "--all",
-                    "--data-dir",
-                    str(self.data_dir),
-                ],
-                capture_output=True,
-                text=True,
-                cwd=str(self.repo_dir),
-            )
-            if result.returncode != 0:
-                raise StatigentBenchmarkError(
-                    f"mlebench prepare failed: {result.stderr}"
-                )
-        except FileNotFoundError:
-            raise StatigentBenchmarkError(
-                "mlebench CLI not found. Install with: "
-                "pip install -e benchmarks/MLE-Bench/"
-            ) from None
+        competition_ids = self._get_competition_ids()
+        for comp_id in competition_ids:
+            competition = self.registry.get_competition(comp_id)
+            download_and_prepare_dataset(competition)
 
         logger.info("MLE-Bench prepared: data_dir={}", self.data_dir)
 
@@ -94,23 +78,15 @@ class MLEBenchAdapter(BenchmarkAdapter):
         predictions: list[dict[str, Any]] = []
         traces: dict[str, list[dict[str, Any]]] = {}
         for comp_id in competition_ids:
-            comp_dir = self.data_dir / comp_id / "prepared" / "public"
-            desc_path = (
-                self.repo_dir / "mlebench" / "competitions" / comp_id / "description.md"
-            )
-
-            if not comp_dir.exists():
-                logger.warning("MLE-Bench skipping {}: data not prepared", comp_id)
+            competition = self._get_competition(comp_id)
+            if competition is None:
                 continue
 
-            description = desc_path.read_text() if desc_path.exists() else ""
-            sample_sub = comp_dir / "sample_submission.csv"
-
             pred_path, trace = agent.run_modeling_for_eval(
-                description,
-                train_path=comp_dir,
-                test_path=comp_dir,
-                sample_submission_path=sample_sub,
+                competition.description,
+                train_path=competition.public_dir,
+                test_path=competition.public_dir,
+                sample_submission_path=competition.sample_submission,
                 task_instructions=self._TASK_INSTRUCTIONS,
             )
             predictions.append(
@@ -123,6 +99,8 @@ class MLEBenchAdapter(BenchmarkAdapter):
 
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score MLE-Bench predictions using mlebench grade."""
+        from mlebench.grade import grade_csv
+
         agent_name = kwargs["agent_name"]
         model_name = kwargs["model_name"]
 
@@ -147,36 +125,23 @@ class MLEBenchAdapter(BenchmarkAdapter):
                 continue
 
             try:
-                result = subprocess.run(
-                    [
-                        "mlebench",
-                        "grade-sample",
-                        str(submission_path),
-                        comp_id,
-                        "--data-dir",
-                        str(self.data_dir),
-                    ],
-                    capture_output=True,
-                    text=True,
-                    cwd=str(self.repo_dir),
+                competition = self.registry.get_competition(comp_id)
+                report = grade_csv(submission_path, competition)
+                results.append(
+                    {
+                        "competition_id": comp_id,
+                        "score": report.score,
+                        "any_medal": report.any_medal,
+                        "gold_medal": report.gold_medal,
+                        "silver_medal": report.silver_medal,
+                        "bronze_medal": report.bronze_medal,
+                        "above_median": report.above_median,
+                    }
                 )
-                if result.returncode == 0:
-                    results.append(
-                        {"competition_id": comp_id, "grade_output": result.stdout}
-                    )
-                else:
-                    results.append(
-                        {
-                            "competition_id": comp_id,
-                            "score": None,
-                            "error": result.stderr,
-                        }
-                    )
-            except FileNotFoundError:
-                raise StatigentBenchmarkError(
-                    "mlebench CLI not found. Install with: "
-                    "pip install -e benchmarks/MLE-Bench/"
-                ) from None
+            except (ValueError, FileNotFoundError) as exc:
+                results.append(
+                    {"competition_id": comp_id, "score": None, "error": str(exc)}
+                )
 
         score = (
             sum(1 for r in results if r.get("score") is not None) / len(results)
@@ -199,43 +164,28 @@ class MLEBenchAdapter(BenchmarkAdapter):
         """Run rule violation detection using statigent.models."""
         from statigent.models import get_model
 
-        prompts_path = (
-            self.repo_dir / "extras" / "rule_violation_detector" / "prompts.py"
-        )
-        if not prompts_path.exists():
-            raise StatigentBenchmarkError(
-                f"Violation prompts not found: {prompts_path}"
-            )
-
         _llm = get_model(judge_model_name)
         logger.warning("detect_violations is a stub — full implementation pending")
         return {"violations_detected": False, "details": {}}
 
     def _get_competition_ids(self) -> list[str]:
         """Get competition IDs from the lite or full split."""
-        split_file = (
-            self.repo_dir
-            / "experiments"
-            / "splits"
-            / ("low.txt" if self.lite else "all.txt")
-        )
-        if split_file.exists():
-            return [
-                line.strip()
-                for line in split_file.read_text().splitlines()
-                if line.strip()
-            ]
+        if self.lite:
+            return cast("list[str]", self.registry.get_lite_competition_ids())
+        return cast("list[str]", self.registry.list_competition_ids())
 
-        import sys
+    def _get_competition(self, comp_id: str) -> "Competition | None":
+        """Get a Competition object, returning None if data is not prepared."""
+        from mlebench.data import is_dataset_prepared
 
-        sys.path.insert(0, str(self.repo_dir))
         try:
-            from mlebench.registry import Registry  # type: ignore[import-not-found]
+            competition = self.registry.get_competition(comp_id)
+        except (FileNotFoundError, ValueError) as exc:
+            logger.warning("MLE-Bench skipping {}: {}", comp_id, exc)
+            return None
 
-            registry = Registry(data_dir=self.data_dir)
-            if self.lite:
-                return registry.get_lite_competition_ids()  # type: ignore[no-any-return]
-            return registry.list_competition_ids()  # type: ignore[no-any-return]
-        except ImportError:
-            logger.warning("mlebench not importable, returning empty competition list")
-            return []
+        if not is_dataset_prepared(competition):
+            logger.warning("MLE-Bench skipping {}: data not prepared", comp_id)
+            return None
+
+        return competition
