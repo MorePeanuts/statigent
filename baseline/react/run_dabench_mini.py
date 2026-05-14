@@ -1,11 +1,10 @@
 """Minimal DABench validation: run baseline agent on a few questions."""
 
-from loguru import logger
+from baseline.react.agent import ReactBaselineAgent
 from rich.console import Console
 from rich.table import Table
 
 from statigent.benchmarks.dabench import DABenchAdapter
-from baseline.react.agent import ReactBaselineAgent
 
 
 def main() -> None:
