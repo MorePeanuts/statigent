@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 from statigent.benchmarks.base import Evaluator, ScoreResult
 from statigent.models import get_model
+from statigent.retry import retry_on_conn_error
 
 _ANSWER_PATTERN = re.compile(r"@(\w+)\[(.*?)\]")
 
@@ -165,7 +166,7 @@ class LLMJudgeEvaluator(Evaluator):
             text = ""
             for attempt in range(1, self._MAX_RETRIES + 1):
                 try:
-                    result = structured_llm.invoke(
+                    result = retry_on_conn_error(structured_llm.invoke)(
                         [{"role": "user", "content": prompt}]
                     )
                     if not isinstance(result, JudgeVerdict):
@@ -257,7 +258,9 @@ class ReformatEvaluator:
                 question=question.get("question", ""),
                 response=resp["response"],
             )
-            response = llm.invoke([{"role": "user", "content": prompt}])
+            response = retry_on_conn_error(llm.invoke)(
+                [{"role": "user", "content": prompt}]
+            )
             content = response.content
             text = content if isinstance(content, str) else str(content)
             reformatted.append({"id": qid, "response": text})

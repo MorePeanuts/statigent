@@ -12,6 +12,7 @@ from loguru import logger
 
 from statigent.benchmarks.base import AgentTrace
 from statigent.models import get_model
+from statigent.retry import retry_on_conn_error
 
 _python_repl = PythonREPL()
 
@@ -97,7 +98,7 @@ def _truncate_content(content: str, max_chars: int = _MAX_FILE_CHARS) -> str:
     tail_lines = tail.count("\n") + 1
     total_lines = content.count("\n") + 1
     omitted = total_lines - head_lines - tail_lines
-    return f'{head}\n\n... [{omitted} lines omitted] ...\n\n{tail}'
+    return f"{head}\n\n... [{omitted} lines omitted] ...\n\n{tail}"
 
 
 @tool
@@ -175,7 +176,7 @@ class ReactBaselineAgent:
         parts.append(prompt)
         parts.append(file_info)
 
-        result = self.agent.invoke(
+        result = retry_on_conn_error(self.agent.invoke)(
             {"messages": [{"role": "user", "content": "\n\n".join(parts)}]}
         )
         response: str = result["messages"][-1].content
@@ -208,7 +209,7 @@ class ReactBaselineAgent:
             f"the sample submission format to {output_path}."
         )
 
-        result = self.agent.invoke(
+        result = retry_on_conn_error(self.agent.invoke)(
             {"messages": [{"role": "user", "content": "\n\n".join(parts)}]}
         )
         trace = _serialize_messages(result["messages"])
