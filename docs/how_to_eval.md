@@ -5,8 +5,14 @@ This guide explains how to use the statigent benchmark evaluation layer to evalu
 ## Quick Start
 
 ```python
+import sys
+from pathlib import Path
+
+# baseline/react/ contains standalone scripts, not a package
+sys.path.insert(0, str(Path("baseline/react").resolve()))
+
 from statigent.benchmarks import run_benchmark, get_benchmark, list_benchmarks
-from baseline.react.agent import ReactBaselineAgent
+from agent import ReactBaselineAgent
 
 # List available benchmarks
 print(list_benchmarks())
