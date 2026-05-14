@@ -180,8 +180,10 @@ class BenchmarkAdapter(ABC):
                 trace_dir = output_dir / "traces"
                 trace_dir.mkdir(exist_ok=True)
                 for qid, trace in traces.items():
+                    trace_path = trace_dir / f"{qid}.jsonl"
+                    trace_path.parent.mkdir(parents=True, exist_ok=True)
                     trace_lines = [json.dumps(msg) for msg in trace]
-                    (trace_dir / f"{qid}.jsonl").write_text(
+                    trace_path.write_text(
                         "\n".join(trace_lines) + "\n"
                     )
         except (OSError, TypeError) as exc:

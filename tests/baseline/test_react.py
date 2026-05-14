@@ -56,9 +56,10 @@ class TestReadFileTool:
         result = read_file.invoke({"file_path": str(f)})
         assert "Alice" in result
 
-    def test_raises_on_missing_file(self) -> None:
-        with pytest.raises(FileNotFoundError):
-            read_file.invoke({"file_path": "/nonexistent/file.csv"})
+    def test_returns_error_for_missing_file(self) -> None:
+        result = read_file.invoke({"file_path": "/nonexistent/file.csv"})
+        assert "Error" in result
+        assert "file not found" in result
 
     def test_max_lines_limits_output(self, tmp_path: Path) -> None:
         f = tmp_path / "data.csv"

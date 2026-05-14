@@ -150,7 +150,7 @@ class TestDSBenchAdapterDA:
         adapter = DSBenchAdapter(data_dir=base, task="data_analysis")
         adapter.prepare()
 
-        predictions = [{"id": "00000001", "response": "The total revenue is 1000000"}]
+        predictions = [{"id": "00000001/question1", "response": "The total revenue is 1000000"}]
         result = adapter.evaluate(
             predictions, agent_name="test", model_name="test-model"
         )

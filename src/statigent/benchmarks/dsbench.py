@@ -181,15 +181,24 @@ class DSBenchAdapter(BenchmarkAdapter):
             intro_path = data_base / "introduction.txt"
             introduction = intro_path.read_text() if intro_path.exists() else ""
 
+            data_files = [
+                f
+                for f in sorted(data_base.iterdir())
+                if f.is_file() and f.suffix not in {".txt", ".DS_Store"}
+            ]
+
             for qname in sample["questions"]:
                 q_path = data_base / f"{qname}.txt"
                 question = q_path.read_text() if q_path.exists() else ""
                 prompt = f"{introduction}\n\n{question}"
                 response, trace = agent.run_analysis_for_eval(
-                    prompt, task_instructions=self._DA_TASK_INSTRUCTIONS
+                    prompt,
+                    files=data_files,
+                    task_instructions=self._DA_TASK_INSTRUCTIONS,
                 )
-                predictions.append({"id": sid, "response": response})
-                traces[str(sid)] = trace
+                qid = f"{sid}/{qname}"
+                predictions.append({"id": qid, "response": response})
+                traces[qid] = trace
                 logger.debug("DSBench DA id={} q={}: response received", sid, qname)
 
         return BenchmarkRunResult(predictions=predictions, traces=traces)
@@ -297,11 +306,35 @@ class DSBenchAdapter(BenchmarkAdapter):
                 )
                 question = q_path.read_text() if q_path.exists() else ""
                 refs.append(
-                    {"id": sample["id"], "question": question, "answer": answer}
+                    {
+                        "id": f"{sample['id']}/{qname}",
+                        "question": question,
+                        "answer": answer,
+                    }
                 )
 
         evaluator = LLMJudgeEvaluator(judge_model_name=self.judge_model_name)
         score_result = evaluator.evaluate(predictions, refs)
+
+        # Compute per-challenge accuracy to align with original DSBench eval logic.
+        per_question = score_result.details.get("per_question", [])
+        challenge_verdicts: dict[str, list[bool]] = {}
+        for detail in per_question:
+            sid = detail["id"].split("/")[0]
+            challenge_verdicts.setdefault(sid, []).append(detail["verdict"])
+        challenge_accuracies = {
+            sid: sum(v) / len(v)
+            for sid, v in challenge_verdicts.items()
+            if v
+        }
+        avg_challenge_acc = (
+            sum(challenge_accuracies.values()) / len(challenge_accuracies)
+            if challenge_accuracies
+            else 0.0
+        )
+        score_result.details["challenge_accuracies"] = challenge_accuracies
+        score_result.details["avg_challenge_accuracy"] = round(avg_challenge_acc, 4)
+
         return EvalResult.from_score_result(
             score_result,
             agent_name=agent_name,

@@ -153,16 +153,21 @@ class LLMJudgeEvaluator(Evaluator):
                 answer=ref["answer"],
                 prediction=prediction,
             )
-            response = llm.invoke([{"role": "user", "content": prompt}])
-            content = response.content
-            text = content if isinstance(content, str) else str(content)
-            is_correct = "true" in text.lower()
+            try:
+                response = llm.invoke([{"role": "user", "content": prompt}])
+                content = response.content
+                text = content if isinstance(content, str) else str(content)
+                is_correct = "true" in text.lower()
+            except Exception:
+                logger.exception("LLM judge failed for id={}", qid)
+                is_correct = False
+                text = ""
             verdicts.append(is_correct)
             details.append(
                 {
                     "id": qid,
                     "verdict": is_correct,
-                    "raw_response": response.content,
+                    "raw_response": text,
                 }
             )
             logger.debug("LLM judge for id={}: verdict={}", qid, is_correct)

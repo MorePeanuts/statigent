@@ -108,7 +108,10 @@ def read_file(file_path: str, max_lines: int = 0) -> str:
     Set max_lines to read only the first N lines (0 = entire file).
     Very long files are automatically truncated with the middle omitted.
     """
-    lines = Path(file_path).read_text().splitlines()
+    path = Path(file_path)
+    if not path.exists():
+        return f"Error: file not found: {file_path}"
+    lines = path.read_text().splitlines()
     if max_lines > 0:
         lines = lines[:max_lines]
     content = "\n".join(lines)
