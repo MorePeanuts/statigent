@@ -1,6 +1,12 @@
 """Minimal DABench validation: run baseline agent on a few questions."""
 
-from baseline.react.agent import ReactBaselineAgent
+import sys
+from pathlib import Path
+
+# Allow importing agent.py and tools.py as standalone modules
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from agent import ReactBaselineAgent
 from rich.console import Console
 from rich.table import Table
 
