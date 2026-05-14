@@ -4,6 +4,7 @@ import pytest
 
 from statigent.benchmarks.evaluators import (
     ExactMatchEvaluator,
+    JudgeVerdict,
     LLMJudgeEvaluator,
     ReformatEvaluator,
 )
@@ -83,9 +84,9 @@ class TestLLMJudgeEvaluator:
     @patch("statigent.benchmarks.evaluators.get_model")
     def test_judge_returns_true(self, mock_get_model: MagicMock):
         mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = "True"
-        mock_llm.invoke.return_value = mock_response
+        mock_structured = MagicMock()
+        mock_structured.invoke.return_value = JudgeVerdict(is_correct=True)
+        mock_llm.with_structured_output.return_value = mock_structured
         mock_get_model.return_value = mock_llm
 
         evaluator = LLMJudgeEvaluator(judge_model_name="deepseek-v4-flash")
@@ -98,9 +99,9 @@ class TestLLMJudgeEvaluator:
     @patch("statigent.benchmarks.evaluators.get_model")
     def test_judge_returns_false(self, mock_get_model: MagicMock):
         mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = "False"
-        mock_llm.invoke.return_value = mock_response
+        mock_structured = MagicMock()
+        mock_structured.invoke.return_value = JudgeVerdict(is_correct=False)
+        mock_llm.with_structured_output.return_value = mock_structured
         mock_get_model.return_value = mock_llm
 
         evaluator = LLMJudgeEvaluator(judge_model_name="deepseek-v4-flash")
@@ -109,6 +110,48 @@ class TestLLMJudgeEvaluator:
             references=[{"id": "1", "answer": "42", "question": "What is 6*7?"}],
         )
         assert result.score == 0.0
+
+    @patch("statigent.benchmarks.evaluators.time.sleep")
+    @patch("statigent.benchmarks.evaluators.get_model")
+    def test_judge_retries_on_failure_then_succeeds(
+        self, mock_get_model: MagicMock, mock_sleep: MagicMock
+    ):
+        mock_llm = MagicMock()
+        mock_structured = MagicMock()
+        mock_structured.invoke.side_effect = [
+            ValueError("parse error"),
+            JudgeVerdict(is_correct=True),
+        ]
+        mock_llm.with_structured_output.return_value = mock_structured
+        mock_get_model.return_value = mock_llm
+
+        evaluator = LLMJudgeEvaluator(judge_model_name="deepseek-v4-flash")
+        result = evaluator.evaluate(
+            predictions=[{"id": "1", "response": "The answer is 42"}],
+            references=[{"id": "1", "answer": "42", "question": "What is 6*7?"}],
+        )
+        assert result.score > 0
+        assert mock_structured.invoke.call_count == 2
+        mock_sleep.assert_called_once_with(1)
+
+    @patch("statigent.benchmarks.evaluators.time.sleep")
+    @patch("statigent.benchmarks.evaluators.get_model")
+    def test_judge_retries_exhausted_defaults_false(
+        self, mock_get_model: MagicMock, mock_sleep: MagicMock
+    ):
+        mock_llm = MagicMock()
+        mock_structured = MagicMock()
+        mock_structured.invoke.side_effect = ValueError("parse error")
+        mock_llm.with_structured_output.return_value = mock_structured
+        mock_get_model.return_value = mock_llm
+
+        evaluator = LLMJudgeEvaluator(judge_model_name="deepseek-v4-flash")
+        result = evaluator.evaluate(
+            predictions=[{"id": "1", "response": "The answer is 42"}],
+            references=[{"id": "1", "answer": "42", "question": "What is 6*7?"}],
+        )
+        assert result.score == 0.0
+        assert mock_structured.invoke.call_count == LLMJudgeEvaluator._MAX_RETRIES
 
 
 class TestReformatEvaluator:

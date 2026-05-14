@@ -1,8 +1,10 @@
 import re
+import time
 from typing import Any
 
 from langchain.chat_models import BaseChatModel
 from loguru import logger
+from pydantic import BaseModel, Field, ValidationError
 
 from statigent.benchmarks.base import Evaluator, ScoreResult
 from statigent.models import get_model
@@ -117,31 +119,37 @@ _JUDGE_PROMPT = (
     "not just a calculation process or a disassembly of ideas. "
     "The question is {question}. The true answer is {answer}. "
     "The predicted answer is {prediction}. "
-    "If the predicted answer is right, please output True. "
-    "Otherwise output False. "
-    "Don't output any other text content. "
-    "You only can output True or False."
+    "Judge whether the predicted answer is correct based on the true answer."
 )
 
 
+class JudgeVerdict(BaseModel):
+    """Structured verdict from LLM judge."""
+
+    is_correct: bool = Field(description="Whether the predicted answer is correct")
+
+
 class LLMJudgeEvaluator(Evaluator):
-    """LLM-as-judge evaluator using statigent.models."""
+    """LLM-as-judge evaluator using statigent.models with structured output."""
+
+    _MAX_RETRIES = 3
 
     def __init__(self, judge_model_name: str = "deepseek-v4-flash") -> None:
         self.judge_model_name = judge_model_name
-        self._llm: BaseChatModel | None = None
+        self._structured_llm: Any = None
 
-    def _get_llm(self) -> BaseChatModel:
-        if self._llm is None:
-            self._llm = get_model(self.judge_model_name)
-        return self._llm
+    def _get_structured_llm(self) -> Any:
+        if self._structured_llm is None:
+            llm = get_model(self.judge_model_name)
+            self._structured_llm = llm.with_structured_output(JudgeVerdict)
+        return self._structured_llm
 
     def evaluate(self, predictions: Any, references: Any) -> ScoreResult:
         refs: list[dict[str, Any]] = references
         preds: list[dict[str, Any]] = predictions
 
         pred_map = {p["id"]: p["response"] for p in preds}
-        llm = self._get_llm()
+        structured_llm = self._get_structured_llm()
 
         verdicts: list[bool] = []
         details: list[dict[str, Any]] = []
@@ -153,21 +161,43 @@ class LLMJudgeEvaluator(Evaluator):
                 answer=ref["answer"],
                 prediction=prediction,
             )
-            try:
-                response = llm.invoke([{"role": "user", "content": prompt}])
-                content = response.content
-                text = content if isinstance(content, str) else str(content)
-                is_correct = "true" in text.lower()
-            except Exception:
-                logger.exception("LLM judge failed for id={}", qid)
-                is_correct = False
-                text = ""
+            is_correct = False
+            text = ""
+            for attempt in range(1, self._MAX_RETRIES + 1):
+                try:
+                    result = structured_llm.invoke(
+                        [{"role": "user", "content": prompt}]
+                    )
+                    if not isinstance(result, JudgeVerdict):
+                        raise TypeError(
+                            f"Expected JudgeVerdict from structured output, "
+                            f"got {type(result).__name__}"
+                        )
+                    is_correct = result.is_correct
+                    text = result.model_dump_json()
+                    break
+                except (TypeError, ValidationError, ValueError):
+                    logger.warning(
+                        "LLM judge failed for id={} (attempt {}/{})",
+                        qid,
+                        attempt,
+                        self._MAX_RETRIES,
+                    )
+                    if attempt == self._MAX_RETRIES:
+                        logger.exception(
+                            "LLM judge gave up for id={} after {} attempts",
+                            qid,
+                            self._MAX_RETRIES,
+                        )
+                        text = ""
+                    else:
+                        time.sleep(2 ** (attempt - 1))
             verdicts.append(is_correct)
             details.append(
                 {
                     "id": qid,
                     "verdict": is_correct,
-                    "raw_response": text,
+                    "verdict_json": text,
                 }
             )
             logger.debug("LLM judge for id={}: verdict={}", qid, is_correct)

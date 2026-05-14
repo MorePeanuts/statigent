@@ -80,9 +80,7 @@ class TestDSBenchAdapterDA:
 
     def test_prepare_downloads_with_mock(self, tmp_path: Path) -> None:
         """Unit test for download+extract using a mocked in-memory zip."""
-        adapter = DSBenchAdapter(
-            data_dir=tmp_path / "dsbench", task="data_analysis"
-        )
+        adapter = DSBenchAdapter(data_dir=tmp_path / "dsbench", task="data_analysis")
 
         buf = io.BytesIO()
         sample_json = json.dumps(
@@ -108,20 +106,22 @@ class TestDSBenchAdapterDA:
         mock_response.raise_for_status = MagicMock()
         mock_response.iter_bytes = MagicMock(
             return_value=[
-                zip_bytes[i : i + 8192]
-                for i in range(0, len(zip_bytes), 8192)
+                zip_bytes[i : i + 8192] for i in range(0, len(zip_bytes), 8192)
             ]
         )
         mock_stream = MagicMock()
         mock_stream.__enter__ = MagicMock(return_value=mock_response)
         mock_stream.__exit__ = MagicMock(return_value=False)
 
-        with patch(
-            "statigent.benchmarks.dsbench.httpx.stream",
-            return_value=mock_stream,
-        ), patch(
-            "statigent.benchmarks.dsbench._DSBENCH_REPO_DIR",
-            tmp_path / "repo",
+        with (
+            patch(
+                "statigent.benchmarks.dsbench.httpx.stream",
+                return_value=mock_stream,
+            ),
+            patch(
+                "statigent.benchmarks.dsbench._DSBENCH_REPO_DIR",
+                tmp_path / "repo",
+            ),
         ):
             adapter.prepare()
         assert len(adapter._samples) == 1
@@ -130,27 +130,34 @@ class TestDSBenchAdapterDA:
         adapter = DSBenchAdapter(
             data_dir=tmp_path / "nonexistent", task="data_analysis"
         )
-        with patch(
-            "statigent.benchmarks.dsbench.httpx.stream",
-            side_effect=httpx.HTTPError("network error"),
-        ), pytest.raises(StatigentBenchmarkError, match="Failed to download"):
+        with (
+            patch(
+                "statigent.benchmarks.dsbench.httpx.stream",
+                side_effect=httpx.HTTPError("network error"),
+            ),
+            pytest.raises(StatigentBenchmarkError, match="Failed to download"),
+        ):
             adapter.prepare()
 
     @patch("statigent.benchmarks.evaluators.get_model")
     def test_evaluate_data_analysis(
         self, mock_get_model: MagicMock, tmp_path: Path
     ) -> None:
+        from statigent.benchmarks.evaluators import JudgeVerdict
+
         mock_llm = MagicMock()
-        mock_response = MagicMock()
-        mock_response.content = "True"
-        mock_llm.invoke.return_value = mock_response
+        mock_structured = MagicMock()
+        mock_structured.invoke.return_value = JudgeVerdict(is_correct=True)
+        mock_llm.with_structured_output.return_value = mock_structured
         mock_get_model.return_value = mock_llm
 
         base = _write_da_test_data(tmp_path)
         adapter = DSBenchAdapter(data_dir=base, task="data_analysis")
         adapter.prepare()
 
-        predictions = [{"id": "00000001/question1", "response": "The total revenue is 1000000"}]
+        predictions = [
+            {"id": "00000001/question1", "response": "The total revenue is 1000000"}
+        ]
         result = adapter.evaluate(
             predictions, agent_name="test", model_name="test-model"
         )
