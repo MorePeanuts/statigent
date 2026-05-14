@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from statigent.benchmarks.base import DataScienceAgent
 
 _DSBENCH_DATA_DIR = (
-    Path(__file__).resolve().parents[4] / "benchmarks" / "data" / "DSBench"
+    Path(__file__).resolve().parents[3] / "benchmarks" / "data" / "DSBench"
 )
 
 TaskType = Literal["data_analysis", "data_modeling"]

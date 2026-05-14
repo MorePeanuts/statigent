@@ -16,11 +16,11 @@ if TYPE_CHECKING:
 
 
 def _default_data_dir() -> Path:
-    return Path(__file__).resolve().parents[4] / "benchmarks" / "data" / "MLE-Bench"
+    return Path(__file__).resolve().parents[3] / "benchmarks" / "data" / "MLE-Bench"
 
 
 def _default_repo_dir() -> Path:
-    return Path(__file__).resolve().parents[4] / "benchmarks" / "MLE-Bench"
+    return Path(__file__).resolve().parents[3] / "benchmarks" / "MLE-Bench"
 
 
 class MLEBenchAdapter(BenchmarkAdapter):

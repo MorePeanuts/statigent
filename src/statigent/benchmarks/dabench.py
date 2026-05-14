@@ -12,7 +12,7 @@ from statigent.benchmarks.base import (
 from statigent.benchmarks.evaluators import ExactMatchEvaluator, ReformatEvaluator
 
 _DABENCH_DATA_DIR = (
-    Path(__file__).resolve().parents[4]
+    Path(__file__).resolve().parents[3]
     / "benchmarks"
     / "InfiAgent-DABench"
     / "examples"
