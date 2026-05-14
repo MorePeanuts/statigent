@@ -1,9 +1,15 @@
-# Dependencies
-node_modules/
-
-# Build output
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
 dist/
 build/
+*.egg
+
+# Virtual environments
+.venv/
 
 # IDE
 .vscode/
@@ -21,10 +27,18 @@ Thumbs.db
 
 # Logs
 *.log
-npm-debug.log*
 
 # Coverage
 coverage/
 
-# TypeScript cache
-*.tsbuildinfo
+# uv
+uv.lock
+
+# Superpowers specs (local only)
+docs/superpowers/
+
+# Benchmark data (large datasets)
+benchmarks/data/
+
+# Evaluation outputs
+evaluations/
