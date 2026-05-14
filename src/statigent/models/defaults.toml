@@ -8,3 +8,20 @@ model = "deepseek-v4-flash"
 model_provider = "deepseek"
 reasoning_effort = "high"
 extra_body = {thinking = {type = "enabled"}}
+
+[deepseek-v4-pro]
+model = "deepseek-v4-pro"
+model_provider = "deepseek"
+extra_body = {thinking = {type = "disabled"}}
+
+[deepseek-v4-pro-thinking]
+model = "deepseek-v4-pro"
+model_provider = "deepseek"
+reasoning_effort = "high"
+extra_body = {thinking = {type = "enabled"}}
+
+[deepseek-v4-pro-max]
+model = "deepseek-v4-pro"
+model_provider = "deepseek"
+reasoning_effort = "max"
+extra_body = {thinking = {type = "enabled"}}
