@@ -1,7 +1,10 @@
 import json
+import shutil
+import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
+import httpx
 from loguru import logger
 
 from statigent.benchmarks.base import (
@@ -19,6 +22,21 @@ _DSBENCH_DATA_DIR = (
     Path(__file__).resolve().parents[3] / "benchmarks" / "data" / "DSBench"
 )
 
+_DSBENCH_REPO_DIR = (
+    Path(__file__).resolve().parents[3] / "benchmarks" / "DSBench"
+)
+
+_HF_DATA_URLS: dict[str, str] = {
+    "data_analysis": (
+        "https://huggingface.co/datasets/liqiang888/DSBench"
+        "/resolve/main/data_analysis/data.zip"
+    ),
+    "data_modeling": (
+        "https://huggingface.co/datasets/liqiang888/DSBench"
+        "/resolve/main/data_modeling/data.zip"
+    ),
+}
+
 TaskType = Literal["data_analysis", "data_modeling"]
 
 
@@ -32,6 +50,7 @@ class DSBenchAdapter(BenchmarkAdapter):
         data_dir: Path | None = None,
         task: TaskType = "data_analysis",
         judge_model_name: str = "deepseek-v4-flash",
+        skip_prepare: bool = False,
     ) -> None:
         if task not in ("data_analysis", "data_modeling"):
             raise ValueError(
@@ -42,22 +61,83 @@ class DSBenchAdapter(BenchmarkAdapter):
         self.name = f"dsbench-{abbrev}"
         self.data_dir = data_dir or _DSBENCH_DATA_DIR
         self.judge_model_name = judge_model_name
+        self.skip_prepare = skip_prepare
         self._samples: list[dict[str, Any]] = []
 
     def prepare(self) -> None:
-        """Verify DSBench data files exist."""
-        if self.task == "data_analysis":
-            data_path = self.data_dir / "data_analysis" / "data.json"
-            data_dir = self.data_dir / "data_analysis" / "data"
-        else:
-            data_path = self.data_dir / "data_modeling" / "data.json"
-            data_dir = self.data_dir / "data_modeling" / "data"
+        """Download/verify DSBench data files.
 
-        if not data_path.exists():
-            raise FileNotFoundError(f"DSBench data file not found: {data_path}")
-        if not data_dir.exists():
-            raise FileNotFoundError(f"DSBench data directory not found: {data_dir}")
+        If the data directory does not exist, downloads the pre-processed
+        dataset from HuggingFace and extracts it into ``self.data_dir``.
+        """
+        if self.skip_prepare:
+            logger.info("DSBench prepare skipped (skip_prepare=True)")
+            return
 
+        task_dir = self.data_dir / self.task
+        data_path = task_dir / "data.json"
+        data_subdir = task_dir / "data"
+
+        if data_path.exists() and data_subdir.exists():
+            self._load_samples(data_path)
+            return
+
+        logger.info(
+            "DSBench {} data not found at {}, downloading from HuggingFace",
+            self.task,
+            task_dir,
+        )
+        self._download_and_extract(task_dir)
+
+        if not data_path.exists() or not data_subdir.exists():
+            raise StatigentBenchmarkError(
+                f"DSBench data still missing after download: {task_dir}"
+            )
+        self._load_samples(data_path)
+
+    def _download_and_extract(self, task_dir: Path) -> None:
+        """Download the pre-processed zip from HuggingFace and extract it."""
+        url = _HF_DATA_URLS[self.task]
+        zip_path = task_dir / "data.zip"
+
+        task_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            with httpx.stream("GET", url, follow_redirects=True) as resp:
+                resp.raise_for_status()
+                total = resp.headers.get("content-length")
+                total_mb = f"{int(total) / 1e6:.1f} MB" if total else "unknown size"
+                logger.info(
+                    "Downloading DSBench {} data ({}) ...", self.task, total_mb
+                )
+                with open(zip_path, "wb") as f:
+                    for chunk in resp.iter_bytes(chunk_size=8192):
+                        f.write(chunk)
+        except httpx.HTTPError as exc:
+            raise StatigentBenchmarkError(
+                f"Failed to download DSBench {self.task} data: {exc}"
+            ) from exc
+
+        logger.info("Extracting DSBench {} data ...", self.task)
+        try:
+            with zipfile.ZipFile(zip_path) as zf:
+                zf.extractall(task_dir)
+        except zipfile.BadZipFile as exc:
+            raise StatigentBenchmarkError(
+                f"Downloaded DSBench {self.task} zip is corrupted: {exc}"
+            ) from exc
+        finally:
+            zip_path.unlink(missing_ok=True)
+
+        # Copy data.json from the submodule repo if not present after extraction.
+        if not (task_dir / "data.json").exists():
+            repo_json = _DSBENCH_REPO_DIR / self.task / "data.json"
+            if repo_json.exists():
+                shutil.copy2(repo_json, task_dir / "data.json")
+
+        logger.info("DSBench {} data ready at {}", self.task, task_dir)
+
+    def _load_samples(self, data_path: Path) -> None:
         with open(data_path) as f:
             self._samples = [json.loads(line.strip()) for line in f if line.strip()]
         logger.info("DSBench {} prepared: {} samples", self.task, len(self._samples))

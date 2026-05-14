@@ -2,9 +2,11 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
 
 from statigent.benchmarks.dsbench import DSBenchAdapter
+from statigent.errors import StatigentBenchmarkError
 
 
 def _write_da_test_data(tmp_path: Path) -> Path:
@@ -66,12 +68,32 @@ class TestDSBenchAdapterDA:
         adapter = DSBenchAdapter(data_dir=base, task="data_analysis")
         adapter.prepare()
 
-    def test_prepare_fails_with_missing_data(self, tmp_path: Path) -> None:
+    def test_prepare_downloads_when_missing(self, tmp_path: Path) -> None:
         adapter = DSBenchAdapter(
             data_dir=tmp_path / "nonexistent", task="data_analysis"
         )
-        with pytest.raises(FileNotFoundError):
-            adapter.prepare()
+        adapter.prepare()
+        assert len(adapter._samples) > 0
+
+    def test_prepare_raises_on_download_failure(self, tmp_path: Path) -> None:
+        adapter = DSBenchAdapter(
+            data_dir=tmp_path / "nonexistent", task="data_analysis"
+        )
+        with patch(
+            "statigent.benchmarks.dsbench.httpx.stream",
+            side_effect=httpx.HTTPError("network error"),
+        ):
+            with pytest.raises(StatigentBenchmarkError, match="Failed to download"):
+                adapter.prepare()
+
+    def test_prepare_skip_skips_download(self, tmp_path: Path) -> None:
+        adapter = DSBenchAdapter(
+            data_dir=tmp_path / "nonexistent",
+            task="data_analysis",
+            skip_prepare=True,
+        )
+        adapter.prepare()
+        assert len(adapter._samples) == 0
 
     @patch("statigent.benchmarks.evaluators.get_model")
     def test_evaluate_data_analysis(
