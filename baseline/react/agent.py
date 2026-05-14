@@ -8,22 +8,15 @@ from tools import python_repl, read_file
 
 from statigent.models import get_model
 
-_SYSTEM_PROMPT = """You are a data science assistant. You can:
-1. Read data files using the read_file tool
-2. Execute Python code using the python_repl tool to analyze data
+_SYSTEM_PROMPT = """You are a data science assistant with access to the following tools:
+1. read_file — Read the contents of a file (CSV, text, etc.)
+2. python_repl — Execute Python code (pandas, numpy, scikit-learn, etc.)
 
-When answering questions:
-- Read the provided data files first
-- Write Python code to compute the answer
-- Always print the final answer in the required format
-- If the question specifies an output format like @answer_name[value], follow it exactly
-- Pay attention to constraints (rounding, specific libraries, etc.)
-- For numerical answers, make sure to print them clearly
-
-When doing modeling tasks:
-- Read the training and test data
-- Build a model using Python
-- Generate predictions and save them to the specified output path as CSV
+General guidelines:
+- Read relevant data files before attempting analysis
+- Write and execute Python code to perform computations
+- Print results clearly so they can be captured
+- For modeling tasks, generate predictions and save them as CSV files
 """
 
 
@@ -42,7 +35,11 @@ class ReactBaselineAgent:
         )
 
     def run_analysis_for_eval(
-        self, prompt: str, *, files: list[Path] | None = None
+        self,
+        prompt: str,
+        *,
+        files: list[Path] | None = None,
+        task_instructions: str = "",
     ) -> str:
         """Run agent on an analysis task, return text response."""
         file_info = ""
@@ -51,8 +48,14 @@ class ReactBaselineAgent:
                 f"- {f}" for f in files
             )
 
+        parts = []
+        if task_instructions:
+            parts.append(task_instructions)
+        parts.append(prompt)
+        parts.append(file_info)
+
         result = self.agent.invoke(
-            {"messages": [{"role": "user", "content": prompt + file_info}]}
+            {"messages": [{"role": "user", "content": "\n\n".join(parts)}]}
         )
         response = result["messages"][-1].content
         logger.debug("ReactBaselineAgent response: {}...", response[:100])
@@ -65,11 +68,15 @@ class ReactBaselineAgent:
         train_path: Path,
         test_path: Path,
         sample_submission_path: Path,
+        task_instructions: str = "",
     ) -> Path:
         """Run agent on a modeling task, return path to prediction CSV."""
         output_path = train_path.parent / "submission.csv"
-        full_prompt = (
-            f"{prompt}\n\n"
+        parts = []
+        if task_instructions:
+            parts.append(task_instructions)
+        parts.append(prompt)
+        parts.append(
             f"Training data: {train_path}\n"
             f"Test data: {test_path}\n"
             f"Sample submission: {sample_submission_path}\n"
@@ -79,7 +86,9 @@ class ReactBaselineAgent:
             f"the sample submission format to {output_path}."
         )
 
-        self.agent.invoke({"messages": [{"role": "user", "content": full_prompt}]})
+        self.agent.invoke(
+            {"messages": [{"role": "user", "content": "\n\n".join(parts)}]}
+        )
 
         if not output_path.exists():
             logger.warning("Submission file not created at {}", output_path)

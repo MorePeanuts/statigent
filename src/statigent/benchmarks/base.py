@@ -68,7 +68,12 @@ class BenchmarkAdapter(ABC):
         """Full pipeline: prepare -> run -> evaluate."""
         self.prepare()
         predictions = self.run(agent, **kwargs)
-        return self.evaluate(predictions, **kwargs)
+        return self.evaluate(
+            predictions,
+            agent_name=agent.name,
+            model_name=agent.model_name,
+            **kwargs,
+        )
 
 
 class DataScienceAgent(Protocol):
@@ -78,9 +83,20 @@ class DataScienceAgent(Protocol):
     model_name: str
 
     def run_analysis_for_eval(
-        self, prompt: str, *, files: list[Path] | None = None
+        self,
+        prompt: str,
+        *,
+        files: list[Path] | None = None,
+        task_instructions: str = "",
     ) -> str:
-        """Run agent on an analysis task, return text response."""
+        """Run agent on an analysis task, return text response.
+
+        Args:
+            prompt: The task prompt from the benchmark adapter.
+            files: Optional data files the agent should read.
+            task_instructions: Benchmark-specific formatting/constraint instructions
+                to prepend to the prompt (e.g., output format requirements).
+        """
         ...
 
     def run_modeling_for_eval(
@@ -90,6 +106,15 @@ class DataScienceAgent(Protocol):
         train_path: Path,
         test_path: Path,
         sample_submission_path: Path,
+        task_instructions: str = "",
     ) -> Path:
-        """Run agent on a modeling task, return path to prediction CSV."""
+        """Run agent on a modeling task, return path to prediction CSV.
+
+        Args:
+            prompt: The task prompt from the benchmark adapter.
+            train_path: Path to training data.
+            test_path: Path to test data.
+            sample_submission_path: Path to sample submission CSV.
+            task_instructions: Benchmark-specific formatting/constraint instructions.
+        """
         ...

@@ -88,7 +88,11 @@ class TestDataScienceAgentProtocol:
             model_name = "deepseek-v4-flash"
 
             def run_analysis_for_eval(
-                self, prompt: str, *, files: list[Path] | None = None
+                self,
+                prompt: str,
+                *,
+                files: list[Path] | None = None,
+                task_instructions: str = "",
             ) -> str:
                 return "answer"
 
@@ -99,6 +103,7 @@ class TestDataScienceAgentProtocol:
                 train_path: Path,
                 test_path: Path,
                 sample_submission_path: Path,
+                task_instructions: str = "",
             ) -> Path:
                 return Path("submission.csv")
 

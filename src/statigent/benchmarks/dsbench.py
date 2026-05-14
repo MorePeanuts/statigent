@@ -67,6 +67,13 @@ class DSBenchAdapter(BenchmarkAdapter):
             return self._run_data_analysis(agent, **kwargs)
         return self._run_data_modeling(agent, **kwargs)
 
+    _DA_TASK_INSTRUCTIONS = (
+        "## Task Instructions\n"
+        "You are answering a data analysis question about a financial or business "
+        "scenario. Provide a clear, concise answer based on the data. "
+        "If the question asks for a specific value, state it explicitly.\n"
+    )
+
     def _run_data_analysis(
         self, agent: "DataScienceAgent", **kwargs: Any
     ) -> list[dict[str, Any]]:
@@ -88,11 +95,23 @@ class DSBenchAdapter(BenchmarkAdapter):
                 q_path = data_base / f"{qname}.txt"
                 question = q_path.read_text() if q_path.exists() else ""
                 prompt = f"{introduction}\n\n{question}"
-                response = agent.run_analysis_for_eval(prompt)
+                response = agent.run_analysis_for_eval(
+                    prompt, task_instructions=self._DA_TASK_INSTRUCTIONS
+                )
                 predictions.append({"id": sid, "response": response})
                 logger.debug("DSBench DA id={} q={}: response received", sid, qname)
 
         return predictions
+
+    _DM_TASK_INSTRUCTIONS = (
+        "## Task Instructions\n"
+        "You are building a predictive model for a data science competition. "
+        "Follow these steps:\n"
+        "1. Read the training data and understand the features\n"
+        "2. Build a model using Python (scikit-learn, xgboost, etc.)\n"
+        "3. Generate predictions for the test data\n"
+        "4. Save predictions as a CSV file matching the sample submission format\n"
+    )
 
     def _run_data_modeling(
         self, agent: "DataScienceAgent", **kwargs: Any
@@ -143,6 +162,7 @@ class DSBenchAdapter(BenchmarkAdapter):
                 train_path=train_path,
                 test_path=test_path,
                 sample_submission_path=sample_sub,
+                task_instructions=self._DM_TASK_INSTRUCTIONS,
             )
             predictions.append({"name": name, "prediction_path": str(pred_path)})
             logger.debug("DSBench DM {}: prediction saved", name)

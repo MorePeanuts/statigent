@@ -66,13 +66,20 @@ class DABenchAdapter(BenchmarkAdapter):
         predictions: list[dict[str, Any]] = []
         for q in questions:
             csv_path = self.data_dir / "da-dev-tables" / q["file_name"]
-            prompt = (
-                f"Question: {q['question']}\n\n"
-                f"Constraints: {q['constraints']}\n\n"
-                f"Output format: {q['format']}\n\n"
-                f"Data file: {csv_path}"
+            task_instructions = (
+                "## Task Instructions\n"
+                "You are answering a closed-form data analysis question. "
+                "Follow these rules strictly:\n"
+                "- Print the final answer in the required output format\n"
+                f"- Output format: {q['format']}\n"
+                "- If the format is @answer_name[value], follow it exactly\n"
+                f"- Constraints: {q['constraints']}\n"
+                "- For numerical answers, print the number clearly\n"
             )
-            response = agent.run_analysis_for_eval(prompt, files=[csv_path])
+            prompt = f"Question: {q['question']}\n\nData file: {csv_path}"
+            response = agent.run_analysis_for_eval(
+                prompt, files=[csv_path], task_instructions=task_instructions
+            )
             predictions.append({"id": q["id"], "response": response})
             logger.debug("DABench question id={}: response received", q["id"])
 

@@ -28,6 +28,16 @@ class MLEBenchAdapter(BenchmarkAdapter):
 
     name = "mlebench"
 
+    _TASK_INSTRUCTIONS = (
+        "## Task Instructions\n"
+        "You are competing in a Kaggle-style ML competition. "
+        "Follow these steps:\n"
+        "1. Read the competition description and understand the evaluation metric\n"
+        "2. Explore the provided data files\n"
+        "3. Build a model to make predictions on the test set\n"
+        "4. Save your predictions as a CSV file matching the sample submission format\n"
+    )
+
     def __init__(
         self,
         data_dir: Path | None = None,
@@ -99,6 +109,7 @@ class MLEBenchAdapter(BenchmarkAdapter):
                 train_path=comp_dir,
                 test_path=comp_dir,
                 sample_submission_path=sample_sub,
+                task_instructions=self._TASK_INSTRUCTIONS,
             )
             predictions.append(
                 {"competition_id": comp_id, "submission_path": str(pred_path)}
