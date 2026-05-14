@@ -73,6 +73,24 @@ class TestReadFileTool:
         result = read_file.invoke({"file_path": str(f), "max_lines": 0})
         assert "v1" in result and "v2" in result
 
+    def test_binary_file_returns_error(self, tmp_path: Path) -> None:
+        f = tmp_path / "data.xlsx"
+        f.write_bytes(b"PK\x03\x04\x80\x81\x82\xff\xfe\x00\x00")
+        result = read_file.invoke({"file_path": str(f)})
+        assert "Error" in result
+        assert "binary file" in result
+        assert ".xlsx" in result
+        assert "python_repl" in result
+
+    def test_binary_file_suggests_alternative_loaders(self, tmp_path: Path) -> None:
+        f = tmp_path / "report.dta"
+        f.write_bytes(b"\x00\x01\x02\x80\xff\xfe\xfd")
+        result = read_file.invoke({"file_path": str(f)})
+        assert "Error" in result
+        assert "binary file" in result
+        assert ".dta" in result
+        assert "pd.read_excel" in result or "pd.read_csv" in result
+
 
 class TestReactBaselineAgentInit:
     @patch("statigent.baseline.react.get_model")
