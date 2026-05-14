@@ -36,3 +36,9 @@ uv.lock
 
 # Superpowers specs (local only)
 docs/superpowers/
+
+# Benchmark data (large datasets)
+benchmarks/data/
+
+# Evaluation outputs
+evaluations/

@@ -4,3 +4,7 @@ class StatigentError(Exception):
 
 class StatigentModelError(StatigentError):
     """Error raised by the model registry."""
+
+
+class StatigentBenchmarkError(StatigentError):
+    """Error raised by the benchmark adapter layer."""
