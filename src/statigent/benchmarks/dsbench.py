@@ -335,9 +335,19 @@ class DSBenchAdapter(BenchmarkAdapter):
         """Compute DSBench normalized score.
 
         Formula: max(0, (model - baseline) / (GT - baseline))
+        When GT == baseline (degenerate case), treat model >= baseline as 1.0.
         """
-        if model_score is None or gt_score is None or baseline_score is None:
+        if (
+            model_score is None
+            or gt_score is None
+            or baseline_score is None
+            or str(model_score) == "nan"
+            or str(gt_score) == "nan"
+            or str(baseline_score) == "nan"
+        ):
             return 0.0
+        if gt_score == baseline_score:
+            return 1.0 if model_score >= baseline_score else 0.0
         return max(0.0, (model_score - baseline_score) / (gt_score - baseline_score))
 
     @staticmethod
@@ -360,7 +370,11 @@ class DSBenchAdapter(BenchmarkAdapter):
         answer_file: Path,
         pred_file: Path,
     ) -> float | None:
-        """Run a per-competition eval script and return the metric score."""
+        """Run a per-competition eval script and return the metric score.
+
+        Returns None if the script could not run, or float('nan') if the
+        script ran but produced a nan result (to distinguish from failure).
+        """
         if not eval_script.exists():
             return None
 
@@ -383,7 +397,15 @@ class DSBenchAdapter(BenchmarkAdapter):
                 return None
 
             result_file = Path(tmpdir) / name / "result.txt"
-            return DSBenchAdapter._read_ref_score(result_file)
+            if not result_file.exists():
+                return None
+            content = result_file.read_text().strip()
+            if content == "nan":
+                return float("nan")
+            try:
+                return float(content)
+            except ValueError:
+                return None
 
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score DSBench predictions."""
@@ -438,6 +460,8 @@ class DSBenchAdapter(BenchmarkAdapter):
                 raw_score, gt_score, baseline_score
             )
 
+            # Count as complete if eval produced a result (even nan), matching
+            # original DSBench where task_complete increments when result.txt exists.
             if raw_score is not None:
                 task_complete += 1
 

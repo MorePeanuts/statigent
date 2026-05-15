@@ -252,6 +252,21 @@ class TestComputeNormalizedScore:
         adapter = DSBenchAdapter(task="data_modeling")
         assert adapter._compute_normalized_score(0.7, 1.0, None) == 0.0
 
+    def test_gt_equals_baseline_model_at_baseline(self) -> None:
+        """When GT == baseline, model at baseline level → 1.0."""
+        adapter = DSBenchAdapter(task="data_modeling")
+        assert adapter._compute_normalized_score(0.5, 0.5, 0.5) == 1.0
+
+    def test_gt_equals_baseline_model_better(self) -> None:
+        """When GT == baseline (degenerate), model exceeding baseline → 1.0."""
+        adapter = DSBenchAdapter(task="data_modeling")
+        assert adapter._compute_normalized_score(0.8, 0.5, 0.5) == 1.0
+
+    def test_gt_equals_baseline_model_worse(self) -> None:
+        """When GT == baseline, model below baseline → 0.0."""
+        adapter = DSBenchAdapter(task="data_modeling")
+        assert adapter._compute_normalized_score(0.3, 0.5, 0.5) == 0.0
+
 
 class TestReadRefScore:
     """Reading GT/baseline reference scores from result.txt files."""
@@ -341,7 +356,11 @@ class TestRunEvalScript:
         score = adapter._run_eval_script(
             eval_script, "nan_test", tmp_path / "answer.csv", tmp_path / "pred.csv"
         )
-        assert score is None
+        # nan is distinct from None — eval ran but produced invalid result
+        assert score is not None
+        import math
+
+        assert math.isnan(score)
 
 
 class TestEvaluateDataModeling:
@@ -414,6 +433,29 @@ class TestEvaluateDataModeling:
             )
 
         assert result.details["task_completion_rate"] == 0.5
+
+    def test_nan_result_counts_as_completed(self, tmp_path: Path) -> None:
+        """Original DSBench counts task_complete when result.txt exists even
+        if it contains 'nan'. Our adapter returns float('nan') for this case,
+        which is not None so it increments task_complete."""
+        adapter = DSBenchAdapter(task="data_modeling", data_dir=tmp_path)
+        adapter._samples = [{"name": "comp_a"}]
+
+        self._setup_ref_scores(tmp_path, "comp_a", gt=1.0, baseline=0.5)
+
+        pred_a = tmp_path / "comp_a.csv"
+        pred_a.write_text("col\n1\n")
+
+        predictions = [{"name": "comp_a", "prediction_path": str(pred_a)}]
+
+        with patch.object(adapter, "_run_eval_script", return_value=float("nan")):
+            result = adapter._evaluate_data_modeling(
+                predictions, agent_name="test_agent", model_name="test_model"
+            )
+
+        assert result.details["task_completion_rate"] == 1.0
+        # nan raw_score → normalized_score should be 0.0
+        assert result.details["per_competition"][0]["normalized_score"] == 0.0
 
     def test_empty_predictions(self, tmp_path: Path) -> None:
         adapter = DSBenchAdapter(task="data_modeling", data_dir=tmp_path)
