@@ -8,3 +8,7 @@ class StatigentModelError(StatigentError):
 
 class StatigentBenchmarkError(StatigentError):
     """Error raised by the benchmark adapter layer."""
+
+
+class StatigentSandboxError(StatigentError):
+    """Error raised by the Docker sandbox."""
