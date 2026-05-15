@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 from langchain.messages import AIMessage, HumanMessage, ToolMessage
 
 from statigent.baseline.react import (
-    _SYSTEM_PROMPT,
     ReactBaselineAgent,
     _serialize_messages,
     make_bash_tool,
@@ -127,55 +126,36 @@ class TestListDirTool:
 
 
 class TestReactBaselineAgentInit:
-    @patch("statigent.baseline.react.get_model")
-    @patch("statigent.baseline.react.create_agent")
-    def test_default_model_name(
-        self,
-        mock_create_agent: MagicMock,
-        mock_get_model: MagicMock,
-    ) -> None:
-        mock_get_model.return_value = MagicMock()
-        mock_create_agent.return_value = MagicMock()
+    def test_default_params(self) -> None:
         agent = ReactBaselineAgent()
         assert agent.model_name == "deepseek-v4-flash"
-        mock_get_model.assert_called_once_with("deepseek-v4-flash")
+        assert agent.sandbox_image == "statigent/ds-sandbox"
+        assert agent.sandbox_network is False
+        assert agent.sandbox_timeout == 600
 
-    @patch("statigent.baseline.react.get_model")
-    @patch("statigent.baseline.react.create_agent")
-    def test_custom_model_name(
-        self,
-        mock_create_agent: MagicMock,
-        mock_get_model: MagicMock,
-    ) -> None:
-        mock_get_model.return_value = MagicMock()
-        mock_create_agent.return_value = MagicMock()
-        agent = ReactBaselineAgent(model_name="gpt-4o")
+    def test_custom_params(self) -> None:
+        agent = ReactBaselineAgent(
+            model_name="gpt-4o",
+            sandbox_image="custom/image",
+            sandbox_network=True,
+            sandbox_timeout=300,
+        )
         assert agent.model_name == "gpt-4o"
-        mock_get_model.assert_called_once_with("gpt-4o")
-
-    @patch("statigent.baseline.react.get_model")
-    @patch("statigent.baseline.react.create_agent")
-    def test_agent_created_with_tools_and_prompt(
-        self, mock_create_agent: MagicMock, mock_get_model: MagicMock
-    ) -> None:
-        mock_llm = MagicMock()
-        mock_get_model.return_value = mock_llm
-        mock_create_agent.return_value = MagicMock()
-        ReactBaselineAgent()
-        mock_create_agent.assert_called_once()
-        call_kwargs = mock_create_agent.call_args
-        assert call_kwargs[0][0] is mock_llm
-        assert len(call_kwargs[0][1]) == 2
-        assert call_kwargs[1]["system_prompt"] == _SYSTEM_PROMPT
+        assert agent.sandbox_image == "custom/image"
+        assert agent.sandbox_network is True
+        assert agent.sandbox_timeout == 300
 
 
 class TestRunAnalysisForEval:
-    @patch("statigent.baseline.react.get_model")
-    @patch("statigent.baseline.react.create_agent")
+    @patch.object(DockerSandbox, "start")
+    @patch.object(DockerSandbox, "stop")
+    @patch.object(ReactBaselineAgent, "_create_agent")
     def test_returns_response_and_trace(
-        self, mock_create_agent: MagicMock, mock_get_model: MagicMock
+        self,
+        mock_create_agent: MagicMock,
+        mock_stop: MagicMock,
+        mock_start: MagicMock,
     ) -> None:
-        mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
         mock_agent.invoke.return_value = {
             "messages": [
@@ -191,13 +171,18 @@ class TestRunAnalysisForEval:
         assert len(trace) == 2
         assert trace[0]["role"] == "user"
         assert trace[1]["role"] == "assistant"
+        mock_start.assert_called_once()
+        mock_stop.assert_called_once()
 
-    @patch("statigent.baseline.react.get_model")
-    @patch("statigent.baseline.react.create_agent")
+    @patch.object(DockerSandbox, "start")
+    @patch.object(DockerSandbox, "stop")
+    @patch.object(ReactBaselineAgent, "_create_agent")
     def test_includes_files_in_message(
-        self, mock_create_agent: MagicMock, mock_get_model: MagicMock
+        self,
+        mock_create_agent: MagicMock,
+        mock_stop: MagicMock,
+        mock_start: MagicMock,
     ) -> None:
-        mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
         mock_agent.invoke.return_value = {
             "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
@@ -213,12 +198,15 @@ class TestRunAnalysisForEval:
         assert "/data/train.csv" in msg["content"]
         assert "/data/test.csv" in msg["content"]
 
-    @patch("statigent.baseline.react.get_model")
-    @patch("statigent.baseline.react.create_agent")
+    @patch.object(DockerSandbox, "start")
+    @patch.object(DockerSandbox, "stop")
+    @patch.object(ReactBaselineAgent, "_create_agent")
     def test_includes_task_instructions(
-        self, mock_create_agent: MagicMock, mock_get_model: MagicMock
+        self,
+        mock_create_agent: MagicMock,
+        mock_stop: MagicMock,
+        mock_start: MagicMock,
     ) -> None:
-        mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
         mock_agent.invoke.return_value = {
             "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
@@ -233,12 +221,15 @@ class TestRunAnalysisForEval:
         msg = mock_agent.invoke.call_args[0][0]["messages"][0]
         assert "Answer in JSON format" in msg["content"]
 
-    @patch("statigent.baseline.react.get_model")
-    @patch("statigent.baseline.react.create_agent")
+    @patch.object(DockerSandbox, "start")
+    @patch.object(DockerSandbox, "stop")
+    @patch.object(ReactBaselineAgent, "_create_agent")
     def test_no_files_no_task_instructions(
-        self, mock_create_agent: MagicMock, mock_get_model: MagicMock
+        self,
+        mock_create_agent: MagicMock,
+        mock_stop: MagicMock,
+        mock_start: MagicMock,
     ) -> None:
-        mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
         mock_agent.invoke.return_value = {
             "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
@@ -253,15 +244,18 @@ class TestRunAnalysisForEval:
 
 
 class TestRunModelingForEval:
-    @patch("statigent.baseline.react.get_model")
-    @patch("statigent.baseline.react.create_agent")
+    @patch.object(DockerSandbox, "get_file")
+    @patch.object(DockerSandbox, "start")
+    @patch.object(DockerSandbox, "stop")
+    @patch.object(ReactBaselineAgent, "_create_agent")
     def test_returns_output_path_and_trace(
         self,
         mock_create_agent: MagicMock,
-        mock_get_model: MagicMock,
+        mock_stop: MagicMock,
+        mock_start: MagicMock,
+        mock_get_file: MagicMock,
         tmp_path: Path,
     ) -> None:
-        mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
         mock_agent.invoke.return_value = {
             "messages": [
@@ -285,18 +279,22 @@ class TestRunModelingForEval:
             test_path=test,
             sample_submission_path=sample,
         )
-        assert result_path == tmp_path / "submission.csv"
+        assert result_path.name == "submission.csv"
         assert len(trace) == 2
+        mock_get_file.assert_called_once()
 
-    @patch("statigent.baseline.react.get_model")
-    @patch("statigent.baseline.react.create_agent")
+    @patch.object(DockerSandbox, "get_file")
+    @patch.object(DockerSandbox, "start")
+    @patch.object(DockerSandbox, "stop")
+    @patch.object(ReactBaselineAgent, "_create_agent")
     def test_includes_paths_in_message(
         self,
         mock_create_agent: MagicMock,
-        mock_get_model: MagicMock,
+        mock_stop: MagicMock,
+        mock_start: MagicMock,
+        mock_get_file: MagicMock,
         tmp_path: Path,
     ) -> None:
-        mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
         mock_agent.invoke.return_value = {
             "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
@@ -321,17 +319,20 @@ class TestRunModelingForEval:
         assert str(train) in msg["content"]
         assert str(test) in msg["content"]
         assert str(sample) in msg["content"]
-        assert "submission.csv" in msg["content"]
+        assert "/workspace/submission.csv" in msg["content"]
 
-    @patch("statigent.baseline.react.get_model")
-    @patch("statigent.baseline.react.create_agent")
+    @patch.object(DockerSandbox, "get_file")
+    @patch.object(DockerSandbox, "start")
+    @patch.object(DockerSandbox, "stop")
+    @patch.object(ReactBaselineAgent, "_create_agent")
     def test_includes_task_instructions(
         self,
         mock_create_agent: MagicMock,
-        mock_get_model: MagicMock,
+        mock_stop: MagicMock,
+        mock_start: MagicMock,
+        mock_get_file: MagicMock,
         tmp_path: Path,
     ) -> None:
-        mock_get_model.return_value = MagicMock()
         mock_agent = MagicMock()
         mock_agent.invoke.return_value = {
             "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
@@ -356,20 +357,26 @@ class TestRunModelingForEval:
         msg = mock_agent.invoke.call_args[0][0]["messages"][0]
         assert "Use random forest" in msg["content"]
 
-    @patch("statigent.baseline.react.get_model")
-    @patch("statigent.baseline.react.create_agent")
+    @patch.object(DockerSandbox, "get_file")
+    @patch.object(DockerSandbox, "start")
+    @patch.object(DockerSandbox, "stop")
+    @patch.object(ReactBaselineAgent, "_create_agent")
     def test_warns_when_submission_not_created(
         self,
         mock_create_agent: MagicMock,
-        mock_get_model: MagicMock,
+        mock_stop: MagicMock,
+        mock_start: MagicMock,
+        mock_get_file: MagicMock,
         tmp_path: Path,
     ) -> None:
-        mock_get_model.return_value = MagicMock()
+        from statigent.errors import StatigentSandboxError
+
         mock_agent = MagicMock()
         mock_agent.invoke.return_value = {
             "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
         }
         mock_create_agent.return_value = mock_agent
+        mock_get_file.side_effect = StatigentSandboxError("not found")
 
         train = tmp_path / "train.csv"
         train.write_text("x,y\n1,2\n")
@@ -401,7 +408,7 @@ class TestSerializeMessages:
             AIMessage(
                 content="",
                 tool_calls=[
-                    {"name": "python_repl", "args": {"code": "print(1)"}, "id": "tc1"}
+                    {"name": "python", "args": {"code": "print(1)"}, "id": "tc1"}
                 ],
             )
         ]
@@ -409,14 +416,14 @@ class TestSerializeMessages:
         assert trace[0]["role"] == "assistant"
         assert trace[0]["content"] == ""
         assert len(trace[0]["tool_calls"]) == 1
-        assert trace[0]["tool_calls"][0]["name"] == "python_repl"
+        assert trace[0]["tool_calls"][0]["name"] == "python"
 
     def test_serializes_tool_message(self) -> None:
-        msgs = [ToolMessage(content="42", name="python_repl", tool_call_id="tc1")]
+        msgs = [ToolMessage(content="42", name="python", tool_call_id="tc1")]
         trace = _serialize_messages(msgs)
         assert trace[0] == {
             "role": "tool",
-            "name": "python_repl",
+            "name": "python",
             "content": "42",
             "tool_call_id": "tc1",
         }
@@ -448,9 +455,8 @@ class TestSerializeMessages:
 
 class TestProtocolConformance:
     def test_satisfies_data_science_agent_protocol(self) -> None:
-        agent = ReactBaselineAgent.__new__(ReactBaselineAgent)
-        agent.name = "react-baseline"
-        agent.model_name = "test"
+        agent = ReactBaselineAgent()
         assert agent.name == "react-baseline"
         assert hasattr(agent, "run_analysis_for_eval")
         assert hasattr(agent, "run_modeling_for_eval")
+        assert agent.model_name == "deepseek-v4-flash"

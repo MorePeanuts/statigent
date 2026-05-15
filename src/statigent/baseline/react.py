@@ -1,6 +1,7 @@
 """React baseline agent with built-in tools."""
 
 import shlex
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,7 @@ from langchain.tools import BaseTool, tool
 from loguru import logger
 
 from statigent.benchmarks.base import AgentTrace
+from statigent.errors import StatigentSandboxError
 from statigent.models import get_model
 from statigent.retry import retry_on_conn_error
 from statigent.sandbox.docker import DockerSandbox
@@ -157,11 +159,19 @@ def make_list_dir_tool(sandbox: DockerSandbox) -> BaseTool:
 
 _SYSTEM_PROMPT = """You are a data science assistant with access to the following tools:
 1. read_file — Read the contents of a file (CSV, text, etc.)
-2. python_repl — Execute Python code (pandas, numpy, scikit-learn, etc.)
+2. write_file — Write content to a file
+3. python — Execute Python code (pandas, numpy, scikit-learn, etc.)
+4. bash — Run shell commands
+5. list_dir — List directory contents
+
+Your working directory is /workspace. All data files are located here.
 
 General guidelines:
-- Data files can be very large. Always use read_file with max_lines=5 first to preview \
-the structure and column names before loading with Python.
+- Each python and bash call starts a fresh process — import modules and \
+load data in every call. Save intermediate results to files in /workspace/ \
+to share state between calls.
+- Data files can be very large. Always use read_file with max_lines=5 first \
+to preview the structure and column names before loading with Python.
 - Read relevant data files before attempting analysis
 - Write and execute Python code to perform computations
 - Print results clearly so they can be captured
@@ -174,14 +184,87 @@ class ReactBaselineAgent:
 
     name = "react-baseline"
 
-    def __init__(self, model_name: str = "deepseek-v4-flash") -> None:
+    def __init__(
+        self,
+        model_name: str = "deepseek-v4-flash",
+        sandbox_image: str = "statigent/ds-sandbox",
+        sandbox_network: bool = False,
+        sandbox_timeout: int = 600,
+    ) -> None:
         self.model_name = model_name
-        llm = get_model(model_name)
-        self.agent = create_agent(
-            llm,
-            [python_repl, read_file],
-            system_prompt=_SYSTEM_PROMPT,
+        self.sandbox_image = sandbox_image
+        self.sandbox_network = sandbox_network
+        self.sandbox_timeout = sandbox_timeout
+
+    def _create_agent(self, sandbox: DockerSandbox) -> Any:
+        tools = [
+            make_bash_tool(sandbox),
+            make_python_tool(sandbox),
+            make_read_file_tool(sandbox),
+            make_write_file_tool(sandbox),
+            make_list_dir_tool(sandbox),
+        ]
+        llm = get_model(self.model_name)
+        return create_agent(llm, tools, system_prompt=_SYSTEM_PROMPT)
+
+    def _make_sandbox(self) -> DockerSandbox:
+        return DockerSandbox(
+            image=self.sandbox_image,
+            network=self.sandbox_network,
+            timeout=self.sandbox_timeout,
         )
+
+    @staticmethod
+    def _build_analysis_mounts(
+        files: list[Path] | None,
+    ) -> list[tuple[Path, str, bool]]:
+        if not files:
+            return []
+        dirs = {f.resolve().parent for f in files}
+        return [(d, str(d), True) for d in sorted(dirs)]
+
+    @staticmethod
+    def _build_analysis_message(
+        prompt: str,
+        *,
+        files: list[Path] | None = None,
+        task_instructions: str = "",
+    ) -> str:
+        file_info = ""
+        if files:
+            file_info = "\n\nAvailable data files:\n" + "\n".join(
+                f"- {f}" for f in files
+            )
+        parts = []
+        if task_instructions:
+            parts.append(task_instructions)
+        parts.append(prompt)
+        parts.append(file_info)
+        return "\n\n".join(parts)
+
+    @staticmethod
+    def _build_modeling_message(
+        prompt: str,
+        *,
+        train_path: Path,
+        test_path: Path,
+        sample_submission_path: Path,
+        task_instructions: str = "",
+    ) -> str:
+        parts = []
+        if task_instructions:
+            parts.append(task_instructions)
+        parts.append(prompt)
+        parts.append(
+            f"Training data: {train_path}\n"
+            f"Test data: {test_path}\n"
+            f"Sample submission: {sample_submission_path}\n"
+            f"Save your predictions to: /workspace/submission.csv\n\n"
+            "Read the training data, build a model, generate predictions "
+            "for the test data, and save them as a CSV file matching "
+            "the sample submission format to /workspace/submission.csv."
+        )
+        return "\n\n".join(parts)
 
     def run_analysis_for_eval(
         self,
@@ -191,25 +274,21 @@ class ReactBaselineAgent:
         task_instructions: str = "",
     ) -> tuple[str, AgentTrace]:
         """Run agent on an analysis task, return text response and trace."""
-        file_info = ""
-        if files:
-            file_info = "\n\nAvailable data files:\n" + "\n".join(
-                f"- {f}" for f in files
+        with self._make_sandbox() as sandbox:
+            mounts = self._build_analysis_mounts(files)
+            sandbox.start(mounts)
+            agent = self._create_agent(sandbox)
+
+            user_message = self._build_analysis_message(
+                prompt, files=files, task_instructions=task_instructions,
             )
-
-        parts = []
-        if task_instructions:
-            parts.append(task_instructions)
-        parts.append(prompt)
-        parts.append(file_info)
-
-        result = retry_on_conn_error(self.agent.invoke)(
-            {"messages": [{"role": "user", "content": "\n\n".join(parts)}]}
-        )
-        response: str = result["messages"][-1].content
-        trace = _serialize_messages(result["messages"])
-        logger.debug("ReactBaselineAgent response: {}...", response[:100])
-        return response, trace
+            result = retry_on_conn_error(agent.invoke)(
+                {"messages": [{"role": "user", "content": user_message}]}
+            )
+            response: str = result["messages"][-1].content
+            trace = _serialize_messages(result["messages"])
+            logger.debug("ReactBaselineAgent response: {}...", response[:100])
+            return response, trace
 
     def run_modeling_for_eval(
         self,
@@ -221,26 +300,29 @@ class ReactBaselineAgent:
         task_instructions: str = "",
     ) -> tuple[Path, AgentTrace]:
         """Run agent on a modeling task, return path to prediction CSV and trace."""
-        output_path = train_path.parent / "submission.csv"
-        parts = []
-        if task_instructions:
-            parts.append(task_instructions)
-        parts.append(prompt)
-        parts.append(
-            f"Training data: {train_path}\n"
-            f"Test data: {test_path}\n"
-            f"Sample submission: {sample_submission_path}\n"
-            f"Save your predictions to: {output_path}\n\n"
-            "Read the training data, build a model, generate predictions "
-            "for the test data, and save them as a CSV file matching "
-            f"the sample submission format to {output_path}."
-        )
+        with self._make_sandbox() as sandbox:
+            data_dir = train_path.resolve()
+            if not data_dir.is_dir():
+                data_dir = data_dir.parent
+            mounts = [(data_dir, str(data_dir), True)]
+            sandbox.start(mounts)
+            agent = self._create_agent(sandbox)
 
-        result = retry_on_conn_error(self.agent.invoke)(
-            {"messages": [{"role": "user", "content": "\n\n".join(parts)}]}
-        )
-        trace = _serialize_messages(result["messages"])
+            user_message = self._build_modeling_message(
+                prompt,
+                train_path=train_path,
+                test_path=test_path,
+                sample_submission_path=sample_submission_path,
+                task_instructions=task_instructions,
+            )
+            result = retry_on_conn_error(agent.invoke)(
+                {"messages": [{"role": "user", "content": user_message}]}
+            )
+            trace = _serialize_messages(result["messages"])
 
-        if not output_path.exists():
-            logger.warning("Submission file not created at {}", output_path)
-        return output_path, trace
+            output_path = Path(tempfile.mkdtemp()) / "submission.csv"
+            try:
+                sandbox.get_file("/workspace/submission.csv", output_path)
+            except StatigentSandboxError:
+                logger.warning("Submission file not created in sandbox")
+            return output_path, trace
