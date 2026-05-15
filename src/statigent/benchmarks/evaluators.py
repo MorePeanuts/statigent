@@ -198,6 +198,9 @@ class LLMJudgeEvaluator(Evaluator):
             details.append(
                 {
                     "id": qid,
+                    "question": ref["question"],
+                    "answer": ref["answer"],
+                    "prediction": pred_map[qid],
                     "verdict": is_correct,
                     "verdict_json": text,
                 }
