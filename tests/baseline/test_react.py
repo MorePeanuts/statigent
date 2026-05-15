@@ -6,89 +6,124 @@ from langchain.messages import AIMessage, HumanMessage, ToolMessage
 from statigent.baseline.react import (
     _SYSTEM_PROMPT,
     ReactBaselineAgent,
-    _check_code_safety,
     _serialize_messages,
-    python_repl,
-    read_file,
+    make_bash_tool,
+    make_list_dir_tool,
+    make_python_tool,
+    make_read_file_tool,
+    make_write_file_tool,
 )
+from statigent.sandbox.docker import DockerSandbox
 
 
-class TestPythonReplTool:
-    def test_executes_simple_code(self) -> None:
-        result = python_repl.invoke({"code": "print(2 + 3)"})
+class TestBashTool:
+    @patch.object(DockerSandbox, "exec")
+    def test_runs_bash_command(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = "hello\n"
+        sandbox = DockerSandbox()
+        tool = make_bash_tool(sandbox)
+        result = tool.invoke({"command": "echo hello"})
+        mock_exec.assert_called_once_with("echo hello")
+        assert result == "hello\n"
+
+
+class TestPythonTool:
+    @patch.object(DockerSandbox, "exec")
+    def test_executes_python_code(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = "5\n"
+        sandbox = DockerSandbox()
+        tool = make_python_tool(sandbox)
+        result = tool.invoke({"code": "print(2 + 3)"})
         assert "5" in result
 
-    def test_returns_output_as_string(self) -> None:
-        result = python_repl.invoke({"code": "print('hello')"})
-        assert isinstance(result, str)
-        assert "hello" in result
+    @patch.object(DockerSandbox, "exec")
+    def test_writes_code_to_temp_file(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = ""
+        sandbox = DockerSandbox()
+        tool = make_python_tool(sandbox)
+        tool.invoke({"code": "import pandas as pd"})
+        cmd = mock_exec.call_args[0][0]
+        assert "/tmp/_statigent_exec.py" in cmd
+        assert "python /tmp/_statigent_exec.py" in cmd
 
-    def test_blocks_os_system(self) -> None:
-        result = python_repl.invoke({"code": "os.system('rm -rf /')"})
-        assert "Blocked" in result
-
-    def test_blocks_subprocess(self) -> None:
-        result = python_repl.invoke({"code": "import subprocess"})
-        assert "Blocked" in result
-
-    def test_blocks_shutil_rmtree(self) -> None:
-        result = python_repl.invoke({"code": "shutil.rmtree('/tmp')"})
-        assert "Blocked" in result
-
-    def test_blocks_eval(self) -> None:
-        result = python_repl.invoke({"code": "eval('1+1')"})
-        assert "Blocked" in result
-
-    def test_blocks_exec(self) -> None:
-        result = python_repl.invoke({"code": "exec('print(1)')"})
-        assert "Blocked" in result
-
-    def test_allows_safe_code(self) -> None:
-        assert _check_code_safety("import pandas as pd") is None
-        assert _check_code_safety("df = pd.read_csv('data.csv')") is None
+    @patch.object(DockerSandbox, "exec")
+    def test_truncates_long_output(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = "x\n" * 50_000
+        sandbox = DockerSandbox()
+        tool = make_python_tool(sandbox)
+        result = tool.invoke({"code": "print('long')"})
+        assert len(result) < 100_000
 
 
 class TestReadFileTool:
-    def test_reads_file_content(self, tmp_path: Path) -> None:
-        f = tmp_path / "data.csv"
-        f.write_text("name,age\nAlice,30\n")
-        result = read_file.invoke({"file_path": str(f)})
+    @patch.object(DockerSandbox, "exec")
+    def test_reads_file(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = "name,age\nAlice,30\n"
+        sandbox = DockerSandbox()
+        tool = make_read_file_tool(sandbox)
+        result = tool.invoke({"file_path": "/workspace/data.csv"})
         assert "Alice" in result
 
-    def test_returns_error_for_missing_file(self) -> None:
-        result = read_file.invoke({"file_path": "/nonexistent/file.csv"})
-        assert "Error" in result
-        assert "file not found" in result
+    @patch.object(DockerSandbox, "exec")
+    def test_reads_file_with_max_lines(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = "line1\nline2\n"
+        sandbox = DockerSandbox()
+        tool = make_read_file_tool(sandbox)
+        tool.invoke({"file_path": "/workspace/data.csv", "max_lines": 2})
+        cmd = mock_exec.call_args[0][0]
+        assert "head -n 2" in cmd
 
-    def test_max_lines_limits_output(self, tmp_path: Path) -> None:
-        f = tmp_path / "data.csv"
-        f.write_text("h1,h2\n" + "\n".join(f"v{i},w{i}" for i in range(100)))
-        result = read_file.invoke({"file_path": str(f), "max_lines": 5})
-        assert result.count("\n") == 4  # 5 lines -> 4 newlines
+    @patch.object(DockerSandbox, "exec")
+    def test_reads_file_no_max_lines(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = "all content\n"
+        sandbox = DockerSandbox()
+        tool = make_read_file_tool(sandbox)
+        tool.invoke({"file_path": "/workspace/data.csv", "max_lines": 0})
+        cmd = mock_exec.call_args[0][0]
+        assert "cat " in cmd
 
-    def test_max_lines_zero_reads_all(self, tmp_path: Path) -> None:
-        f = tmp_path / "data.csv"
-        f.write_text("h1,h2\nv1,w1\nv2,w2\n")
-        result = read_file.invoke({"file_path": str(f), "max_lines": 0})
-        assert "v1" in result and "v2" in result
 
-    def test_binary_file_returns_error(self, tmp_path: Path) -> None:
-        f = tmp_path / "data.xlsx"
-        f.write_bytes(b"PK\x03\x04\x80\x81\x82\xff\xfe\x00\x00")
-        result = read_file.invoke({"file_path": str(f)})
-        assert "Error" in result
-        assert "binary file" in result
-        assert ".xlsx" in result
-        assert "python_repl" in result
+class TestWriteFileTool:
+    @patch.object(DockerSandbox, "exec")
+    def test_writes_file(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = ""
+        sandbox = DockerSandbox()
+        tool = make_write_file_tool(sandbox)
+        tool.invoke({"file_path": "/workspace/output.txt", "content": "hello"})
+        cmd = mock_exec.call_args[0][0]
+        assert "cat >" in cmd
+        assert "/workspace/output.txt" in cmd
+        assert "hello" in cmd
 
-    def test_binary_file_suggests_alternative_loaders(self, tmp_path: Path) -> None:
-        f = tmp_path / "report.dta"
-        f.write_bytes(b"\x00\x01\x02\x80\xff\xfe\xfd")
-        result = read_file.invoke({"file_path": str(f)})
-        assert "Error" in result
-        assert "binary file" in result
-        assert ".dta" in result
-        assert "pd.read_excel" in result or "pd.read_csv" in result
+    @patch.object(DockerSandbox, "exec")
+    def test_returns_success_message(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = ""
+        sandbox = DockerSandbox()
+        tool = make_write_file_tool(sandbox)
+        result = tool.invoke({"file_path": "/workspace/out.txt", "content": "x"})
+        assert "Successfully" in result
+
+
+class TestListDirTool:
+    @patch.object(DockerSandbox, "exec")
+    def test_lists_directory(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = (
+            "total 8\ndrwxr-xr-x 2 root root 4096 .\n"
+            "-rw-r--r-- 1 root root 100 data.csv\n"
+        )
+        sandbox = DockerSandbox()
+        tool = make_list_dir_tool(sandbox)
+        result = tool.invoke({"path": "/workspace"})
+        assert "data.csv" in result
+
+    @patch.object(DockerSandbox, "exec")
+    def test_default_path_is_workspace(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = "total 0\n"
+        sandbox = DockerSandbox()
+        tool = make_list_dir_tool(sandbox)
+        tool.invoke({})
+        cmd = mock_exec.call_args[0][0]
+        assert "/workspace" in cmd
 
 
 class TestReactBaselineAgentInit:

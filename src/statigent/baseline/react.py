@@ -1,43 +1,36 @@
 """React baseline agent with built-in tools."""
 
-import re
+import shlex
 from pathlib import Path
 from typing import Any
 
 from langchain.agents import create_agent
 from langchain.messages import AIMessage, AnyMessage, HumanMessage, ToolMessage
-from langchain.tools import tool
-from langchain_experimental.utilities import PythonREPL
+from langchain.tools import BaseTool, tool
 from loguru import logger
 
 from statigent.benchmarks.base import AgentTrace
 from statigent.models import get_model
 from statigent.retry import retry_on_conn_error
+from statigent.sandbox.docker import DockerSandbox
 
-_python_repl = PythonREPL()
-
-_DANGEROUS_PATTERNS: list[re.Pattern[str]] = [
-    re.compile(r"\bos\.system\b"),
-    re.compile(r"\bsubprocess\b"),
-    re.compile(r"\bshutil\.rmtree\b"),
-    re.compile(r"\bos\.remove\b"),
-    re.compile(r"\bos\.unlink\b"),
-    re.compile(r"\brm\s+-rf\b"),
-    re.compile(r'\bopen\s*\([^)]*["\']w'),
-    re.compile(r"\b__import__\b"),
-    re.compile(r"\beval\b"),
-    re.compile(r"\bexec\b"),
-    re.compile(r"\bcompile\b"),
-]
+_MAX_FILE_CHARS = 10_000
+_TRUNCATION_OVERHEAD = 200  # budget for the ellipsis marker
 
 
-def _check_code_safety(code: str) -> str | None:
-    """Return a warning message if code contains dangerous patterns, else None."""
-    for pattern in _DANGEROUS_PATTERNS:
-        match = pattern.search(code)
-        if match:
-            return f"Blocked: dangerous pattern '{match.group()}' detected in code."
-    return None
+def _truncate_content(content: str, max_chars: int = _MAX_FILE_CHARS) -> str:
+    """Truncate content by keeping head and tail, replacing middle with an ellipsis."""
+    if len(content) <= max_chars:
+        return content
+    tail_budget = max_chars // 3
+    head_budget = max_chars - tail_budget - _TRUNCATION_OVERHEAD
+    head = content[:head_budget]
+    tail = content[-tail_budget:]
+    head_lines = head.count("\n") + 1
+    tail_lines = tail.count("\n") + 1
+    total_lines = content.count("\n") + 1
+    omitted = total_lines - head_lines - tail_lines
+    return f"{head}\n\n... [{omitted} lines omitted] ...\n\n{tail}"
 
 
 def _serialize_messages(messages: list[AnyMessage]) -> AgentTrace:
@@ -67,66 +60,99 @@ def _serialize_messages(messages: list[AnyMessage]) -> AgentTrace:
     return trace
 
 
-@tool
-def python_repl(code: str) -> str:
-    """Execute Python code and return the output.
+def make_bash_tool(sandbox: DockerSandbox) -> BaseTool:
+    @tool
+    def bash(command: str) -> str:
+        """Run a bash command in the workspace.
 
-    Use this to run data analysis code. Available packages: pandas, numpy,
-    scikit-learn, torch, scipy, matplotlib, seaborn.
-    If you want to see the output of a value, use print(...) in your code.
-    The current working directory and any provided files are accessible.
-    """
-    warning = _check_code_safety(code)
-    if warning:
-        return warning
-    output = _python_repl.run(code)
-    return _truncate_content(output)
+        Use this for shell operations like installing packages,
+        managing files, running scripts, or chaining commands.
+        Each call runs in a fresh process — variables do not persist.
+        Save intermediate results to files in /workspace/ to share
+        state between calls.
+        """
+        return _truncate_content(sandbox.exec(command))
 
-
-_MAX_FILE_CHARS = 10_000
-_TRUNCATION_OVERHEAD = 200  # budget for the ellipsis marker
+    return bash
 
 
-def _truncate_content(content: str, max_chars: int = _MAX_FILE_CHARS) -> str:
-    """Truncate content by keeping head and tail, replacing middle with an ellipsis."""
-    if len(content) <= max_chars:
-        return content
-    tail_budget = max_chars // 3
-    head_budget = max_chars - tail_budget - _TRUNCATION_OVERHEAD
-    head = content[:head_budget]
-    tail = content[-tail_budget:]
-    head_lines = head.count("\n") + 1
-    tail_lines = tail.count("\n") + 1
-    total_lines = content.count("\n") + 1
-    omitted = total_lines - head_lines - tail_lines
-    return f"{head}\n\n... [{omitted} lines omitted] ...\n\n{tail}"
+def make_python_tool(sandbox: DockerSandbox) -> BaseTool:
+    @tool
+    def python(code: str) -> str:
+        """Execute Python code and return the output.
 
-
-@tool
-def read_file(file_path: str, max_lines: int = 0) -> str:
-    """Read the contents of a file.
-
-    Use this to read CSV data files, task descriptions, or other text files.
-    Set max_lines to read only the first N lines (0 = entire file).
-    Very long files are automatically truncated with the middle omitted.
-    """
-    path = Path(file_path)
-    if not path.exists():
-        return f"Error: file not found: {file_path}"
-    try:
-        lines = path.read_text().splitlines()
-    except UnicodeDecodeError:
-        suffix = path.suffix.lower()
-        return (
-            f"Error: {file_path} is a binary file ({suffix!r}) "
-            f"and cannot be read as text. Use python_repl with "
-            f"pd.read_excel(), pd.read_csv(), or other appropriate "
-            f"libraries to load this file instead."
+        Use this to run data analysis code. Available packages: pandas,
+        numpy, scikit-learn, scipy, xgboost, lightgbm, matplotlib,
+        seaborn, torch.
+        Each call starts a fresh interpreter — import modules and load
+        data in every call. Save intermediate results to files in
+        /workspace/ to share state between calls.
+        If you want to see the output of a value, use print(...) in your code.
+        """
+        cmd = (
+            f"cat > /tmp/_statigent_exec.py << 'STATIGENT_PYTHON_EOF'\n"
+            f"{code}\n"
+            f"STATIGENT_PYTHON_EOF\n"
+            f"python /tmp/_statigent_exec.py"
         )
-    if max_lines > 0:
-        lines = lines[:max_lines]
-    content = "\n".join(lines)
-    return _truncate_content(content)
+        return _truncate_content(sandbox.exec(cmd))
+
+    return python
+
+
+def make_read_file_tool(sandbox: DockerSandbox) -> BaseTool:
+    @tool
+    def read_file(file_path: str, max_lines: int = 0) -> str:
+        """Read the contents of a file.
+
+        Use this to read CSV data files, task descriptions, or other
+        text files. Set max_lines to read only the first N lines
+        (0 = entire file). Very long files are automatically truncated
+        with the middle omitted.
+        """
+        safe_path = shlex.quote(file_path)
+        if max_lines > 0:
+            cmd = f"head -n {max_lines} {safe_path}"
+        else:
+            cmd = f"cat {safe_path}"
+        return _truncate_content(sandbox.exec(cmd))
+
+    return read_file
+
+
+def make_write_file_tool(sandbox: DockerSandbox) -> BaseTool:
+    @tool
+    def write_file(file_path: str, content: str) -> str:
+        """Write content to a file.
+
+        Use this to save results, create scripts, or write configuration
+        files.
+        """
+        safe_path = shlex.quote(file_path)
+        cmd = (
+            f"cat > {safe_path} << 'STATIGENT_WRITE_EOF'\n"
+            f"{content}\n"
+            f"STATIGENT_WRITE_EOF"
+        )
+        result = sandbox.exec(cmd)
+        if result.startswith("Exit code:"):
+            return f"Error writing file: {result}"
+        return f"Successfully wrote to {file_path}"
+
+    return write_file
+
+
+def make_list_dir_tool(sandbox: DockerSandbox) -> BaseTool:
+    @tool
+    def list_dir(path: str = "/workspace") -> str:
+        """List directory contents.
+
+        Use this to explore the workspace, find data files, or check
+        what outputs have been created.
+        """
+        return sandbox.exec(f"ls -la {shlex.quote(path)}")
+
+    return list_dir
 
 
 _SYSTEM_PROMPT = """You are a data science assistant with access to the following tools:
