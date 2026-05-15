@@ -253,6 +253,18 @@ class TestDockerSandboxExec:
         sandbox.exec("echo done")
         assert mock_run.call_args[1]["timeout"] == 120
 
+    @patch("statigent.sandbox.docker.subprocess.run")
+    def test_exec_handles_binary_output(self, mock_run: MagicMock) -> None:
+        sandbox = DockerSandbox()
+        sandbox._container_name = "testcontainer"
+        mock_run.return_value = MagicMock(
+            returncode=0, stdout="PK\xef\xbf\xbd\xef\xbf\xbd"
+        )
+
+        result = sandbox.exec("cat /workspace/binary.xlsx")
+        assert "PK" in result
+        assert mock_run.call_args[1]["errors"] == "replace"
+
 
 class TestDockerSandboxGetFile:
     """Test DockerSandbox.get_file() for copy commands and failures."""
@@ -377,7 +389,7 @@ class TestSanitizeDockerErrors:
             "Error response from daemon: something failed"
         )
         assert "daemon" not in result
-        assert "Error: something failed" == result
+        assert result == "Error: something failed"
 
     def test_removes_container_id(self) -> None:
         result = _sanitize_docker_errors(

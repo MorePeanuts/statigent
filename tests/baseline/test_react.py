@@ -42,7 +42,7 @@ class TestPythonTool:
         tool = make_python_tool(sandbox)
         tool.invoke({"code": "import pandas as pd"})
         cmd = mock_exec.call_args[0][0]
-        assert "/tmp/_statigent_exec.py" in cmd
+        assert "base64 -d > /tmp/_statigent_exec.py" in cmd
         assert "python /tmp/_statigent_exec.py" in cmd
 
     @patch.object(DockerSandbox, "exec")
@@ -81,6 +81,23 @@ class TestReadFileTool:
         cmd = mock_exec.call_args[0][0]
         assert "cat " in cmd
 
+    @patch.object(DockerSandbox, "exec")
+    def test_detects_binary_file(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = "PK\x03\x04���binary"
+        sandbox = DockerSandbox()
+        tool = make_read_file_tool(sandbox)
+        result = tool.invoke({"file_path": "/workspace/data.xlsx"})
+        assert "binary file" in result
+        assert "pd.read_excel" in result
+
+    @patch.object(DockerSandbox, "exec")
+    def test_text_file_no_binary_warning(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = "name,age\nAlice,30\n"
+        sandbox = DockerSandbox()
+        tool = make_read_file_tool(sandbox)
+        result = tool.invoke({"file_path": "/workspace/data.csv"})
+        assert "binary file" not in result
+
 
 class TestWriteFileTool:
     @patch.object(DockerSandbox, "exec")
@@ -90,9 +107,8 @@ class TestWriteFileTool:
         tool = make_write_file_tool(sandbox)
         tool.invoke({"file_path": "/workspace/output.txt", "content": "hello"})
         cmd = mock_exec.call_args[0][0]
-        assert "cat >" in cmd
+        assert "base64 -d >" in cmd
         assert "/workspace/output.txt" in cmd
-        assert "hello" in cmd
 
     @patch.object(DockerSandbox, "exec")
     def test_returns_success_message(self, mock_exec: MagicMock) -> None:
@@ -123,6 +139,14 @@ class TestListDirTool:
         tool.invoke({})
         cmd = mock_exec.call_args[0][0]
         assert "/workspace" in cmd
+
+    @patch.object(DockerSandbox, "exec")
+    def test_truncates_long_output(self, mock_exec: MagicMock) -> None:
+        mock_exec.return_value = "file_\n" * 50_000
+        sandbox = DockerSandbox()
+        tool = make_list_dir_tool(sandbox)
+        result = tool.invoke({"path": "/workspace"})
+        assert len(result) < 100_000
 
 
 class TestReactBaselineAgentInit:
@@ -395,6 +419,53 @@ class TestRunModelingForEval:
             )
             mock_logger.warning.assert_called_once()
         assert not result_path.exists()
+
+    @patch.object(DockerSandbox, "get_file")
+    @patch.object(DockerSandbox, "start")
+    @patch.object(DockerSandbox, "stop")
+    @patch.object(ReactBaselineAgent, "_create_agent")
+    def test_mounts_all_data_directories(
+        self,
+        mock_create_agent: MagicMock,
+        mock_stop: MagicMock,
+        mock_start: MagicMock,
+        mock_get_file: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        mock_agent = MagicMock()
+        mock_agent.invoke.return_value = {
+            "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
+        }
+        mock_create_agent.return_value = mock_agent
+
+        train_dir = tmp_path / "train_data"
+        train_dir.mkdir()
+        train = train_dir / "train.csv"
+        train.write_text("x,y\n1,2\n")
+
+        test_dir = tmp_path / "test_data"
+        test_dir.mkdir()
+        test = test_dir / "test.csv"
+        test.write_text("x\n3\n")
+
+        sample_dir = tmp_path / "submissions"
+        sample_dir.mkdir()
+        sample = sample_dir / "sample.csv"
+        sample.write_text("x,y\n3,0\n")
+
+        agent = ReactBaselineAgent()
+        agent.run_modeling_for_eval(
+            "Build a model",
+            train_path=train,
+            test_path=test,
+            sample_submission_path=sample,
+        )
+
+        mounts = mock_start.call_args[0][0]
+        mounted_dirs = {m[0] for m in mounts}
+        assert train_dir in mounted_dirs
+        assert test_dir in mounted_dirs
+        assert sample_dir in mounted_dirs
 
 
 class TestSerializeMessages:

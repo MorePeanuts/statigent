@@ -90,7 +90,7 @@ class DockerSandbox:
 
         if result.returncode != 0:
             raise StatigentSandboxError(
-                f"Failed to start sandbox: {_sanitize_docker_errors(result.stderr.strip())}"
+                f"Failed to start sandbox: {result.stderr.strip()}"
             )
 
         self._container_name = result.stdout.strip()
@@ -129,6 +129,7 @@ class DockerSandbox:
                 capture_output=True,
                 text=True,
                 timeout=self._timeout,
+                errors="replace",
             )
         except subprocess.TimeoutExpired:
             return f"Error: command timed out after {self._timeout} seconds"

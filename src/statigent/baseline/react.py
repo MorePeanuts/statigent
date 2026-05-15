@@ -1,5 +1,6 @@
 """React baseline agent with built-in tools."""
 
+import base64
 import shlex
 import tempfile
 from pathlib import Path
@@ -91,11 +92,10 @@ def make_python_tool(sandbox: DockerSandbox) -> BaseTool:
         /workspace/ to share state between calls.
         If you want to see the output of a value, use print(...) in your code.
         """
+        encoded = base64.b64encode(code.encode()).decode()
         cmd = (
-            f"cat > /tmp/_statigent_exec.py << 'STATIGENT_PYTHON_EOF'\n"
-            f"{code}\n"
-            f"STATIGENT_PYTHON_EOF\n"
-            f"python /tmp/_statigent_exec.py"
+            f"echo {encoded} | base64 -d > /tmp/_statigent_exec.py"
+            f" && python /tmp/_statigent_exec.py"
         )
         return _truncate_content(sandbox.exec(cmd))
 
@@ -117,7 +117,15 @@ def make_read_file_tool(sandbox: DockerSandbox) -> BaseTool:
             cmd = f"head -n {max_lines} {safe_path}"
         else:
             cmd = f"cat {safe_path}"
-        return _truncate_content(sandbox.exec(cmd))
+        output = sandbox.exec(cmd)
+        if "�" in output[:500]:
+            return (
+                f"Error: {file_path} appears to be a binary file "
+                "(e.g., Excel, Parquet, image). Use the python tool "
+                "with an appropriate library (e.g., pd.read_excel(), "
+                "pd.read_parquet()) to read it instead."
+            )
+        return _truncate_content(output)
 
     return read_file
 
@@ -131,11 +139,8 @@ def make_write_file_tool(sandbox: DockerSandbox) -> BaseTool:
         files.
         """
         safe_path = shlex.quote(file_path)
-        cmd = (
-            f"cat > {safe_path} << 'STATIGENT_WRITE_EOF'\n"
-            f"{content}\n"
-            f"STATIGENT_WRITE_EOF"
-        )
+        encoded = base64.b64encode(content.encode()).decode()
+        cmd = f"echo {encoded} | base64 -d > {safe_path}"
         result = sandbox.exec(cmd)
         if result.startswith("Exit code:"):
             return f"Error writing file: {result}"
@@ -152,7 +157,7 @@ def make_list_dir_tool(sandbox: DockerSandbox) -> BaseTool:
         Use this to explore the workspace, find data files, or check
         what outputs have been created.
         """
-        return sandbox.exec(f"ls -la {shlex.quote(path)}")
+        return _truncate_content(sandbox.exec(f"ls -la {shlex.quote(path)}"))
 
     return list_dir
 
@@ -164,7 +169,8 @@ _SYSTEM_PROMPT = """You are a data science assistant with access to the followin
 4. bash — Run shell commands
 5. list_dir — List directory contents
 
-Your working directory is /workspace. All data files are located here.
+Your working directory is /workspace. Data files are located at the
+paths specified in the task — use list_dir or read_file to explore them.
 
 General guidelines:
 - Each python and bash call starts a fresh process — import modules and \
@@ -301,10 +307,11 @@ class ReactBaselineAgent:
     ) -> tuple[Path, AgentTrace]:
         """Run agent on a modeling task, return path to prediction CSV and trace."""
         with self._make_sandbox() as sandbox:
-            data_dir = train_path.resolve()
-            if not data_dir.is_dir():
-                data_dir = data_dir.parent
-            mounts = [(data_dir, str(data_dir), True)]
+            dirs: set[Path] = set()
+            for p in (train_path, test_path, sample_submission_path):
+                resolved = p.resolve()
+                dirs.add(resolved if resolved.is_dir() else resolved.parent)
+            mounts = [(d, str(d), True) for d in sorted(dirs)]
             sandbox.start(mounts)
             agent = self._create_agent(sandbox)
 
