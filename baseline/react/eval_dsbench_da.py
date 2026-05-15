@@ -23,7 +23,14 @@ def main(
     ] = Path("evaluations"),
     limit: Annotated[
         int | None,
-        typer.Option(help="Number of samples to evaluate. Defaults to all."),
+        typer.Option(help="Number of questions to evaluate. Defaults to all."),
+    ] = None,
+    task_id: Annotated[
+        str | None,
+        typer.Option(
+            help="Run a specific sample or question. "
+            "Sample ID (e.g. 00000001) or question ID (e.g. 00000001/question6).",
+        ),
     ] = None,
     model: Annotated[
         str,
@@ -46,6 +53,7 @@ def main(
     console.print(f"  Agent model: {model}")
     console.print(f"  Judge model: {judge_model}")
     console.print(f"  Limit: {limit or 'all'}")
+    console.print(f"  Task ID: {task_id or 'all'}")
     console.print(f"  Output: {output_dir}")
 
     adapter = DSBenchAdapter(
@@ -57,12 +65,17 @@ def main(
     console.print("\n[blue]Preparing DSBench data analysis data...[/blue]")
     adapter.prepare()
     total = len(adapter._samples)
-    console.print(f"  {total} samples available")
+    total_questions = sum(
+        len(s.get("questions", [])) for s in adapter._samples
+    )
+    console.print(f"  {total} samples ({total_questions} questions) available")
 
     console.print("\n[blue]Running evaluation...[/blue]")
     kwargs: dict = {"output_dir": str(output_dir)}
     if limit is not None:
         kwargs["limit"] = limit
+    if task_id is not None:
+        kwargs["task_id"] = task_id
 
     result = adapter.execute(agent, **kwargs)
 
@@ -76,8 +89,8 @@ def main(
     table.add_row("Judge", judge_model)
     console.print(table)
 
-    n = limit or total
-    console.print(f"\n[bold green]Done — evaluated {n} samples[/bold green]")
+    n = result.details.get("total", "?")
+    console.print(f"\n[bold green]Done — evaluated {n} questions[/bold green]")
 
 
 if __name__ == "__main__":

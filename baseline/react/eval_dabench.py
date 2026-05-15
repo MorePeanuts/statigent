@@ -25,6 +25,12 @@ def main(
         int | None,
         typer.Option(help="Number of questions to evaluate. Defaults to all."),
     ] = None,
+    task_id: Annotated[
+        str | None,
+        typer.Option(
+            help="Run a specific question by its ID (e.g. 5).",
+        ),
+    ] = None,
     model: Annotated[
         str,
         typer.Option(help="Model profile name from defaults.toml."),
@@ -42,6 +48,7 @@ def main(
     console.print("[bold]DABench Evaluation[/bold]")
     console.print(f"  Model: {model}")
     console.print(f"  Limit: {limit or 'all'}")
+    console.print(f"  Task ID: {task_id or 'all'}")
     console.print(f"  Output: {output_dir}")
 
     # Setup
@@ -59,6 +66,8 @@ def main(
     kwargs: dict = {"output_dir": str(output_dir)}
     if limit is not None:
         kwargs["limit"] = limit
+    if task_id is not None:
+        kwargs["task_id"] = task_id
 
     result = adapter.execute(agent, **kwargs)
 
@@ -74,7 +83,7 @@ def main(
     table.add_row("Score", f"{result.score:.4f}")
     console.print(table)
 
-    n = limit or total
+    n = result.details.get("total", "?")
     console.print(f"\n[bold green]Done — evaluated {n} questions[/bold green]")
 
 

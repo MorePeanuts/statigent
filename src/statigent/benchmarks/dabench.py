@@ -62,7 +62,16 @@ class DABenchAdapter(BenchmarkAdapter):
     def run(self, agent: DataScienceAgent, **kwargs: Any) -> BenchmarkRunResult:
         """Run agent on DABench questions."""
         limit = kwargs.get("limit")
-        questions = self._questions[:limit] if limit else self._questions
+        task_id = kwargs.get("task_id")
+
+        questions = self._questions
+        if task_id:
+            questions = [q for q in questions if str(q["id"]) == task_id]
+        elif limit:
+            questions = questions[:limit]
+
+        if task_id and not questions:
+            logger.warning("task_id '{}' did not match any question", task_id)
 
         predictions: list[dict[str, Any]] = []
         traces: dict[str, list[dict[str, Any]]] = {}

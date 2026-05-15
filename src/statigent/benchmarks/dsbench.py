@@ -168,14 +168,29 @@ class DSBenchAdapter(BenchmarkAdapter):
     ) -> BenchmarkRunResult:
         """Run data analysis task."""
         limit = kwargs.get("limit")
-        samples = self._samples[:limit] if limit else self._samples
+        task_id = kwargs.get("task_id")
+
+        # task_id: "00000001" → run all questions in that sample;
+        #          "00000001/question6" → run a single question.
+        # When task_id is set, limit is ignored.
+        target_sid: str | None = None
+        target_qname: str | None = None
+        if task_id:
+            parts = str(task_id).split("/", 1)
+            target_sid = parts[0]
+            if len(parts) == 2:
+                target_qname = parts[1]
 
         predictions: list[dict[str, Any]] = []
         traces: dict[str, list[dict[str, Any]]] = {}
-        for sample in samples:
+        question_count = 0
+        for sample in self._samples:
             if not sample.get("questions"):
                 continue
             sid = sample["id"]
+            if target_sid and sid != target_sid:
+                continue
+
             data_base = self.data_dir / "data_analysis" / "data" / sid
 
             intro_path = data_base / "introduction.txt"
@@ -188,6 +203,10 @@ class DSBenchAdapter(BenchmarkAdapter):
             ]
 
             for qname in sample["questions"]:
+                if limit and question_count >= limit:
+                    break
+                if target_qname and qname != target_qname:
+                    continue
                 q_path = data_base / f"{qname}.txt"
                 question = q_path.read_text() if q_path.exists() else ""
                 prompt = f"{introduction}\n\n{question}"
@@ -199,7 +218,15 @@ class DSBenchAdapter(BenchmarkAdapter):
                 qid = f"{sid}/{qname}"
                 predictions.append({"id": qid, "response": response})
                 traces[qid] = trace
+                question_count += 1
                 logger.debug("DSBench DA id={} q={}: response received", sid, qname)
+            if limit and question_count >= limit:
+                break
+
+        if task_id and not predictions:
+            logger.warning(
+                "task_id '{}' did not match any sample/question", task_id
+            )
 
         return BenchmarkRunResult(predictions=predictions, traces=traces)
 
@@ -218,7 +245,14 @@ class DSBenchAdapter(BenchmarkAdapter):
     ) -> BenchmarkRunResult:
         """Run data modeling task."""
         limit = kwargs.get("limit")
-        samples = self._samples[:limit] if limit else self._samples
+        task_id = kwargs.get("task_id")
+
+        samples = self._samples
+        if task_id:
+            # Match by sample name (e.g. "titanic")
+            samples = [s for s in samples if str(s["name"]) == str(task_id)]
+        elif limit:
+            samples = samples[:limit]
 
         predictions: list[dict[str, Any]] = []
         traces: dict[str, list[dict[str, Any]]] = {}
@@ -268,6 +302,11 @@ class DSBenchAdapter(BenchmarkAdapter):
             predictions.append({"name": name, "prediction_path": str(pred_path)})
             traces[name] = trace
             logger.debug("DSBench DM {}: prediction saved", name)
+
+        if task_id and not predictions:
+            logger.warning(
+                "task_id '{}' did not match any sample name", task_id
+            )
 
         return BenchmarkRunResult(predictions=predictions, traces=traces)
 
