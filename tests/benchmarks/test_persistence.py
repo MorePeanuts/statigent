@@ -173,7 +173,7 @@ class TestPersist:
         )
         assert not (output_dir / "traces").exists()
 
-    def test_prediction_csv_copied_to_pred_dir(self, tmp_path: Path) -> None:
+    def test_prediction_csv_moved_to_pred_dir(self, tmp_path: Path) -> None:
         csv_src = tmp_path / "raw" / "submission.csv"
         csv_src.parent.mkdir(parents=True)
         csv_src.write_text("PassengerId,Survived\n1,0\n2,1\n")
@@ -190,10 +190,16 @@ class TestPersist:
             result, predictions=predictions, base_dir=tmp_path / "out"
         )
 
-        # File should be copied into predictions/
+        # File should be moved into predictions/
         copied = output_dir / "predictions" / "titanic_submission.csv"
         assert copied.exists()
         assert copied.read_text() == "PassengerId,Survived\n1,0\n2,1\n"
+
+        # Source should no longer exist after move
+        assert not csv_src.exists()
+
+        # Source parent dir should be cleaned up (empty after move)
+        assert not csv_src.parent.exists()
 
         # responses.jsonl should point to the copied file
         jsonl = output_dir / "predictions" / "responses.jsonl"
@@ -232,6 +238,12 @@ class TestPersist:
         second = output_dir / "predictions" / "titanic_1_submission.csv"
         assert first.read_text() == "first"
         assert second.read_text() == "second"
+
+        # Sources moved, not copied
+        assert not csv1.exists()
+        assert not csv2.exists()
+        assert not csv1.parent.exists()
+        assert not csv2.parent.exists()
 
     def test_prediction_path_with_slash_in_id_sanitized(self, tmp_path: Path) -> None:
         csv_src = tmp_path / "raw" / "submission.csv"

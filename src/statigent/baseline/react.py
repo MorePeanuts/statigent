@@ -304,6 +304,7 @@ class ReactBaselineAgent:
         test_path: Path,
         sample_submission_path: Path,
         task_instructions: str = "",
+        work_dir: Path | None = None,
     ) -> tuple[Path, AgentTrace]:
         """Run agent on a modeling task, return path to prediction CSV and trace."""
         with self._make_sandbox() as sandbox:
@@ -327,7 +328,11 @@ class ReactBaselineAgent:
             )
             trace = _serialize_messages(result["messages"])
 
-            output_path = Path(tempfile.mkdtemp()) / "submission.csv"
+            if work_dir is not None:
+                work_dir.mkdir(parents=True, exist_ok=True)
+                output_path = work_dir / "submission.csv"
+            else:
+                output_path = Path(tempfile.mkdtemp()) / "submission.csv"
             try:
                 sandbox.get_file("/workspace/submission.csv", output_path)
             except StatigentSandboxError:

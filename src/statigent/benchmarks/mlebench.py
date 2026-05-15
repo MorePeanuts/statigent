@@ -1,3 +1,5 @@
+import shutil
+import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -82,13 +84,19 @@ class MLEBenchAdapter(BenchmarkAdapter):
             if competition is None:
                 continue
 
-            pred_path, trace = agent.run_modeling_for_eval(
-                competition.description,
-                train_path=competition.public_dir,
-                test_path=competition.public_dir,
-                sample_submission_path=competition.sample_submission,
-                task_instructions=self._TASK_INSTRUCTIONS,
-            )
+            work_dir = Path(tempfile.mkdtemp())
+            try:
+                pred_path, trace = agent.run_modeling_for_eval(
+                    competition.description,
+                    train_path=competition.public_dir,
+                    test_path=competition.public_dir,
+                    sample_submission_path=competition.sample_submission,
+                    task_instructions=self._TASK_INSTRUCTIONS,
+                    work_dir=work_dir,
+                )
+            except Exception:
+                shutil.rmtree(work_dir, ignore_errors=True)
+                raise
             predictions.append(
                 {"competition_id": comp_id, "submission_path": str(pred_path)}
             )

@@ -467,6 +467,48 @@ class TestRunModelingForEval:
         assert test_dir in mounted_dirs
         assert sample_dir in mounted_dirs
 
+    @patch.object(DockerSandbox, "get_file")
+    @patch.object(DockerSandbox, "start")
+    @patch.object(DockerSandbox, "stop")
+    @patch.object(ReactBaselineAgent, "_create_agent")
+    def test_writes_to_provided_work_dir(
+        self,
+        mock_create_agent: MagicMock,
+        mock_stop: MagicMock,
+        mock_start: MagicMock,
+        mock_get_file: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        mock_agent = MagicMock()
+        mock_agent.invoke.return_value = {
+            "messages": [HumanMessage(content="q"), AIMessage(content="answer")]
+        }
+        mock_create_agent.return_value = mock_agent
+
+        train = tmp_path / "train.csv"
+        train.write_text("x,y\n1,2\n")
+        test = tmp_path / "test.csv"
+        test.write_text("x\n3\n")
+        sample = tmp_path / "sample_submission.csv"
+        sample.write_text("x,y\n3,0\n")
+
+        work_dir = tmp_path / "work"
+
+        agent = ReactBaselineAgent()
+        result_path, _trace = agent.run_modeling_for_eval(
+            "Build a model",
+            train_path=train,
+            test_path=test,
+            sample_submission_path=sample,
+            work_dir=work_dir,
+        )
+
+        assert result_path == work_dir / "submission.csv"
+        assert work_dir.exists()
+        mock_get_file.assert_called_once_with(
+            "/workspace/submission.csv", work_dir / "submission.csv"
+        )
+
 
 class TestSerializeMessages:
     def test_serializes_human_message(self) -> None:

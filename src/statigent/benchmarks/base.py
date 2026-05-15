@@ -1,3 +1,4 @@
+import contextlib
 import json
 import shutil
 from abc import ABC, abstractmethod
@@ -158,8 +159,9 @@ class BenchmarkAdapter(ABC):
             pred_dir = output_dir / "predictions"
             pred_dir.mkdir(exist_ok=True)
 
-            # Copy prediction CSVs from temp locations into pred_dir so that
+            # Move prediction CSVs from staging locations into pred_dir so that
             # persisted results are self-contained and re-evaluable.
+            # Stale staging directories are removed after their files are moved.
             persisted: list[dict[str, Any]] = []
             seen_dests: set[str] = set()
             for p in predictions:
@@ -183,8 +185,11 @@ class BenchmarkAdapter(ABC):
                     if str(dest) in seen_dests:
                         dest = pred_dir / f"{identifier}_{len(seen_dests)}_{src.name}"
                     seen_dests.add(str(dest))
-                    shutil.copy2(src, dest)
+                    shutil.move(src, dest)
                     p_copy[path_key] = str(dest)
+                    # Remove the staging directory if empty after the move.
+                    with contextlib.suppress(OSError):
+                        src.parent.rmdir()
                 persisted.append(p_copy)
 
             if persisted:
@@ -253,6 +258,7 @@ class DataScienceAgent(Protocol):
         test_path: Path,
         sample_submission_path: Path,
         task_instructions: str = "",
+        work_dir: Path | None = None,
     ) -> tuple[Path, AgentTrace]:
         """Run agent on a modeling task, return path to prediction CSV and trace.
 
@@ -262,5 +268,9 @@ class DataScienceAgent(Protocol):
             test_path: Path to test data.
             sample_submission_path: Path to sample submission CSV.
             task_instructions: Benchmark-specific formatting/constraint instructions.
+            work_dir: Optional working directory where the agent should write
+                its output (e.g. submission.csv). When provided, the agent
+                writes directly to this directory instead of a temporary
+                location, giving the caller control over the file lifecycle.
         """
         ...

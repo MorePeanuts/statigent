@@ -310,13 +310,19 @@ class DSBenchAdapter(BenchmarkAdapter):
                 logger.warning("DSBench DM skipping {}: train.csv not found", name)
                 continue
 
-            pred_path, trace = agent.run_modeling_for_eval(
-                description,
-                train_path=train_path,
-                test_path=test_path,
-                sample_submission_path=sample_sub,
-                task_instructions=self._DM_TASK_INSTRUCTIONS,
-            )
+            work_dir = Path(tempfile.mkdtemp())
+            try:
+                pred_path, trace = agent.run_modeling_for_eval(
+                    description,
+                    train_path=train_path,
+                    test_path=test_path,
+                    sample_submission_path=sample_sub,
+                    task_instructions=self._DM_TASK_INSTRUCTIONS,
+                    work_dir=work_dir,
+                )
+            except Exception:
+                shutil.rmtree(work_dir, ignore_errors=True)
+                raise
             predictions.append({"name": name, "prediction_path": str(pred_path)})
             traces[name] = trace
             logger.debug("DSBench DM {}: prediction saved", name)

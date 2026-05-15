@@ -104,6 +104,7 @@ class TestDataScienceAgentProtocol:
                 test_path: Path,
                 sample_submission_path: Path,
                 task_instructions: str = "",
+                work_dir: Path | None = None,
             ) -> Path:
                 return Path("submission.csv")
 
