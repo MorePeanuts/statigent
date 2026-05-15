@@ -36,6 +36,19 @@ uv sync --group benchmark
 uv sync --all-groups          # Install all groups
 ```
 
+### Docker (Required for Agent Execution)
+
+The baseline agent executes code inside Docker containers for isolation. Install Docker Desktop:
+
+- **macOS**: https://docs.docker.com/desktop/install/mac-install/
+- **Linux**: https://docs.docker.com/engine/install/
+
+Then build the sandbox image:
+
+```bash
+docker build -t statigent/ds-sandbox .
+```
+
 ### API Keys
 
 Model access is configured via environment variables. LangChain auto-discovers keys by provider name:
@@ -74,6 +87,27 @@ print(f"Score: {result.score}")
 ```
 
 Available benchmarks: `dabench`, `dsbench-da`, `dsbench-dm`, `mlebench`. For detailed usage, data preparation, and per-benchmark options, see [docs/how_to_eval.md](docs/how_to_eval.md).
+
+## Baseline Agents
+
+### React Baseline
+
+The React baseline agent (`ReactBaselineAgent`) uses langchain's `create_agent` with a Docker sandbox. Each evaluation task runs in an isolated container:
+
+- **Tools**: `bash`, `python`, `read_file`, `write_file`, `list_dir`
+- **Execution model**: One Docker container per task. Data directories are bind-mounted read-only; output files are extracted after task completion.
+- **Network**: Disabled by default. Pass `sandbox_network=True` to enable.
+
+```python
+from statigent.baseline import ReactBaselineAgent
+
+agent = ReactBaselineAgent(
+    model_name="deepseek-v4-flash",
+    sandbox_image="statigent/ds-sandbox",
+    sandbox_network=False,
+    sandbox_timeout=600,
+)
+```
 
 ## Custom Models
 
