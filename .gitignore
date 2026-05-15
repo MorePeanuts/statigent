@@ -32,7 +32,7 @@ Thumbs.db
 coverage/
 
 # uv
-uv.lock
+cache/
 
 # Superpowers specs (local only)
 docs/superpowers/
