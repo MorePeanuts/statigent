@@ -4860,6 +4860,10 @@ dependencies = [
 [package.dev-dependencies]
 benchmark = [
     { name = "mlebench" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
 ]
 datascience = [
     { name = "matplotlib" },
@@ -4894,7 +4898,13 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-benchmark = [{ name = "mlebench", editable = "benchmarks/MLE-Bench" }]
+benchmark = [
+    { name = "mlebench", editable = "benchmarks/MLE-Bench" },
+    { name = "numpy", specifier = ">=2.4.4" },
+    { name = "pandas", specifier = ">=3.0.3" },
+    { name = "scikit-learn", specifier = ">=1.8.0" },
+    { name = "scipy", specifier = ">=1.17.1" },
+]
 datascience = [
     { name = "matplotlib", specifier = ">=3.10.9" },
     { name = "numpy", specifier = ">=2.4.4" },

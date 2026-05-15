@@ -1,3 +1,5 @@
+import json
+import shutil
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
@@ -132,12 +134,10 @@ class BenchmarkAdapter(ABC):
         Returns:
             Path to the created output directory.
         """
-        import json
-
         if base_dir is None:
             base_dir = Path("evaluations")
 
-        timestamp = datetime.now().strftime('%Y%m%dT%H%M%S')
+        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         parts = [result.agent_name, result.model_name, result.benchmark_name, timestamp]
         dir_name = "-".join(parts)
         output_dir = base_dir / dir_name
@@ -157,8 +157,38 @@ class BenchmarkAdapter(ABC):
             # predictions/responses.jsonl
             pred_dir = output_dir / "predictions"
             pred_dir.mkdir(exist_ok=True)
-            if predictions:
-                lines = [json.dumps(p) for p in predictions]
+
+            # Copy prediction CSVs from temp locations into pred_dir so that
+            # persisted results are self-contained and re-evaluable.
+            persisted: list[dict[str, Any]] = []
+            seen_dests: set[str] = set()
+            for p in predictions:
+                p_copy = dict(p)
+                for path_key in ("prediction_path", "submission_path"):
+                    src_str = p_copy.get(path_key)
+                    if src_str is None:
+                        continue
+                    src = Path(src_str)
+                    if not src.exists():
+                        continue
+                    identifier = (
+                        p_copy.get("name")
+                        or p_copy.get("id")
+                        or p_copy.get("competition_id")
+                        or "pred"
+                    )
+                    # Sanitize for filesystem safety.
+                    identifier = str(identifier).replace("/", "_")
+                    dest = pred_dir / f"{identifier}_{src.name}"
+                    if str(dest) in seen_dests:
+                        dest = pred_dir / f"{identifier}_{len(seen_dests)}_{src.name}"
+                    seen_dests.add(str(dest))
+                    shutil.copy2(src, dest)
+                    p_copy[path_key] = str(dest)
+                persisted.append(p_copy)
+
+            if persisted:
+                lines = [json.dumps(p) for p in persisted]
                 (pred_dir / "responses.jsonl").write_text("\n".join(lines) + "\n")
             else:
                 (pred_dir / "responses.jsonl").write_text("")
@@ -183,9 +213,7 @@ class BenchmarkAdapter(ABC):
                     trace_path = trace_dir / f"{qid}.jsonl"
                     trace_path.parent.mkdir(parents=True, exist_ok=True)
                     trace_lines = [json.dumps(msg) for msg in trace]
-                    trace_path.write_text(
-                        "\n".join(trace_lines) + "\n"
-                    )
+                    trace_path.write_text("\n".join(trace_lines) + "\n")
         except (OSError, TypeError) as exc:
             raise StatigentBenchmarkError(
                 f"Failed to persist evaluation results to {output_dir}: {exc}"

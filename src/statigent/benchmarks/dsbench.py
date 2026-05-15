@@ -379,6 +379,11 @@ class DSBenchAdapter(BenchmarkAdapter):
             return None
 
         with tempfile.TemporaryDirectory() as tmpdir:
+            # The eval script writes to {path}/{name}/result.txt, so the
+            # subdirectory must exist before the script runs.
+            result_subdir = Path(tmpdir) / name
+            result_subdir.mkdir(parents=True, exist_ok=True)
+
             cmd = [
                 sys.executable,
                 str(eval_script),
@@ -393,10 +398,20 @@ class DSBenchAdapter(BenchmarkAdapter):
             ]
             try:
                 subprocess.run(cmd, capture_output=True, timeout=120, check=True)
-            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            except subprocess.CalledProcessError as exc:
+                stderr = exc.stderr.decode(errors="replace") if exc.stderr else ""
+                logger.warning(
+                    "DSBench DM eval script {} failed (rc={}): {}",
+                    eval_script.name,
+                    exc.returncode,
+                    stderr[:500],
+                )
+                return None
+            except subprocess.TimeoutExpired:
+                logger.warning("DSBench DM eval script {} timed out", eval_script.name)
                 return None
 
-            result_file = Path(tmpdir) / name / "result.txt"
+            result_file = result_subdir / "result.txt"
             if not result_file.exists():
                 return None
             content = result_file.read_text().strip()

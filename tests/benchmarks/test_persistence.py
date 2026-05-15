@@ -173,6 +173,108 @@ class TestPersist:
         )
         assert not (output_dir / "traces").exists()
 
+    def test_prediction_csv_copied_to_pred_dir(self, tmp_path: Path) -> None:
+        csv_src = tmp_path / "raw" / "submission.csv"
+        csv_src.parent.mkdir(parents=True)
+        csv_src.write_text("PassengerId,Survived\n1,0\n2,1\n")
+
+        result = EvalResult(
+            score=0.5,
+            details={},
+            agent_name="test-agent",
+            model_name="test-model",
+            benchmark_name="dsbench-dm",
+        )
+        predictions = [{"name": "titanic", "prediction_path": str(csv_src)}]
+        output_dir = BenchmarkAdapter.persist(
+            result, predictions=predictions, base_dir=tmp_path / "out"
+        )
+
+        # File should be copied into predictions/
+        copied = output_dir / "predictions" / "titanic_submission.csv"
+        assert copied.exists()
+        assert copied.read_text() == "PassengerId,Survived\n1,0\n2,1\n"
+
+        # responses.jsonl should point to the copied file
+        jsonl = output_dir / "predictions" / "responses.jsonl"
+        lines = jsonl.read_text().strip().split("\n")
+        entry = json.loads(lines[0])
+        assert entry["prediction_path"] == str(copied)
+
+    def test_prediction_csv_collision_gets_suffix(self, tmp_path: Path) -> None:
+        csv1 = tmp_path / "a" / "submission.csv"
+        csv1.parent.mkdir(parents=True)
+        csv1.write_text("first")
+
+        csv2 = tmp_path / "b" / "submission.csv"
+        csv2.parent.mkdir(parents=True)
+        csv2.write_text("second")
+
+        result = EvalResult(
+            score=0.5,
+            details={},
+            agent_name="test-agent",
+            model_name="test-model",
+            benchmark_name="test",
+        )
+        # Same name, different source files → second gets a counter suffix
+        predictions = [
+            {"name": "titanic", "prediction_path": str(csv1)},
+            {"name": "titanic", "prediction_path": str(csv2)},
+        ]
+        output_dir = BenchmarkAdapter.persist(
+            result, predictions=predictions, base_dir=tmp_path / "out"
+        )
+
+        assert (output_dir / "predictions" / "titanic_submission.csv").exists()
+        assert (output_dir / "predictions" / "titanic_1_submission.csv").exists()
+        first = output_dir / "predictions" / "titanic_submission.csv"
+        second = output_dir / "predictions" / "titanic_1_submission.csv"
+        assert first.read_text() == "first"
+        assert second.read_text() == "second"
+
+    def test_prediction_path_with_slash_in_id_sanitized(self, tmp_path: Path) -> None:
+        csv_src = tmp_path / "raw" / "submission.csv"
+        csv_src.parent.mkdir(parents=True)
+        csv_src.write_text("data")
+
+        result = EvalResult(
+            score=0.5,
+            details={},
+            agent_name="test",
+            model_name="test",
+            benchmark_name="test",
+        )
+        predictions = [{"id": "00000001/question6", "prediction_path": str(csv_src)}]
+        output_dir = BenchmarkAdapter.persist(
+            result, predictions=predictions, base_dir=tmp_path / "out"
+        )
+
+        # The "/" should be replaced with "_"
+        copied = output_dir / "predictions" / "00000001_question6_submission.csv"
+        assert copied.exists()
+
+    def test_missing_prediction_file_skipped(self, tmp_path: Path) -> None:
+        result = EvalResult(
+            score=0.5,
+            details={},
+            agent_name="test",
+            model_name="test",
+            benchmark_name="test",
+        )
+        predictions = [
+            {"name": "titanic", "prediction_path": "/nonexistent/submission.csv"},
+        ]
+        output_dir = BenchmarkAdapter.persist(
+            result, predictions=predictions, base_dir=tmp_path / "out"
+        )
+
+        # No file copied, path remains unchanged in JSONL
+        jsonl = output_dir / "predictions" / "responses.jsonl"
+        lines = jsonl.read_text().strip().split("\n")
+        entry = json.loads(lines[0])
+        assert entry["prediction_path"] == "/nonexistent/submission.csv"
+
 
 class TestExecutePersistence:
     def test_execute_persists_when_output_dir_provided(self, tmp_path: Path) -> None:
