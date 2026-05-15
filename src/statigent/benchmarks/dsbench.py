@@ -1,5 +1,8 @@
 import json
 import shutil
+import subprocess
+import sys
+import tempfile
 import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -11,6 +14,7 @@ from statigent.benchmarks.base import (
     BenchmarkAdapter,
     BenchmarkRunResult,
     EvalResult,
+    ScoreResult,
 )
 from statigent.benchmarks.evaluators import LLMJudgeEvaluator
 from statigent.errors import StatigentBenchmarkError
@@ -22,9 +26,7 @@ _DSBENCH_DATA_DIR = (
     Path(__file__).resolve().parents[3] / "benchmarks" / "data" / "DSBench"
 )
 
-_DSBENCH_REPO_DIR = (
-    Path(__file__).resolve().parents[3] / "benchmarks" / "DSBench"
-)
+_DSBENCH_REPO_DIR = Path(__file__).resolve().parents[3] / "benchmarks" / "DSBench"
 
 _HF_DATA_URLS: dict[str, str] = {
     "data_analysis": (
@@ -75,20 +77,22 @@ class DSBenchAdapter(BenchmarkAdapter):
 
         if data_path.exists() and data_subdir.exists():
             self._load_samples(data_path)
-            return
-
-        logger.info(
-            "DSBench {} data not found at {}, downloading from HuggingFace",
-            self.task,
-            task_dir,
-        )
-        self._download_and_extract(task_dir)
-
-        if not data_path.exists() or not data_subdir.exists():
-            raise StatigentBenchmarkError(
-                f"DSBench data still missing after download: {task_dir}"
+        else:
+            logger.info(
+                "DSBench {} data not found at {}, downloading from HuggingFace",
+                self.task,
+                task_dir,
             )
-        self._load_samples(data_path)
+            self._download_and_extract(task_dir)
+
+            if not data_path.exists() or not data_subdir.exists():
+                raise StatigentBenchmarkError(
+                    f"DSBench data still missing after download: {task_dir}"
+                )
+            self._load_samples(data_path)
+
+        if self.task == "data_modeling":
+            self._extract_save_performance()
 
     def _download_and_extract(self, task_dir: Path) -> None:
         """Download the pre-processed zip from HuggingFace and extract it."""
@@ -97,15 +101,11 @@ class DSBenchAdapter(BenchmarkAdapter):
 
         zip_path = task_dir / "data.zip"
         try:
-            with httpx.stream(
-                "GET", url, follow_redirects=True, timeout=120.0
-            ) as resp:
+            with httpx.stream("GET", url, follow_redirects=True, timeout=120.0) as resp:
                 resp.raise_for_status()
                 total = resp.headers.get("content-length")
                 total_mb = f"{int(total) / 1e6:.1f} MB" if total else "unknown size"
-                logger.info(
-                    "Downloading DSBench {} data ({}) ...", self.task, total_mb
-                )
+                logger.info("Downloading DSBench {} data ({}) ...", self.task, total_mb)
                 with open(zip_path, "wb") as f:
                     for chunk in resp.iter_bytes(chunk_size=8192):
                         f.write(chunk)
@@ -148,7 +148,27 @@ class DSBenchAdapter(BenchmarkAdapter):
     def _load_samples(self, data_path: Path) -> None:
         with open(data_path) as f:
             self._samples = [json.loads(line.strip()) for line in f if line.strip()]
-        logger.info("DSBench {} prepared: {} samples", self.task, len(self._samples))
+
+    def _extract_save_performance(self) -> None:
+        """Extract save_performance.zip containing GT/baseline reference scores."""
+        sp_dir = self.data_dir / "data_modeling" / "save_performance"
+        if sp_dir.exists():
+            return
+
+        zip_path = _DSBENCH_REPO_DIR / "data_modeling" / "save_performance.zip"
+        if not zip_path.exists():
+            logger.warning("DSBench save_performance.zip not found at {}", zip_path)
+            return
+
+        logger.info("Extracting DSBench save_performance reference scores ...")
+        try:
+            with zipfile.ZipFile(zip_path) as zf:
+                self._safe_extract(zf, self.data_dir / "data_modeling")
+        except (zipfile.BadZipFile, OSError, RuntimeError) as exc:
+            raise StatigentBenchmarkError(
+                f"Failed to extract save_performance.zip: {exc}"
+            ) from exc
+        logger.info("DSBench save_performance reference scores extracted")
 
     def run(self, agent: "DataScienceAgent", **kwargs: Any) -> BenchmarkRunResult:
         """Run agent on DSBench tasks."""
@@ -224,9 +244,7 @@ class DSBenchAdapter(BenchmarkAdapter):
                 break
 
         if task_id and not predictions:
-            logger.warning(
-                "task_id '{}' did not match any sample/question", task_id
-            )
+            logger.warning("task_id '{}' did not match any sample/question", task_id)
 
         return BenchmarkRunResult(predictions=predictions, traces=traces)
 
@@ -304,11 +322,68 @@ class DSBenchAdapter(BenchmarkAdapter):
             logger.debug("DSBench DM {}: prediction saved", name)
 
         if task_id and not predictions:
-            logger.warning(
-                "task_id '{}' did not match any sample name", task_id
-            )
+            logger.warning("task_id '{}' did not match any sample name", task_id)
 
         return BenchmarkRunResult(predictions=predictions, traces=traces)
+
+    @staticmethod
+    def _compute_normalized_score(
+        model_score: float | None,
+        gt_score: float | None,
+        baseline_score: float | None,
+    ) -> float:
+        """Compute DSBench normalized score.
+
+        Formula: max(0, (model - baseline) / (GT - baseline))
+        """
+        if model_score is None or gt_score is None or baseline_score is None:
+            return 0.0
+        return max(0.0, (model_score - baseline_score) / (gt_score - baseline_score))
+
+    @staticmethod
+    def _read_ref_score(path: Path) -> float | None:
+        """Read a reference score from a result.txt file."""
+        if not path.exists():
+            return None
+        content = path.read_text().strip()
+        if content == "nan":
+            return None
+        try:
+            return float(content)
+        except ValueError:
+            return None
+
+    @staticmethod
+    def _run_eval_script(
+        eval_script: Path,
+        name: str,
+        answer_file: Path,
+        pred_file: Path,
+    ) -> float | None:
+        """Run a per-competition eval script and return the metric score."""
+        if not eval_script.exists():
+            return None
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cmd = [
+                sys.executable,
+                str(eval_script),
+                "--answer_file",
+                str(answer_file),
+                "--predict_file",
+                str(pred_file),
+                "--path",
+                tmpdir,
+                "--name",
+                name,
+            ]
+            try:
+                subprocess.run(cmd, capture_output=True, timeout=120, check=True)
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                return None
+
+            result_file = Path(tmpdir) / name / "result.txt"
+            return DSBenchAdapter._read_ref_score(result_file)
 
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score DSBench predictions."""
@@ -317,9 +392,82 @@ class DSBenchAdapter(BenchmarkAdapter):
 
         if self.task == "data_analysis":
             return self._evaluate_data_analysis(predictions, agent_name, model_name)
-        raise StatigentBenchmarkError(
-            "DSBench data_modeling evaluation requires running per-competition "
-            "eval scripts — not yet implemented in the adapter layer"
+        return self._evaluate_data_modeling(predictions, agent_name, model_name)
+
+    def _evaluate_data_modeling(
+        self,
+        predictions: list[dict[str, Any]],
+        agent_name: str,
+        model_name: str,
+    ) -> EvalResult:
+        """Evaluate data modeling predictions using per-competition eval scripts."""
+        eval_dir = _DSBENCH_REPO_DIR / "data_modeling" / "evaluation"
+        ref_dir = self.data_dir / "data_modeling" / "save_performance"
+        answers_dir = self.data_dir / "data_modeling" / "data" / "answers"
+
+        results: list[dict[str, Any]] = []
+        task_complete = 0
+
+        for pred in predictions:
+            name = pred["name"]
+            pred_path = Path(pred["prediction_path"])
+
+            if not pred_path.exists():
+                results.append(
+                    {
+                        "name": name,
+                        "raw_score": None,
+                        "gt_score": None,
+                        "baseline_score": None,
+                        "normalized_score": 0.0,
+                    }
+                )
+                continue
+
+            answer_file = answers_dir / name / "test_answer.csv"
+            raw_score = self._run_eval_script(
+                eval_dir / f"{name}_eval.py", name, answer_file, pred_path
+            )
+
+            gt_score = self._read_ref_score(ref_dir / "GT" / name / "result.txt")
+            baseline_score = self._read_ref_score(
+                ref_dir / "baseline" / name / "result.txt"
+            )
+
+            normalized = self._compute_normalized_score(
+                raw_score, gt_score, baseline_score
+            )
+
+            if raw_score is not None:
+                task_complete += 1
+
+            results.append(
+                {
+                    "name": name,
+                    "raw_score": raw_score,
+                    "gt_score": gt_score,
+                    "baseline_score": baseline_score,
+                    "normalized_score": normalized,
+                }
+            )
+
+        total = len(self._samples) if self._samples else 1
+        scores = [r["normalized_score"] for r in results]
+        overall = sum(scores) / total if total else 0.0
+        completion_rate = task_complete / total if total else 0.0
+
+        return EvalResult.from_score_result(
+            ScoreResult(
+                score=round(overall, 4),
+                details={
+                    "per_competition": results,
+                    "task_completion_rate": round(completion_rate, 4),
+                    "total_competitions": total,
+                },
+            ),
+            agent_name=agent_name,
+            model_name=model_name,
+            benchmark_name=self.name,
         )
 
     def _evaluate_data_analysis(
@@ -366,9 +514,7 @@ class DSBenchAdapter(BenchmarkAdapter):
             sid = detail["id"].split("/")[0]
             challenge_verdicts.setdefault(sid, []).append(detail["verdict"])
         challenge_accuracies = {
-            sid: sum(v) / len(v)
-            for sid, v in challenge_verdicts.items()
-            if v
+            sid: sum(v) / len(v) for sid, v in challenge_verdicts.items() if v
         }
         avg_challenge_acc = (
             sum(challenge_accuracies.values()) / len(challenge_accuracies)
