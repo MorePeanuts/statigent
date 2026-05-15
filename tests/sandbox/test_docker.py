@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from statigent.errors import StatigentSandboxError
-from statigent.sandbox.docker import DockerSandbox
+from statigent.sandbox.docker import DockerSandbox, _sanitize_docker_errors
 
 
 class TestDockerSandboxInit:
@@ -131,7 +131,7 @@ class TestDockerSandboxStart:
             MagicMock(returncode=1, stderr="image not found"),
         ]
         sandbox = DockerSandbox()
-        with pytest.raises(StatigentSandboxError, match="Failed to start container"):
+        with pytest.raises(StatigentSandboxError, match="Failed to start sandbox"):
             sandbox.start([])
 
     @patch("statigent.sandbox.docker.subprocess.run")
@@ -367,3 +367,50 @@ class TestDockerSandboxContextManager:
         with pytest.raises(ValueError), sandbox:
             raise ValueError("test error")
         mock_stop.assert_called_once()
+
+
+class TestSanitizeDockerErrors:
+    """Test that Docker-specific terms are removed from error messages."""
+
+    def test_removes_daemon_error_prefix(self) -> None:
+        result = _sanitize_docker_errors(
+            "Error response from daemon: something failed"
+        )
+        assert "daemon" not in result
+        assert "Error: something failed" == result
+
+    def test_removes_container_id(self) -> None:
+        result = _sanitize_docker_errors(
+            "Container 9cca72ff6c0e is not running"
+        )
+        assert "9cca72ff" not in result
+        assert "the environment" in result
+
+    def test_removes_docker_keyword(self) -> None:
+        result = _sanitize_docker_errors("docker: command not found")
+        assert "docker" not in result.lower()
+        assert "system" in result
+
+    def test_replaces_not_running(self) -> None:
+        result = _sanitize_docker_errors("is not running")
+        assert "is unavailable" in result
+        assert "not running" not in result
+
+    def test_preserves_non_docker_errors(self) -> None:
+        result = _sanitize_docker_errors("permission denied")
+        assert result == "permission denied"
+
+
+class TestDockerSandboxStartSleepInfinity:
+    """Test that start() includes 'sleep infinity' to keep container alive."""
+
+    @patch("statigent.sandbox.docker.subprocess.run")
+    @patch("statigent.sandbox.docker.atexit.register")
+    def test_includes_sleep_infinity(
+        self, mock_atexit: MagicMock, mock_run: MagicMock
+    ) -> None:
+        mock_run.return_value = MagicMock(stdout="abc123\n", returncode=0)
+        sandbox = DockerSandbox()
+        sandbox.start([])
+        cmd = mock_run.call_args[0][0]
+        assert cmd[-2:] == ["sleep", "infinity"]

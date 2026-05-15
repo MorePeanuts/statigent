@@ -1,6 +1,7 @@
 """Docker-based sandbox for isolated command execution."""
 
 import atexit
+import re
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -8,6 +9,21 @@ from typing import Any
 from loguru import logger
 
 from statigent.errors import StatigentSandboxError
+
+_DOCKER_ERROR_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    (re.compile(r"Error response from daemon:\s*"), "Error: "),
+    (re.compile(r"[Cc]ontainer\s+[0-9a-f]{6,}"), "the environment"),
+    (re.compile(r"is not running"), "is unavailable"),
+    (re.compile(r"[Dd]ocker"), "system"),
+]
+
+
+def _sanitize_docker_errors(stderr: str) -> str:
+    """Remove Docker-specific terms from error messages seen by the agent."""
+    sanitized = stderr
+    for pattern, replacement in _DOCKER_ERROR_PATTERNS:
+        sanitized = pattern.sub(replacement, sanitized)
+    return sanitized
 
 
 class DockerSandbox:
@@ -68,13 +84,13 @@ class DockerSandbox:
             cmd.extend(["--network", "none"])
 
         cmd.extend(["-w", self._workdir])
-        cmd.append(self._image)
+        cmd.extend([self._image, "sleep", "infinity"])
 
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode != 0:
             raise StatigentSandboxError(
-                f"Failed to start container: {result.stderr.strip()}"
+                f"Failed to start sandbox: {_sanitize_docker_errors(result.stderr.strip())}"
             )
 
         self._container_name = result.stdout.strip()
@@ -115,11 +131,13 @@ class DockerSandbox:
                 timeout=self._timeout,
             )
         except subprocess.TimeoutExpired:
-            return f"Command timed out after {self._timeout} seconds"
+            return f"Error: command timed out after {self._timeout} seconds"
 
         output = result.stdout
         if result.returncode != 0:
-            output = f"Exit code: {result.returncode}\n{result.stdout}{result.stderr}"
+            raw_err = result.stderr
+            sanitized = _sanitize_docker_errors(raw_err)
+            output = f"Exit code: {result.returncode}\n{result.stdout}{sanitized}"
 
         return output
 
