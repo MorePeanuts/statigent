@@ -490,7 +490,7 @@ class DSBenchAdapter(BenchmarkAdapter):
                 }
             )
 
-        total = len(self._samples) if self._samples else 1
+        total = len(results) if results else 1
         scores = [r["normalized_score"] for r in results]
         overall = sum(scores) / total if total else 0.0
         completion_rate = task_complete / total if total else 0.0
