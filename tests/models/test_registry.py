@@ -3,7 +3,9 @@ from unittest.mock import patch
 
 import pytest
 
+import statigent.models
 from statigent.errors import StatigentModelError
+from statigent.models import get_model, list_models, load_registry
 from statigent.models.registry import ModelRegistry
 
 
@@ -153,3 +155,56 @@ class TestGetModel:
             model_provider="deepseek",
             reasoning_effort="high",
         )
+
+
+class TestModuleLevelFunctions:
+    """Tests for load_registry / get_model / list_models in models/__init__.py."""
+
+    def test_load_registry_updates_global_list_models(self, tmp_path: Path):
+        """list_models() reflects the registry loaded by load_registry(path)."""
+        config = _write_toml(
+            tmp_path,
+            '[custom-model]\n'
+            'model = "deepseek-v4-flash"\n'
+            'model_provider = "deepseek"\n',
+        )
+        load_registry(str(config))
+        assert list_models() == ["custom-model"]
+
+    def test_load_registry_updates_global_get_model(self, tmp_path: Path):
+        """get_model() uses the registry loaded by load_registry(path)."""
+        config = _write_toml(
+            tmp_path,
+            '[custom-model]\n'
+            'model = "deepseek-v4-flash"\n'
+            'model_provider = "deepseek"\n',
+        )
+        load_registry(str(config))
+        with patch("statigent.models.registry.init_chat_model") as mock_init:
+            mock_init.return_value = object()
+            result = get_model("custom-model")
+            assert result is mock_init.return_value
+            mock_init.assert_called_once_with(
+                model="deepseek-v4-flash", model_provider="deepseek"
+            )
+
+    def test_lazy_init_list_models_loads_defaults(self):
+        """list_models() lazily loads bundled defaults when global is None."""
+        statigent.models._DEFAULT_REGISTRY = None
+        models = list_models()
+        assert "deepseek-v4-flash" in models
+
+    def test_lazy_init_get_model_loads_defaults(self):
+        """get_model() lazily loads bundled defaults when global is None."""
+        statigent.models._DEFAULT_REGISTRY = None
+        with patch("statigent.models.registry.init_chat_model") as mock_init:
+            mock_init.return_value = object()
+            get_model("deepseek-v4-flash")
+            mock_init.assert_called_once()
+
+    def test_load_registry_no_args_loads_defaults(self):
+        """load_registry() without arguments loads the bundled defaults.toml."""
+        load_registry()
+        models = list_models()
+        assert "deepseek-v4-flash" in models
+        assert "deepseek-v4-flash-thinking" in models

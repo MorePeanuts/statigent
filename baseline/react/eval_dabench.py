@@ -9,7 +9,11 @@ from rich.table import Table
 
 from statigent.baseline import ReactBaselineAgent
 from statigent.benchmarks.dabench import DABenchAdapter
-from statigent.models import ModelRegistry
+from statigent.models import load_registry
+
+_DEFAULT_REGISTRY_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "config" / "models.toml"
+)
 
 
 def main(
@@ -35,11 +39,23 @@ def main(
         str,
         typer.Option(help="Model profile name from defaults.toml."),
     ] = "deepseek-v4-flash",
+    registry_path: Annotated[
+        Path | None,
+        typer.Option(
+            help="Path to model registry TOML file.",
+            dir_okay=False,
+            file_okay=True,
+        ),
+    ] = None,
 ) -> None:
     console = Console()
 
-    # Validate model
-    registry = ModelRegistry.load_registry()
+    path = registry_path or _DEFAULT_REGISTRY_PATH
+    if not path.exists():
+        console.print(f"[red]Registry file not found: {path}[/red]")
+        console.print("Create config/models.toml or pass --registry-path")
+        raise typer.Exit(code=1)
+    registry = load_registry(str(path))
     if not registry.has_model(model):
         available = ", ".join(registry.list_models())
         console.print(f"[red]Unknown model: {model}. Available: {available}[/red]")
@@ -50,6 +66,7 @@ def main(
     console.print(f"  Limit: {limit or 'all'}")
     console.print(f"  Task ID: {task_id or 'all'}")
     console.print(f"  Output: {output_dir}")
+    console.print(f"  Registry: {path}")
 
     # Setup
     adapter = DABenchAdapter()

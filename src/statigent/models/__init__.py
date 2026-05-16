@@ -22,8 +22,10 @@ def list_models() -> list[str]:
 
 
 def load_registry(path: str | None = None) -> ModelRegistry:
-    """Load a model registry from a TOML file."""
-    return ModelRegistry.load_registry(path)
+    """Load a model registry from a TOML file, updating the default registry."""
+    global _DEFAULT_REGISTRY
+    _DEFAULT_REGISTRY = ModelRegistry.load_registry(path)
+    return _DEFAULT_REGISTRY
 
 
 __all__ = ["ModelRegistry", "get_model", "list_models", "load_registry"]
