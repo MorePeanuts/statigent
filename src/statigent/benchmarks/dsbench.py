@@ -11,6 +11,7 @@ import httpx
 from loguru import logger
 
 from statigent.benchmarks.base import (
+    AgentTrace,
     BenchmarkAdapter,
     BenchmarkRunResult,
     EvalResult,
@@ -187,6 +188,7 @@ class DSBenchAdapter(BenchmarkAdapter):
         self, agent: "DataScienceAgent", **kwargs: Any
     ) -> BenchmarkRunResult:
         """Run data analysis task."""
+        persister = kwargs.get("persister")
         limit = kwargs.get("limit")
         task_id = kwargs.get("task_id")
 
@@ -202,7 +204,7 @@ class DSBenchAdapter(BenchmarkAdapter):
                 target_qname = parts[1]
 
         predictions: list[dict[str, Any]] = []
-        traces: dict[str, list[dict[str, Any]]] = {}
+        traces: dict[str, AgentTrace] = {}
         question_count = 0
         for sample in self._samples:
             if not sample.get("questions"):
@@ -236,8 +238,12 @@ class DSBenchAdapter(BenchmarkAdapter):
                     task_instructions=self._DA_TASK_INSTRUCTIONS,
                 )
                 qid = f"{sid}/{qname}"
-                predictions.append({"id": qid, "response": response})
+                pred = {"id": qid, "response": response}
+                predictions.append(pred)
                 traces[qid] = trace
+                if persister is not None:
+                    persister.add_prediction(pred)
+                    persister.add_trace(qid, trace)
                 question_count += 1
                 logger.debug("DSBench DA id={} q={}: response received", sid, qname)
             if limit and question_count >= limit:
@@ -262,6 +268,7 @@ class DSBenchAdapter(BenchmarkAdapter):
         self, agent: "DataScienceAgent", **kwargs: Any
     ) -> BenchmarkRunResult:
         """Run data modeling task."""
+        persister = kwargs.get("persister")
         limit = kwargs.get("limit")
         task_id = kwargs.get("task_id")
 
@@ -273,7 +280,7 @@ class DSBenchAdapter(BenchmarkAdapter):
             samples = samples[:limit]
 
         predictions: list[dict[str, Any]] = []
-        traces: dict[str, list[dict[str, Any]]] = {}
+        traces: dict[str, AgentTrace] = {}
         for sample in samples:
             name = sample["name"]
             task_path = (
@@ -320,11 +327,15 @@ class DSBenchAdapter(BenchmarkAdapter):
                     task_instructions=self._DM_TASK_INSTRUCTIONS,
                     work_dir=work_dir,
                 )
+                pred = {"name": name, "prediction_path": str(pred_path)}
+                predictions.append(pred)
+                traces[name] = trace
+                if persister is not None:
+                    persister.add_prediction(pred)
+                    persister.add_trace(name, trace)
             except Exception:
                 shutil.rmtree(work_dir, ignore_errors=True)
                 raise
-            predictions.append({"name": name, "prediction_path": str(pred_path)})
-            traces[name] = trace
             logger.debug("DSBench DM {}: prediction saved", name)
 
         if task_id and not predictions:

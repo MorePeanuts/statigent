@@ -6,10 +6,12 @@ from unittest.mock import MagicMock
 import pytest
 
 from statigent.benchmarks.base import (
+    AgentTrace,
     BenchmarkAdapter,
     BenchmarkRunResult,
     DataScienceAgent,
     EvalResult,
+    RunPersister,
 )
 from statigent.errors import StatigentBenchmarkError
 
@@ -297,10 +299,15 @@ class TestExecutePersistence:
                 pass
 
             def run(self, agent: DataScienceAgent, **kwargs: Any) -> BenchmarkRunResult:
-                return BenchmarkRunResult(
-                    predictions=[{"id": 0, "response": "test"}],
-                    traces={"0": [{"role": "user", "content": "test"}]},
-                )
+                persister = kwargs.get("persister")
+                pred = {"id": 0, "response": "test"}
+                trace: dict[str, list[dict[str, Any]]] = {
+                    "0": [{"role": "user", "content": "test"}]
+                }
+                if persister is not None:
+                    persister.add_prediction(pred)
+                    persister.add_trace("0", trace["0"])
+                return BenchmarkRunResult(predictions=[pred], traces=trace)
 
             def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
                 return EvalResult(
@@ -319,10 +326,10 @@ class TestExecutePersistence:
         result = adapter.execute(mock_agent, output_dir=str(tmp_path))
 
         assert result.score == 1.0
-        assert (tmp_path / "test-agent-test-model-stub-").parent == tmp_path
         # Find the created directory
         dirs = list(tmp_path.iterdir())
         assert len(dirs) == 1
+        assert dirs[0].name.startswith("test-agent-test-model-stub-")
         assert (dirs[0] / "meta.json").exists()
         assert (dirs[0] / "evaluation" / "scores.json").exists()
         assert (dirs[0] / "traces" / "0.jsonl").exists()
@@ -356,3 +363,186 @@ class TestExecutePersistence:
         assert result.score == 0.0
         # No files should be written to tmp_path
         assert not any(tmp_path.iterdir())
+
+    def test_execute_persists_predictions_incrementally(
+        self, tmp_path: Path
+    ) -> None:
+        """Verify that execute() writes predictions to disk via the persister."""
+        num_tasks = 3
+
+        class InlineAdapter(BenchmarkAdapter):
+            name = "inline"
+
+            def prepare(self) -> None:
+                pass
+
+            def run(
+                self, agent: DataScienceAgent, **kwargs: Any
+            ) -> BenchmarkRunResult:
+                persister = kwargs.get("persister")
+                predictions: list[dict[str, Any]] = []
+                traces: dict[str, AgentTrace] = {}
+                for i in range(num_tasks):
+                    pred = {"id": i, "response": f"reply-{i}"}
+                    trace: AgentTrace = [{"role": "user", "content": str(i)}]
+                    predictions.append(pred)
+                    traces[str(i)] = trace
+                    if persister is not None:
+                        persister.add_prediction(pred)
+                        persister.add_trace(str(i), trace)
+                return BenchmarkRunResult(predictions=predictions, traces=traces)
+
+            def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
+                return EvalResult(
+                    score=0.5,
+                    details={},
+                    agent_name=kwargs["agent_name"],
+                    model_name=kwargs["model_name"],
+                    benchmark_name=self.name,
+                )
+
+        mock_agent = MagicMock()
+        mock_agent.name = "test-agent"
+        mock_agent.model_name = "test-model"
+
+        adapter = InlineAdapter()
+        result = adapter.execute(mock_agent, output_dir=str(tmp_path))
+
+        assert result.score == 0.5
+        dirs = list(tmp_path.iterdir())
+        assert len(dirs) == 1
+
+        # predictions/responses.jsonl should have all 3 lines
+        pred_file = dirs[0] / "predictions" / "responses.jsonl"
+        assert pred_file.exists()
+        lines = pred_file.read_text().strip().split("\n")
+        assert len(lines) == num_tasks
+        for i, line in enumerate(lines):
+            assert json.loads(line)["id"] == i
+
+        # traces should have all 3 files
+        for i in range(num_tasks):
+            assert (dirs[0] / "traces" / f"{i}.jsonl").exists()
+
+        # scores.json should exist
+        assert (dirs[0] / "evaluation" / "scores.json").exists()
+
+
+class TestRunPersister:
+    def test_add_prediction_writes_jsonl_line(self, tmp_path: Path) -> None:
+        persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
+        persister.add_prediction({"id": 0, "response": "hello"})
+        pred_file = persister.output_dir / "predictions" / "responses.jsonl"
+        assert pred_file.exists()
+        lines = pred_file.read_text().strip().split("\n")
+        assert len(lines) == 1
+        assert json.loads(lines[0])["id"] == 0
+
+    def test_add_prediction_moves_csv(self, tmp_path: Path) -> None:
+        csv_src = tmp_path / "raw" / "submission.csv"
+        csv_src.parent.mkdir(parents=True)
+        csv_src.write_text("a,b\n1,2\n")
+
+        persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
+        pred = {"name": "titanic", "prediction_path": str(csv_src)}
+        persister.add_prediction(pred)
+
+        copied = persister.output_dir / "predictions" / "titanic_submission.csv"
+        assert copied.exists()
+        assert copied.read_text() == "a,b\n1,2\n"
+        assert not csv_src.exists()
+        # The prediction dict was updated in-place
+        assert pred["prediction_path"] == str(copied)
+
+    def test_add_trace_writes_file_immediately(self, tmp_path: Path) -> None:
+        persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
+        trace: AgentTrace = [{"role": "user", "content": "hello"}]
+        persister.add_trace("0", trace)
+        trace_file = persister.output_dir / "traces" / "0.jsonl"
+        assert trace_file.exists()
+        lines = trace_file.read_text().strip().split("\n")
+        assert len(lines) == 1
+        assert json.loads(lines[0])["role"] == "user"
+
+    def test_multiple_add_prediction_appends_in_order(self, tmp_path: Path) -> None:
+        persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
+        persister.add_prediction({"id": 0, "response": "first"})
+        persister.add_prediction({"id": 1, "response": "second"})
+        persister.add_prediction({"id": 2, "response": "third"})
+        pred_file = persister.output_dir / "predictions" / "responses.jsonl"
+        lines = pred_file.read_text().strip().split("\n")
+        assert len(lines) == 3
+        assert json.loads(lines[0])["id"] == 0
+        assert json.loads(lines[1])["id"] == 1
+        assert json.loads(lines[2])["id"] == 2
+
+    def test_finalize_writes_scores(self, tmp_path: Path) -> None:
+        persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
+        persister.add_prediction({"id": 0, "response": "x"})
+        persister.finalize(
+            EvalResult(
+                score=0.95,
+                details={"acc": 0.95},
+                agent_name="test-agent",
+                model_name="test-model",
+                benchmark_name="test-bench",
+            )
+        )
+        scores_file = persister.output_dir / "evaluation" / "scores.json"
+        assert scores_file.exists()
+        scores = json.loads(scores_file.read_text())
+        assert scores["score"] == 0.95
+        assert scores["details"]["acc"] == 0.95
+
+    def test_no_trace_dir_when_no_traces(self, tmp_path: Path) -> None:
+        persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
+        persister.add_prediction({"id": 0, "response": "x"})
+        persister.finalize(
+            EvalResult(
+                score=0.0,
+                details={},
+                agent_name="test-agent",
+                model_name="test-model",
+                benchmark_name="test-bench",
+            )
+        )
+        assert not (persister.output_dir / "traces").exists()
+
+    def test_empty_predictions_creates_empty_file(self, tmp_path: Path) -> None:
+        persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
+        persister.finalize(
+            EvalResult(
+                score=0.0,
+                details={},
+                agent_name="test-agent",
+                model_name="test-model",
+                benchmark_name="test-bench",
+            )
+        )
+        pred_file = persister.output_dir / "predictions" / "responses.jsonl"
+        assert pred_file.exists()
+        assert pred_file.read_text() == ""
+
+    def test_crash_recovery(self, tmp_path: Path) -> None:
+        """Partial results survive interruption — no finalize() called."""
+        persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
+        persister.add_prediction({"id": 0, "response": "done"})
+        persister.add_trace("0", [{"role": "user", "content": "q"}])
+        persister.add_prediction({"id": 1, "response": "done"})
+        persister.add_trace("1", [{"role": "user", "content": "q2"}])
+        # Simulate crash: third task never runs, finalize never called
+
+        # Verify 2 predictions are on disk
+        pred_file = persister.output_dir / "predictions" / "responses.jsonl"
+        lines = pred_file.read_text().strip().split("\n")
+        assert len(lines) == 2
+
+        # Verify 2 trace files exist
+        assert (persister.output_dir / "traces" / "0.jsonl").exists()
+        assert (persister.output_dir / "traces" / "1.jsonl").exists()
+
+        # Meta.json exists (created in __init__)
+        assert (persister.output_dir / "meta.json").exists()
+
+        # Scores do NOT exist (finalize was never called)
+        assert not (persister.output_dir / "evaluation" / "scores.json").exists()

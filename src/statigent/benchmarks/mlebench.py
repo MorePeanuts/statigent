@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, cast
 from loguru import logger
 
 from statigent.benchmarks.base import (
+    AgentTrace,
     BenchmarkAdapter,
     BenchmarkRunResult,
     EvalResult,
@@ -71,6 +72,7 @@ class MLEBenchAdapter(BenchmarkAdapter):
 
     def run(self, agent: "DataScienceAgent", **kwargs: Any) -> BenchmarkRunResult:
         """Run agent on MLE-Bench competitions."""
+        persister = kwargs.get("persister")
         limit = kwargs.get("limit")
 
         competition_ids = self._get_competition_ids()
@@ -78,7 +80,7 @@ class MLEBenchAdapter(BenchmarkAdapter):
             competition_ids = competition_ids[: int(limit)]
 
         predictions: list[dict[str, Any]] = []
-        traces: dict[str, list[dict[str, Any]]] = {}
+        traces: dict[str, AgentTrace] = {}
         for comp_id in competition_ids:
             competition = self._get_competition(comp_id)
             if competition is None:
@@ -94,13 +96,15 @@ class MLEBenchAdapter(BenchmarkAdapter):
                     task_instructions=self._TASK_INSTRUCTIONS,
                     work_dir=work_dir,
                 )
+                pred = {"competition_id": comp_id, "submission_path": str(pred_path)}
+                predictions.append(pred)
+                traces[comp_id] = trace
+                if persister is not None:
+                    persister.add_prediction(pred)
+                    persister.add_trace(comp_id, trace)
             except Exception:
                 shutil.rmtree(work_dir, ignore_errors=True)
                 raise
-            predictions.append(
-                {"competition_id": comp_id, "submission_path": str(pred_path)}
-            )
-            traces[comp_id] = trace
             logger.debug("MLE-Bench {}: submission created", comp_id)
 
         return BenchmarkRunResult(predictions=predictions, traces=traces)

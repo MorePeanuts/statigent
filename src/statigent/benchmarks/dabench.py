@@ -5,6 +5,7 @@ from typing import Any
 from loguru import logger
 
 from statigent.benchmarks.base import (
+    AgentTrace,
     BenchmarkAdapter,
     BenchmarkRunResult,
     DataScienceAgent,
@@ -61,6 +62,7 @@ class DABenchAdapter(BenchmarkAdapter):
 
     def run(self, agent: DataScienceAgent, **kwargs: Any) -> BenchmarkRunResult:
         """Run agent on DABench questions."""
+        persister = kwargs.get("persister")
         limit = kwargs.get("limit")
         task_id = kwargs.get("task_id")
 
@@ -74,7 +76,7 @@ class DABenchAdapter(BenchmarkAdapter):
             logger.warning("task_id '{}' did not match any question", task_id)
 
         predictions: list[dict[str, Any]] = []
-        traces: dict[str, list[dict[str, Any]]] = {}
+        traces: dict[str, AgentTrace] = {}
         for q in questions:
             csv_path = self.data_dir / "da-dev-tables" / q["file_name"]
             task_instructions = (
@@ -91,8 +93,13 @@ class DABenchAdapter(BenchmarkAdapter):
             response, trace = agent.run_analysis_for_eval(
                 prompt, files=[csv_path], task_instructions=task_instructions
             )
-            predictions.append({"id": q["id"], "response": response})
-            traces[str(q["id"])] = trace
+            qid = str(q["id"])
+            pred = {"id": q["id"], "response": response}
+            predictions.append(pred)
+            traces[qid] = trace
+            if persister is not None:
+                persister.add_prediction(pred)
+                persister.add_trace(qid, trace)
             logger.debug("DABench question id={}: response received", q["id"])
 
         return BenchmarkRunResult(predictions=predictions, traces=traces)

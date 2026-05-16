@@ -8,6 +8,7 @@ from statigent.benchmarks.base import (
     DataScienceAgent,
     EvalResult,
     Evaluator,
+    RunPersister,
     ScoreResult,
 )
 from statigent.benchmarks.dabench import DABenchAdapter
@@ -54,6 +55,7 @@ __all__ = [
     "EvalResult",
     "Evaluator",
     "MLEBenchAdapter",
+    "RunPersister",
     "ScoreResult",
     "get_benchmark",
     "list_benchmarks",

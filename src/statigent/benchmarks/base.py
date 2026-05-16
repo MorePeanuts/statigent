@@ -7,6 +7,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol, Self
 
+from loguru import logger
+
 from statigent.errors import StatigentBenchmarkError
 
 AgentTrace = list[dict[str, Any]]
@@ -19,6 +21,122 @@ class BenchmarkRunResult:
 
     predictions: list[dict[str, Any]]
     traces: dict[str, AgentTrace]
+
+
+class RunPersister:
+    """Writes predictions and traces to disk incrementally as each task completes.
+
+    Created before ``run()`` starts so the output directory and meta.json are
+    on disk immediately.  Each adapter calls ``add_prediction()`` and
+    ``add_trace()`` after every task.  ``finalize()`` writes scores.json
+    after ``evaluate()`` returns.
+
+    Not thread-safe.  Callers must serialize access to the shared
+    ``responses.jsonl`` file.
+    """
+
+    def __init__(
+        self,
+        base_dir: Path,
+        agent_name: str,
+        model_name: str,
+        benchmark_name: str,
+    ) -> None:
+        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+        dir_name = f"{agent_name}-{model_name}-{benchmark_name}-{timestamp}"
+        self.output_dir = base_dir / dir_name
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        meta: dict[str, Any] = {
+            "agent_name": agent_name,
+            "model_name": model_name,
+            "benchmark_name": benchmark_name,
+            "timestamp": timestamp,
+        }
+        (self.output_dir / "meta.json").write_text(json.dumps(meta, indent=2))
+
+        self._pred_dir = self.output_dir / "predictions"
+        self._pred_dir.mkdir(exist_ok=True)
+        self._pred_path = self._pred_dir / "responses.jsonl"
+
+        self._trace_dir = self.output_dir / "traces"
+        self._eval_dir = self.output_dir / "evaluation"
+
+        self._seen_dests: set[str] = set()
+        self._pred_count = 0
+
+    def add_prediction(self, prediction: dict[str, Any]) -> None:
+        """Persist one prediction immediately.
+
+        Computes destination paths for any associated CSV files, writes the
+        JSONL line first, then moves the CSVs.  This ordering ensures that a
+        write failure does not leave orphaned CSV files in the output directory.
+
+        **The prediction dict is mutated in-place:** any ``prediction_path``
+        or ``submission_path`` key is rewritten to point into the output
+        directory.
+        """
+        moves: list[tuple[Path, Path]] = []
+        for path_key in ("prediction_path", "submission_path"):
+            src_str = prediction.get(path_key)
+            if src_str is None:
+                continue
+            src = Path(src_str)
+            if not src.exists():
+                continue
+            identifier = (
+                prediction.get("name")
+                or prediction.get("id")
+                or prediction.get("competition_id")
+                or "pred"
+            )
+            identifier = str(identifier).replace("/", "_")
+            dest = self._pred_dir / f"{identifier}_{src.name}"
+            dest_str = str(dest)
+            if dest_str in self._seen_dests:
+                suffix = f"_{len(self._seen_dests)}_"
+                dest = self._pred_dir / f"{identifier}{suffix}{src.name}"
+                dest_str = str(dest)
+            self._seen_dests.add(dest_str)
+            prediction[path_key] = dest_str
+            moves.append((src, dest))
+
+        with open(self._pred_path, "a") as f:
+            f.write(json.dumps(prediction) + "\n")
+        self._pred_count += 1
+
+        for src, dest in moves:
+            shutil.move(src, dest)
+            with contextlib.suppress(OSError):
+                src.parent.rmdir()
+
+    def add_trace(self, question_id: str, trace: AgentTrace) -> None:
+        """Write one trace file immediately."""
+        if not self._trace_dir.exists():
+            self._trace_dir.mkdir(parents=True, exist_ok=True)
+        trace_path = self._trace_dir / f"{question_id}.jsonl"
+        trace_path.parent.mkdir(parents=True, exist_ok=True)
+        trace_lines = [json.dumps(msg) for msg in trace]
+        trace_path.write_text("\n".join(trace_lines) + "\n")
+
+    def finalize(self, result: "EvalResult") -> None:
+        """Write scores.json.  Call after ``evaluate()`` returns."""
+        self._eval_dir.mkdir(parents=True, exist_ok=True)
+        scores: dict[str, Any] = {
+            "score": result.score,
+            "details": result.details,
+            "agent_name": result.agent_name,
+            "model_name": result.model_name,
+            "benchmark_name": result.benchmark_name,
+        }
+        (self._eval_dir / "scores.json").write_text(json.dumps(scores, indent=2))
+
+        if self._pred_count == 0:
+            self._pred_path.write_text("")
+
+    @property
+    def prediction_count(self) -> int:
+        return self._pred_count
 
 
 @dataclass
@@ -84,10 +202,28 @@ class BenchmarkAdapter(ABC):
     def execute(self, agent: "DataScienceAgent", **kwargs: Any) -> EvalResult:
         """Full pipeline: prepare -> run -> evaluate.
 
-        If output_dir is provided in kwargs, persists results to disk.
+        If output_dir is provided in kwargs, creates a RunPersister before
+        ``run()`` so that predictions and traces are written to disk
+        incrementally as each task completes.
         """
         self.prepare()
+
+        output_dir_raw = kwargs.pop("output_dir", None)
+        persister: RunPersister | None = None
+        if output_dir_raw is not None:
+            persister = RunPersister(
+                base_dir=Path(output_dir_raw),
+                agent_name=agent.name,
+                model_name=agent.model_name,
+                benchmark_name=self.name,
+            )
+            kwargs["persister"] = persister
+
         run_result = self.run(agent, **kwargs)
+
+        # Don't leak internal keys into evaluate().
+        kwargs.pop("persister", None)
+
         result = self.evaluate(
             run_result.predictions,
             agent_name=agent.name,
@@ -95,14 +231,16 @@ class BenchmarkAdapter(ABC):
             **kwargs,
         )
 
-        output_dir = kwargs.get("output_dir")
-        if output_dir is not None:
-            self.persist(
-                result,
-                predictions=run_result.predictions,
-                traces=run_result.traces,
-                base_dir=Path(output_dir),
-            )
+        if persister is not None:
+            if (
+                persister.prediction_count == 0
+                and run_result.predictions
+            ):
+                logger.warning(
+                    "RunPersister was provided but no predictions were persisted. "
+                    "The adapter may not support incremental persistence."
+                )
+            persister.finalize(result)
 
         return result
 
@@ -138,93 +276,25 @@ class BenchmarkAdapter(ABC):
         if base_dir is None:
             base_dir = Path("evaluations")
 
-        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-        parts = [result.agent_name, result.model_name, result.benchmark_name, timestamp]
-        dir_name = "-".join(parts)
-        output_dir = base_dir / dir_name
-
         try:
-            output_dir.mkdir(parents=True, exist_ok=True)
-
-            # meta.json
-            meta: dict[str, Any] = {
-                "agent_name": result.agent_name,
-                "model_name": result.model_name,
-                "benchmark_name": result.benchmark_name,
-                "timestamp": timestamp,
-            }
-            (output_dir / "meta.json").write_text(json.dumps(meta, indent=2))
-
-            # predictions/responses.jsonl
-            pred_dir = output_dir / "predictions"
-            pred_dir.mkdir(exist_ok=True)
-
-            # Move prediction CSVs from staging locations into pred_dir so that
-            # persisted results are self-contained and re-evaluable.
-            # Stale staging directories are removed after their files are moved.
-            persisted: list[dict[str, Any]] = []
-            seen_dests: set[str] = set()
+            persister = RunPersister(
+                base_dir,
+                result.agent_name,
+                result.model_name,
+                result.benchmark_name,
+            )
             for p in predictions:
-                p_copy = dict(p)
-                for path_key in ("prediction_path", "submission_path"):
-                    src_str = p_copy.get(path_key)
-                    if src_str is None:
-                        continue
-                    src = Path(src_str)
-                    if not src.exists():
-                        continue
-                    identifier = (
-                        p_copy.get("name")
-                        or p_copy.get("id")
-                        or p_copy.get("competition_id")
-                        or "pred"
-                    )
-                    # Sanitize for filesystem safety.
-                    identifier = str(identifier).replace("/", "_")
-                    dest = pred_dir / f"{identifier}_{src.name}"
-                    if str(dest) in seen_dests:
-                        dest = pred_dir / f"{identifier}_{len(seen_dests)}_{src.name}"
-                    seen_dests.add(str(dest))
-                    shutil.move(src, dest)
-                    p_copy[path_key] = str(dest)
-                    # Remove the staging directory if empty after the move.
-                    with contextlib.suppress(OSError):
-                        src.parent.rmdir()
-                persisted.append(p_copy)
-
-            if persisted:
-                lines = [json.dumps(p) for p in persisted]
-                (pred_dir / "responses.jsonl").write_text("\n".join(lines) + "\n")
-            else:
-                (pred_dir / "responses.jsonl").write_text("")
-
-            # evaluation/scores.json
-            eval_dir = output_dir / "evaluation"
-            eval_dir.mkdir(exist_ok=True)
-            scores: dict[str, Any] = {
-                "score": result.score,
-                "details": result.details,
-                "agent_name": result.agent_name,
-                "model_name": result.model_name,
-                "benchmark_name": result.benchmark_name,
-            }
-            (eval_dir / "scores.json").write_text(json.dumps(scores, indent=2))
-
-            # traces/{question_id}.jsonl
+                persister.add_prediction(p)
             if traces:
-                trace_dir = output_dir / "traces"
-                trace_dir.mkdir(exist_ok=True)
                 for qid, trace in traces.items():
-                    trace_path = trace_dir / f"{qid}.jsonl"
-                    trace_path.parent.mkdir(parents=True, exist_ok=True)
-                    trace_lines = [json.dumps(msg) for msg in trace]
-                    trace_path.write_text("\n".join(trace_lines) + "\n")
+                    persister.add_trace(qid, trace)
+            persister.finalize(result)
         except (OSError, TypeError) as exc:
             raise StatigentBenchmarkError(
-                f"Failed to persist evaluation results to {output_dir}: {exc}"
+                f"Failed to persist evaluation results: {exc}"
             ) from exc
 
-        return output_dir
+        return persister.output_dir
 
 
 class DataScienceAgent(Protocol):
