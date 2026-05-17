@@ -225,7 +225,9 @@ dm_adapter = DSBenchAdapter(task="data_modeling")
 
 ### MLE-Bench — ML Engineering
 
-75 Kaggle competitions, Kaggle-style medal evaluation.
+75 Kaggle competitions, Kaggle-style medal evaluation. The agent runs inside a Docker container and must produce a `submission.csv` file.
+
+#### Adapter Usage
 
 ```python
 from statigent.benchmarks.mlebench import MLEBenchAdapter
@@ -250,6 +252,117 @@ result = adapter.evaluate(run_result.predictions, agent_name=agent.name, model_n
 violations = adapter.detect_violations(submission_dir, output_dir, judge_model_name="deepseek-v4-flash")
 ```
 
+#### How Task Information Reaches the Agent
+
+The agent runs in a Docker container. All information is passed via the filesystem:
+
+| Host Path | Container Path | Access | Content |
+|-----------|---------------|--------|---------|
+| `competition/public_dir` | `/home/data/` | Read-only | Training data, task description, sample submission |
+| `competition/private_dir` | `/private/` | Permission 700 (inaccessible) | Full test set with labels (grading only) |
+
+Typical `/home/data/` layout (e.g., spaceship-titanic):
+
+```
+/home/data/
+├── description.md          # Kaggle competition description (task, metric, fields)
+├── train.csv               # Training set (with labels)
+├── test.csv                # Test set (without label column)
+└── sample_submission.csv   # Submission format reference
+```
+
+A generic instructions file at `/home/instructions.txt` provides benchmark-wide rules:
+- Required output path: `/home/submission/submission.csv`
+- Validation server at `http://localhost:5000/validate` (format check only, no score)
+- Anti-cheating rules (no manual labeling, no copying others' solutions)
+- Precedence: `instructions.txt` rules override `description.md`
+
+The container also receives `COMPETITION_ID` as an environment variable.
+
+#### Agent Execution Flow
+
+```
+Container starts (root)
+  │
+  ├─ 1. chmod a+rw /home (recursive, excluding /home/data)
+  │     Grants nonroot user write access to /home/submission/, /home/logs/, /home/code/
+  │
+  ├─ 2. Start Flask grading server (background, localhost:5000)
+  │     Provides /validate and /health endpoints
+  │
+  └─ 3. Main process stays alive until agent completes
+       Agent runs via: bash /home/agent/start.sh [kwargs...]
+```
+
+Inside the container, the agent can:
+- Read `/home/data/` for training data and task descriptions
+- Write code to `/home/code/` and logs to `/home/logs/`
+- Install additional Python packages (conda environment pre-installed)
+- Call the validation server to check `submission.csv` format
+- **Cannot** access `/private/` (correct answers are permission-blocked)
+
+#### Data Preparation
+
+Each competition has a `prepare.py` that re-splits the original Kaggle data. Since Kaggle does not publish test-set labels, MLE-Bench uses `train_test_split` on the original training data to create its own held-out test set:
+
+```
+Original Kaggle train.csv
+        │
+        ▼
+  train_test_split(test_size=0.1, random_state=0)
+        │
+        ├── public/train.csv    (90% — visible to agent)
+        └── private/test.csv    (10% — labels retained, used for grading)
+```
+
+The public test set (`public/test.csv`) is the same data with the target column dropped — this is what the agent must predict against.
+
+#### Scoring & Medal Thresholds
+
+Each competition has a `grade_fn(submission, answers)` that computes a raw float score. The raw score is then ranked against the real Kaggle leaderboard to determine medal tiers:
+
+| Participants | Gold | Silver | Bronze |
+|-------------|------|--------|--------|
+| <100 | Top 10% | Top 20% | Top 40% |
+| 100–249 | 10th place | Top 20% | Top 40% |
+| 250–999 | 10+0.2% place | 50th place | 100th place |
+| 1000+ | 10+0.2% place | Top 5% | Top 10% |
+
+Medals are mutually exclusive (gold winners are not counted as silver/bronze).
+
+The grading system automatically detects whether lower or higher scores are better by comparing the top and bottom entries on the real Kaggle leaderboard.
+
+The final result per competition is a `CompetitionReport`:
+```python
+CompetitionReport:
+    score: 0.81234
+    gold_medal: False
+    silver_medal: True
+    bronze_medal: False
+    above_median: True
+    gold_threshold: 0.85000
+    # ...
+```
+
+#### Complete Pipeline (Native MLE-Bench)
+
+For reference, the native MLE-Bench pipeline (what the adapter wraps):
+
+```
+mlebench prepare -c <competition-id>    # Download & re-split data
+        │
+docker build agents/my-agent/           # Build agent image
+        │
+python run_agent.py                     # Run agent in container
+        │                               #   → produces submission.csv
+python experiments/make_submission.py   # Generate submission.jsonl
+        │
+mlebench grade --submission ...         # Score against private labels
+        │
+python experiments/aggregate.py         # Aggregate across seeds (mean ± SEM)
+        │                               #   Core metric: any_medal_percentage
+```
+
 ## Running the Baseline
 
 ```bash
@@ -264,4 +377,4 @@ uv run python baseline/react/run_dabench_mini.py
 | DABench | ABQ / PSAQ / UASQ | Exact match with float tolerance (1e-6) |
 | DSBench DA | Accuracy | LLM-judged correctness |
 | DSBench DM | Normalized score | Not yet implemented in adapter |
-| MLE-Bench | Score percentage | Kaggle-style grading via `mlebench grade-sample` |
+| MLE-Bench | Medal / Above-median | Raw score ranked against real Kaggle leaderboard → medal tier + above-median |
