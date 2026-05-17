@@ -70,7 +70,7 @@ uv build
 ### Code Style
 
 - Line length: 88 characters (ruff default)
-- Use single quotes for strings
+- Use double quotes for strings
 - Use spaces for indentation (4 spaces)
 - Use `from __future__ import annotations` is NOT needed (Python 3.12+)
 - Use modern Python syntax: `X | Y` instead of `Union[X, Y]`, `list[X]` instead of `List[X]`, etc.
