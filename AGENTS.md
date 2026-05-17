@@ -101,8 +101,6 @@ The repository follows Git Flow:
 - Use conventional commit messages: `feat:`, `fix:`, `refactor:`, `test:`,
   `docs:`, `chore:`
 
-Do not create commits or branches unless the user asks.
-
 ## Local Environment Notes
 
 The sandbox may block direct access to the user-level `uv` cache. If a needed
