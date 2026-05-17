@@ -36,6 +36,7 @@ cache/
 
 # Superpowers specs (local only)
 docs/superpowers/
+.worktrees/
 
 # Benchmark data (large datasets)
 benchmarks/data/

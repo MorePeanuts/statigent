@@ -1,0 +1,122 @@
+from pathlib import Path
+
+import pytest
+from pydantic import ValidationError
+
+from statigent.schemas import (
+    ArtifactRef,
+    Budget,
+    Complexity,
+    DatasetProfile,
+    ExplorationAction,
+    ExplorationActionKind,
+    InputFileInfo,
+    OutputBundle,
+    OutputStatus,
+    OutputType,
+    TableProfile,
+    TaskBrief,
+    TaskType,
+    budget_for_complexity,
+)
+
+
+def test_budget_for_complexity_simple_returns_small_limits() -> None:
+    budget = budget_for_complexity(Complexity.SIMPLE)
+
+    assert isinstance(budget, Budget)
+    assert budget.max_rounds == 2
+    assert budget.max_code_cells == 4
+    assert budget.max_debug_attempts == 1
+    assert budget.timeout_seconds == 120
+
+
+def test_task_brief_supports_deep_analysis() -> None:
+    brief = TaskBrief(
+        task_type=TaskType.DEEP_ANALYSIS,
+        objective="Create an executive sales report",
+        output_type=OutputType.REPORT,
+        requirements=["Use business language"],
+        data_context="sales.csv has daily revenue",
+        complexity=Complexity.COMPLEX,
+        budgets=budget_for_complexity(Complexity.COMPLEX),
+    )
+
+    assert brief.task_type is TaskType.DEEP_ANALYSIS
+    assert brief.budgets.max_rounds == 8
+
+
+def test_custom_action_requires_rationale_expected_evidence_and_risk_notes() -> None:
+    with pytest.raises(ValidationError):
+        ExplorationAction(
+            kind=ExplorationActionKind.CUSTOM_ANALYSIS,
+            title="Try unusual segmentation",
+            description="Cluster stores by seasonality",
+        )
+
+    action = ExplorationAction(
+        kind=ExplorationActionKind.CUSTOM_ANALYSIS,
+        title="Try unusual segmentation",
+        description="Cluster stores by seasonality",
+        rationale="The prompt asks for hidden patterns",
+        expected_evidence="A compact segment summary",
+        risk_notes="May overfit noisy history",
+    )
+
+    assert action.kind is ExplorationActionKind.CUSTOM_ANALYSIS
+
+
+def test_dataset_profile_records_table_and_non_table_files(tmp_path: Path) -> None:
+    profile = DatasetProfile(
+        root=tmp_path,
+        files=[
+            InputFileInfo(
+                path=tmp_path / "sales.csv",
+                relative_path="sales.csv",
+                suffix=".csv",
+                size_bytes=12,
+                is_tabular=True,
+            )
+        ],
+        tables=[
+            TableProfile(
+                path=tmp_path / "sales.csv",
+                relative_path="sales.csv",
+                rows=2,
+                columns=2,
+                column_names=["date", "revenue"],
+                dtypes={"date": "object", "revenue": "int64"},
+                missing_rates={"date": 0.0, "revenue": 0.0},
+                unique_counts={"date": 2, "revenue": 2},
+                numeric_summaries={"revenue": {"mean": 15.0}},
+                likely_time_columns=["date"],
+                likely_categorical_columns=[],
+                sample_rows=[{"date": "2026-01-01", "revenue": 10}],
+                warnings=[],
+            )
+        ],
+        warnings=[],
+    )
+
+    assert profile.tables[0].rows == 2
+    assert "sales.csv" in profile.compact_summary()
+
+
+def test_output_bundle_has_status_content_and_artifacts(tmp_path: Path) -> None:
+    bundle = OutputBundle(
+        status=OutputStatus.SUCCESS,
+        output_type=OutputType.FILE,
+        content="Generated cleaned data",
+        artifacts=[
+            ArtifactRef(
+                name="clean.csv",
+                path=tmp_path / "clean.csv",
+                kind="table",
+                description="Cleaned table",
+            )
+        ],
+        warnings=[],
+        trace_summary="1 cell executed",
+    )
+
+    assert bundle.artifacts[0].name == "clean.csv"
