@@ -135,6 +135,32 @@ def test_agent_satisfies_protocol(tmp_path: Path) -> None:
     assert trace[-1]["role"] == "assistant"
 
 
+def test_agent_keeps_work_dir_for_artifact_references(tmp_path: Path) -> None:
+    profile = make_profile(tmp_path)
+    brief = make_brief(TaskType.DATA_ANALYSIS)
+    work_dirs: list[Path] = []
+
+    def factory(
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+        work_dir: Path,
+    ) -> FakeOrchestrator:
+        work_dirs.append(work_dir)
+        return FakeOrchestrator()
+
+    agent = StatigentDataScienceAgent(
+        model_name="fake",
+        profiler=FakeProfiler(profile),
+        planner=FakePlanner(brief),
+        orchestrator_factory=factory,
+    )
+
+    agent.run_analysis_for_eval("question", files=[])
+
+    assert work_dirs
+    assert work_dirs[0].exists()
+
+
 def test_agent_returns_unsupported_for_deep_analysis(tmp_path: Path) -> None:
     profile = make_profile(tmp_path)
     agent = make_agent(profile, make_brief(TaskType.DEEP_ANALYSIS))

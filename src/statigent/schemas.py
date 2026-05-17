@@ -2,8 +2,8 @@
 
 These models flow across all layers: input profiling &rarr; task planning
 &rarr; notebook execution &rarr; exploration orchestration &rarr; output rendering.
-Every public field carries a description so structured LLM calls receive
-enough context to fill the schema correctly.
+Docstrings, type annotations, and field constraints keep those hand-offs
+explicit while remaining compatible with LangChain structured outputs.
 """
 
 from enum import StrEnum

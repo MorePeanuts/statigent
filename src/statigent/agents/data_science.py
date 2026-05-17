@@ -9,7 +9,6 @@ render_unsupported — the skeleton does not implement modeling or deep
 commercial analysis yet.
 """
 
-import shutil
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
@@ -84,54 +83,53 @@ class StatigentDataScienceAgent:
     ) -> tuple[str, AgentTrace]:
         """Run the full analysis pipeline and return (answer, trace).
 
-        Creates a temporary work directory that is cleaned up on exit.
+        Creates a temporary work directory for inputs and artifacts.
+        The directory is intentionally left on disk because rendered outputs
+        and traces may reference generated artifact paths.
         Unsupported task types (modeling, deep analysis, unknown) skip
         the orchestrator and return an unsupported-status response.
         """
         work_dir = Path(tempfile.mkdtemp(prefix="statigent-agent-"))
-        try:
-            profile = self._profiler(work_dir).profile_paths(files)
-            brief = self._planner().create_brief(
-                prompt=prompt,
-                task_instructions=task_instructions,
-                profile=profile,
-            )
-            trace: AgentTrace = [
-                {
-                    "role": "system",
-                    "content": profile.compact_summary(),
-                    "name": "input",
-                },
-                {
-                    "role": "assistant",
-                    "content": brief.model_dump_json(),
-                    "name": "task_brief",
-                },
-            ]
-            if brief.task_type in {
-                TaskType.DATA_MODELING,
-                TaskType.DEEP_ANALYSIS,
-                TaskType.UNKNOWN,
-            }:
-                bundle = self.renderer.render_unsupported(brief)
-                trace.append(
-                    {"role": "assistant", "content": bundle.content, "name": "output"}
-                )
-                return bundle.content, trace
-
-            orchestrator = self._orchestrator(brief, profile, work_dir)
-            report = orchestrator.run(brief, profile)
-            bundle = self.renderer.render(brief, report)
+        profile = self._profiler(work_dir).profile_paths(files)
+        brief = self._planner().create_brief(
+            prompt=prompt,
+            task_instructions=task_instructions,
+            profile=profile,
+        )
+        trace: AgentTrace = [
+            {
+                "role": "system",
+                "content": profile.compact_summary(),
+                "name": "input",
+            },
+            {
+                "role": "assistant",
+                "content": brief.model_dump_json(),
+                "name": "task_brief",
+            },
+        ]
+        if brief.task_type in {
+            TaskType.DATA_MODELING,
+            TaskType.DEEP_ANALYSIS,
+            TaskType.UNKNOWN,
+        }:
+            bundle = self.renderer.render_unsupported(brief)
             trace.append(
-                {
-                    "role": "assistant",
-                    "content": bundle.model_dump_json(),
-                    "name": "output",
-                }
+                {"role": "assistant", "content": bundle.content, "name": "output"}
             )
             return bundle.content, trace
-        finally:
-            shutil.rmtree(work_dir, ignore_errors=True)
+
+        orchestrator = self._orchestrator(brief, profile, work_dir)
+        report = orchestrator.run(brief, profile)
+        bundle = self.renderer.render(brief, report)
+        trace.append(
+            {
+                "role": "assistant",
+                "content": bundle.model_dump_json(),
+                "name": "output",
+            }
+        )
+        return bundle.content, trace
 
     def run_modeling_for_eval(
         self,
@@ -150,25 +148,22 @@ class StatigentDataScienceAgent:
         exist on disk.
         """
         target_dir = work_dir or Path(tempfile.mkdtemp(prefix="statigent-modeling-"))
-        try:
-            response, trace = self.run_analysis_for_eval(
-                prompt,
-                files=[train_path, test_path, sample_submission_path],
-                task_instructions=task_instructions,
-            )
-            trace.append(
-                {
-                    "role": "assistant",
-                    "content": (
-                        f"Modeling submission generation is not implemented: {response}"
-                    ),
-                    "name": "modeling_placeholder",
-                }
-            )
-            return target_dir / "submission.csv", trace
-        finally:
-            if work_dir is None:
-                shutil.rmtree(target_dir, ignore_errors=True)
+        response, trace = self.run_analysis_for_eval(
+            prompt,
+            files=[train_path, test_path, sample_submission_path],
+            task_instructions=task_instructions,
+        )
+        trace.append(
+            {
+                "role": "assistant",
+                "content": (
+                    "Modeling submission generation is not implemented: "
+                    f"{response}"
+                ),
+                "name": "modeling_placeholder",
+            }
+        )
+        return target_dir / "submission.csv", trace
 
     def _profiler(self, work_dir: Path) -> _Profiler:
         if self.profiler is not None:
