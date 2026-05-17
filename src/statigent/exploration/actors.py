@@ -1,3 +1,11 @@
+"""LLM-backed exploration actors for the Inspector-Reviewer-Coder-Debugger loop.
+
+Each actor wraps a LangChain chat model with structured output. The actor
+Protocols used here avoid coupling to LangChain's BaseChatModel — any
+callable that satisfies `with_structured_output(Schema) -> Runnable`
+works, which keeps tests simple (plain fake objects, no mocking framework).
+"""
+
 from typing import Protocol, TypeVar, cast
 
 from statigent.schemas import (
@@ -24,6 +32,8 @@ class _StructuredModel(Protocol):
 
 
 class Inspector:
+    """Proposes the next exploration action and drafts the final output."""
+
     def __init__(self, model: object) -> None:
         self.model = cast("_StructuredModel", model)
 
@@ -84,6 +94,8 @@ class Inspector:
 
 
 class Reviewer:
+    """Reviews proposed actions for relevance and safety, and evaluates final drafts."""
+
     def __init__(self, model: object) -> None:
         self.model = cast("_StructuredModel", model)
 
@@ -137,6 +149,8 @@ class Reviewer:
 
 
 class Coder:
+    """Writes incremental Python notebook cells for approved exploration actions."""
+
     def __init__(self, model: object) -> None:
         self.model = cast("_StructuredModel", model)
 
@@ -163,6 +177,8 @@ class Coder:
 
 
 class Debugger:
+    """Diagnoses failed cells and proposes corrected code, or recommends abandonment."""
+
     def __init__(self, model: object) -> None:
         self.model = cast("_StructuredModel", model)
 

@@ -1,3 +1,15 @@
+"""Benchmark-compatible agent wrapper satisfying the DataScienceAgent protocol.
+
+Wires the full pipeline: InputProfiler -> TaskBriefPlanner ->
+ExplorationOrchestrator -> OutputRenderer. Supports dependency injection
+of every component for testing.
+
+Currently routes DATA_MODELING, DEEP_ANALYSIS, and UNKNOWN tasks to
+render_unsupported — the skeleton does not implement modeling or deep
+commercial analysis yet.
+"""
+
+import shutil
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
@@ -40,6 +52,12 @@ OrchestratorFactory = Callable[[TaskBrief, DatasetProfile, Path], _Orchestrator]
 
 
 class StatigentDataScienceAgent:
+    """Top-level agent implementing the DataScienceAgent benchmark protocol.
+
+    Construct with model_name only for production use; inject profiler,
+    planner, orchestrator_factory, or renderer for testing.
+    """
+
     name = "statigent-data-science"
 
     def __init__(
@@ -64,43 +82,56 @@ class StatigentDataScienceAgent:
         files: list[Path] | None = None,
         task_instructions: str = "",
     ) -> tuple[str, AgentTrace]:
+        """Run the full analysis pipeline and return (answer, trace).
+
+        Creates a temporary work directory that is cleaned up on exit.
+        Unsupported task types (modeling, deep analysis, unknown) skip
+        the orchestrator and return an unsupported-status response.
+        """
         work_dir = Path(tempfile.mkdtemp(prefix="statigent-agent-"))
-        profile = self._profiler(work_dir).profile_paths(files)
-        brief = self._planner().create_brief(
-            prompt=prompt,
-            task_instructions=task_instructions,
-            profile=profile,
-        )
-        trace: AgentTrace = [
-            {"role": "system", "content": profile.compact_summary(), "name": "input"},
-            {
-                "role": "assistant",
-                "content": brief.model_dump_json(),
-                "name": "task_brief",
-            },
-        ]
-        if brief.task_type in {
-            TaskType.DATA_MODELING,
-            TaskType.DEEP_ANALYSIS,
-            TaskType.UNKNOWN,
-        }:
-            bundle = self.renderer.render_unsupported(brief)
+        try:
+            profile = self._profiler(work_dir).profile_paths(files)
+            brief = self._planner().create_brief(
+                prompt=prompt,
+                task_instructions=task_instructions,
+                profile=profile,
+            )
+            trace: AgentTrace = [
+                {
+                    "role": "system",
+                    "content": profile.compact_summary(),
+                    "name": "input",
+                },
+                {
+                    "role": "assistant",
+                    "content": brief.model_dump_json(),
+                    "name": "task_brief",
+                },
+            ]
+            if brief.task_type in {
+                TaskType.DATA_MODELING,
+                TaskType.DEEP_ANALYSIS,
+                TaskType.UNKNOWN,
+            }:
+                bundle = self.renderer.render_unsupported(brief)
+                trace.append(
+                    {"role": "assistant", "content": bundle.content, "name": "output"}
+                )
+                return bundle.content, trace
+
+            orchestrator = self._orchestrator(brief, profile, work_dir)
+            report = orchestrator.run(brief, profile)
+            bundle = self.renderer.render(brief, report)
             trace.append(
-                {"role": "assistant", "content": bundle.content, "name": "output"}
+                {
+                    "role": "assistant",
+                    "content": bundle.model_dump_json(),
+                    "name": "output",
+                }
             )
             return bundle.content, trace
-
-        orchestrator = self._orchestrator(brief, profile, work_dir)
-        report = orchestrator.run(brief, profile)
-        bundle = self.renderer.render(brief, report)
-        trace.append(
-            {
-                "role": "assistant",
-                "content": bundle.model_dump_json(),
-                "name": "output",
-            }
-        )
-        return bundle.content, trace
+        finally:
+            shutil.rmtree(work_dir, ignore_errors=True)
 
     def run_modeling_for_eval(
         self,
@@ -112,22 +143,32 @@ class StatigentDataScienceAgent:
         task_instructions: str = "",
         work_dir: Path | None = None,
     ) -> tuple[Path, AgentTrace]:
+        """Placeholder for modeling tasks — returns an unsupported submission path.
+
+        Currently delegates to run_analysis_for_eval which returns an
+        unsupported response. The returned submission.csv path does not
+        exist on disk.
+        """
         target_dir = work_dir or Path(tempfile.mkdtemp(prefix="statigent-modeling-"))
-        response, trace = self.run_analysis_for_eval(
-            prompt,
-            files=[train_path, test_path, sample_submission_path],
-            task_instructions=task_instructions,
-        )
-        trace.append(
-            {
-                "role": "assistant",
-                "content": (
-                    f"Modeling submission generation is not implemented: {response}"
-                ),
-                "name": "modeling_placeholder",
-            }
-        )
-        return target_dir / "submission.csv", trace
+        try:
+            response, trace = self.run_analysis_for_eval(
+                prompt,
+                files=[train_path, test_path, sample_submission_path],
+                task_instructions=task_instructions,
+            )
+            trace.append(
+                {
+                    "role": "assistant",
+                    "content": (
+                        f"Modeling submission generation is not implemented: {response}"
+                    ),
+                    "name": "modeling_placeholder",
+                }
+            )
+            return target_dir / "submission.csv", trace
+        finally:
+            if work_dir is None:
+                shutil.rmtree(target_dir, ignore_errors=True)
 
     def _profiler(self, work_dir: Path) -> _Profiler:
         if self.profiler is not None:

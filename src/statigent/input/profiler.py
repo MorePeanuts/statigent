@@ -1,3 +1,17 @@
+"""Input file discovery and tabular data profiling.
+
+The InputProfiler is the first stage of the data science pipeline:
+1. Discover files from paths, directories, and zip archives.
+2. Classify each file as tabular or non-tabular by suffix.
+3. Profile each tabular file (shape, dtypes, missing rates, numeric stats,
+   time column heuristics, categorical column heuristics, sample rows).
+4. Return a DatasetProfile with all results and warnings.
+
+Security: zip extraction validates that every member stays within the
+target directory (path-traversal protection) and enforces total
+uncompressed size limits.
+"""
+
 import zipfile
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -33,6 +47,13 @@ class _DiscoveryResult:
 
 
 class InputProfiler:
+    """Discover and profile input files for a data science task.
+
+    Handles single files, directories (recursive), and zip archives.
+    A single profiling failure does not abort the run — the file is skipped
+    and the warning is recorded in the DatasetProfile.
+    """
+
     def __init__(
         self,
         work_dir: Path,
@@ -46,6 +67,12 @@ class InputProfiler:
         self.sample_rows = sample_rows
 
     def profile_paths(self, paths: list[Path] | None) -> DatasetProfile:
+        """Profile all discovered files and return a DatasetProfile.
+
+        Accepts None (no inputs), single files, directories, or zip archives.
+        Each tabular file is profiled independently — failures are recorded
+        as warnings rather than crashing the run.
+        """
         warnings: list[str] = []
         discovery = self._discover_paths(paths, warnings)
         files: list[InputFileInfo] = list(discovery.input_file_infos)
@@ -89,8 +116,7 @@ class InputProfiler:
                 warning = f"Failed to profile {item.relative_path}: {err}"
                 warnings.append(warning)
                 continue
-            if table is not None:
-                tables.append(table)
+            tables.append(table)
 
         return DatasetProfile(
             root=self.work_dir,
@@ -255,7 +281,7 @@ class InputProfiler:
             else:
                 target_dir.unlink()
 
-    def _profile_table(self, item: _DiscoveredFile) -> TableProfile | None:
+    def _profile_table(self, item: _DiscoveredFile) -> TableProfile:
         table_warnings: list[str] = []
         frame = self._read_table(item.path)
 

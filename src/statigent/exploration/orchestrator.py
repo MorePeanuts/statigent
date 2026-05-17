@@ -1,3 +1,11 @@
+"""Explicit exploration loop orchestrating Inspector, Reviewer, Coder, and Debugger.
+
+The orchestrator iterates through: Inspector proposes action &rarr; Reviewer
+approves/rejects/revises &rarr; Coder writes code &rarr; Kernel executes &rarr;
+Debugger fixes failures (up to max_debug_attempts). Budgets (max_rounds,
+max_code_cells) are enforced throughout. Currently single-round skeleton.
+"""
+
 from typing import Literal, Protocol
 
 from statigent.notebook.base import NotebookKernel
@@ -50,6 +58,12 @@ class _Debugger(Protocol):
 
 
 class ExplorationOrchestrator:
+    """Runs the Inspector-Reviewer-Coder-Debugger loop within budget limits.
+
+    Accepts fake or real actors and kernel via dependency injection so
+    the same loop works for both tests and production.
+    """
+
     def __init__(
         self,
         *,
@@ -117,6 +131,9 @@ class ExplorationOrchestrator:
                     debug_attempts=debug_attempts,
                 )
             )
+            # Single-round skeleton: the reviewer feedback loop across
+            # multiple rounds is not yet implemented. Remove this break
+            # once Inspector uses prior step results to guide next actions.
             break
 
         if steps:

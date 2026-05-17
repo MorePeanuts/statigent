@@ -6,6 +6,13 @@ from statigent.schemas import ArtifactRef, NotebookCellResult, NotebookState
 
 
 class FakeNotebookKernel:
+    """In-process notebook kernel for testing.
+
+    execute_cell pops from a pre-configured queue of (stdout, stderr,
+    exit_code) tuples, so tests control exactly what each cell returns.
+    read_file and write_artifact operate on the real local filesystem.
+    """
+
     def __init__(self) -> None:
         self._context: NotebookContext | None = None
         self._queued: list[tuple[str, str, int]] = []

@@ -1,3 +1,11 @@
+"""Task brief generation from user prompts and dataset profiles.
+
+Uses LangChain structured output to classify the task and estimate
+complexity. When the LLM fails (malformed JSON, validation errors,
+or upstream API issues), a deterministic keyword-based fallback
+produces a safe default TaskBrief so the pipeline never blocks.
+"""
+
 from typing import Protocol, cast
 
 from langchain_core.exceptions import LangChainException, OutputParserException
@@ -25,6 +33,8 @@ class _TaskBriefModel(Protocol):
     ) -> _StructuredTaskBriefModel: ...
 
 
+# Only catch structured-output-specific failures here — genuine programming
+# errors (TypeError, MemoryError, etc.) must propagate to fail fast.
 _EXPECTED_STRUCTURED_OUTPUT_ERRORS = (
     ValidationError,
     OutputParserException,
@@ -33,6 +43,12 @@ _EXPECTED_STRUCTURED_OUTPUT_ERRORS = (
 
 
 class TaskBriefPlanner:
+    """Generate a TaskBrief from a user prompt, instructions, and dataset profile.
+
+    Uses LLM structured output with a deterministic fallback so the
+    pipeline degrades gracefully when the model produces unparseable output.
+    """
+
     def __init__(self, model: object) -> None:
         self.model = cast("_TaskBriefModel", model)
 
@@ -42,6 +58,7 @@ class TaskBriefPlanner:
         task_instructions: str,
         profile: DatasetProfile,
     ) -> TaskBrief:
+        """Create a TaskBrief using the LLM, falling back on keyword heuristics."""
         messages = self._build_messages(
             prompt=prompt,
             task_instructions=task_instructions,

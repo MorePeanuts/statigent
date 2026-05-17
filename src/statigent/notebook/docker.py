@@ -1,3 +1,13 @@
+"""Docker-backed notebook kernel with incremental state.
+
+Each cell runs inside a Docker sandbox. State (variables, imports) is
+pickled to disk after every successful cell so subsequent cells inherit
+the accumulated namespace.
+
+Security: all code is base64-encoded before shell transport; file paths
+are quoted with shlex.quote() to prevent command injection.
+"""
+
 import base64
 import json
 import shlex
@@ -9,6 +19,10 @@ from statigent.notebook.base import FileReadResult, NotebookContext
 from statigent.sandbox.docker import DockerSandbox
 from statigent.schemas import ArtifactRef, NotebookCellResult, NotebookState
 
+# Python driver that lives inside the container. It decodes the base64
+# cell payload, executes it in a persistent STATE dict, and emits JSON
+# results on stdout. State is serialized via pickle so it survives
+# across container exec calls.
 _DRIVER = r"""
 import base64
 import contextlib
@@ -49,6 +63,12 @@ def run_cell(encoded):
 
 
 class DockerNotebookKernel:
+    """Notebook kernel that executes cells in an isolated Docker sandbox.
+
+    Each cell runs via `sandbox.exec()` with state persisted between cells
+    using pickle. Input files are bind-mounted read-only into the container.
+    """
+
     def __init__(
         self,
         *,

@@ -1,3 +1,11 @@
+"""Output rendering — converts exploration reports into final bundles.
+
+Routes tasks by type: DATA_ANALYSIS tasks flow through the normal
+render path; DATA_MODELING, DEEP_ANALYSIS, and UNKNOWN tasks return
+an explicit "unsupported" bundle so callers get a clear signal rather
+than a confusing error.
+"""
+
 from statigent.schemas import (
     ExplorationReport,
     OutputBundle,
@@ -8,6 +16,8 @@ from statigent.schemas import (
 
 
 class OutputRenderer:
+    """Renders an ExplorationReport into a user-facing OutputBundle."""
+
     def render(
         self,
         brief: TaskBrief,
