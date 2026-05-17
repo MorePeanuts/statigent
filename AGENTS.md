@@ -57,7 +57,8 @@ specifically about project metadata.
 - Use `loguru` for diagnostics and `rich` for user-facing terminal output.
 - Do not use `print()` for diagnostic output.
 
-Formatting is controlled by `pyproject.toml`; follow the formatter.
+- Comments explain WHY, not WHAT — omit comments that restate the code or reference task/PR context. Public functions and classes must have docstrings; private helpers only need them when the purpose isn't obvious from the signature.
+- Formatting is controlled by `pyproject.toml`; follow the formatter.
 
 ## Tests
 

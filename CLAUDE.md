@@ -75,6 +75,8 @@ uv build
 - Use `from __future__ import annotations` is NOT needed (Python 3.12+)
 - Use modern Python syntax: `X | Y` instead of `Union[X, Y]`, `list[X]` instead of `List[X]`, etc.
 - Import order (enforced by ruff isort): stdlib → third-party → first-party (`statigent`)
+- Comments explain WHY, not WHAT — omit comments that restate the code or reference task/PR context
+- Public functions and classes must have docstrings; private helpers only need them when the purpose isn't obvious from the signature
 
 ### Type Hints
 
