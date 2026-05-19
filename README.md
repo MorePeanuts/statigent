@@ -27,11 +27,9 @@ git submodule update --init
 
 Optional dependency groups:
 
-- **datascience** — numpy, pandas, scikit-learn, torch, etc. Required for agent data analysis and modeling
-- **benchmark** — mlebench. Required for MLE-Bench evaluation
+- **benchmark** — mlebench. Required for MLE-Bench evaluation and DSBench (data modeling evaluation)
 
 ```bash
-uv sync --group datascience
 uv sync --group benchmark
 uv sync --all-groups          # Install all groups
 ```
@@ -123,11 +121,11 @@ model = registry.get_model("my-model")
 The TOML format follows the same structure as `defaults.toml` — each section is a profile name, and its keys are passed to `langchain.init_chat_model`:
 
 ```toml
-[my-gpt4]
+[gpt-5_4]
 model = "gpt-5.4"
 model_provider = "openai"
 
-[my-claude]
+[claude-sonnet-4_6]
 model = "claude-sonnet-4.6"
 model_provider = "anthropic"
 ```
