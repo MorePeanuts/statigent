@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from statigent.exploration import Coder, Debugger, Inspector, Reviewer
 from statigent.schemas import (
@@ -22,11 +22,20 @@ from statigent.schemas import (
 T = TypeVar("T")
 
 
-class FakeStructuredModel[T]:
-    def __init__(self, result: T) -> None:
-        self.result = result
+def _make_raw_result(
+    parsed: object = None, parsing_error: object = None
+) -> dict[str, Any]:
+    return {"raw": None, "parsed": parsed, "parsing_error": parsing_error}
 
-    def invoke(self, _messages: list[dict[str, str]]) -> T:
+
+class FakeStructuredModel[T]:
+    def __init__(self, result: T, include_raw: bool = False) -> None:
+        self.result = result
+        self.include_raw = include_raw
+
+    def invoke(self, _messages: list[dict[str, str]]) -> Any:
+        if self.include_raw:
+            return _make_raw_result(parsed=self.result)
         return self.result
 
 
@@ -34,8 +43,10 @@ class FakeModel:
     def __init__(self, result: object) -> None:
         self.result = result
 
-    def with_structured_output(self, _schema: type[T]) -> FakeStructuredModel[T]:
-        return FakeStructuredModel(cast("T", self.result))
+    def with_structured_output(
+        self, _schema: type[T], *, include_raw: bool = False
+    ) -> FakeStructuredModel[Any]:
+        return FakeStructuredModel(cast("T", self.result), include_raw=include_raw)
 
 
 def make_brief() -> TaskBrief:

@@ -6,10 +6,11 @@ callable that satisfies `with_structured_output(Schema) -> Runnable`
 works, which keeps tests simple (plain fake objects, no mocking framework).
 """
 
-from typing import Protocol, TypeVar, cast
+from typing import Any, Protocol, TypeVar, cast
 
 from langchain.messages import AnyMessage, HumanMessage, SystemMessage
 
+from statigent.retry import invoke_structured_with_retries, retry_on_parse_error
 from statigent.schemas import (
     CodeDraft,
     DatasetProfile,
@@ -30,7 +31,19 @@ class _StructuredRunnable(Protocol[T_co]):
 
 
 class _StructuredModel(Protocol):
-    def with_structured_output(self, schema: type[T]) -> _StructuredRunnable[T]: ...
+    def with_structured_output(
+        self, schema: type[T], *, include_raw: bool = False
+    ) -> _StructuredRunnable[Any]: ...
+
+
+def _invoke_with_retries[T](
+    model: _StructuredModel,
+    schema: type[T],
+    messages: list[AnyMessage],
+) -> T:
+    structured = model.with_structured_output(schema, include_raw=True)
+    result = retry_on_parse_error(invoke_structured_with_retries)(structured, messages)
+    return cast("T", result)
 
 
 class Inspector:
@@ -46,8 +59,9 @@ class Inspector:
         steps: list[ExplorationStep],
         reviewer_feedback: str,
     ) -> ExplorationAction:
-        structured = self.model.with_structured_output(ExplorationAction)
-        return structured.invoke(
+        return _invoke_with_retries(
+            self.model,
+            ExplorationAction,
             [
                 SystemMessage(
                     content=(
@@ -65,7 +79,7 @@ class Inspector:
                         f"Reviewer feedback:\n{reviewer_feedback}"
                     ),
                 ),
-            ]
+            ],
         )
 
     def final_draft(
@@ -74,8 +88,9 @@ class Inspector:
         profile: DatasetProfile,
         steps: list[ExplorationStep],
     ) -> FinalDraft:
-        structured = self.model.with_structured_output(FinalDraft)
-        return structured.invoke(
+        return _invoke_with_retries(
+            self.model,
+            FinalDraft,
             [
                 SystemMessage(
                     content=(
@@ -91,7 +106,7 @@ class Inspector:
                         f"Exploration steps:\n{[s.model_dump() for s in steps]}"
                     ),
                 ),
-            ]
+            ],
         )
 
 
@@ -106,8 +121,9 @@ class Reviewer:
         brief: TaskBrief,
         action: ExplorationAction,
     ) -> ReviewDecision:
-        structured = self.model.with_structured_output(ReviewDecision)
-        return structured.invoke(
+        return _invoke_with_retries(
+            self.model,
+            ReviewDecision,
             [
                 SystemMessage(
                     content=(
@@ -122,12 +138,13 @@ class Reviewer:
                         f"Action:\n{action.model_dump_json()}"
                     ),
                 ),
-            ]
+            ],
         )
 
     def review_final(self, brief: TaskBrief, draft: FinalDraft) -> ReviewDecision:
-        structured = self.model.with_structured_output(ReviewDecision)
-        return structured.invoke(
+        return _invoke_with_retries(
+            self.model,
+            ReviewDecision,
             [
                 SystemMessage(
                     content=(
@@ -142,7 +159,7 @@ class Reviewer:
                         f"Draft:\n{draft.model_dump_json()}"
                     ),
                 ),
-            ]
+            ],
         )
 
 
@@ -153,8 +170,9 @@ class Coder:
         self.model = cast("_StructuredModel", model)
 
     def write_code(self, brief: TaskBrief, action: ExplorationAction) -> CodeDraft:
-        structured = self.model.with_structured_output(CodeDraft)
-        return structured.invoke(
+        return _invoke_with_retries(
+            self.model,
+            CodeDraft,
             [
                 SystemMessage(
                     content=(
@@ -168,7 +186,7 @@ class Coder:
                         f"Action:\n{action.model_dump_json()}"
                     ),
                 ),
-            ]
+            ],
         )
 
 
@@ -179,8 +197,9 @@ class Debugger:
         self.model = cast("_StructuredModel", model)
 
     def debug(self, brief: TaskBrief, code: str, error: str) -> DebugDecision:
-        structured = self.model.with_structured_output(DebugDecision)
-        return structured.invoke(
+        return _invoke_with_retries(
+            self.model,
+            DebugDecision,
             [
                 SystemMessage(
                     content=(
@@ -194,5 +213,5 @@ class Debugger:
                         f"Failed code:\n{code}\n\nError:\n{error}"
                     ),
                 ),
-            ]
+            ],
         )

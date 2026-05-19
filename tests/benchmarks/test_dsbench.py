@@ -153,7 +153,11 @@ class TestDSBenchAdapterDA:
 
         mock_llm = MagicMock()
         mock_structured = MagicMock()
-        mock_structured.invoke.return_value = JudgeVerdict(is_correct=True)
+        mock_structured.invoke.return_value = {
+            "raw": MagicMock(),
+            "parsed": JudgeVerdict(is_correct=True),
+            "parsing_error": None,
+        }
         mock_llm.with_structured_output.return_value = mock_structured
         mock_get_model.return_value = mock_llm
 
@@ -179,7 +183,11 @@ class TestDSBenchAdapterDA:
 
         mock_llm = MagicMock()
         mock_structured = MagicMock()
-        mock_structured.invoke.return_value = JudgeVerdict(is_correct=True)
+        mock_structured.invoke.return_value = {
+            "raw": MagicMock(),
+            "parsed": JudgeVerdict(is_correct=True),
+            "parsing_error": None,
+        }
         mock_llm.with_structured_output.return_value = mock_structured
         mock_get_model.return_value = mock_llm
 

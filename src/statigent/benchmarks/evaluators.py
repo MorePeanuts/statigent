@@ -1,15 +1,19 @@
 import re
-import time
 from typing import Any
 
 from langchain.chat_models import BaseChatModel
 from langchain.messages import HumanMessage
 from loguru import logger
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 
 from statigent.benchmarks.base import Evaluator, ScoreResult
+from statigent.errors import StatigentParseError
 from statigent.models import get_model
-from statigent.retry import retry_on_conn_error
+from statigent.retry import (
+    invoke_structured_with_retries,
+    retry_on_conn_error,
+    retry_on_parse_error,
+)
 
 _ANSWER_PATTERN = re.compile(r"@(\w+)\[(.*?)\]")
 
@@ -134,8 +138,6 @@ class JudgeVerdict(BaseModel):
 class LLMJudgeEvaluator(Evaluator):
     """LLM-as-judge evaluator using statigent.models with structured output."""
 
-    _MAX_RETRIES = 3
-
     def __init__(self, judge_model_name: str = "deepseek-v4-flash") -> None:
         self.judge_model_name = judge_model_name
         self._structured_llm: Any = None
@@ -143,15 +145,24 @@ class LLMJudgeEvaluator(Evaluator):
     def _get_structured_llm(self) -> Any:
         if self._structured_llm is None:
             llm = get_model(self.judge_model_name)
-            self._structured_llm = llm.with_structured_output(JudgeVerdict)
+            self._structured_llm = llm.with_structured_output(
+                JudgeVerdict, include_raw=True
+            )
         return self._structured_llm
+
+    def _invoke_structured(self, messages: list[Any]) -> JudgeVerdict:
+        parsed = invoke_structured_with_retries(self._get_structured_llm(), messages)
+        if not isinstance(parsed, JudgeVerdict):
+            raise StatigentParseError(
+                f"Expected JudgeVerdict, got {type(parsed).__name__}"
+            )
+        return parsed
 
     def evaluate(self, predictions: Any, references: Any) -> ScoreResult:
         refs: list[dict[str, Any]] = references
         preds: list[dict[str, Any]] = predictions
 
         pred_map = {p["id"]: p["response"] for p in preds}
-        structured_llm = self._get_structured_llm()
 
         verdicts: list[bool] = []
         details: list[dict[str, Any]] = []
@@ -164,37 +175,16 @@ class LLMJudgeEvaluator(Evaluator):
                 answer=ref["answer"],
                 prediction=pred_map[qid],
             )
-            is_correct = False
-            text = ""
-            for attempt in range(1, self._MAX_RETRIES + 1):
-                try:
-                    result = retry_on_conn_error(structured_llm.invoke)(
-                        [HumanMessage(content=prompt)]
-                    )
-                    if not isinstance(result, JudgeVerdict):
-                        raise TypeError(
-                            f"Expected JudgeVerdict from structured output, "
-                            f"got {type(result).__name__}"
-                        )
-                    is_correct = result.is_correct
-                    text = result.model_dump_json()
-                    break
-                except (TypeError, ValidationError, ValueError):
-                    logger.warning(
-                        "LLM judge failed for id={} (attempt {}/{})",
-                        qid,
-                        attempt,
-                        self._MAX_RETRIES,
-                    )
-                    if attempt == self._MAX_RETRIES:
-                        logger.exception(
-                            "LLM judge gave up for id={} after {} attempts",
-                            qid,
-                            self._MAX_RETRIES,
-                        )
-                        text = ""
-                    else:
-                        time.sleep(2 ** (attempt - 1))
+            try:
+                verdict = retry_on_parse_error(self._invoke_structured)(
+                    [HumanMessage(content=prompt)]
+                )
+                is_correct = verdict.is_correct
+                text = verdict.model_dump_json()
+            except StatigentParseError:
+                logger.exception("LLM judge gave up for id={}", qid)
+                is_correct = False
+                text = ""
             verdicts.append(is_correct)
             details.append(
                 {

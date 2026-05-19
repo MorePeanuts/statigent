@@ -28,3 +28,7 @@ class StatigentBenchmarkError(StatigentError):
 
 class StatigentSandboxError(StatigentError):
     """Error raised by the Docker sandbox."""
+
+
+class StatigentParseError(StatigentError):
+    """Error raised when structured output parsing fails."""

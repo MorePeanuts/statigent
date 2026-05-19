@@ -1,7 +1,5 @@
 from pathlib import Path
-
-import pytest
-from langchain_core.exceptions import OutputParserException
+from typing import Any
 
 from statigent.input import TaskBriefPlanner
 from statigent.schemas import (
@@ -16,22 +14,36 @@ from statigent.schemas import (
 )
 
 
-class FakeStructuredModel:
-    def __init__(self, result: TaskBrief | Exception) -> None:
-        self.result = result
+def _make_raw_result(
+    parsed: object = None, parsing_error: object = None
+) -> dict[str, Any]:
+    return {"raw": None, "parsed": parsed, "parsing_error": parsing_error}
 
-    def invoke(self, _messages: list[dict[str, str]]) -> TaskBrief:
-        if isinstance(self.result, Exception):
-            raise self.result
-        return self.result
+
+class FakeStructuredModel:
+    def __init__(
+        self, result: TaskBrief | None, parsing_error: Exception | None = None
+    ) -> None:
+        self.result = result
+        self.parsing_error = parsing_error
+
+    def invoke(self, _messages: list[dict[str, str]]) -> dict[str, Any]:
+        return _make_raw_result(parsed=self.result, parsing_error=self.parsing_error)
 
 
 class FakeModel:
-    def __init__(self, result: TaskBrief | Exception) -> None:
+    def __init__(
+        self,
+        result: TaskBrief | None = None,
+        parsing_error: Exception | None = None,
+    ) -> None:
         self.result = result
+        self.parsing_error = parsing_error
 
-    def with_structured_output(self, _schema: type[TaskBrief]) -> FakeStructuredModel:
-        return FakeStructuredModel(self.result)
+    def with_structured_output(
+        self, _schema: type[TaskBrief], *, include_raw: bool = False
+    ) -> FakeStructuredModel:
+        return FakeStructuredModel(self.result, self.parsing_error)
 
 
 def make_profile(tmp_path: Path) -> DatasetProfile:
@@ -94,7 +106,7 @@ def test_planner_uses_structured_model_result(tmp_path: Path) -> None:
 
 
 def test_planner_fallback_detects_deep_analysis(tmp_path: Path) -> None:
-    planner = TaskBriefPlanner(model=FakeModel(OutputParserException("bad json")))
+    planner = TaskBriefPlanner(model=FakeModel(parsing_error=ValueError("bad json")))
 
     brief = planner.create_brief(
         prompt="Create a deep business analysis report for sales executives",
@@ -108,7 +120,7 @@ def test_planner_fallback_detects_deep_analysis(tmp_path: Path) -> None:
 
 
 def test_planner_fallback_detects_modeling(tmp_path: Path) -> None:
-    planner = TaskBriefPlanner(model=FakeModel(OutputParserException("bad json")))
+    planner = TaskBriefPlanner(model=FakeModel(parsing_error=ValueError("bad json")))
 
     brief = planner.create_brief(
         prompt="Build a predictive model and forecast next month's demand",
@@ -126,7 +138,7 @@ def test_planner_fallback_detects_modeling(tmp_path: Path) -> None:
 def test_planner_fallback_handles_structured_output_exception(
     tmp_path: Path,
 ) -> None:
-    planner = TaskBriefPlanner(model=FakeModel(OutputParserException("bad json")))
+    planner = TaskBriefPlanner(model=FakeModel(parsing_error=ValueError("bad json")))
 
     brief = planner.create_brief(
         prompt="Summarize the dataset",
@@ -139,12 +151,19 @@ def test_planner_fallback_handles_structured_output_exception(
     assert brief.warnings
 
 
-def test_planner_unexpected_programmer_error_propagates(tmp_path: Path) -> None:
-    planner = TaskBriefPlanner(model=FakeModel(TypeError("programmer bug")))
+def test_planner_parse_error_after_retries_triggers_fallback(
+    tmp_path: Path,
+) -> None:
+    """When structured output consistently fails, fallback is used after retries."""
+    planner = TaskBriefPlanner(
+        model=FakeModel(parsing_error=TypeError("programmer bug"))
+    )
 
-    with pytest.raises(TypeError, match="programmer bug"):
-        planner.create_brief(
-            prompt="Analyze revenue trend",
-            task_instructions="",
-            profile=make_profile(tmp_path),
-        )
+    brief = planner.create_brief(
+        prompt="Analyze revenue trend",
+        task_instructions="",
+        profile=make_profile(tmp_path),
+    )
+
+    assert brief.warnings
+    assert any("parsing failure" in w for w in brief.warnings)

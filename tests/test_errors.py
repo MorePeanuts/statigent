@@ -5,6 +5,7 @@ from statigent.errors import (
     StatigentModelError,
     StatigentNotebookError,
     StatigentOutputError,
+    StatigentParseError,
 )
 
 
@@ -27,6 +28,7 @@ def test_layer_errors_inherit_from_statigent_error() -> None:
         StatigentNotebookError("bad notebook"),
         StatigentExplorationError("bad exploration"),
         StatigentOutputError("bad output"),
+        StatigentParseError("bad parse"),
     ]
 
     assert all(isinstance(err, StatigentError) for err in errors)

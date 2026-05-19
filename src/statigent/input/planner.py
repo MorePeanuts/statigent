@@ -6,13 +6,13 @@ or upstream API issues), a deterministic keyword-based fallback
 produces a safe default TaskBrief so the pipeline never blocks.
 """
 
-from typing import Protocol, cast
+from typing import Any, Protocol, cast
 
 from langchain.messages import AnyMessage, HumanMessage, SystemMessage
-from langchain_core.exceptions import LangChainException, OutputParserException
 from loguru import logger
-from pydantic import ValidationError
 
+from statigent.errors import StatigentParseError
+from statigent.retry import invoke_structured_with_retries, retry_on_parse_error
 from statigent.schemas import (
     Complexity,
     DatasetProfile,
@@ -24,23 +24,16 @@ from statigent.schemas import (
 
 
 class _StructuredTaskBriefModel(Protocol):
-    def invoke(self, messages: list[AnyMessage]) -> TaskBrief: ...
+    def invoke(self, messages: list[AnyMessage]) -> Any: ...
 
 
 class _TaskBriefModel(Protocol):
     def with_structured_output(
         self,
         schema: type[TaskBrief],
+        *,
+        include_raw: bool = False,
     ) -> _StructuredTaskBriefModel: ...
-
-
-# Only catch structured-output-specific failures here — genuine programming
-# errors (TypeError, MemoryError, etc.) must propagate to fail fast.
-_EXPECTED_STRUCTURED_OUTPUT_ERRORS = (
-    ValidationError,
-    OutputParserException,
-    LangChainException,
-)
 
 
 class TaskBriefPlanner:
@@ -66,9 +59,14 @@ class TaskBriefPlanner:
             profile=profile,
         )
         try:
-            structured_model = self.model.with_structured_output(TaskBrief)
-            return structured_model.invoke(messages)
-        except _EXPECTED_STRUCTURED_OUTPUT_ERRORS as err:
+            structured_model = self.model.with_structured_output(
+                TaskBrief, include_raw=True
+            )
+            result = retry_on_parse_error(invoke_structured_with_retries)(
+                structured_model, messages
+            )
+            return cast("TaskBrief", result)
+        except StatigentParseError as err:
             logger.warning("Task brief structured output failed: {}", err)
             return self._fallback_brief(
                 prompt=prompt,
