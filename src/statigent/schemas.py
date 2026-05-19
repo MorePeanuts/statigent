@@ -69,10 +69,14 @@ class ExplorationActionKind(StrEnum):
 class Budget(BaseModel):
     """Resource caps for an exploration run."""
 
-    max_rounds: int = Field(ge=1)
-    max_code_cells: int = Field(ge=1)
-    max_debug_attempts: int = Field(ge=0)
-    timeout_seconds: int = Field(ge=1)
+    max_rounds: int = Field(ge=1, description="Maximum exploration rounds allowed")
+    max_code_cells: int = Field(
+        ge=1, description="Maximum code cells that can be executed"
+    )
+    max_debug_attempts: int = Field(
+        ge=0, description="Maximum debug retries per failed cell"
+    )
+    timeout_seconds: int = Field(ge=1, description="Wall-clock timeout in seconds")
 
 
 def budget_for_complexity(complexity: Complexity) -> Budget:
@@ -102,29 +106,48 @@ def budget_for_complexity(complexity: Complexity) -> Budget:
 class InputFileInfo(BaseModel):
     """Metadata for a single file discovered during input scanning."""
 
-    path: Path
-    relative_path: str
-    suffix: str
-    size_bytes: int = Field(ge=0)
-    is_tabular: bool
-    warnings: list[str] = Field(default_factory=list)
+    path: Path = Field(description="Absolute path to the file on disk")
+    relative_path: str = Field(description="Path relative to the dataset root")
+    suffix: str = Field(description="File extension including the dot (e.g. .csv)")
+    size_bytes: int = Field(ge=0, description="File size in bytes")
+    is_tabular: bool = Field(description="Whether the file contains tabular data")
+    warnings: list[str] = Field(
+        default_factory=list, description="Issues found during scanning"
+    )
 
 
 class TableProfile(BaseModel):
     """Statistical profile of a single tabular data source."""
-    path: Path
-    relative_path: str
-    rows: int = Field(ge=0)
-    columns: int = Field(ge=0)
-    column_names: list[str]
-    dtypes: dict[str, str]
-    missing_rates: dict[str, float]
-    unique_counts: dict[str, int]
-    numeric_summaries: dict[str, dict[str, float]]
-    likely_time_columns: list[str]
-    likely_categorical_columns: list[str]
-    sample_rows: list[dict[str, object]]
-    warnings: list[str] = Field(default_factory=list)
+
+    path: Path = Field(description="Absolute path to the table file")
+    relative_path: str = Field(description="Path relative to the dataset root")
+    rows: int = Field(ge=0, description="Number of rows in the table")
+    columns: int = Field(ge=0, description="Number of columns in the table")
+    column_names: list[str] = Field(description="Ordered list of column names")
+    dtypes: dict[str, str] = Field(
+        description="Mapping of column name to dtype string"
+    )
+    missing_rates: dict[str, float] = Field(
+        description="Fraction of nulls per column (0.0-1.0)"
+    )
+    unique_counts: dict[str, int] = Field(
+        description="Number of distinct values per column"
+    )
+    numeric_summaries: dict[str, dict[str, float]] = Field(
+        description="Per-column stats: mean, std, min, max, etc."
+    )
+    likely_time_columns: list[str] = Field(
+        description="Columns that appear to contain temporal data"
+    )
+    likely_categorical_columns: list[str] = Field(
+        description="Columns that appear to contain categorical data"
+    )
+    sample_rows: list[dict[str, object]] = Field(
+        description="Representative rows for LLM context"
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Issues found during profiling"
+    )
 
 
 class DatasetProfile(BaseModel):
@@ -134,10 +157,14 @@ class DatasetProfile(BaseModel):
     LLM prompts for task planning.
     """
 
-    root: Path
-    files: list[InputFileInfo]
-    tables: list[TableProfile]
-    warnings: list[str] = Field(default_factory=list)
+    root: Path = Field(description="Root directory of the dataset")
+    files: list[InputFileInfo] = Field(
+        description="All files discovered during scanning"
+    )
+    tables: list[TableProfile] = Field(description="Profiles of tabular data sources")
+    warnings: list[str] = Field(
+        default_factory=list, description="Cross-file issues found during scanning"
+    )
 
     def compact_summary(self) -> str:
         table_lines = [
@@ -161,15 +188,25 @@ class TaskBrief(BaseModel):
     resources to allocate.
     """
 
-    task_type: TaskType
-    objective: str
-    output_type: OutputType
-    requirements: list[str] = Field(default_factory=list)
-    data_context: str
-    complexity: Complexity
-    budgets: Budget
-    analysis_hints: list[str] = Field(default_factory=list)
-    warnings: list[str] = Field(default_factory=list)
+    task_type: TaskType = Field(description="Category of the data science task")
+    objective: str = Field(
+        description="Natural-language description of what the user wants"
+    )
+    output_type: OutputType = Field(
+        description="Expected shape of the final deliverable"
+    )
+    requirements: list[str] = Field(
+        default_factory=list, description="Explicit requirements from user instructions"
+    )
+    data_context: str = Field(description="Summary of the input dataset for context")
+    complexity: Complexity = Field(description="Estimated difficulty tier")
+    budgets: Budget = Field(description="Resource caps derived from complexity")
+    analysis_hints: list[str] = Field(
+        default_factory=list, description="Suggested analysis directions"
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Caveats from the planning stage"
+    )
 
 
 class ExplorationAction(BaseModel):
@@ -178,12 +215,20 @@ class ExplorationAction(BaseModel):
     CUSTOM_ANALYSIS actions must supply rationale, expected_evidence, and
     risk_notes — enforced by the model validator below.
     """
-    kind: ExplorationActionKind
-    title: str
-    description: str
-    rationale: str = ""
-    expected_evidence: str = ""
-    risk_notes: str = ""
+    kind: ExplorationActionKind = Field(
+        description="Which predefined action to perform"
+    )
+    title: str = Field(description="Short human-readable label for the action")
+    description: str = Field(description="What this action will investigate or compute")
+    rationale: str = Field(
+        default="", description="Why this action is worth performing"
+    )
+    expected_evidence: str = Field(
+        default="", description="What output would confirm the action was useful"
+    )
+    risk_notes: str = Field(
+        default="", description="Potential pitfalls or side effects"
+    )
 
     @model_validator(mode="after")
     def validate_custom_action(self) -> "ExplorationAction":
@@ -203,23 +248,30 @@ class ExplorationAction(BaseModel):
 class ArtifactRef(BaseModel):
     """Pointer to a generated file (chart, table, report) from exploration."""
 
-    name: str
-    path: Path
-    kind: str
-    description: str = ""
+    name: str = Field(description="Short identifier for the artifact")
+    path: Path = Field(description="Filesystem path to the artifact")
+    kind: str = Field(description="Artifact category (chart, table, report, etc.)")
+    description: str = Field(
+        default="", description="What the artifact contains or shows"
+    )
 
 
 class NotebookCellResult(BaseModel):
     """Result of executing a single notebook cell."""
-    cell_id: str
-    code: str
-    purpose: str
-    stdout: str = ""
-    stderr: str = ""
-    exit_code: int
-    duration_ms: int = Field(ge=0)
-    artifacts: list[ArtifactRef] = Field(default_factory=list)
-    error_summary: str = ""
+
+    cell_id: str = Field(description="Unique identifier for the cell")
+    code: str = Field(description="Python source code that was executed")
+    purpose: str = Field(description="Why this cell was run")
+    stdout: str = Field(default="", description="Captured standard output")
+    stderr: str = Field(default="", description="Captured standard error")
+    exit_code: int = Field(description="Process exit code (0 = success)")
+    duration_ms: int = Field(ge=0, description="Execution time in milliseconds")
+    artifacts: list[ArtifactRef] = Field(
+        default_factory=list, description="Files generated by this cell"
+    )
+    error_summary: str = Field(
+        default="", description="Human-readable error summary if failed"
+    )
 
     @property
     def ok(self) -> bool:
@@ -229,80 +281,116 @@ class NotebookCellResult(BaseModel):
 class NotebookState(BaseModel):
     """Accumulated state of a notebook session — all executed cells and artifacts."""
 
-    executed_cells: list[NotebookCellResult] = Field(default_factory=list)
-    artifacts: list[ArtifactRef] = Field(default_factory=list)
+    executed_cells: list[NotebookCellResult] = Field(
+        default_factory=list, description="All cell execution results in order"
+    )
+    artifacts: list[ArtifactRef] = Field(
+        default_factory=list, description="All artifacts accumulated across cells"
+    )
 
 
 class ReviewDecision(BaseModel):
     """Decision from the Reviewer actor — approve, reject, or revise an action."""
 
-    approved: bool
-    reason: str
-    revised_action: ExplorationAction | None = None
+    approved: bool = Field(description="Whether the action or draft is accepted")
+    reason: str = Field(description="Justification for the decision")
+    revised_action: ExplorationAction | None = Field(
+        default=None, description="Suggested alternative when rejecting an action"
+    )
 
 
 class CodeDraft(BaseModel):
     """Code written by the Coder actor for a single notebook cell."""
 
-    code: str
-    purpose: str
-    expected_observation: str
+    code: str = Field(description="Python source code for the notebook cell")
+    purpose: str = Field(description="What this code is intended to accomplish")
+    expected_observation: str = Field(
+        description="What output or result the code should produce"
+    )
 
 
 class DebugDecision(BaseModel):
     """Decision from the Debugger actor — retry with corrected code or abandon."""
 
-    retry: bool
-    code: str = ""
-    reason: str
+    retry: bool = Field(description="Whether to retry with corrected code")
+    code: str = Field(default="", description="Corrected source code if retrying")
+    reason: str = Field(description="Diagnosis of the failure and fix rationale")
 
 
 class FinalDraft(BaseModel):
     """Final answer or report drafted by the Inspector after exploration completes."""
 
-    content: str
-    evidence: list[str] = Field(default_factory=list)
-    warnings: list[str] = Field(default_factory=list)
+    content: str = Field(description="The main answer or report text")
+    evidence: list[str] = Field(
+        default_factory=list, description="Supporting evidence from exploration steps"
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Caveats about the draft"
+    )
 
 
 class ExplorationStep(BaseModel):
     """One complete step: action -> review -> code -> execute -> (debug)."""
 
-    action: ExplorationAction
-    review: ReviewDecision
-    code: CodeDraft | None = None
-    result: NotebookCellResult | None = None
-    debug_attempts: int = 0
+    action: ExplorationAction = Field(description="The proposed exploration action")
+    review: ReviewDecision = Field(description="Reviewer's decision on the action")
+    code: CodeDraft | None = Field(
+        default=None, description="Code written for this step"
+    )
+    result: NotebookCellResult | None = Field(
+        default=None, description="Execution result of the code cell"
+    )
+    debug_attempts: int = Field(
+        default=0, description="Number of debug retries for this step"
+    )
 
 
 class ExplorationReport(BaseModel):
     """Orchestrator output: steps, final draft, artifacts, and warnings."""
 
-    status: Literal["success", "partial"]
-    final_draft: FinalDraft
-    steps: list[ExplorationStep]
-    artifacts: list[ArtifactRef]
-    warnings: list[str] = Field(default_factory=list)
+    status: Literal["success", "partial"] = Field(
+        description="Whether exploration completed fully or partially"
+    )
+    final_draft: FinalDraft = Field(
+        description="The Inspector's final answer or report"
+    )
+    steps: list[ExplorationStep] = Field(
+        description="All exploration steps taken"
+    )
+    artifacts: list[ArtifactRef] = Field(
+        description="All generated artifacts"
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Issues encountered during exploration"
+    )
 
 
 class OutputBundle(BaseModel):
     """Rendered output bound for the user or benchmark evaluator."""
 
-    status: OutputStatus
-    output_type: OutputType
-    content: str
-    artifacts: list[ArtifactRef] = Field(default_factory=list)
-    warnings: list[str] = Field(default_factory=list)
-    trace_summary: str = ""
+    status: OutputStatus = Field(description="Terminal status of the output")
+    output_type: OutputType = Field(description="Shape of the delivered content")
+    content: str = Field(description="The rendered text or report")
+    artifacts: list[ArtifactRef] = Field(
+        default_factory=list, description="Accompanying generated files"
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Caveats about the output"
+    )
+    trace_summary: str = Field(
+        default="", description="Condensed agent trace for debugging"
+    )
 
 
 class TraceEvent(BaseModel):
     """Single event in an agent trace for benchmarking / observability."""
 
-    role: str
-    content: str
-    name: str = ""
-    metadata: dict[str, object] = Field(default_factory=dict)
+    role: str = Field(description="Who produced this event (system, user, assistant)")
+    content: str = Field(description="The event payload text")
+    name: str = Field(default="", description="Tool name or action identifier")
+    metadata: dict[str, object] = Field(
+        default_factory=dict, description="Extra key-value data for this event"
+    )
 
 
 __all__ = [
