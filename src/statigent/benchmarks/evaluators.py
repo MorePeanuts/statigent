@@ -3,6 +3,7 @@ import time
 from typing import Any
 
 from langchain.chat_models import BaseChatModel
+from langchain.messages import HumanMessage
 from loguru import logger
 from pydantic import BaseModel, Field, ValidationError
 
@@ -168,7 +169,7 @@ class LLMJudgeEvaluator(Evaluator):
             for attempt in range(1, self._MAX_RETRIES + 1):
                 try:
                     result = retry_on_conn_error(structured_llm.invoke)(
-                        [{"role": "user", "content": prompt}]
+                        [HumanMessage(content=prompt)]
                     )
                     if not isinstance(result, JudgeVerdict):
                         raise TypeError(
@@ -262,9 +263,7 @@ class ReformatEvaluator:
                 question=question.get("question", ""),
                 response=resp["response"],
             )
-            response = retry_on_conn_error(llm.invoke)(
-                [{"role": "user", "content": prompt}]
-            )
+            response = retry_on_conn_error(llm.invoke)([HumanMessage(content=prompt)])
             content = response.content
             text = content if isinstance(content, str) else str(content)
             reformatted.append({"id": qid, "response": text})

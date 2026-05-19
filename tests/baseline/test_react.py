@@ -219,8 +219,8 @@ class TestRunAnalysisForEval:
             files=[Path("/data/train.csv"), Path("/data/test.csv")],
         )
         msg = mock_agent.invoke.call_args[0][0]["messages"][0]
-        assert "/data/train.csv" in msg["content"]
-        assert "/data/test.csv" in msg["content"]
+        assert "/data/train.csv" in msg.content
+        assert "/data/test.csv" in msg.content
 
     @patch.object(DockerSandbox, "start")
     @patch.object(DockerSandbox, "stop")
@@ -243,7 +243,7 @@ class TestRunAnalysisForEval:
             task_instructions="Answer in JSON format",
         )
         msg = mock_agent.invoke.call_args[0][0]["messages"][0]
-        assert "Answer in JSON format" in msg["content"]
+        assert "Answer in JSON format" in msg.content
 
     @patch.object(DockerSandbox, "start")
     @patch.object(DockerSandbox, "stop")
@@ -263,8 +263,8 @@ class TestRunAnalysisForEval:
         agent = ReactBaselineAgent()
         agent.run_analysis_for_eval("What is 2+2?")
         msg = mock_agent.invoke.call_args[0][0]["messages"][0]
-        assert "What is 2+2?" in msg["content"]
-        assert "Available data files" not in msg["content"]
+        assert "What is 2+2?" in msg.content
+        assert "Available data files" not in msg.content
 
 
 class TestRunModelingForEval:
@@ -340,10 +340,10 @@ class TestRunModelingForEval:
             sample_submission_path=sample,
         )
         msg = mock_agent.invoke.call_args[0][0]["messages"][0]
-        assert str(train) in msg["content"]
-        assert str(test) in msg["content"]
-        assert str(sample) in msg["content"]
-        assert "/workspace/submission.csv" in msg["content"]
+        assert str(train) in msg.content
+        assert str(test) in msg.content
+        assert str(sample) in msg.content
+        assert "/workspace/submission.csv" in msg.content
 
     @patch.object(DockerSandbox, "get_file")
     @patch.object(DockerSandbox, "start")
@@ -379,7 +379,7 @@ class TestRunModelingForEval:
             task_instructions="Use random forest",
         )
         msg = mock_agent.invoke.call_args[0][0]["messages"][0]
-        assert "Use random forest" in msg["content"]
+        assert "Use random forest" in msg.content
 
     @patch.object(DockerSandbox, "get_file")
     @patch.object(DockerSandbox, "start")

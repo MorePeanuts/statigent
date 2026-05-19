@@ -8,6 +8,7 @@ produces a safe default TaskBrief so the pipeline never blocks.
 
 from typing import Protocol, cast
 
+from langchain.messages import AnyMessage, HumanMessage, SystemMessage
 from langchain_core.exceptions import LangChainException, OutputParserException
 from loguru import logger
 from pydantic import ValidationError
@@ -23,7 +24,7 @@ from statigent.schemas import (
 
 
 class _StructuredTaskBriefModel(Protocol):
-    def invoke(self, messages: list[dict[str, str]]) -> TaskBrief: ...
+    def invoke(self, messages: list[AnyMessage]) -> TaskBrief: ...
 
 
 class _TaskBriefModel(Protocol):
@@ -81,26 +82,24 @@ class TaskBriefPlanner:
         prompt: str,
         task_instructions: str,
         profile: DatasetProfile,
-    ) -> list[dict[str, str]]:
+    ) -> list[AnyMessage]:
         return [
-            {
-                "role": "system",
-                "content": (
+            SystemMessage(
+                content=(
                     "Create a concise structured data science task brief. "
                     "Use the provided task request, extra instructions, and "
                     "dataset summary. Return only fields in the TaskBrief schema."
                 ),
-            },
-            {
-                "role": "user",
-                "content": "\n\n".join(
+            ),
+            HumanMessage(
+                content="\n\n".join(
                     [
                         f"Prompt:\n{prompt}",
                         f"Task instructions:\n{task_instructions or 'None'}",
                         f"Dataset profile:\n{profile.compact_summary()}",
                     ]
                 ),
-            },
+            ),
         ]
 
     def _fallback_brief(

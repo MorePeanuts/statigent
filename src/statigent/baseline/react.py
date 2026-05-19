@@ -286,10 +286,12 @@ class ReactBaselineAgent:
             agent = self._create_agent(sandbox)
 
             user_message = self._build_analysis_message(
-                prompt, files=files, task_instructions=task_instructions,
+                prompt,
+                files=files,
+                task_instructions=task_instructions,
             )
             result = retry_on_conn_error(agent.invoke)(
-                {"messages": [{"role": "user", "content": user_message}]}
+                {"messages": [HumanMessage(content=user_message)]}
             )
             response: str = result["messages"][-1].content
             trace = _serialize_messages(result["messages"])
@@ -324,7 +326,7 @@ class ReactBaselineAgent:
                 task_instructions=task_instructions,
             )
             result = retry_on_conn_error(agent.invoke)(
-                {"messages": [{"role": "user", "content": user_message}]}
+                {"messages": [HumanMessage(content=user_message)]}
             )
             trace = _serialize_messages(result["messages"])
 
