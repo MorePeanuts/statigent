@@ -21,7 +21,7 @@ class TestPersist:
         result = EvalResult(
             score=0.85,
             details={"abq": 0.85, "psaq": 0.9},
-            agent_name="react-baseline",
+            agent_name="react",
             model_name="deepseek-v4-flash",
             benchmark_name="dabench",
         )
@@ -35,13 +35,13 @@ class TestPersist:
         result = EvalResult(
             score=0.85,
             details={"abq": 0.85},
-            agent_name="react-baseline",
+            agent_name="react",
             model_name="deepseek-v4-flash",
             benchmark_name="dabench",
         )
         output_dir = BenchmarkAdapter.persist(result, predictions=[], base_dir=tmp_path)
         meta = json.loads((output_dir / "meta.json").read_text())
-        assert meta["agent_name"] == "react-baseline"
+        assert meta["agent_name"] == "react"
         assert meta["model_name"] == "deepseek-v4-flash"
         assert meta["benchmark_name"] == "dabench"
         assert "timestamp" in meta
@@ -85,13 +85,13 @@ class TestPersist:
         result = EvalResult(
             score=0.0,
             details={},
-            agent_name="react-baseline",
+            agent_name="react",
             model_name="deepseek-v4-flash",
             benchmark_name="dabench",
         )
         output_dir = BenchmarkAdapter.persist(result, predictions=[], base_dir=tmp_path)
         dir_name = output_dir.name
-        assert dir_name.startswith("react-baseline-deepseek-v4-flash-dabench-")
+        assert dir_name.startswith("dabench-react-deepseek-v4-flash-")
 
     def test_io_error_wrapped_as_benchmark_error(self, tmp_path: Path) -> None:
         result = EvalResult(
@@ -329,7 +329,7 @@ class TestExecutePersistence:
         # Find the created directory
         dirs = list(tmp_path.iterdir())
         assert len(dirs) == 1
-        assert dirs[0].name.startswith("test-agent-test-model-stub-")
+        assert dirs[0].name.startswith("stub-test-agent-test-model-")
         assert (dirs[0] / "meta.json").exists()
         assert (dirs[0] / "evaluation" / "scores.json").exists()
         assert (dirs[0] / "traces" / "0.jsonl").exists()

@@ -23,12 +23,12 @@ class TestEvalResult:
         result = EvalResult(
             score=0.85,
             details={"metric": "accuracy"},
-            agent_name="react-baseline",
+            agent_name="react",
             model_name="deepseek-v4-flash",
             benchmark_name="dabench",
         )
         assert result.score == 0.85
-        assert result.agent_name == "react-baseline"
+        assert result.agent_name == "react"
         assert result.model_name == "deepseek-v4-flash"
         assert result.benchmark_name == "dabench"
 

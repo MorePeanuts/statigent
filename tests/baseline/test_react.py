@@ -569,7 +569,7 @@ class TestSerializeMessages:
 class TestProtocolConformance:
     def test_satisfies_data_science_agent_protocol(self) -> None:
         agent = ReactBaselineAgent()
-        assert agent.name == "react-baseline"
+        assert agent.name == "react"
         assert hasattr(agent, "run_analysis_for_eval")
         assert hasattr(agent, "run_modeling_for_eval")
         assert agent.model_name == "deepseek-v4-flash"

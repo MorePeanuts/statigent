@@ -43,7 +43,7 @@ class RunPersister:
         benchmark_name: str,
     ) -> None:
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
-        dir_name = f"{agent_name}-{model_name}-{benchmark_name}-{timestamp}"
+        dir_name = f"{benchmark_name}-{agent_name}-{model_name}-{timestamp}"
         self.output_dir = base_dir / dir_name
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -254,7 +254,7 @@ class BenchmarkAdapter(ABC):
         """Persist evaluation result, predictions, and traces to disk.
 
         Creates:
-            {base_dir}/{agent_name}-{model_name}-{benchmark_name}-{timestamp}/
+            {base_dir}/{benchmark_name}-{agent_name}-{model_name}-{timestamp}/
             ├── meta.json
             ├── predictions/
             │   └── responses.jsonl

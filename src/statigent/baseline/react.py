@@ -188,7 +188,7 @@ to preview the structure and column names before loading with Python.
 class ReactBaselineAgent:
     """Simple react baseline agent using langchain's create_agent."""
 
-    name = "react-baseline"
+    name = "react"
 
     def __init__(
         self,
