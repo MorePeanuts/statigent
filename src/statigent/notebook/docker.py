@@ -164,6 +164,8 @@ class DockerNotebookKernel:
         return FileReadResult(path=path, content=raw[:max_bytes], truncated=truncated)
 
     def write_artifact(self, name: str, content: str, kind: str) -> ArtifactRef:
+        # TODO: also write artifact into the container's /workspace so that
+        # subsequent cells can access generated files.
         if self._context is None:
             raise StatigentNotebookError("Docker notebook kernel has not been started")
         path = self._context.work_dir / "artifacts" / name

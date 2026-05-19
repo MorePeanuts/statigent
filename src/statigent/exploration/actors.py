@@ -60,6 +60,8 @@ class Inspector:
                         f"Task brief:\n{brief.model_dump_json()}\n\n"
                         f"Profile:\n{profile.compact_summary()}\n\n"
                         f"Completed steps: {len(steps)}\n"
+                        # TODO: include step results (stdout/artifacts) in
+                        # context so Inspector can reason over prior findings.
                         f"Reviewer feedback:\n{reviewer_feedback}"
                     ),
                 ),
@@ -84,6 +86,8 @@ class Inspector:
                     content=(
                         f"Task brief:\n{brief.model_dump_json()}\n\n"
                         f"Profile:\n{profile.compact_summary()}\n\n"
+                        # TODO: trim large step outputs before sending to LLM;
+                        # full model_dump() may exceed context window limits.
                         f"Exploration steps:\n{[s.model_dump() for s in steps]}"
                     ),
                 ),

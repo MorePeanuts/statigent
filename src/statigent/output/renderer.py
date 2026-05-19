@@ -42,6 +42,8 @@ class OutputRenderer:
         )
 
     def render_unsupported(self, brief: TaskBrief) -> OutputBundle:
+        # TODO: replace render_unsupported with real rendering once
+        # DATA_MODELING and DEEP_ANALYSIS execution paths are implemented.
         return OutputBundle(
             status=OutputStatus.UNSUPPORTED,
             output_type=brief.output_type,

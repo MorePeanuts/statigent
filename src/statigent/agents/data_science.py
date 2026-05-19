@@ -113,6 +113,9 @@ class StatigentDataScienceAgent:
             TaskType.DEEP_ANALYSIS,
             TaskType.UNKNOWN,
         }:
+            # TODO: implement DATA_MODELING (model training, prediction,
+            # submission.csv generation) and DEEP_ANALYSIS (multi-step
+            # commercial/business report with executive summary).
             bundle = self.renderer.render_unsupported(brief)
             trace.append(
                 {"role": "assistant", "content": bundle.content, "name": "output"}
@@ -147,6 +150,8 @@ class StatigentDataScienceAgent:
         unsupported response. The returned submission.csv path does not
         exist on disk.
         """
+        # WARNING: run_modeling_for_eval is a stub — no model training,
+        # prediction, or submission file generation is implemented yet.
         target_dir = work_dir or Path(tempfile.mkdtemp(prefix="statigent-modeling-"))
         response, trace = self.run_analysis_for_eval(
             prompt,

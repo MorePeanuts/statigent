@@ -131,9 +131,10 @@ class ExplorationOrchestrator:
                     debug_attempts=debug_attempts,
                 )
             )
-            # Single-round skeleton: the reviewer feedback loop across
-            # multiple rounds is not yet implemented. Remove this break
-            # once Inspector uses prior step results to guide next actions.
+            # WARNING: orchestrator loop currently runs only 1 round;
+            # multi-round iteration (Inspector re-proposes after reviewer
+            # feedback, accumulated results guide next actions) is not
+            # yet implemented.
             break
 
         if steps:
