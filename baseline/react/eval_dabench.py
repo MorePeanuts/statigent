@@ -50,12 +50,20 @@ def main(
 ) -> None:
     console = Console()
 
-    path = registry_path or _DEFAULT_REGISTRY_PATH
-    if not path.exists():
-        console.print(f"[red]Registry file not found: {path}[/red]")
-        console.print("Create config/models.toml or pass --registry-path")
-        raise typer.Exit(code=1)
-    registry = load_registry(str(path))
+    if registry_path is not None:
+        if registry_path.exists():
+            path = str(registry_path)
+        else:
+            console.print(
+                f"[yellow]Registry file not found: {registry_path}, "
+                "falling back to bundled defaults[/yellow]"
+            )
+            path = None
+    elif _DEFAULT_REGISTRY_PATH.exists():
+        path = str(_DEFAULT_REGISTRY_PATH)
+    else:
+        path = None
+    registry = load_registry(path)
     if not registry.has_model(model):
         available = ", ".join(registry.list_models())
         console.print(f"[red]Unknown model: {model}. Available: {available}[/red]")
@@ -66,7 +74,7 @@ def main(
     console.print(f"  Limit: {limit or 'all'}")
     console.print(f"  Task ID: {task_id or 'all'}")
     console.print(f"  Output: {output_dir}")
-    console.print(f"  Registry: {path}")
+    console.print(f"  Registry: {path or 'bundled defaults'}")
 
     # Setup
     adapter = DABenchAdapter()

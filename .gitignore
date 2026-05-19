@@ -43,3 +43,6 @@ benchmarks/data/
 
 # Evaluation outputs
 evaluations/
+
+# Local model config (falls back to bundled defaults)
+config/models.toml
