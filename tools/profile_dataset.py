@@ -20,6 +20,7 @@ from rich.panel import Panel
 from rich.pretty import Pretty
 from rich.table import Table
 
+from statigent.benchmarks.dsbench import _find_submission_file
 from statigent.input.profiler import InputProfiler
 from statigent.schemas import DatasetProfile
 
@@ -64,7 +65,7 @@ def _collect_dsbench_dm(sample_name: str) -> list[Path]:
         for f in (
             resplit / "train.csv",
             resplit / "test.csv",
-            resplit / "sample_submission.csv",
+            _find_submission_file(resplit),
         )
         if f.exists()
     ]
