@@ -131,11 +131,12 @@ def main(
             if line:
                 messages.append(json.loads(line))
 
-    console.rule(f"[bold blue]{trace_file}")
-    console.print(f"[dim]{len(messages)} messages[/dim]\n")
+    with console.pager(styles=True):
+        console.rule(f"[bold blue]{trace_file}")
+        console.print(f"[dim]{len(messages)} messages[/dim]\n")
 
-    for msg in messages:
-        _render_message(msg, collapse)
+        for msg in messages:
+            _render_message(msg, collapse)
 
 
 if __name__ == "__main__":
