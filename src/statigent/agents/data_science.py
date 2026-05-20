@@ -96,6 +96,10 @@ class StatigentDataScienceAgent:
             task_instructions=task_instructions,
             profile=profile,
         )
+        # TODO: AgentTrace should be an object passed between multiple agents.
+        # Consider using an agent field to indicate which agent it comes from.
+        # Since the debugger may run multiple times, each with its own independent
+        # context, a session field can be used to specify the session ID.
         trace: AgentTrace = [
             {
                 "role": "system",
@@ -113,9 +117,10 @@ class StatigentDataScienceAgent:
             TaskType.DEEP_ANALYSIS,
             TaskType.UNKNOWN,
         }:
-            # TODO: implement DATA_MODELING (model training, prediction,
-            # submission.csv generation) and DEEP_ANALYSIS (multi-step
-            # commercial/business report with executive summary).
+            # WARNING: When using the run_analysis_for_eval method, the input must
+            # be a data analysis task. If it is identified as another type of task,
+            # it indicates a misjudgment, and a warning message should be output,
+            # with the task forcibly changed to a data analysis task.
             bundle = self.renderer.render_unsupported(brief)
             trace.append(
                 {"role": "assistant", "content": bundle.content, "name": "output"}
@@ -162,8 +167,7 @@ class StatigentDataScienceAgent:
             {
                 "role": "assistant",
                 "content": (
-                    "Modeling submission generation is not implemented: "
-                    f"{response}"
+                    f"Modeling submission generation is not implemented: {response}"
                 ),
                 "name": "modeling_placeholder",
             }

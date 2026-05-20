@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, model_validator
 
 class TaskType(StrEnum):
     """Classification of a data science task by scope and expected output."""
+
     DATA_ANALYSIS = "data_analysis"
     DATA_MODELING = "data_modeling"
     DEEP_ANALYSIS = "deep_analysis"
@@ -52,6 +53,7 @@ class ExplorationActionKind(StrEnum):
     CUSTOM_ANALYSIS requires rationale, expected_evidence, and risk_notes;
     all other kinds are safe with just a title and description.
     """
+
     INSPECT_SCHEMA = "inspect_schema"
     PROFILE_MISSINGNESS = "profile_missingness"
     SUMMARIZE_NUMERIC = "summarize_numeric"
@@ -124,9 +126,7 @@ class TableProfile(BaseModel):
     rows: int = Field(ge=0, description="Number of rows in the table")
     columns: int = Field(ge=0, description="Number of columns in the table")
     column_names: list[str] = Field(description="Ordered list of column names")
-    dtypes: dict[str, str] = Field(
-        description="Mapping of column name to dtype string"
-    )
+    dtypes: dict[str, str] = Field(description="Mapping of column name to dtype string")
     missing_rates: dict[str, float] = Field(
         description="Fraction of nulls per column (0.0-1.0)"
     )
@@ -180,6 +180,7 @@ class DatasetProfile(BaseModel):
         return "Tables:\n" + "\n".join(table_lines) + warning_text
 
 
+# TODO: The comments here are not for programmers, but for large models.
 class TaskBrief(BaseModel):
     """Structured task plan produced by the TaskBriefPlanner.
 
@@ -209,15 +210,22 @@ class TaskBrief(BaseModel):
     )
 
 
+# BUG: See the `next_action` method of the Inspector; this method is not suitable
+# for structured output.
 class ExplorationAction(BaseModel):
     """A single exploration step proposed by the Inspector.
 
     CUSTOM_ANALYSIS actions must supply rationale, expected_evidence, and
     risk_notes — enforced by the model validator below.
     """
+
     kind: ExplorationActionKind = Field(
         description="Which predefined action to perform"
     )
+    # BUG: Each predefined exploration action should correspond to a carefully designed
+    # exploration prompt, similar to skills. The Inspector is responsible for outputting
+    # its analysis process and conclusions, which are then parsed by the reviewer to
+    # extract actions and integrate the prompts.
     title: str = Field(description="Short human-readable label for the action")
     description: str = Field(description="What this action will investigate or compute")
     rationale: str = Field(
@@ -354,12 +362,8 @@ class ExplorationReport(BaseModel):
     final_draft: FinalDraft = Field(
         description="The Inspector's final answer or report"
     )
-    steps: list[ExplorationStep] = Field(
-        description="All exploration steps taken"
-    )
-    artifacts: list[ArtifactRef] = Field(
-        description="All generated artifacts"
-    )
+    steps: list[ExplorationStep] = Field(description="All exploration steps taken")
+    artifacts: list[ArtifactRef] = Field(description="All generated artifacts")
     warnings: list[str] = Field(
         default_factory=list, description="Issues encountered during exploration"
     )

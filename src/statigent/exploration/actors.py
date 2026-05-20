@@ -59,8 +59,12 @@ class Inspector:
         steps: list[ExplorationStep],
         reviewer_feedback: str,
     ) -> ExplorationAction:
+        # TODO: context engineering for Inspector
         return _invoke_with_retries(
             self.model,
+            # BUG: next_action is completely unsuitable for structured output.
+            # Here should be a carefully designed prompt that guides the model to
+            # complete data exploration instructions.
             ExplorationAction,
             [
                 SystemMessage(
@@ -88,6 +92,9 @@ class Inspector:
         profile: DatasetProfile,
         steps: list[ExplorationStep],
     ) -> FinalDraft:
+        # TODO: Output different types based on the task type. If it is only a data
+        # analysis task (question-based), output the answer directly. If it is a data
+        # modeling task, output a structured data insight report.
         return _invoke_with_retries(
             self.model,
             FinalDraft,
@@ -121,6 +128,8 @@ class Reviewer:
         brief: TaskBrief,
         action: ExplorationAction,
     ) -> ReviewDecision:
+        # TODO: Analyze the inspector's thought process, determine whether it is
+        # correct, and extract the specific action.
         return _invoke_with_retries(
             self.model,
             ReviewDecision,
@@ -142,6 +151,9 @@ class Reviewer:
         )
 
     def review_final(self, brief: TaskBrief, draft: FinalDraft) -> ReviewDecision:
+        # TODO: The final review should be used to determine whether the insector's
+        # final output has completed the tasks for this stage. If not, and if the budget
+        # limit has not been reached, more exploration steps are needed.
         return _invoke_with_retries(
             self.model,
             ReviewDecision,
@@ -170,6 +182,9 @@ class Coder:
         self.model = cast("_StructuredModel", model)
 
     def write_code(self, brief: TaskBrief, action: ExplorationAction) -> CodeDraft:
+        # BUG: The coder should bind a `append_code_cell` tool to add cells to the code
+        # context, but not execute them for now. Additionally, each cell corresponds
+        # to a question passed from the reviewer.
         return _invoke_with_retries(
             self.model,
             CodeDraft,
@@ -190,6 +205,8 @@ class Coder:
         )
 
 
+# TODO: The debugger should be equipped with a replace_code_cell tool, using a React
+# agent focused on solving code debugging issues.
 class Debugger:
     """Diagnoses failed cells and proposes corrected code, or recommends abandonment."""
 

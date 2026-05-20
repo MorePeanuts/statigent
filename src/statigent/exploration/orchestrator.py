@@ -90,6 +90,7 @@ class ExplorationOrchestrator:
                 warnings.append("Code cell budget exhausted.")
                 break
 
+            # BUG: action should be plain text instead of structured output
             action = self.inspector.next_action(
                 brief,
                 profile,

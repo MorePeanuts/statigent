@@ -43,6 +43,7 @@ BENCHMARK_NAMES = ("dabench", "dsbench_da", "dsbench_dm")
 # File collectors — each mirrors the corresponding adapter exactly
 # ---------------------------------------------------------------------------
 
+
 def _collect_dsbench_da(sample_id: str) -> list[Path]:
     data_base = _DSBENCH_DIR / "data_analysis" / "data" / sample_id
     if not data_base.exists():
@@ -81,9 +82,7 @@ def _collect_dabench(question_id: str) -> list[Path]:
     matches = [q for q in questions if str(q["id"]) == question_id]
     if not matches:
         max_id = len(questions) - 1
-        console.print(
-            f"[red]Question id '{question_id}' not found (0-{max_id})"
-        )
+        console.print(f"[red]Question id '{question_id}' not found (0-{max_id})")
         raise typer.Exit(1)
     csv_path = _DABENCH_DIR / "da-dev-tables" / matches[0]["file_name"]
     if not csv_path.exists():
@@ -124,6 +123,7 @@ def collect_files(target: str, task_id: str | None) -> list[Path]:
 # Sample listing (only when task_id is missing for benchmarks that need it)
 # ---------------------------------------------------------------------------
 
+
 def _print_dsbench_dm_samples() -> None:
     resplit = _DSBENCH_DIR / "data_modeling" / "data" / "data_resplit"
     if not resplit.exists():
@@ -139,6 +139,7 @@ def _print_dsbench_dm_samples() -> None:
 # Rendering
 # ---------------------------------------------------------------------------
 
+
 def _human_bytes(n: int) -> str:
     size = float(n)
     for unit in ("B", "KB", "MB", "GB"):
@@ -150,7 +151,7 @@ def _human_bytes(n: int) -> str:
 
 def _print_profile(profile: DatasetProfile) -> None:
     console.rule("[bold blue]DatasetProfile")
-    console.print(Pretty(profile, max_depth=2))
+    console.print(Pretty(profile, max_depth=3))
 
     file_table = Table(title="Discovered Files", show_lines=False)
     file_table.add_column("Relative Path", style="cyan")
@@ -159,12 +160,17 @@ def _print_profile(profile: DatasetProfile) -> None:
     file_table.add_column("Tabular?", justify="center")
     for f in profile.files:
         file_table.add_row(
-            f.relative_path, f.suffix, _human_bytes(f.size_bytes),
+            f.relative_path,
+            f.suffix,
+            _human_bytes(f.size_bytes),
             "Yes" if f.is_tabular else "No",
         )
     console.print(file_table)
 
     for t in profile.tables:
+        rows_text = "\n".join(
+            f"  Row {i}: {row}" for i, row in enumerate(t.sample_rows, 1)
+        )
         console.print(
             Panel(
                 f"[bold]{t.relative_path}[/bold]\n"
@@ -176,12 +182,10 @@ def _print_profile(profile: DatasetProfile) -> None:
                 f"Likely time columns: {t.likely_time_columns}\n"
                 f"Likely categorical columns: {t.likely_categorical_columns}\n"
                 f"Numeric summaries: {t.numeric_summaries}\n"
-                f"Sample rows (first {len(t.sample_rows)}):",
+                f"Sample rows (first {len(t.sample_rows)}):\n{rows_text}",
                 title=f"TableProfile: {t.relative_path}",
             )
         )
-        for i, row in enumerate(t.sample_rows, 1):
-            console.print(f"  Row {i}: {row}")
 
     if profile.warnings:
         console.print("\n[bold yellow]Warnings:")
@@ -201,6 +205,7 @@ def _print_profile(profile: DatasetProfile) -> None:
 # CLI
 # ---------------------------------------------------------------------------
 
+
 @app.command()
 def main(
     target: str = typer.Argument(
@@ -213,10 +218,10 @@ def main(
     task_id: str | None = typer.Argument(
         None,
         help="Task/sample id for benchmarks. "
-             "DABench: question id (e.g. 0); "
-             "DSBench-DA: sample id (e.g. 00000001); "
-             "DSBench-DM: sample name (e.g. titanic). "
-             "Ignored for custom paths.",
+        "DABench: question id (e.g. 0); "
+        "DSBench-DA: sample id (e.g. 00000001); "
+        "DSBench-DM: sample name (e.g. titanic). "
+        "Ignored for custom paths.",
     ),
 ) -> None:
     """Profile a dataset with InputProfiler to inspect what the agent sees at runtime.
