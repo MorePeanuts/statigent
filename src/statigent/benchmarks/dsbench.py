@@ -221,7 +221,7 @@ class DSBenchAdapter(BenchmarkAdapter):
             data_files = [
                 f
                 for f in sorted(data_base.iterdir())
-                if f.is_file() and f.suffix not in {".txt", ".DS_Store"}
+                if f.is_file() and f.suffix != ".txt" and f.name != ".DS_Store"
             ]
 
             for qname in sample["questions"]:
