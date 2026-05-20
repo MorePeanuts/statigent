@@ -43,6 +43,22 @@ _HF_DATA_URLS: dict[str, str] = {
 TaskType = Literal["data_analysis", "data_modeling"]
 
 
+def _find_submission_file(task_dir: Path) -> Path:
+    """Find the sample submission file in a task data directory.
+
+    Prefers filenames containing 'submission' (case-insensitive),
+    otherwise returns the first CSV that is not train.csv or test.csv.
+    """
+    csvs = [f for f in task_dir.iterdir() if f.is_file() and f.suffix == ".csv"]
+    for f in csvs:
+        if "submission" in f.name.lower():
+            return f
+    for f in sorted(csvs):
+        if f.name not in ("train.csv", "test.csv"):
+            return f
+    return task_dir / "sample_submission.csv"
+
+
 class DSBenchAdapter(BenchmarkAdapter):
     """Adapter for the DSBench benchmark (data analysis + data modeling tasks)."""
 
@@ -288,30 +304,12 @@ class DSBenchAdapter(BenchmarkAdapter):
             )
             description = task_path.read_text() if task_path.exists() else ""
 
-            train_path = (
-                self.data_dir
-                / "data_modeling"
-                / "data"
-                / "data_resplit"
-                / name
-                / "train.csv"
+            task_data_dir = (
+                self.data_dir / "data_modeling" / "data" / "data_resplit" / name
             )
-            test_path = (
-                self.data_dir
-                / "data_modeling"
-                / "data"
-                / "data_resplit"
-                / name
-                / "test.csv"
-            )
-            sample_sub = (
-                self.data_dir
-                / "data_modeling"
-                / "data"
-                / "data_resplit"
-                / name
-                / "sample_submission.csv"
-            )
+            train_path = task_data_dir / "train.csv"
+            test_path = task_data_dir / "test.csv"
+            sample_sub = _find_submission_file(task_data_dir)
 
             if not train_path.exists():
                 logger.warning("DSBench DM skipping {}: train.csv not found", name)
