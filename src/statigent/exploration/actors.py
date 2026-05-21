@@ -95,6 +95,8 @@ def _invoke_tool_call(
     tools: list[StructuredTool],
     messages: list[AnyMessage],
     expected_tool_name: str,
+    *,
+    invoke_additional_tools: bool = False,
 ) -> object:
     response = model.bind_tools(tools).invoke(messages)
     if not isinstance(response, AIMessage):
@@ -102,18 +104,33 @@ def _invoke_tool_call(
             f"Tool model returned {type(response).__name__}, expected AIMessage"
         )
     tool_by_name = {tool.name: tool for tool in tools}
-    expected_result: object | None = None
+    expected_calls = []
     for call in response.tool_calls:
         name = call["name"]
-        tool = tool_by_name.get(name)
-        if tool is None:
+        if name not in tool_by_name:
             raise StatigentExplorationError(f"Unknown tool call: {name}")
-        result = tool.invoke(call["args"])
         if name == expected_tool_name:
-            expected_result = result
-    if expected_result is None:
-        raise StatigentExplorationError(f"Model did not call {expected_tool_name}")
-    return expected_result
+            expected_calls.append(call)
+    if len(expected_calls) != 1:
+        raise StatigentExplorationError(
+            f"Model must call exactly one {expected_tool_name}; "
+            f"received {len(expected_calls)}"
+        )
+    seen_tool_names: set[str] = set()
+    for call in response.tool_calls:
+        name = call["name"]
+        if name in seen_tool_names:
+            raise StatigentExplorationError(f"Duplicate tool call: {name}")
+        seen_tool_names.add(name)
+    expected_result: object | None = None
+    if invoke_additional_tools:
+        for call in response.tool_calls:
+            name = call["name"]
+            result = tool_by_name[name].invoke(call["args"])
+            if name == expected_tool_name:
+                expected_result = result
+        return expected_result
+    return tool_by_name[expected_tool_name].invoke(expected_calls[0]["args"])
 
 
 class Inspector:
@@ -382,6 +399,7 @@ class Debugger:
                 ),
             ],
             "replace_code_cell",
+            invoke_additional_tools=True,
         )
         return lessons
 

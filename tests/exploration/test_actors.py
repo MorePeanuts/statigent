@@ -1,8 +1,10 @@
 from pathlib import Path
 from typing import Any, TypeVar, cast
 
+import pytest
 from langchain.messages import AIMessage
 
+from statigent.errors import StatigentExplorationError
 from statigent.exploration import Coder, Debugger, Inspector, Reviewer
 from statigent.exploration.tools import make_replace_code_cell_tool
 from statigent.notebook import FakeNotebookKernel, NotebookContext
@@ -74,9 +76,7 @@ class FakeToolModel:
         self.bound_tool_names: list[str] = []
 
     def bind_tools(self, tools: list[object]) -> "FakeToolModel":
-        self.bound_tool_names = [
-            getattr(tool, "name", "") for tool in tools
-        ]
+        self.bound_tool_names = [getattr(tool, "name", "") for tool in tools]
         return self
 
     def invoke(self, _messages: list[object]) -> AIMessage:
@@ -233,6 +233,45 @@ def test_coder_append_code_cell_uses_append_tool(tmp_path: Path) -> None:
     assert cell == kernel.get_code_context().cells[0]
     assert cell.code == "print('ok')"
     assert model.bound_tool_names == ["append_code_cell"]
+
+
+def test_coder_append_code_cell_rejects_duplicate_tool_calls(
+    tmp_path: Path,
+) -> None:
+    kernel = FakeNotebookKernel()
+    kernel.start(NotebookContext(input_paths=[], work_dir=tmp_path / "work"))
+    model = FakeToolModel(
+        "append_code_cell",
+        {
+            "code": "print('first')",
+            "purpose": "First",
+            "expected_observation": "first",
+        },
+        extra_tool_calls=[
+            {
+                "name": "append_code_cell",
+                "args": {
+                    "code": "print('second')",
+                    "purpose": "Second",
+                    "expected_observation": "second",
+                },
+                "id": "call-2",
+            }
+        ],
+    )
+    coder = Coder(model)
+    instruction = ApprovedCodeInstruction(
+        action_kind=ExplorationActionKind.INSPECT_SCHEMA,
+        question="What columns exist?",
+        evidence_needed="Column list",
+        coding_instruction="Print columns.",
+        action_prompt="Inspect schema.",
+    )
+
+    with pytest.raises(StatigentExplorationError, match="exactly one"):
+        coder.append_code_cell(make_brief(), instruction, kernel)
+
+    assert kernel.get_code_context().cells == []
 
 
 def test_debugger_debug_cell_uses_replace_and_records_lesson(tmp_path: Path) -> None:
