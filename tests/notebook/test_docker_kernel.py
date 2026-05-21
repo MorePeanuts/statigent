@@ -33,10 +33,19 @@ def test_docker_kernel_execute_cell_wraps_incremental_driver(
     kernel = DockerNotebookKernel(image="image", network=False)
     kernel.start(NotebookContext(input_paths=[], work_dir=tmp_path / "work"))
 
-    result = kernel.execute_cell("x = 1 + 1\nprint(x)", "compute")
+    cell = kernel.append_code_cell(
+        "x = 1 + 1\nprint(x)",
+        "compute",
+        "Print the computed value",
+    )
+    result = kernel.execute_cell(cell.cell_id)
+    context = kernel.get_code_context()
 
+    assert cell.cell_id == "cell-1"
     assert result.stdout == "2\n"
     assert result.exit_code == 0
+    assert result.purpose == "compute"
+    assert context.cells[0].latest_result == result
     assert "statigent_notebook_driver.py" in sandbox.exec.call_args[0][0]
 
 

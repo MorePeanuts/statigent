@@ -289,6 +289,28 @@ class NotebookCellResult(BaseModel):
         return self.exit_code == 0
 
 
+class NotebookCell(BaseModel):
+    """Durable notebook code cell with planning metadata and latest result."""
+
+    cell_id: str = Field(description="Stable identifier for this notebook cell")
+    code: str = Field(description="Python source code stored in the cell")
+    purpose: str = Field(description="Why this cell exists")
+    expected_observation: str = Field(
+        description="What output or result this cell is expected to produce"
+    )
+    latest_result: NotebookCellResult | None = Field(
+        default=None, description="Most recent execution result for this cell"
+    )
+
+
+class NotebookCodeContext(BaseModel):
+    """Ordered notebook code cells available to exploration actors."""
+
+    cells: list[NotebookCell] = Field(
+        default_factory=list, description="Notebook cells in insertion order"
+    )
+
+
 class NotebookState(BaseModel):
     """Accumulated state of a notebook session — all executed cells and artifacts."""
 
@@ -417,7 +439,9 @@ __all__ = [
     "ExplorationStep",
     "FinalDraft",
     "InputFileInfo",
+    "NotebookCell",
     "NotebookCellResult",
+    "NotebookCodeContext",
     "NotebookState",
     "OutputBundle",
     "OutputStatus",

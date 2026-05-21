@@ -17,7 +17,13 @@ from pathlib import Path
 from statigent.errors import StatigentNotebookError
 from statigent.notebook.base import FileReadResult, NotebookContext
 from statigent.sandbox.docker import DockerSandbox
-from statigent.schemas import ArtifactRef, NotebookCellResult, NotebookState
+from statigent.schemas import (
+    ArtifactRef,
+    NotebookCell,
+    NotebookCellResult,
+    NotebookCodeContext,
+    NotebookState,
+)
 
 # Python driver that lives inside the container. It decodes the base64
 # cell payload, executes it in a persistent STATE dict, and emits JSON
@@ -79,6 +85,7 @@ class DockerNotebookKernel:
         self.network = network
         self._sandbox: DockerSandbox | None = None
         self._context: NotebookContext | None = None
+        self._cells: list[NotebookCell] = []
         self._state = NotebookState()
 
     def start(self, context: NotebookContext) -> None:
@@ -107,9 +114,42 @@ class DockerNotebookKernel:
         self._sandbox = None
         self._context = None
 
-    def execute_cell(self, code: str, purpose: str) -> NotebookCellResult:
+    def append_code_cell(
+        self,
+        code: str,
+        purpose: str,
+        expected_observation: str,
+    ) -> NotebookCell:
+        cell = NotebookCell(
+            cell_id=f"cell-{len(self._cells) + 1}",
+            code=code,
+            purpose=purpose,
+            expected_observation=expected_observation,
+        )
+        self._cells.append(cell)
+        return cell
+
+    def replace_code_cell(
+        self,
+        cell_id: str,
+        code: str,
+        purpose: str,
+        expected_observation: str,
+    ) -> NotebookCell:
+        index, _cell = self._require_cell(cell_id)
+        cell = NotebookCell(
+            cell_id=cell_id,
+            code=code,
+            purpose=purpose,
+            expected_observation=expected_observation,
+        )
+        self._cells[index] = cell
+        return cell
+
+    def execute_cell(self, cell_id: str) -> NotebookCellResult:
         sandbox = self._require_sandbox()
-        encoded = base64.b64encode(code.encode()).decode()
+        _index, cell = self._require_cell(cell_id)
+        encoded = base64.b64encode(cell.code.encode()).decode()
         command = (
             "python - <<'PY'\n"
             "import importlib.util\n"
@@ -134,9 +174,9 @@ class DockerNotebookKernel:
         stderr = str(payload.get("stderr", ""))
         exit_code = int(payload.get("exit_code", 1))
         result = NotebookCellResult(
-            cell_id=f"cell-{len(self._state.executed_cells) + 1}",
-            code=code,
-            purpose=purpose,
+            cell_id=cell.cell_id,
+            code=cell.code,
+            purpose=cell.purpose,
             stdout=str(payload.get("stdout", "")),
             stderr=stderr,
             exit_code=exit_code,
@@ -144,8 +184,12 @@ class DockerNotebookKernel:
             artifacts=[],
             error_summary=stderr[:500] if exit_code else "",
         )
+        cell.latest_result = result
         self._state.executed_cells.append(result)
         return result
+
+    def get_code_context(self) -> NotebookCodeContext:
+        return NotebookCodeContext(cells=list(self._cells))
 
     def read_file(
         self,
@@ -190,3 +234,9 @@ class DockerNotebookKernel:
         if self._sandbox is None:
             raise StatigentNotebookError("Docker notebook kernel has not been started")
         return self._sandbox
+
+    def _require_cell(self, cell_id: str) -> tuple[int, NotebookCell]:
+        for index, cell in enumerate(self._cells):
+            if cell.cell_id == cell_id:
+                return index, cell
+        raise StatigentNotebookError(f"Unknown notebook cell: {cell_id}")

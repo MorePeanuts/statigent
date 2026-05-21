@@ -2,7 +2,13 @@ from pathlib import Path
 
 from statigent.errors import StatigentNotebookError
 from statigent.notebook.base import FileReadResult, NotebookContext
-from statigent.schemas import ArtifactRef, NotebookCellResult, NotebookState
+from statigent.schemas import (
+    ArtifactRef,
+    NotebookCell,
+    NotebookCellResult,
+    NotebookCodeContext,
+    NotebookState,
+)
 
 
 class FakeNotebookKernel:
@@ -16,6 +22,7 @@ class FakeNotebookKernel:
     def __init__(self) -> None:
         self._context: NotebookContext | None = None
         self._queued: list[tuple[str, str, int]] = []
+        self._cells: list[NotebookCell] = []
         self._state = NotebookState()
 
     def queue_result(
@@ -33,14 +40,47 @@ class FakeNotebookKernel:
     def close(self) -> None:
         self._context = None
 
-    def execute_cell(self, code: str, purpose: str) -> NotebookCellResult:
-        if self._context is None:
-            raise StatigentNotebookError("Fake notebook kernel has not been started")
-        stdout, stderr, exit_code = self._queued.pop(0) if self._queued else ("", "", 0)
-        result = NotebookCellResult(
-            cell_id=f"cell-{len(self._state.executed_cells) + 1}",
+    def append_code_cell(
+        self,
+        code: str,
+        purpose: str,
+        expected_observation: str,
+    ) -> NotebookCell:
+        cell = NotebookCell(
+            cell_id=f"cell-{len(self._cells) + 1}",
             code=code,
             purpose=purpose,
+            expected_observation=expected_observation,
+        )
+        self._cells.append(cell)
+        return cell
+
+    def replace_code_cell(
+        self,
+        cell_id: str,
+        code: str,
+        purpose: str,
+        expected_observation: str,
+    ) -> NotebookCell:
+        index, _cell = self._require_cell(cell_id)
+        cell = NotebookCell(
+            cell_id=cell_id,
+            code=code,
+            purpose=purpose,
+            expected_observation=expected_observation,
+        )
+        self._cells[index] = cell
+        return cell
+
+    def execute_cell(self, cell_id: str) -> NotebookCellResult:
+        if self._context is None:
+            raise StatigentNotebookError("Fake notebook kernel has not been started")
+        _index, cell = self._require_cell(cell_id)
+        stdout, stderr, exit_code = self._queued.pop(0) if self._queued else ("", "", 0)
+        result = NotebookCellResult(
+            cell_id=cell.cell_id,
+            code=cell.code,
+            purpose=cell.purpose,
             stdout=stdout,
             stderr=stderr,
             exit_code=exit_code,
@@ -48,8 +88,12 @@ class FakeNotebookKernel:
             artifacts=[],
             error_summary=stderr if exit_code else "",
         )
+        cell.latest_result = result
         self._state.executed_cells.append(result)
         return result
+
+    def get_code_context(self) -> NotebookCodeContext:
+        return NotebookCodeContext(cells=list(self._cells))
 
     def read_file(
         self,
@@ -87,3 +131,9 @@ class FakeNotebookKernel:
 
     def snapshot(self) -> NotebookState:
         return self._state
+
+    def _require_cell(self, cell_id: str) -> tuple[int, NotebookCell]:
+        for index, cell in enumerate(self._cells):
+            if cell.cell_id == cell_id:
+                return index, cell
+        raise StatigentNotebookError(f"Unknown notebook cell: {cell_id}")

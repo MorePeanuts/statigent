@@ -105,7 +105,12 @@ class ExplorationOrchestrator:
 
             approved_action = review.revised_action or action
             code = self.coder.write_code(brief, approved_action)
-            result = self.kernel.execute_cell(code.code, code.purpose)
+            cell = self.kernel.append_code_cell(
+                code.code,
+                code.purpose,
+                code.expected_observation,
+            )
+            result = self.kernel.execute_cell(cell.cell_id)
             debug_attempts = 0
 
             while not result.ok and debug_attempts < brief.budgets.max_debug_attempts:
@@ -118,7 +123,13 @@ class ExplorationOrchestrator:
                 if not decision.retry:
                     warnings.append(f"Debugger abandoned action: {decision.reason}")
                     break
-                result = self.kernel.execute_cell(decision.code, code.purpose)
+                cell = self.kernel.replace_code_cell(
+                    cell.cell_id,
+                    decision.code,
+                    code.purpose,
+                    code.expected_observation,
+                )
+                result = self.kernel.execute_cell(cell.cell_id)
 
             if not result.ok:
                 warnings.append(f"Exploration action failed: {approved_action.title}")
