@@ -2,6 +2,7 @@ FROM python:3.12-slim
 
 RUN pip install --no-cache-dir \
     pandas numpy scikit-learn scipy xgboost lightgbm \
-    matplotlib seaborn torch torchvision
+    matplotlib seaborn torch torchvision \
+    openpyxl xlrd pyarrow Pillow
 
 WORKDIR /workspace

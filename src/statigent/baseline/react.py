@@ -68,8 +68,8 @@ def make_bash_tool(sandbox: DockerSandbox) -> BaseTool:
     def bash(command: str) -> str:
         """Run a bash command in the workspace.
 
-        Use this for shell operations like installing packages,
-        managing files, running scripts, or chaining commands.
+        Use this for shell operations like managing files,
+        running scripts, or chaining commands.
         Each call runs in a fresh process — variables do not persist.
         Save intermediate results to files in /workspace/ to share
         state between calls.
@@ -84,9 +84,6 @@ def make_python_tool(sandbox: DockerSandbox) -> BaseTool:
     def python(code: str) -> str:
         """Execute Python code and return the output.
 
-        Use this to run data analysis code. Available packages: pandas,
-        numpy, scikit-learn, scipy, xgboost, lightgbm, matplotlib,
-        seaborn, torch.
         Each call starts a fresh interpreter — import modules and load
         data in every call. Save intermediate results to files in
         /workspace/ to share state between calls.
@@ -105,12 +102,11 @@ def make_python_tool(sandbox: DockerSandbox) -> BaseTool:
 def make_read_file_tool(sandbox: DockerSandbox) -> BaseTool:
     @tool
     def read_file(file_path: str, max_lines: int = 0) -> str:
-        """Read the contents of a file.
+        """Read the contents of a text file.
 
-        Use this to read CSV data files, task descriptions, or other
-        text files. Set max_lines to read only the first N lines
-        (0 = entire file). Very long files are automatically truncated
-        with the middle omitted.
+        Use this to read CSV and other plain text files. Set max_lines
+        to read only the first N lines (0 = entire file). Very long
+        files are automatically truncated with the middle omitted.
         """
         safe_path = shlex.quote(file_path)
         if max_lines > 0:
@@ -121,13 +117,38 @@ def make_read_file_tool(sandbox: DockerSandbox) -> BaseTool:
         if "�" in output[:500]:
             return (
                 f"Error: {file_path} appears to be a binary file "
-                "(e.g., Excel, Parquet, image). Use the python tool "
-                "with an appropriate library (e.g., pd.read_excel(), "
-                "pd.read_parquet()) to read it instead."
+                "(e.g., Excel, Parquet, image). Use the read_excel "
+                "tool for Excel files, or the python tool with an "
+                "appropriate library for other binary formats."
             )
         return _truncate_content(output)
 
     return read_file
+
+
+def make_read_excel_tool(sandbox: DockerSandbox) -> BaseTool:
+    @tool
+    def read_excel(file_path: str, max_rows: int = 0) -> str:
+        """Read an Excel file (.xlsx, .xls) and display its contents.
+
+        Set max_rows to read only the first N rows (0 = all rows).
+        Very large outputs are automatically truncated.
+        """
+        safe_path = repr(file_path)
+        limit_clause = f", nrows={max_rows}" if max_rows > 0 else ""
+        code = (
+            f"import pandas as pd; "
+            f"df = pd.read_excel({safe_path}{limit_clause}); "
+            f"print(df.to_string())"
+        )
+        encoded = base64.b64encode(code.encode()).decode()
+        cmd = (
+            f"echo {encoded} | base64 -d > /tmp/_statigent_excel.py"
+            f" && python /tmp/_statigent_excel.py"
+        )
+        return _truncate_content(sandbox.exec(cmd))
+
+    return read_excel
 
 
 def make_write_file_tool(sandbox: DockerSandbox) -> BaseTool:
@@ -163,11 +184,12 @@ def make_list_dir_tool(sandbox: DockerSandbox) -> BaseTool:
 
 
 _SYSTEM_PROMPT = """You are a data science assistant with access to the following tools:
-1. read_file — Read the contents of a file (CSV, text, etc.)
-2. write_file — Write content to a file
-3. python — Execute Python code (pandas, numpy, scikit-learn, etc.)
-4. bash — Run shell commands
-5. list_dir — List directory contents
+1. read_file — Read the contents of a text file (CSV, etc.)
+2. read_excel — Read an Excel file (.xlsx, .xls)
+3. write_file — Write content to a file
+4. python — Execute Python code
+5. bash — Run shell commands
+6. list_dir — List directory contents
 
 Your working directory is /workspace. Data files are located at the
 paths specified in the task — use list_dir or read_file to explore them.
@@ -181,7 +203,6 @@ to preview the structure and column names before loading with Python.
 - Read relevant data files before attempting analysis
 - Write and execute Python code to perform computations
 - Print results clearly so they can be captured
-- For modeling tasks, generate predictions and save them as CSV files
 """
 
 
@@ -207,6 +228,7 @@ class ReactBaselineAgent:
             make_bash_tool(sandbox),
             make_python_tool(sandbox),
             make_read_file_tool(sandbox),
+            make_read_excel_tool(sandbox),
             make_write_file_tool(sandbox),
             make_list_dir_tool(sandbox),
         ]
@@ -221,25 +243,42 @@ class ReactBaselineAgent:
         )
 
     @staticmethod
-    def _build_analysis_mounts(
-        files: list[Path] | None,
-    ) -> list[tuple[Path, str, bool]]:
-        if not files:
-            return []
-        dirs = {f.resolve().parent for f in files}
-        return [(d, str(d), True) for d in sorted(dirs)]
+    def _remap_to_container(
+        local_files: list[Path],
+        prefix: str = "/workspace/data",
+    ) -> tuple[list[tuple[Path, str, bool]], dict[Path, Path]]:
+        """Remap local file paths to neutral container paths.
+
+        Returns:
+            mounts: (local_dir, container_dir, read_only) for sandbox.start
+            path_map: local file path → container file path
+        """
+        dir_to_container: dict[Path, str] = {}
+        path_map: dict[Path, Path] = {}
+        for f in local_files:
+            parent = f.resolve().parent
+            if parent not in dir_to_container:
+                idx = len(dir_to_container)
+                dir_to_container[parent] = f"{prefix}/{idx}"
+            path_map[f] = Path(dir_to_container[parent]) / f.name
+
+        mounts = [
+            (local_dir, container_dir, True)
+            for local_dir, container_dir in sorted(dir_to_container.items())
+        ]
+        return mounts, path_map
 
     @staticmethod
     def _build_analysis_message(
         prompt: str,
         *,
-        files: list[Path] | None = None,
+        container_files: list[Path] | None = None,
         task_instructions: str = "",
     ) -> str:
         file_info = ""
-        if files:
+        if container_files:
             file_info = "\n\nAvailable data files:\n" + "\n".join(
-                f"- {f}" for f in files
+                f"- {f}" for f in container_files
             )
         parts = []
         if task_instructions:
@@ -281,13 +320,17 @@ class ReactBaselineAgent:
     ) -> tuple[str, AgentTrace]:
         """Run agent on an analysis task, return text response and trace."""
         with self._make_sandbox() as sandbox:
-            mounts = self._build_analysis_mounts(files)
+            if files:
+                mounts, path_map = self._remap_to_container(files)
+            else:
+                mounts, path_map = [], {}
             sandbox.start(mounts)
             agent = self._create_agent(sandbox)
 
+            container_files = [path_map[f] for f in files] if files else None
             user_message = self._build_analysis_message(
                 prompt,
-                files=files,
+                container_files=container_files,
                 task_instructions=task_instructions,
             )
             result = retry_on_conn_error(agent.invoke)(
@@ -295,7 +338,7 @@ class ReactBaselineAgent:
             )
             response: str = result["messages"][-1].content
             trace = _serialize_messages(result["messages"])
-            logger.debug("ReactBaselineAgent response: {}...", response[:100])
+            logger.debug("ReactBaselineAgent response: {}...", response[:300])
             return response, trace
 
     def run_modeling_for_eval(
@@ -310,19 +353,16 @@ class ReactBaselineAgent:
     ) -> tuple[Path, AgentTrace]:
         """Run agent on a modeling task, return path to prediction CSV and trace."""
         with self._make_sandbox() as sandbox:
-            dirs: set[Path] = set()
-            for p in (train_path, test_path, sample_submission_path):
-                resolved = p.resolve()
-                dirs.add(resolved if resolved.is_dir() else resolved.parent)
-            mounts = [(d, str(d), True) for d in sorted(dirs)]
+            local_files = [train_path, test_path, sample_submission_path]
+            mounts, path_map = self._remap_to_container(local_files)
             sandbox.start(mounts)
             agent = self._create_agent(sandbox)
 
             user_message = self._build_modeling_message(
                 prompt,
-                train_path=train_path,
-                test_path=test_path,
-                sample_submission_path=sample_submission_path,
+                train_path=path_map[train_path],
+                test_path=path_map[test_path],
+                sample_submission_path=path_map[sample_submission_path],
                 task_instructions=task_instructions,
             )
             result = retry_on_conn_error(agent.invoke)(

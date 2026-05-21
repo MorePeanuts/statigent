@@ -10,7 +10,13 @@ from typing import Protocol
 
 from pydantic import BaseModel, Field
 
-from statigent.schemas import ArtifactRef, NotebookCellResult, NotebookState
+from statigent.schemas import (
+    ArtifactRef,
+    NotebookCell,
+    NotebookCellResult,
+    NotebookCodeContext,
+    NotebookState,
+)
 
 
 class NotebookContext(BaseModel):
@@ -34,11 +40,29 @@ class NotebookKernel(Protocol):
 
     Implementations: FakeNotebookKernel (test), DockerNotebookKernel (prod).
     """
+
     def start(self, context: NotebookContext) -> None: ...
 
     def close(self) -> None: ...
 
-    def execute_cell(self, code: str, purpose: str) -> NotebookCellResult: ...
+    def append_code_cell(
+        self,
+        code: str,
+        purpose: str,
+        expected_observation: str,
+    ) -> NotebookCell: ...
+
+    def replace_code_cell(
+        self,
+        cell_id: str,
+        code: str,
+        purpose: str,
+        expected_observation: str,
+    ) -> NotebookCell: ...
+
+    def execute_cell(self, cell_id: str) -> NotebookCellResult: ...
+
+    def get_code_context(self) -> NotebookCodeContext: ...
 
     def read_file(
         self,

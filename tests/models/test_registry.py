@@ -164,7 +164,7 @@ class TestModuleLevelFunctions:
         """list_models() reflects the registry loaded by load_registry(path)."""
         config = _write_toml(
             tmp_path,
-            '[custom-model]\n'
+            "[custom-model]\n"
             'model = "deepseek-v4-flash"\n'
             'model_provider = "deepseek"\n',
         )
@@ -175,7 +175,7 @@ class TestModuleLevelFunctions:
         """get_model() uses the registry loaded by load_registry(path)."""
         config = _write_toml(
             tmp_path,
-            '[custom-model]\n'
+            "[custom-model]\n"
             'model = "deepseek-v4-flash"\n'
             'model_provider = "deepseek"\n',
         )

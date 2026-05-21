@@ -4,15 +4,15 @@ Wires the full pipeline: InputProfiler -> TaskBriefPlanner ->
 ExplorationOrchestrator -> OutputRenderer. Supports dependency injection
 of every component for testing.
 
-Currently routes DATA_MODELING, DEEP_ANALYSIS, and UNKNOWN tasks to
-render_unsupported — the skeleton does not implement modeling or deep
-commercial analysis yet.
+The analysis benchmark entrypoint coerces non-analysis task classifications
+back to DATA_ANALYSIS because that entrypoint is already selected by the
+benchmark harness.
 """
 
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from statigent.benchmarks.base import AgentTrace
 from statigent.exploration import (
@@ -26,7 +26,13 @@ from statigent.input import InputProfiler, TaskBriefPlanner
 from statigent.models import get_model
 from statigent.notebook import DockerNotebookKernel, NotebookContext
 from statigent.output import OutputRenderer
-from statigent.schemas import DatasetProfile, ExplorationReport, TaskBrief, TaskType
+from statigent.schemas import (
+    DatasetProfile,
+    ExplorationReport,
+    TaskBrief,
+    TaskType,
+    TraceEvent,
+)
 
 
 class _Profiler(Protocol):
@@ -45,6 +51,11 @@ class _Planner(Protocol):
 
 class _Orchestrator(Protocol):
     def run(self, brief: TaskBrief, profile: DatasetProfile) -> ExplorationReport: ...
+
+
+@runtime_checkable
+class _Closable(Protocol):
+    def close(self) -> None: ...
 
 
 OrchestratorFactory = Callable[[TaskBrief, DatasetProfile, Path], _Orchestrator]
@@ -86,8 +97,9 @@ class StatigentDataScienceAgent:
         Creates a temporary work directory for inputs and artifacts.
         The directory is intentionally left on disk because rendered outputs
         and traces may reference generated artifact paths.
-        Unsupported task types (modeling, deep analysis, unknown) skip
-        the orchestrator and return an unsupported-status response.
+        Non-analysis task classifications are treated as planning errors for
+        this entrypoint. They are traced, added to the brief warnings, and
+        coerced to DATA_ANALYSIS before exploration runs.
         """
         work_dir = Path(tempfile.mkdtemp(prefix="statigent-agent-"))
         profile = self._profiler(work_dir).profile_paths(files)
@@ -96,42 +108,64 @@ class StatigentDataScienceAgent:
             task_instructions=task_instructions,
             profile=profile,
         )
-        trace: AgentTrace = [
-            {
-                "role": "system",
-                "content": profile.compact_summary(),
-                "name": "input",
-            },
-            {
-                "role": "assistant",
-                "content": brief.model_dump_json(),
-                "name": "task_brief",
-            },
+        trace_events = [
+            TraceEvent(
+                role="system",
+                content=profile.compact_summary(),
+                name="input",
+                agent="input_profiler",
+            ),
+            TraceEvent(
+                role="assistant",
+                content=brief.model_dump_json(),
+                name="task_brief",
+                agent="task_brief_planner",
+            ),
         ]
-        if brief.task_type in {
-            TaskType.DATA_MODELING,
-            TaskType.DEEP_ANALYSIS,
-            TaskType.UNKNOWN,
-        }:
-            # TODO: implement DATA_MODELING (model training, prediction,
-            # submission.csv generation) and DEEP_ANALYSIS (multi-step
-            # commercial/business report with executive summary).
-            bundle = self.renderer.render_unsupported(brief)
-            trace.append(
-                {"role": "assistant", "content": bundle.content, "name": "output"}
+
+        if brief.task_type is not TaskType.DATA_ANALYSIS:
+            original_task_type = brief.task_type
+            warning = (
+                f"run_analysis_for_eval received {original_task_type}; "
+                "coerced to data_analysis."
             )
-            return bundle.content, trace
+            brief = brief.model_copy(
+                update={
+                    "task_type": TaskType.DATA_ANALYSIS,
+                    "warnings": [*brief.warnings, warning],
+                }
+            )
+            trace_events.append(
+                TraceEvent(
+                    role="assistant",
+                    content=warning,
+                    name="task_type_coercion",
+                    agent="data_science_agent",
+                    metadata={"original_task_type": original_task_type.value},
+                )
+            )
 
         orchestrator = self._orchestrator(brief, profile, work_dir)
-        report = orchestrator.run(brief, profile)
+        try:
+            report = orchestrator.run(brief, profile)
+        finally:
+            if isinstance(orchestrator, _Closable):
+                orchestrator.close()
+        trace_events.extend(self._orchestrator_trace_events(report))
+        if brief.warnings:
+            report = report.model_copy(
+                update={"warnings": [*brief.warnings, *report.warnings]}
+            )
         bundle = self.renderer.render(brief, report)
-        trace.append(
-            {
-                "role": "assistant",
-                "content": bundle.model_dump_json(),
-                "name": "output",
-            }
+        trace_events.append(
+            TraceEvent(
+                role="assistant",
+                content=bundle.model_dump_json(),
+                name="output",
+                agent="output_renderer",
+            )
         )
+        trace: AgentTrace = [event.model_dump() for event in trace_events]
         return bundle.content, trace
 
     def run_modeling_for_eval(
@@ -146,28 +180,37 @@ class StatigentDataScienceAgent:
     ) -> tuple[Path, AgentTrace]:
         """Placeholder for modeling tasks — returns an unsupported submission path.
 
-        Currently delegates to run_analysis_for_eval which returns an
-        unsupported response. The returned submission.csv path does not
-        exist on disk.
+        The returned submission.csv path does not exist on disk.
         """
-        # WARNING: run_modeling_for_eval is a stub — no model training,
-        # prediction, or submission file generation is implemented yet.
         target_dir = work_dir or Path(tempfile.mkdtemp(prefix="statigent-modeling-"))
-        response, trace = self.run_analysis_for_eval(
-            prompt,
-            files=[train_path, test_path, sample_submission_path],
-            task_instructions=task_instructions,
+        content = (
+            "Modeling submission generation is not implemented. "
+            f"Received prompt: {prompt}"
         )
-        trace.append(
-            {
-                "role": "assistant",
-                "content": (
-                    "Modeling submission generation is not implemented: "
-                    f"{response}"
+        trace_events = [
+            TraceEvent(
+                role="system",
+                content=(
+                    "Modeling evaluation placeholder received train, test, "
+                    "and sample submission paths."
                 ),
-                "name": "modeling_placeholder",
-            }
-        )
+                name="modeling_input",
+                agent="data_science_agent",
+                metadata={
+                    "train_path": str(train_path),
+                    "test_path": str(test_path),
+                    "sample_submission_path": str(sample_submission_path),
+                    "task_instructions": task_instructions,
+                },
+            ),
+            TraceEvent(
+                role="assistant",
+                content=content,
+                name="modeling_placeholder",
+                agent="data_science_agent",
+            ),
+        ]
+        trace: AgentTrace = [event.model_dump() for event in trace_events]
         return target_dir / "submission.csv", trace
 
     def _profiler(self, work_dir: Path) -> _Profiler:
@@ -204,3 +247,7 @@ class StatigentDataScienceAgent:
             debugger=Debugger(model),
             kernel=kernel,
         )
+
+    @staticmethod
+    def _orchestrator_trace_events(report: ExplorationReport) -> list[TraceEvent]:
+        return list(report.trace_events)

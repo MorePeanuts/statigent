@@ -1,7 +1,85 @@
+import base64
+import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
+from statigent.errors import StatigentSandboxError
 from statigent.notebook import DockerNotebookKernel, NotebookContext
+from statigent.notebook.docker import _DRIVER
+
+
+def start_or_skip_docker_kernel(
+    kernel: DockerNotebookKernel,
+    context: NotebookContext,
+) -> None:
+    try:
+        kernel.start(context)
+    except StatigentSandboxError as err:
+        pytest.skip(f"Docker unavailable: {err}")
+
+
+def run_driver_cell(
+    driver_path: Path,
+    code: str,
+    state_path: Path,
+) -> dict[str, object]:
+    encoded = base64.b64encode(code.encode()).decode()
+    script = (
+        "import importlib.util\n"
+        "import sys\n"
+        "spec = importlib.util.spec_from_file_location('driver', sys.argv[1])\n"
+        "driver = importlib.util.module_from_spec(spec)\n"
+        "assert spec.loader is not None\n"
+        "spec.loader.exec_module(driver)\n"
+        "driver.run_cell(sys.argv[2])\n"
+    )
+    env = os.environ.copy()
+    env["STATIGENT_NOTEBOOK_STATE_PATH"] = str(state_path)
+    result = subprocess.run(
+        [sys.executable, "-c", script, str(driver_path), encoded],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=env,
+    )
+    return dict(json.loads(result.stdout.strip().splitlines()[-1]))
+
+
+def test_docker_driver_persists_simple_state_after_import(tmp_path: Path) -> None:
+    driver_path = tmp_path / "statigent_notebook_driver.py"
+    state_path = tmp_path / "state.pkl"
+    driver_path.write_text(_DRIVER)
+
+    first = run_driver_cell(driver_path, "import math\nvalue = 9", state_path)
+    second = run_driver_cell(driver_path, "print(math.sqrt(value))", state_path)
+
+    assert first["exit_code"] == 0
+    assert first["stderr"] == ""
+    assert second["exit_code"] == 0
+    assert second["stdout"] == "3.0\n"
+
+
+def test_docker_driver_persists_dotted_imports(tmp_path: Path) -> None:
+    driver_path = tmp_path / "statigent_notebook_driver.py"
+    state_path = tmp_path / "state.pkl"
+    driver_path.write_text(_DRIVER)
+
+    first = run_driver_cell(driver_path, "import xml.etree.ElementTree", state_path)
+    second = run_driver_cell(
+        driver_path,
+        "print(xml.etree.ElementTree.Element('x').tag)",
+        state_path,
+    )
+
+    assert first["exit_code"] == 0
+    assert first["stderr"] == ""
+    assert second["exit_code"] == 0
+    assert second["stdout"] == "x\n"
 
 
 @patch("statigent.notebook.docker.DockerSandbox")
@@ -20,6 +98,11 @@ def test_docker_kernel_starts_sandbox_with_mounts(
     sandbox.start.assert_called_once()
     mounts = sandbox.start.call_args[0][0]
     assert any(mount[0] == data.parent for mount in mounts)
+    assert (tmp_path / "work").exists()
+    assert any(
+        mount == ((tmp_path / "work").resolve(), "/workspace", False)
+        for mount in mounts
+    )
 
 
 @patch("statigent.notebook.docker.DockerSandbox")
@@ -33,11 +116,99 @@ def test_docker_kernel_execute_cell_wraps_incremental_driver(
     kernel = DockerNotebookKernel(image="image", network=False)
     kernel.start(NotebookContext(input_paths=[], work_dir=tmp_path / "work"))
 
-    result = kernel.execute_cell("x = 1 + 1\nprint(x)", "compute")
+    cell = kernel.append_code_cell(
+        "x = 1 + 1\nprint(x)",
+        "compute",
+        "Print the computed value",
+    )
+    result = kernel.execute_cell(cell.cell_id)
+    context = kernel.get_code_context()
 
+    assert cell.cell_id == "cell-1"
     assert result.stdout == "2\n"
     assert result.exit_code == 0
+    assert result.purpose == "compute"
+    assert context.cells[0].latest_result == result
     assert "statigent_notebook_driver.py" in sandbox.exec.call_args[0][0]
+
+
+@patch("statigent.notebook.docker.DockerSandbox")
+def test_docker_kernel_discovers_artifacts_created_by_cells(
+    mock_sandbox_class: MagicMock,
+    tmp_path: Path,
+) -> None:
+    sandbox = MagicMock()
+    sandbox.exec.return_value = '{"stdout": "saved\\n", "stderr": "", "exit_code": 0}'
+    mock_sandbox_class.return_value = sandbox
+    work_dir = tmp_path / "work"
+    kernel = DockerNotebookKernel(image="image", network=False)
+    kernel.start(NotebookContext(input_paths=[], work_dir=work_dir))
+    artifact_path = work_dir / "artifacts" / "summary.csv"
+    artifact_path.write_text("x\n1\n")
+    cell = kernel.append_code_cell(
+        "write_summary()",
+        "write summary",
+        "Create a summary table artifact",
+    )
+
+    result = kernel.execute_cell(cell.cell_id)
+
+    assert [artifact.name for artifact in result.artifacts] == ["summary.csv"]
+    assert result.artifacts[0].kind == "table"
+    assert kernel.list_artifacts() == result.artifacts
+
+
+@patch("statigent.notebook.docker.DockerSandbox")
+def test_docker_kernel_executes_replaced_cell_with_same_id(
+    mock_sandbox_class: MagicMock,
+    tmp_path: Path,
+) -> None:
+    sandbox = MagicMock()
+    sandbox.exec.side_effect = [
+        "",
+        '{"stdout": "fixed\\n", "stderr": "", "exit_code": 0}',
+    ]
+    mock_sandbox_class.return_value = sandbox
+    kernel = DockerNotebookKernel(image="image", network=False)
+    kernel.start(NotebookContext(input_paths=[], work_dir=tmp_path / "work"))
+
+    cell = kernel.append_code_cell(
+        "print(missing)",
+        "compute",
+        "Print the computed value",
+    )
+    replaced = kernel.replace_code_cell(
+        cell.cell_id,
+        "print('fixed')",
+        "compute after fix",
+        "Print the fixed value",
+    )
+    result = kernel.execute_cell(replaced.cell_id)
+
+    assert replaced.cell_id == cell.cell_id
+    assert result.cell_id == cell.cell_id
+    assert result.code == "print('fixed')"
+    assert result.purpose == "compute after fix"
+    assert result.stdout == "fixed\n"
+    assert kernel.get_code_context().cells == [replaced]
+    assert kernel.get_code_context().cells[0].latest_result == result
+
+
+@patch("statigent.notebook.docker.DockerSandbox")
+def test_docker_kernel_start_skips_when_docker_unavailable(
+    mock_sandbox_class: MagicMock,
+    tmp_path: Path,
+) -> None:
+    sandbox = MagicMock()
+    sandbox.start.side_effect = StatigentSandboxError("Docker daemon is not running")
+    mock_sandbox_class.return_value = sandbox
+    kernel = DockerNotebookKernel(image="image", network=False)
+
+    with pytest.raises(pytest.skip.Exception):
+        start_or_skip_docker_kernel(
+            kernel,
+            NotebookContext(input_paths=[], work_dir=tmp_path / "work"),
+        )
 
 
 @patch("statigent.notebook.docker.DockerSandbox")

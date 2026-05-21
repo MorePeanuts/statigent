@@ -8,27 +8,58 @@ from statigent.schemas import (
     Budget,
     Complexity,
     DatasetProfile,
+    DebugLesson,
     ExplorationAction,
     ExplorationActionKind,
+    ExplorationReport,
+    FinalDraft,
     InputFileInfo,
     OutputBundle,
     OutputStatus,
     OutputType,
+    ReviewerPlanDecision,
     TableProfile,
     TaskBrief,
     TaskType,
+    TraceEvent,
     budget_for_complexity,
 )
 
 
-def test_budget_for_complexity_simple_returns_small_limits() -> None:
-    budget = budget_for_complexity(Complexity.SIMPLE)
+def test_budget_for_complexity_uses_fixed_system_tiers() -> None:
+    assert budget_for_complexity(Complexity.SIMPLE) == Budget(
+        max_rounds=3,
+        max_code_cells=6,
+        max_debug_attempts=2,
+        timeout_seconds=180,
+    )
+    assert budget_for_complexity(Complexity.MODERATE) == Budget(
+        max_rounds=7,
+        max_code_cells=14,
+        max_debug_attempts=3,
+        timeout_seconds=480,
+    )
+    assert budget_for_complexity(Complexity.COMPLEX) == Budget(
+        max_rounds=12,
+        max_code_cells=28,
+        max_debug_attempts=5,
+        timeout_seconds=900,
+    )
 
-    assert isinstance(budget, Budget)
-    assert budget.max_rounds == 2
-    assert budget.max_code_cells == 4
-    assert budget.max_debug_attempts == 1
-    assert budget.timeout_seconds == 120
+
+def test_task_brief_field_descriptions_define_what_not_how() -> None:
+    schema = TaskBrief.model_json_schema()
+    task_type_description = schema["properties"]["task_type"]["description"]
+    output_type_description = schema["properties"]["output_type"]["description"]
+    complexity_description = schema["properties"]["complexity"]["description"]
+    budgets_description = schema["properties"]["budgets"]["description"]
+
+    assert "category" in task_type_description.casefold()
+    assert "shape" in output_type_description.casefold()
+    assert "effort tier" in complexity_description.casefold()
+    assert "system-derived resource caps" in budgets_description.casefold()
+    assert "choose when" not in task_type_description.casefold()
+    assert "analyze by" not in complexity_description.casefold()
 
 
 def test_task_brief_supports_deep_analysis() -> None:
@@ -43,7 +74,70 @@ def test_task_brief_supports_deep_analysis() -> None:
     )
 
     assert brief.task_type is TaskType.DEEP_ANALYSIS
-    assert brief.budgets.max_rounds == 8
+    assert brief.budgets.max_rounds == 12
+
+
+def test_trace_event_requires_agent_and_session() -> None:
+    event = TraceEvent(
+        role="assistant",
+        content="planned",
+        name="task_brief",
+        agent="task_brief_planner",
+        session=1,
+    )
+
+    assert event.model_dump()["agent"] == "task_brief_planner"
+    assert event.model_dump()["session"] == 1
+
+
+def test_exploration_report_exposes_trace_events() -> None:
+    report = ExplorationReport(
+        status="success",
+        final_draft=FinalDraft(content="Done"),
+        steps=[],
+        artifacts=[],
+    )
+
+    assert report.trace_events == []
+
+
+def test_reviewer_plan_decision_allows_rejection_without_action() -> None:
+    decision = ReviewerPlanDecision(approved=False, reason="Redundant")
+
+    assert decision.action_kind is None
+    assert decision.constraints == []
+
+
+def test_reviewer_plan_decision_allows_complete_approval() -> None:
+    decision = ReviewerPlanDecision(
+        approved=True,
+        reason="Relevant next step",
+        action_kind=ExplorationActionKind.SUMMARIZE_NUMERIC,
+        question="What is the revenue distribution?",
+        evidence_needed="Summary statistics for revenue",
+        coding_instruction="Compute descriptive statistics for revenue.",
+        constraints=["Use profiled table names only"],
+    )
+
+    assert decision.action_kind is ExplorationActionKind.SUMMARIZE_NUMERIC
+    assert decision.question == "What is the revenue distribution?"
+
+
+def test_reviewer_plan_decision_rejects_approval_without_payload() -> None:
+    with pytest.raises(ValidationError, match="approved plan requires"):
+        ReviewerPlanDecision(approved=True, reason="Relevant next step")
+
+
+def test_debug_lesson_records_task_local_fix() -> None:
+    lesson = DebugLesson(
+        error_pattern="NameError",
+        root_cause="Column variable was misspelled",
+        fix_strategy="Use df.columns to confirm names",
+        applies_when="Column access fails",
+    )
+
+    assert lesson.error_pattern == "NameError"
+    assert lesson.fix_strategy == "Use df.columns to confirm names"
 
 
 def test_custom_action_requires_rationale_expected_evidence_and_risk_notes() -> None:

@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field, model_validator
 
 class TaskType(StrEnum):
     """Classification of a data science task by scope and expected output."""
+
     DATA_ANALYSIS = "data_analysis"
     DATA_MODELING = "data_modeling"
     DEEP_ANALYSIS = "deep_analysis"
@@ -52,6 +53,7 @@ class ExplorationActionKind(StrEnum):
     CUSTOM_ANALYSIS requires rationale, expected_evidence, and risk_notes;
     all other kinds are safe with just a title and description.
     """
+
     INSPECT_SCHEMA = "inspect_schema"
     PROFILE_MISSINGNESS = "profile_missingness"
     SUMMARIZE_NUMERIC = "summarize_numeric"
@@ -80,26 +82,26 @@ class Budget(BaseModel):
 
 
 def budget_for_complexity(complexity: Complexity) -> Budget:
-    """Return a resource budget appropriate for the given complexity tier."""
+    """Return the system-owned resource budget for a complexity tier."""
     if complexity is Complexity.SIMPLE:
         return Budget(
-            max_rounds=2,
-            max_code_cells=4,
-            max_debug_attempts=1,
-            timeout_seconds=120,
+            max_rounds=3,
+            max_code_cells=6,
+            max_debug_attempts=2,
+            timeout_seconds=180,
         )
     if complexity is Complexity.MODERATE:
         return Budget(
-            max_rounds=5,
-            max_code_cells=10,
-            max_debug_attempts=2,
-            timeout_seconds=300,
+            max_rounds=7,
+            max_code_cells=14,
+            max_debug_attempts=3,
+            timeout_seconds=480,
         )
     return Budget(
-        max_rounds=8,
-        max_code_cells=18,
-        max_debug_attempts=3,
-        timeout_seconds=600,
+        max_rounds=12,
+        max_code_cells=28,
+        max_debug_attempts=5,
+        timeout_seconds=900,
     )
 
 
@@ -124,9 +126,7 @@ class TableProfile(BaseModel):
     rows: int = Field(ge=0, description="Number of rows in the table")
     columns: int = Field(ge=0, description="Number of columns in the table")
     column_names: list[str] = Field(description="Ordered list of column names")
-    dtypes: dict[str, str] = Field(
-        description="Mapping of column name to dtype string"
-    )
+    dtypes: dict[str, str] = Field(description="Mapping of column name to dtype string")
     missing_rates: dict[str, float] = Field(
         description="Fraction of nulls per column (0.0-1.0)"
     )
@@ -188,19 +188,23 @@ class TaskBrief(BaseModel):
     resources to allocate.
     """
 
-    task_type: TaskType = Field(description="Category of the data science task")
+    task_type: TaskType = Field(description="Category of task requested by the user")
     objective: str = Field(
         description="Natural-language description of what the user wants"
     )
     output_type: OutputType = Field(
-        description="Expected shape of the final deliverable"
+        description="Shape of deliverable requested by the user"
     )
     requirements: list[str] = Field(
         default_factory=list, description="Explicit requirements from user instructions"
     )
     data_context: str = Field(description="Summary of the input dataset for context")
-    complexity: Complexity = Field(description="Estimated difficulty tier")
-    budgets: Budget = Field(description="Resource caps derived from complexity")
+    complexity: Complexity = Field(
+        description="Expected effort tier for completing the task"
+    )
+    budgets: Budget = Field(
+        description="System-derived resource caps for the selected effort tier"
+    )
     analysis_hints: list[str] = Field(
         default_factory=list, description="Suggested analysis directions"
     )
@@ -209,15 +213,22 @@ class TaskBrief(BaseModel):
     )
 
 
+# BUG: See the `next_action` method of the Inspector; this method is not suitable
+# for structured output.
 class ExplorationAction(BaseModel):
     """A single exploration step proposed by the Inspector.
 
     CUSTOM_ANALYSIS actions must supply rationale, expected_evidence, and
     risk_notes — enforced by the model validator below.
     """
+
     kind: ExplorationActionKind = Field(
         description="Which predefined action to perform"
     )
+    # BUG: Each predefined exploration action should correspond to a carefully designed
+    # exploration prompt, similar to skills. The Inspector is responsible for outputting
+    # its analysis process and conclusions, which are then parsed by the reviewer to
+    # extract actions and integrate the prompts.
     title: str = Field(description="Short human-readable label for the action")
     description: str = Field(description="What this action will investigate or compute")
     rationale: str = Field(
@@ -256,6 +267,92 @@ class ArtifactRef(BaseModel):
     )
 
 
+class ReviewerPlanDecision(BaseModel):
+    """Structured Reviewer decision for an Inspector planning response."""
+
+    approved: bool = Field(description="Whether the plan is approved")
+    reason: str = Field(description="Reviewer rationale for approving or rejecting")
+    action_kind: ExplorationActionKind | None = Field(
+        default=None, description="Approved exploration action kind, if any"
+    )
+    question: str = Field(
+        default="", description="Specific question approved for the Coder"
+    )
+    evidence_needed: str = Field(
+        default="", description="Evidence the approved code cell should produce"
+    )
+    coding_instruction: str = Field(
+        default="", description="Concrete instruction for the Coder"
+    )
+    constraints: list[str] = Field(
+        default_factory=list, description="Execution or analysis constraints"
+    )
+
+    @model_validator(mode="after")
+    def validate_approved_payload(self) -> "ReviewerPlanDecision":
+        if not self.approved:
+            return self
+        missing = []
+        if self.action_kind is None:
+            missing.append("action_kind")
+        for name in ("question", "evidence_needed", "coding_instruction"):
+            if not getattr(self, name).strip():
+                missing.append(name)
+        if missing:
+            missing_text = ", ".join(missing)
+            raise ValueError(f"approved plan requires: {missing_text}")
+        return self
+
+
+class FinalReviewDecision(BaseModel):
+    """Structured Final Reviewer decision for an Inspector final draft."""
+
+    approved: bool = Field(description="Whether the final draft is accepted")
+    reason: str = Field(description="Reason for approval or rejection")
+    additional_exploration_focus: str = Field(
+        default="", description="Targeted focus for more exploration if rejected"
+    )
+
+
+class ApprovedCodeInstruction(BaseModel):
+    """Coder-facing instruction assembled from an approved Reviewer decision."""
+
+    action_kind: ExplorationActionKind = Field(
+        description="Approved exploration action kind"
+    )
+    question: str = Field(description="Specific question the code should answer")
+    evidence_needed: str = Field(description="Evidence the code should produce")
+    coding_instruction: str = Field(description="Concrete instruction for the Coder")
+    action_prompt: str = Field(description="Reusable DEA action prompt text")
+    constraints: list[str] = Field(
+        default_factory=list, description="Execution or analysis constraints"
+    )
+
+
+class DebugLesson(BaseModel):
+    """Task-local debugging lesson that can guide later repair attempts."""
+
+    error_pattern: str = Field(description="Recognizable error signature or symptom")
+    root_cause: str = Field(description="Underlying cause of the failure")
+    fix_strategy: str = Field(description="Reusable strategy that fixed the issue")
+    applies_when: str = Field(description="Conditions where this lesson is relevant")
+
+
+class ExplorationObservation(BaseModel):
+    """Inspector-facing summary of a completed exploration cell result."""
+
+    question: str = Field(description="Question the cell attempted to answer")
+    purpose: str = Field(description="Why the cell was executed")
+    stdout: str = Field(default="", description="Relevant standard output summary")
+    artifacts: list[ArtifactRef] = Field(
+        default_factory=list, description="Artifacts produced by the cell"
+    )
+    error_summary: str = Field(
+        default="", description="Failure summary if the cell did not complete"
+    )
+    warning: str = Field(default="", description="Caveat or warning for Inspector")
+
+
 class NotebookCellResult(BaseModel):
     """Result of executing a single notebook cell."""
 
@@ -276,6 +373,28 @@ class NotebookCellResult(BaseModel):
     @property
     def ok(self) -> bool:
         return self.exit_code == 0
+
+
+class NotebookCell(BaseModel):
+    """Durable notebook code cell with planning metadata and latest result."""
+
+    cell_id: str = Field(description="Stable identifier for this notebook cell")
+    code: str = Field(description="Python source code stored in the cell")
+    purpose: str = Field(description="Why this cell exists")
+    expected_observation: str = Field(
+        description="What output or result this cell is expected to produce"
+    )
+    latest_result: NotebookCellResult | None = Field(
+        default=None, description="Most recent execution result for this cell"
+    )
+
+
+class NotebookCodeContext(BaseModel):
+    """Ordered notebook code cells available to exploration actors."""
+
+    cells: list[NotebookCell] = Field(
+        default_factory=list, description="Notebook cells in insertion order"
+    )
 
 
 class NotebookState(BaseModel):
@@ -345,6 +464,21 @@ class ExplorationStep(BaseModel):
     )
 
 
+class TraceEvent(BaseModel):
+    """Single event in an agent trace for benchmarking and observability."""
+
+    role: str = Field(description="Message role for benchmark trace compatibility")
+    content: str = Field(description="Event payload")
+    name: str = Field(default="", description="Tool, phase, or action identifier")
+    agent: str = Field(description="Agent or layer that produced the event")
+    session: int = Field(
+        default=1, ge=1, description="Independent session number for this agent"
+    )
+    metadata: dict[str, object] = Field(
+        default_factory=dict, description="Additional event metadata"
+    )
+
+
 class ExplorationReport(BaseModel):
     """Orchestrator output: steps, final draft, artifacts, and warnings."""
 
@@ -354,14 +488,14 @@ class ExplorationReport(BaseModel):
     final_draft: FinalDraft = Field(
         description="The Inspector's final answer or report"
     )
-    steps: list[ExplorationStep] = Field(
-        description="All exploration steps taken"
-    )
-    artifacts: list[ArtifactRef] = Field(
-        description="All generated artifacts"
-    )
+    steps: list[ExplorationStep] = Field(description="All exploration steps taken")
+    artifacts: list[ArtifactRef] = Field(description="All generated artifacts")
     warnings: list[str] = Field(
         default_factory=list, description="Issues encountered during exploration"
+    )
+    trace_events: list[TraceEvent] = Field(
+        default_factory=list,
+        description="Trace events emitted by the exploration orchestrator",
     )
 
 
@@ -382,36 +516,32 @@ class OutputBundle(BaseModel):
     )
 
 
-class TraceEvent(BaseModel):
-    """Single event in an agent trace for benchmarking / observability."""
-
-    role: str = Field(description="Who produced this event (system, user, assistant)")
-    content: str = Field(description="The event payload text")
-    name: str = Field(default="", description="Tool name or action identifier")
-    metadata: dict[str, object] = Field(
-        default_factory=dict, description="Extra key-value data for this event"
-    )
-
-
 __all__ = [
+    "ApprovedCodeInstruction",
     "ArtifactRef",
     "Budget",
     "CodeDraft",
     "Complexity",
     "DatasetProfile",
     "DebugDecision",
+    "DebugLesson",
     "ExplorationAction",
     "ExplorationActionKind",
+    "ExplorationObservation",
     "ExplorationReport",
     "ExplorationStep",
     "FinalDraft",
+    "FinalReviewDecision",
     "InputFileInfo",
+    "NotebookCell",
     "NotebookCellResult",
+    "NotebookCodeContext",
     "NotebookState",
     "OutputBundle",
     "OutputStatus",
     "OutputType",
     "ReviewDecision",
+    "ReviewerPlanDecision",
     "TableProfile",
     "TaskBrief",
     "TaskType",

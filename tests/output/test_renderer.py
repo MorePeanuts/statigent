@@ -1,10 +1,14 @@
 from statigent.output import OutputRenderer
 from statigent.schemas import (
     Complexity,
+    ExplorationAction,
+    ExplorationActionKind,
     ExplorationReport,
+    ExplorationStep,
     FinalDraft,
     OutputStatus,
     OutputType,
+    ReviewDecision,
     TaskBrief,
     TaskType,
     budget_for_complexity,
@@ -65,3 +69,35 @@ def test_renderer_returns_partial_for_partial_report() -> None:
 
     assert bundle.status is OutputStatus.PARTIAL
     assert bundle.warnings == ["Budget exhausted"]
+
+
+def test_renderer_handles_langgraph_exploration_report_shape() -> None:
+    report = ExplorationReport(
+        status="success",
+        final_draft=FinalDraft(
+            content="Average revenue is 15.",
+            evidence=["mean=15"],
+            warnings=["Small sample"],
+        ),
+        steps=[
+            ExplorationStep(
+                action=ExplorationAction(
+                    kind=ExplorationActionKind.SUMMARIZE_NUMERIC,
+                    title="Average revenue",
+                    description="Compute mean revenue",
+                ),
+                review=ReviewDecision(approved=True, reason="Relevant"),
+            )
+        ],
+        artifacts=[],
+        warnings=["Small sample"],
+    )
+
+    bundle = OutputRenderer().render(
+        make_brief(TaskType.DATA_ANALYSIS, OutputType.REPORT),
+        report,
+    )
+
+    assert bundle.status is OutputStatus.SUCCESS
+    assert bundle.content == "Average revenue is 15."
+    assert bundle.trace_summary == "1 exploration step(s)"

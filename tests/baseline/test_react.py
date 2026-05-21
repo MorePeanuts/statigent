@@ -88,7 +88,7 @@ class TestReadFileTool:
         tool = make_read_file_tool(sandbox)
         result = tool.invoke({"file_path": "/workspace/data.xlsx"})
         assert "binary file" in result
-        assert "pd.read_excel" in result
+        assert "read_excel tool" in result
 
     @patch.object(DockerSandbox, "exec")
     def test_text_file_no_binary_warning(self, mock_exec: MagicMock) -> None:
@@ -219,8 +219,8 @@ class TestRunAnalysisForEval:
             files=[Path("/data/train.csv"), Path("/data/test.csv")],
         )
         msg = mock_agent.invoke.call_args[0][0]["messages"][0]
-        assert "/data/train.csv" in msg.content
-        assert "/data/test.csv" in msg.content
+        assert "/workspace/data/0/train.csv" in msg.content
+        assert "/workspace/data/0/test.csv" in msg.content
 
     @patch.object(DockerSandbox, "start")
     @patch.object(DockerSandbox, "stop")
@@ -340,9 +340,9 @@ class TestRunModelingForEval:
             sample_submission_path=sample,
         )
         msg = mock_agent.invoke.call_args[0][0]["messages"][0]
-        assert str(train) in msg.content
-        assert str(test) in msg.content
-        assert str(sample) in msg.content
+        assert "/workspace/data/0/train.csv" in msg.content
+        assert "/workspace/data/0/test.csv" in msg.content
+        assert "/workspace/data/0/sample_submission.csv" in msg.content
         assert "/workspace/submission.csv" in msg.content
 
     @patch.object(DockerSandbox, "get_file")

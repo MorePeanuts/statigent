@@ -116,9 +116,7 @@ class TestDockerSandboxStart:
             returncode=1, stderr="Cannot connect to the Docker daemon"
         )
         sandbox = DockerSandbox()
-        with pytest.raises(
-            StatigentSandboxError, match="Docker daemon is not running"
-        ):
+        with pytest.raises(StatigentSandboxError, match="Docker daemon is not running"):
             sandbox.start([])
 
     @patch("statigent.sandbox.docker.subprocess.run")
@@ -232,9 +230,7 @@ class TestDockerSandboxExec:
 
         sandbox = DockerSandbox()
         sandbox._container_name = "testcontainer"
-        mock_run.side_effect = subprocess.TimeoutExpired(
-            cmd="docker exec", timeout=600
-        )
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="docker exec", timeout=600)
 
         result = sandbox.exec("slow_command")
         assert "timed out" in result.lower()
@@ -292,9 +288,7 @@ class TestDockerSandboxGetFile:
     def test_get_file_copy_fails(self, mock_run: MagicMock) -> None:
         sandbox = DockerSandbox()
         sandbox._container_name = "testcontainer"
-        mock_run.return_value = MagicMock(
-            returncode=1, stderr="No such file"
-        )
+        mock_run.return_value = MagicMock(returncode=1, stderr="No such file")
 
         with pytest.raises(StatigentSandboxError, match="Failed to copy file"):
             sandbox.get_file("/missing/path", Path("/host/path"))
@@ -341,9 +335,7 @@ class TestDockerSandboxStop:
     def test_stop_docker_failure_logged_not_raised(self, mock_run: MagicMock) -> None:
         sandbox = DockerSandbox()
         sandbox._container_name = "testcontainer"
-        mock_run.return_value = MagicMock(
-            returncode=1, stderr="container not found"
-        )
+        mock_run.return_value = MagicMock(returncode=1, stderr="container not found")
 
         sandbox.stop()
         assert sandbox._container_name == ""
@@ -353,9 +345,7 @@ class TestDockerSandboxContextManager:
     """Test DockerSandbox as context manager calls stop on exit."""
 
     @patch.object(DockerSandbox, "stop")
-    def test_context_manager_calls_stop_on_exit(
-        self, mock_stop: MagicMock
-    ) -> None:
+    def test_context_manager_calls_stop_on_exit(self, mock_stop: MagicMock) -> None:
         sandbox = DockerSandbox()
         sandbox._container_name = "testcontainer"
         with sandbox:
@@ -363,9 +353,7 @@ class TestDockerSandboxContextManager:
         mock_stop.assert_called_once()
 
     @patch.object(DockerSandbox, "stop")
-    def test_context_manager_returns_self(
-        self, mock_stop: MagicMock
-    ) -> None:
+    def test_context_manager_returns_self(self, mock_stop: MagicMock) -> None:
         sandbox = DockerSandbox()
         with sandbox as ctx:
             assert ctx is sandbox
@@ -385,16 +373,12 @@ class TestSanitizeDockerErrors:
     """Test that Docker-specific terms are removed from error messages."""
 
     def test_removes_daemon_error_prefix(self) -> None:
-        result = _sanitize_docker_errors(
-            "Error response from daemon: something failed"
-        )
+        result = _sanitize_docker_errors("Error response from daemon: something failed")
         assert "daemon" not in result
         assert result == "Error: something failed"
 
     def test_removes_container_id(self) -> None:
-        result = _sanitize_docker_errors(
-            "Container 9cca72ff6c0e is not running"
-        )
+        result = _sanitize_docker_errors("Container 9cca72ff6c0e is not running")
         assert "9cca72ff" not in result
         assert "the environment" in result
 

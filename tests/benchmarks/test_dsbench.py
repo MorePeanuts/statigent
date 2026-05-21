@@ -221,6 +221,38 @@ class TestDSBenchAdapterDM:
             DSBenchAdapter(data_dir=Path("/tmp"), task="invalid")
 
 
+class TestSafeExtract:
+    def test_rejects_zip_entries_outside_destination_sibling_prefix(
+        self, tmp_path: Path
+    ) -> None:
+        dest = tmp_path / "data"
+        sibling = tmp_path / "data_evil"
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("../data_evil/pwn.txt", "owned")
+        buf.seek(0)
+
+        with (
+            zipfile.ZipFile(buf) as zf,
+            pytest.raises(StatigentBenchmarkError, match="escapes target directory"),
+        ):
+            DSBenchAdapter._safe_extract(zf, dest)
+
+        assert not (sibling / "pwn.txt").exists()
+
+    def test_extracts_safe_zip_entries(self, tmp_path: Path) -> None:
+        dest = tmp_path / "data"
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w") as zf:
+            zf.writestr("challenge/file.txt", "ok")
+        buf.seek(0)
+
+        with zipfile.ZipFile(buf) as zf:
+            DSBenchAdapter._safe_extract(zf, dest)
+
+        assert (dest / "challenge" / "file.txt").read_text() == "ok"
+
+
 class TestComputeNormalizedScore:
     """DSBench normalized score: max(0, (model - baseline) / (GT - baseline))."""
 

@@ -1,15 +1,13 @@
 """Task brief generation from user prompts and dataset profiles.
 
-Uses LangChain structured output to classify the task and estimate
-complexity. When the LLM fails (malformed JSON, validation errors,
-or upstream API issues), a deterministic keyword-based fallback
-produces a safe default TaskBrief so the pipeline never blocks.
+Uses LangChain structured output to classify the task, estimate complexity,
+and capture user-facing requirements. Resource budgets are always derived by
+the system from the selected complexity tier.
 """
 
-from typing import Any, Protocol, cast
-
 from langchain.messages import AnyMessage, HumanMessage, SystemMessage
-from loguru import logger
+from langchain_core.language_models.chat_models import BaseChatModel
+from pydantic import BaseModel, Field
 
 from statigent.errors import StatigentParseError
 from statigent.retry import invoke_structured_with_retries, retry_on_parse_error
@@ -23,28 +21,52 @@ from statigent.schemas import (
 )
 
 
-class _StructuredTaskBriefModel(Protocol):
-    def invoke(self, messages: list[AnyMessage]) -> Any: ...
+class _TaskBriefPlan(BaseModel):
+    task_type: TaskType = Field(description="Category of task requested by the user")
+    objective: str = Field(
+        description="Natural-language description of what the user wants"
+    )
+    output_type: OutputType = Field(
+        description="Shape of deliverable requested by the user"
+    )
+    requirements: list[str] = Field(
+        default_factory=list, description="Explicit requirements from user instructions"
+    )
+    data_context: str = Field(description="Summary of the input dataset for context")
+    complexity: Complexity = Field(
+        description="Expected effort tier for completing the task"
+    )
+    analysis_hints: list[str] = Field(
+        default_factory=list, description="Suggested analysis directions"
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Caveats from the planning stage"
+    )
 
-
-class _TaskBriefModel(Protocol):
-    def with_structured_output(
-        self,
-        schema: type[TaskBrief],
-        *,
-        include_raw: bool = False,
-    ) -> _StructuredTaskBriefModel: ...
+    def to_task_brief(self) -> TaskBrief:
+        """Convert model-selected planning fields into a system-budgeted brief."""
+        return TaskBrief(
+            task_type=self.task_type,
+            objective=self.objective,
+            output_type=self.output_type,
+            requirements=self.requirements,
+            data_context=self.data_context,
+            complexity=self.complexity,
+            budgets=budget_for_complexity(self.complexity),
+            analysis_hints=self.analysis_hints,
+            warnings=self.warnings,
+        )
 
 
 class TaskBriefPlanner:
     """Generate a TaskBrief from a user prompt, instructions, and dataset profile.
 
-    Uses LLM structured output with a deterministic fallback so the
-    pipeline degrades gracefully when the model produces unparseable output.
+    Uses LLM structured output for semantic classification. Budgets are
+    system-owned and derived after parsing.
     """
 
-    def __init__(self, model: object) -> None:
-        self.model = cast("_TaskBriefModel", model)
+    def __init__(self, model: BaseChatModel) -> None:
+        self.model = model
 
     def create_brief(
         self,
@@ -52,28 +74,24 @@ class TaskBriefPlanner:
         task_instructions: str,
         profile: DatasetProfile,
     ) -> TaskBrief:
-        """Create a TaskBrief using the LLM, falling back on keyword heuristics."""
+        """Create a TaskBrief using the LLM structured output contract."""
         messages = self._build_messages(
             prompt=prompt,
             task_instructions=task_instructions,
             profile=profile,
         )
-        try:
-            structured_model = self.model.with_structured_output(
-                TaskBrief, include_raw=True
+        structured_model = self.model.with_structured_output(
+            _TaskBriefPlan, include_raw=True
+        )
+        result = retry_on_parse_error(invoke_structured_with_retries)(
+            structured_model, messages
+        )
+        if not isinstance(result, _TaskBriefPlan):
+            raise StatigentParseError(
+                "Task brief structured output returned "
+                f"{type(result).__name__}, expected _TaskBriefPlan"
             )
-            result = retry_on_parse_error(invoke_structured_with_retries)(
-                structured_model, messages
-            )
-            return cast("TaskBrief", result)
-        except StatigentParseError as err:
-            logger.warning("Task brief structured output failed: {}", err)
-            return self._fallback_brief(
-                prompt=prompt,
-                task_instructions=task_instructions,
-                profile=profile,
-                error=err,
-            )
+        return result.to_task_brief()
 
     def _build_messages(
         self,
@@ -84,9 +102,13 @@ class TaskBriefPlanner:
         return [
             SystemMessage(
                 content=(
-                    "Create a concise structured data science task brief. "
-                    "Use the provided task request, extra instructions, and "
-                    "dataset summary. Return only fields in the TaskBrief schema."
+                    "Create a concise structured data science task brief from "
+                    "the user's request, extra instructions, and dataset summary. "
+                    "Classify the task type, objective, output type, explicit "
+                    "requirements, data context, useful analysis hints, and "
+                    "complexity tier. Numeric budgets are system-derived from "
+                    "the complexity tier; do not invent or tune budget values. "
+                    "Return only fields in the provided structured output schema."
                 ),
             ),
             HumanMessage(
@@ -99,69 +121,3 @@ class TaskBriefPlanner:
                 ),
             ),
         ]
-
-    def _fallback_brief(
-        self,
-        prompt: str,
-        task_instructions: str,
-        profile: DatasetProfile,
-        error: Exception,
-    ) -> TaskBrief:
-        task_type, output_type, complexity = self._fallback_classification(prompt)
-        return TaskBrief(
-            task_type=task_type,
-            objective=prompt.strip() or "Analyze the provided dataset.",
-            output_type=output_type,
-            requirements=self._fallback_requirements(task_instructions),
-            data_context=profile.compact_summary(),
-            complexity=complexity,
-            budgets=budget_for_complexity(complexity),
-            warnings=[
-                "LLM parsing failure; using deterministic fallback task brief. "
-                f"Error: {error}"
-            ],
-        )
-
-    def _fallback_classification(
-        self,
-        prompt: str,
-    ) -> tuple[TaskType, OutputType, Complexity]:
-        normalized = prompt.casefold()
-        if self._contains_any(
-            normalized,
-            ("predict", "prediction", "predictive", "modeling", "model", "forecast"),
-        ):
-            return (
-                TaskType.DATA_MODELING,
-                OutputType.FILE,
-                Complexity.COMPLEX,
-            )
-        if self._contains_any(
-            normalized,
-            ("deep", "business", "commercial", "executive"),
-        ):
-            return (
-                TaskType.DEEP_ANALYSIS,
-                OutputType.REPORT,
-                Complexity.COMPLEX,
-            )
-        if self._contains_any(normalized, ("report", "analysis", "analyze", "analyse")):
-            return (
-                TaskType.DATA_ANALYSIS,
-                OutputType.REPORT,
-                Complexity.MODERATE,
-            )
-        return (
-            TaskType.DATA_ANALYSIS,
-            OutputType.ANSWER,
-            Complexity.SIMPLE,
-        )
-
-    def _fallback_requirements(self, task_instructions: str) -> list[str]:
-        instructions = task_instructions.strip()
-        if not instructions:
-            return []
-        return [instructions]
-
-    def _contains_any(self, value: str, terms: tuple[str, ...]) -> bool:
-        return any(term in value for term in terms)

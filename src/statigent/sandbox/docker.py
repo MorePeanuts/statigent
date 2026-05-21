@@ -168,9 +168,7 @@ class DockerSandbox:
         )
 
         if result.returncode != 0:
-            raise StatigentSandboxError(
-                f"Failed to copy file: {result.stderr.strip()}"
-            )
+            raise StatigentSandboxError(f"Failed to copy file: {result.stderr.strip()}")
 
     def stop(self) -> None:
         """Stop and remove the container. Idempotent — no-op if not running."""

@@ -89,7 +89,7 @@ class DABenchAdapter(BenchmarkAdapter):
                 f"- Constraints: {q['constraints']}\n"
                 "- For numerical answers, print the number clearly\n"
             )
-            prompt = f"Question: {q['question']}\n\nData file: {csv_path}"
+            prompt = f"Question: {q['question']}"
             response, trace = agent.run_analysis_for_eval(
                 prompt, files=[csv_path], task_instructions=task_instructions
             )

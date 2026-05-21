@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import pytest
+
 from statigent.agents import StatigentDataScienceAgent
 from statigent.schemas import (
     Budget,
@@ -13,6 +15,7 @@ from statigent.schemas import (
     TableProfile,
     TaskBrief,
     TaskType,
+    TraceEvent,
 )
 
 if TYPE_CHECKING:
@@ -53,6 +56,46 @@ class FakeOrchestrator:
             steps=[],
             artifacts=[],
             warnings=[],
+        )
+
+
+class ClosableFakeOrchestrator(FakeOrchestrator):
+    def __init__(self) -> None:
+        self.close_calls = 0
+
+    def close(self) -> None:
+        self.close_calls += 1
+
+
+class FailingClosableOrchestrator(ClosableFakeOrchestrator):
+    def run(
+        self,
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+    ) -> ExplorationReport:
+        raise RuntimeError("orchestrator failed")
+
+
+class TracedFakeOrchestrator:
+    def run(
+        self,
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+    ) -> ExplorationReport:
+        return ExplorationReport(
+            status="success",
+            final_draft=FinalDraft(content="Answer is 42", evidence=["computed"]),
+            steps=[],
+            artifacts=[],
+            warnings=[],
+            trace_events=[
+                TraceEvent(
+                    role="assistant",
+                    content="planned",
+                    name="plan",
+                    agent="inspector",
+                )
+            ],
         )
 
 
@@ -161,19 +204,147 @@ def test_agent_keeps_work_dir_for_artifact_references(tmp_path: Path) -> None:
     assert work_dirs[0].exists()
 
 
-def test_agent_returns_unsupported_for_deep_analysis(tmp_path: Path) -> None:
+def test_analysis_eval_closes_orchestrator_after_success(tmp_path: Path) -> None:
+    profile = make_profile(tmp_path)
+    brief = make_brief(TaskType.DATA_ANALYSIS)
+    orchestrator = ClosableFakeOrchestrator()
+
+    def factory(
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+        _work_dir: Path,
+    ) -> ClosableFakeOrchestrator:
+        return orchestrator
+
+    agent = StatigentDataScienceAgent(
+        model_name="fake",
+        profiler=FakeProfiler(profile),
+        planner=FakePlanner(brief),
+        orchestrator_factory=factory,
+    )
+
+    agent.run_analysis_for_eval("question", files=[])
+
+    assert orchestrator.close_calls == 1
+
+
+def test_analysis_eval_closes_orchestrator_after_failure(tmp_path: Path) -> None:
+    profile = make_profile(tmp_path)
+    brief = make_brief(TaskType.DATA_ANALYSIS)
+    orchestrator = FailingClosableOrchestrator()
+
+    def factory(
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+        _work_dir: Path,
+    ) -> FailingClosableOrchestrator:
+        return orchestrator
+
+    agent = StatigentDataScienceAgent(
+        model_name="fake",
+        profiler=FakeProfiler(profile),
+        planner=FakePlanner(brief),
+        orchestrator_factory=factory,
+    )
+
+    with pytest.raises(RuntimeError, match="orchestrator failed"):
+        agent.run_analysis_for_eval("question", files=[])
+
+    assert orchestrator.close_calls == 1
+
+
+def test_analysis_eval_coerces_deep_analysis_brief(tmp_path: Path) -> None:
     profile = make_profile(tmp_path)
     agent = make_agent(profile, make_brief(TaskType.DEEP_ANALYSIS))
 
-    response, _trace = agent.run_analysis_for_eval("deep report", files=[])
+    response, trace = agent.run_analysis_for_eval("deep report", files=[])
 
-    assert "deep_analysis" in response
-    assert "not implemented" in response
+    assert response == "Answer is 42"
+    assert any("coerced" in event["content"].casefold() for event in trace)
+    assert all("agent" in event and "session" in event for event in trace)
+
+
+def test_analysis_eval_coerces_non_analysis_brief(tmp_path: Path) -> None:
+    profile = make_profile(tmp_path)
+    brief = make_brief(TaskType.DATA_MODELING)
+    seen: list[TaskType] = []
+
+    class CapturingOrchestrator:
+        def run(
+            self,
+            run_brief: TaskBrief,
+            run_profile: DatasetProfile,
+        ) -> ExplorationReport:
+            seen.append(run_brief.task_type)
+            return FakeOrchestrator().run(run_brief, run_profile)
+
+    def factory(
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+        _work_dir: Path,
+    ) -> CapturingOrchestrator:
+        return CapturingOrchestrator()
+
+    agent = StatigentDataScienceAgent(
+        model_name="fake",
+        profiler=FakeProfiler(profile),
+        planner=FakePlanner(brief),
+        orchestrator_factory=factory,
+    )
+
+    response, trace = agent.run_analysis_for_eval("predict", files=[])
+
+    assert response == "Answer is 42"
+    assert seen == [TaskType.DATA_ANALYSIS]
+    assert any("coerced" in event["content"].casefold() for event in trace)
+    assert all("agent" in event and "session" in event for event in trace)
+
+
+def test_analysis_eval_appends_orchestrator_trace_events(tmp_path: Path) -> None:
+    profile = make_profile(tmp_path)
+    brief = make_brief(TaskType.DATA_ANALYSIS)
+
+    def factory(
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+        _work_dir: Path,
+    ) -> TracedFakeOrchestrator:
+        return TracedFakeOrchestrator()
+
+    agent = StatigentDataScienceAgent(
+        model_name="fake",
+        profiler=FakeProfiler(profile),
+        planner=FakePlanner(brief),
+        orchestrator_factory=factory,
+    )
+
+    response, trace = agent.run_analysis_for_eval("question", files=[])
+
+    assert response == "Answer is 42"
+    assert any(
+        event["name"] == "plan" and event["agent"] == "inspector" for event in trace
+    )
+    assert all("agent" in event and "session" in event for event in trace)
 
 
 def test_modeling_eval_returns_unsupported_submission_path(tmp_path: Path) -> None:
     profile = make_profile(tmp_path)
-    agent = make_agent(profile, make_brief(TaskType.DATA_MODELING))
+    orchestrator_calls: list[TaskType] = []
+
+    def factory(
+        brief: TaskBrief,
+        _profile: DatasetProfile,
+        _work_dir: Path,
+    ) -> FakeOrchestrator:
+        orchestrator_calls.append(brief.task_type)
+        return FakeOrchestrator()
+
+    agent = StatigentDataScienceAgent(
+        model_name="fake",
+        profiler=FakeProfiler(profile),
+        planner=FakePlanner(make_brief(TaskType.DATA_MODELING)),
+        orchestrator_factory=factory,
+    )
     train = tmp_path / "train.csv"
     test = tmp_path / "test.csv"
     sample = tmp_path / "sample_submission.csv"
@@ -190,4 +361,6 @@ def test_modeling_eval_returns_unsupported_submission_path(tmp_path: Path) -> No
 
     assert submission_path.name == "submission.csv"
     assert not submission_path.exists()
+    assert orchestrator_calls == []
     assert any("not implemented" in msg["content"] for msg in trace)
+    assert all("agent" in event and "session" in event for event in trace)
