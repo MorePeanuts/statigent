@@ -21,14 +21,40 @@ from statigent.schemas import (
 )
 
 
-def test_budget_for_complexity_simple_returns_small_limits() -> None:
-    budget = budget_for_complexity(Complexity.SIMPLE)
+def test_budget_for_complexity_uses_fixed_system_tiers() -> None:
+    assert budget_for_complexity(Complexity.SIMPLE) == Budget(
+        max_rounds=3,
+        max_code_cells=6,
+        max_debug_attempts=2,
+        timeout_seconds=180,
+    )
+    assert budget_for_complexity(Complexity.MODERATE) == Budget(
+        max_rounds=7,
+        max_code_cells=14,
+        max_debug_attempts=3,
+        timeout_seconds=480,
+    )
+    assert budget_for_complexity(Complexity.COMPLEX) == Budget(
+        max_rounds=12,
+        max_code_cells=28,
+        max_debug_attempts=5,
+        timeout_seconds=900,
+    )
 
-    assert isinstance(budget, Budget)
-    assert budget.max_rounds == 2
-    assert budget.max_code_cells == 4
-    assert budget.max_debug_attempts == 1
-    assert budget.timeout_seconds == 120
+
+def test_task_brief_field_descriptions_define_what_not_how() -> None:
+    schema = TaskBrief.model_json_schema()
+    task_type_description = schema["properties"]["task_type"]["description"]
+    output_type_description = schema["properties"]["output_type"]["description"]
+    complexity_description = schema["properties"]["complexity"]["description"]
+    budgets_description = schema["properties"]["budgets"]["description"]
+
+    assert "category" in task_type_description.casefold()
+    assert "shape" in output_type_description.casefold()
+    assert "effort tier" in complexity_description.casefold()
+    assert "system-derived resource caps" in budgets_description.casefold()
+    assert "choose when" not in task_type_description.casefold()
+    assert "analyze by" not in complexity_description.casefold()
 
 
 def test_task_brief_supports_deep_analysis() -> None:
@@ -43,7 +69,7 @@ def test_task_brief_supports_deep_analysis() -> None:
     )
 
     assert brief.task_type is TaskType.DEEP_ANALYSIS
-    assert brief.budgets.max_rounds == 8
+    assert brief.budgets.max_rounds == 12
 
 
 def test_custom_action_requires_rationale_expected_evidence_and_risk_notes() -> None:

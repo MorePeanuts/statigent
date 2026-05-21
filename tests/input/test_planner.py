@@ -1,6 +1,9 @@
 from pathlib import Path
 from typing import Any
 
+import pytest
+
+from statigent.errors import StatigentParseError
 from statigent.input import TaskBriefPlanner
 from statigent.schemas import (
     Budget,
@@ -11,6 +14,7 @@ from statigent.schemas import (
     TableProfile,
     TaskBrief,
     TaskType,
+    budget_for_complexity,
 )
 
 
@@ -22,7 +26,7 @@ def _make_raw_result(
 
 class FakeStructuredModel:
     def __init__(
-        self, result: TaskBrief | None, parsing_error: Exception | None = None
+        self, result: object = None, parsing_error: Exception | None = None
     ) -> None:
         self.result = result
         self.parsing_error = parsing_error
@@ -34,7 +38,7 @@ class FakeStructuredModel:
 class FakeModel:
     def __init__(
         self,
-        result: TaskBrief | None = None,
+        result: object = None,
         parsing_error: Exception | None = None,
     ) -> None:
         self.result = result
@@ -88,10 +92,10 @@ def test_planner_uses_structured_model_result(tmp_path: Path) -> None:
         data_context="sales.csv",
         complexity=Complexity.MODERATE,
         budgets=Budget(
-            max_rounds=5,
-            max_code_cells=10,
-            max_debug_attempts=2,
-            timeout_seconds=300,
+            max_rounds=7,
+            max_code_cells=14,
+            max_debug_attempts=3,
+            timeout_seconds=480,
         ),
     )
     planner = TaskBriefPlanner(model=FakeModel(expected))
@@ -105,59 +109,46 @@ def test_planner_uses_structured_model_result(tmp_path: Path) -> None:
     assert brief == expected
 
 
-def test_planner_fallback_detects_deep_analysis(tmp_path: Path) -> None:
-    planner = TaskBriefPlanner(model=FakeModel(parsing_error=ValueError("bad json")))
-
-    brief = planner.create_brief(
-        prompt="Create a deep business analysis report for sales executives",
-        task_instructions="",
-        profile=make_profile(tmp_path),
-    )
-
-    assert brief.task_type is TaskType.DEEP_ANALYSIS
-    assert brief.output_type is OutputType.REPORT
-    assert brief.warnings
-
-
-def test_planner_fallback_detects_modeling(tmp_path: Path) -> None:
-    planner = TaskBriefPlanner(model=FakeModel(parsing_error=ValueError("bad json")))
-
-    brief = planner.create_brief(
-        prompt="Build a predictive model and forecast next month's demand",
-        task_instructions="",
-        profile=make_profile(tmp_path),
-    )
-
-    assert brief.task_type is TaskType.DATA_MODELING
-    assert brief.output_type is OutputType.FILE
-    assert brief.complexity is Complexity.COMPLEX
-    assert any("parsing failure" in warning for warning in brief.warnings)
-    assert any("fallback" in warning for warning in brief.warnings)
-
-
-def test_planner_fallback_handles_structured_output_exception(
+def test_planner_raises_parse_error_for_structured_output_error(
     tmp_path: Path,
 ) -> None:
     planner = TaskBriefPlanner(model=FakeModel(parsing_error=ValueError("bad json")))
 
-    brief = planner.create_brief(
-        prompt="Summarize the dataset",
-        task_instructions="",
-        profile=make_profile(tmp_path),
+    with pytest.raises(StatigentParseError):
+        planner.create_brief(
+            prompt="Summarize the dataset",
+            task_instructions="",
+            profile=make_profile(tmp_path),
+        )
+
+
+def test_planner_raises_parse_error_for_wrong_parsed_type(tmp_path: Path) -> None:
+    planner = TaskBriefPlanner(model=FakeModel(result="not a task brief"))
+
+    with pytest.raises(StatigentParseError):
+        planner.create_brief(
+            prompt="Analyze revenue trend",
+            task_instructions="",
+            profile=make_profile(tmp_path),
+        )
+
+
+def test_planner_derives_budget_from_complexity(tmp_path: Path) -> None:
+    expected = TaskBrief(
+        task_type=TaskType.DATA_ANALYSIS,
+        objective="Analyze revenue trend",
+        output_type=OutputType.REPORT,
+        requirements=[],
+        data_context="sales.csv",
+        complexity=Complexity.MODERATE,
+        budgets=Budget(
+            max_rounds=1,
+            max_code_cells=1,
+            max_debug_attempts=0,
+            timeout_seconds=1,
+        ),
     )
-
-    assert brief.task_type is TaskType.DATA_ANALYSIS
-    assert brief.output_type is OutputType.ANSWER
-    assert brief.warnings
-
-
-def test_planner_parse_error_after_retries_triggers_fallback(
-    tmp_path: Path,
-) -> None:
-    """When structured output consistently fails, fallback is used after retries."""
-    planner = TaskBriefPlanner(
-        model=FakeModel(parsing_error=TypeError("programmer bug"))
-    )
+    planner = TaskBriefPlanner(model=FakeModel(expected))
 
     brief = planner.create_brief(
         prompt="Analyze revenue trend",
@@ -165,5 +156,4 @@ def test_planner_parse_error_after_retries_triggers_fallback(
         profile=make_profile(tmp_path),
     )
 
-    assert brief.warnings
-    assert any("parsing failure" in w for w in brief.warnings)
+    assert brief.budgets == budget_for_complexity(Complexity.MODERATE)

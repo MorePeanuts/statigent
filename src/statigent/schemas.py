@@ -82,26 +82,26 @@ class Budget(BaseModel):
 
 
 def budget_for_complexity(complexity: Complexity) -> Budget:
-    """Return a resource budget appropriate for the given complexity tier."""
+    """Return the system-owned resource budget for a complexity tier."""
     if complexity is Complexity.SIMPLE:
         return Budget(
-            max_rounds=2,
-            max_code_cells=4,
-            max_debug_attempts=1,
-            timeout_seconds=120,
+            max_rounds=3,
+            max_code_cells=6,
+            max_debug_attempts=2,
+            timeout_seconds=180,
         )
     if complexity is Complexity.MODERATE:
         return Budget(
-            max_rounds=5,
-            max_code_cells=10,
-            max_debug_attempts=2,
-            timeout_seconds=300,
+            max_rounds=7,
+            max_code_cells=14,
+            max_debug_attempts=3,
+            timeout_seconds=480,
         )
     return Budget(
-        max_rounds=8,
-        max_code_cells=18,
-        max_debug_attempts=3,
-        timeout_seconds=600,
+        max_rounds=12,
+        max_code_cells=28,
+        max_debug_attempts=5,
+        timeout_seconds=900,
     )
 
 
@@ -180,7 +180,6 @@ class DatasetProfile(BaseModel):
         return "Tables:\n" + "\n".join(table_lines) + warning_text
 
 
-# TODO: The comments here are not for programmers, but for large models.
 class TaskBrief(BaseModel):
     """Structured task plan produced by the TaskBriefPlanner.
 
@@ -189,19 +188,23 @@ class TaskBrief(BaseModel):
     resources to allocate.
     """
 
-    task_type: TaskType = Field(description="Category of the data science task")
+    task_type: TaskType = Field(description="Category of task requested by the user")
     objective: str = Field(
         description="Natural-language description of what the user wants"
     )
     output_type: OutputType = Field(
-        description="Expected shape of the final deliverable"
+        description="Shape of deliverable requested by the user"
     )
     requirements: list[str] = Field(
         default_factory=list, description="Explicit requirements from user instructions"
     )
     data_context: str = Field(description="Summary of the input dataset for context")
-    complexity: Complexity = Field(description="Estimated difficulty tier")
-    budgets: Budget = Field(description="Resource caps derived from complexity")
+    complexity: Complexity = Field(
+        description="Expected effort tier for completing the task"
+    )
+    budgets: Budget = Field(
+        description="System-derived resource caps for the selected effort tier"
+    )
     analysis_hints: list[str] = Field(
         default_factory=list, description="Suggested analysis directions"
     )
