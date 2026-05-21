@@ -75,12 +75,27 @@ def load_state():
         state.update(values)
     modules = payload.get("modules", {})
     if isinstance(modules, dict):
-        for name, module_name in modules.items():
-            if isinstance(name, str) and isinstance(module_name, str):
+        for name, module_spec in modules.items():
+            if not isinstance(name, str):
+                continue
+            module_names = []
+            if isinstance(module_spec, str):
+                module_names = [module_spec]
+            elif isinstance(module_spec, list):
+                module_names = [
+                    item for item in module_spec if isinstance(item, str)
+                ]
+            if not module_names:
+                continue
+            for module_name in sorted(module_names, key=lambda value: value.count(".")):
                 try:
-                    state[name] = importlib.import_module(module_name)
+                    importlib.import_module(module_name)
                 except Exception:
                     pass
+            try:
+                state[name] = importlib.import_module(module_names[0])
+            except Exception:
+                pass
     return state
 
 def save_state(state):
@@ -92,7 +107,14 @@ def save_state(state):
         ):
             continue
         if isinstance(value, ModuleType):
-            modules[name] = value.__name__
+            module_prefix = value.__name__
+            related_modules = [
+                module_name
+                for module_name in sys.modules
+                if module_name == module_prefix
+                or module_name.startswith(module_prefix + ".")
+            ]
+            modules[name] = sorted(related_modules, key=lambda item: item.count("."))
             continue
         if can_pickle(value):
             values[name] = value

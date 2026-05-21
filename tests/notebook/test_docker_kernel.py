@@ -64,6 +64,24 @@ def test_docker_driver_persists_simple_state_after_import(tmp_path: Path) -> Non
     assert second["stdout"] == "3.0\n"
 
 
+def test_docker_driver_persists_dotted_imports(tmp_path: Path) -> None:
+    driver_path = tmp_path / "statigent_notebook_driver.py"
+    state_path = tmp_path / "state.pkl"
+    driver_path.write_text(_DRIVER)
+
+    first = run_driver_cell(driver_path, "import xml.etree.ElementTree", state_path)
+    second = run_driver_cell(
+        driver_path,
+        "print(xml.etree.ElementTree.Element('x').tag)",
+        state_path,
+    )
+
+    assert first["exit_code"] == 0
+    assert first["stderr"] == ""
+    assert second["exit_code"] == 0
+    assert second["stdout"] == "x\n"
+
+
 @patch("statigent.notebook.docker.DockerSandbox")
 def test_docker_kernel_starts_sandbox_with_mounts(
     mock_sandbox_class: MagicMock,
