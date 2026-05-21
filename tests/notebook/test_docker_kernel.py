@@ -1,3 +1,8 @@
+import base64
+import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -5,6 +10,7 @@ import pytest
 
 from statigent.errors import StatigentSandboxError
 from statigent.notebook import DockerNotebookKernel, NotebookContext
+from statigent.notebook.docker import _DRIVER
 
 
 def start_or_skip_docker_kernel(
@@ -15,6 +21,47 @@ def start_or_skip_docker_kernel(
         kernel.start(context)
     except StatigentSandboxError as err:
         pytest.skip(f"Docker unavailable: {err}")
+
+
+def run_driver_cell(
+    driver_path: Path,
+    code: str,
+    state_path: Path,
+) -> dict[str, object]:
+    encoded = base64.b64encode(code.encode()).decode()
+    script = (
+        "import importlib.util\n"
+        "import sys\n"
+        "spec = importlib.util.spec_from_file_location('driver', sys.argv[1])\n"
+        "driver = importlib.util.module_from_spec(spec)\n"
+        "assert spec.loader is not None\n"
+        "spec.loader.exec_module(driver)\n"
+        "driver.run_cell(sys.argv[2])\n"
+    )
+    env = os.environ.copy()
+    env["STATIGENT_NOTEBOOK_STATE_PATH"] = str(state_path)
+    result = subprocess.run(
+        [sys.executable, "-c", script, str(driver_path), encoded],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=env,
+    )
+    return dict(json.loads(result.stdout.strip().splitlines()[-1]))
+
+
+def test_docker_driver_persists_simple_state_after_import(tmp_path: Path) -> None:
+    driver_path = tmp_path / "statigent_notebook_driver.py"
+    state_path = tmp_path / "state.pkl"
+    driver_path.write_text(_DRIVER)
+
+    first = run_driver_cell(driver_path, "import math\nvalue = 9", state_path)
+    second = run_driver_cell(driver_path, "print(math.sqrt(value))", state_path)
+
+    assert first["exit_code"] == 0
+    assert first["stderr"] == ""
+    assert second["exit_code"] == 0
+    assert second["stdout"] == "3.0\n"
 
 
 @patch("statigent.notebook.docker.DockerSandbox")

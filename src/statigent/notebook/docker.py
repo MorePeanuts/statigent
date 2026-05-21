@@ -27,24 +27,82 @@ from statigent.schemas import (
 
 # Python driver that lives inside the container. It decodes the base64
 # cell payload, executes it in a persistent STATE dict, and emits JSON
-# results on stdout. State is serialized via pickle so it survives
-# across container exec calls.
+# results on stdout. Pickleable values and module bindings are persisted
+# so normal imports do not break later JSON output.
 _DRIVER = r"""
 import base64
 import contextlib
+import importlib
 import io
 import json
+import os
 import pickle
 import sys
 import traceback
 from pathlib import Path
+from types import ModuleType
 
-STATE_PATH = Path("/tmp/statigent_notebook_state.pkl")
-if STATE_PATH.exists():
-    with STATE_PATH.open("rb") as f:
-        STATE = pickle.load(f)
-else:
-    STATE = {"__name__": "__statigent_notebook__"}
+STATE_PATH = Path(os.environ.get(
+    "STATIGENT_NOTEBOOK_STATE_PATH",
+    "/tmp/statigent_notebook_state.pkl",
+))
+
+def empty_state():
+    return {"__name__": "__statigent_notebook__"}
+
+def can_pickle(value):
+    try:
+        pickle.dumps(value)
+    except Exception:
+        return False
+    return True
+
+def load_state():
+    if not STATE_PATH.exists():
+        return empty_state()
+    try:
+        with STATE_PATH.open("rb") as f:
+            payload = pickle.load(f)
+    except Exception:
+        return empty_state()
+    if not isinstance(payload, dict):
+        return empty_state()
+    if "values" not in payload or "modules" not in payload:
+        return payload
+    state = empty_state()
+    values = payload.get("values", {})
+    if isinstance(values, dict):
+        state.update(values)
+    modules = payload.get("modules", {})
+    if isinstance(modules, dict):
+        for name, module_name in modules.items():
+            if isinstance(name, str) and isinstance(module_name, str):
+                try:
+                    state[name] = importlib.import_module(module_name)
+                except Exception:
+                    pass
+    return state
+
+def save_state(state):
+    values = {}
+    modules = {}
+    for name, value in state.items():
+        if name == "__builtins__" or (
+            name.startswith("__") and name.endswith("__")
+        ):
+            continue
+        if isinstance(value, ModuleType):
+            modules[name] = value.__name__
+            continue
+        if can_pickle(value):
+            values[name] = value
+    payload = {"values": values, "modules": modules}
+    tmp_path = STATE_PATH.with_suffix(STATE_PATH.suffix + ".tmp")
+    with tmp_path.open("wb") as f:
+        pickle.dump(payload, f)
+    tmp_path.replace(STATE_PATH)
+
+STATE = load_state()
 
 def run_cell(encoded):
     code = base64.b64decode(encoded.encode()).decode()
@@ -58,8 +116,10 @@ def run_cell(encoded):
             exit_code = 1
             traceback.print_exc(file=stderr)
     if exit_code == 0:
-        with STATE_PATH.open("wb") as f:
-            pickle.dump(STATE, f)
+        try:
+            save_state(STATE)
+        except Exception:
+            pass
     print(json.dumps({
         "stdout": stdout.getvalue(),
         "stderr": stderr.getvalue(),
