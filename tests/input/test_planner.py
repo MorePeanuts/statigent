@@ -2,11 +2,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic import BaseModel
 
 from statigent.errors import StatigentParseError
 from statigent.input import TaskBriefPlanner
 from statigent.schemas import (
-    Budget,
     Complexity,
     DatasetProfile,
     InputFileInfo,
@@ -16,6 +16,8 @@ from statigent.schemas import (
     TaskType,
     budget_for_complexity,
 )
+
+_UNSET = object()
 
 
 def _make_raw_result(
@@ -38,16 +40,21 @@ class FakeStructuredModel:
 class FakeModel:
     def __init__(
         self,
-        result: object = None,
+        result: object = _UNSET,
+        payload: dict[str, object] | None = None,
         parsing_error: Exception | None = None,
     ) -> None:
         self.result = result
+        self.payload = payload
         self.parsing_error = parsing_error
+        self.schema: type[BaseModel] | None = None
 
     def with_structured_output(
-        self, _schema: type[TaskBrief], *, include_raw: bool = False
+        self, schema: type[BaseModel], *, include_raw: bool = False
     ) -> FakeStructuredModel:
-        return FakeStructuredModel(self.result, self.parsing_error)
+        self.schema = schema
+        result = schema(**self.payload) if self.payload is not None else self.result
+        return FakeStructuredModel(result, self.parsing_error)
 
 
 def make_profile(tmp_path: Path) -> DatasetProfile:
@@ -83,22 +90,22 @@ def make_profile(tmp_path: Path) -> DatasetProfile:
     )
 
 
-def test_planner_uses_structured_model_result(tmp_path: Path) -> None:
-    expected = TaskBrief(
-        task_type=TaskType.DATA_ANALYSIS,
-        objective="Analyze revenue trend",
-        output_type=OutputType.REPORT,
-        requirements=["Mention trend"],
-        data_context="sales.csv",
-        complexity=Complexity.MODERATE,
-        budgets=Budget(
-            max_rounds=7,
-            max_code_cells=14,
-            max_debug_attempts=3,
-            timeout_seconds=480,
-        ),
+def test_planner_uses_structured_result_without_model_budgets(
+    tmp_path: Path,
+) -> None:
+    fake_model = FakeModel(
+        payload={
+            "task_type": TaskType.DATA_ANALYSIS,
+            "objective": "Analyze revenue trend",
+            "output_type": OutputType.REPORT,
+            "requirements": ["Mention trend"],
+            "data_context": "sales.csv",
+            "complexity": Complexity.MODERATE,
+            "analysis_hints": ["Compare revenue by date"],
+            "warnings": [],
+        }
     )
-    planner = TaskBriefPlanner(model=FakeModel(expected))
+    planner = TaskBriefPlanner(model=fake_model)
 
     brief = planner.create_brief(
         prompt="Analyze revenue trend",
@@ -106,7 +113,19 @@ def test_planner_uses_structured_model_result(tmp_path: Path) -> None:
         profile=make_profile(tmp_path),
     )
 
-    assert brief == expected
+    assert fake_model.schema is not None
+    assert "budgets" not in fake_model.schema.model_json_schema()["properties"]
+    assert brief == TaskBrief(
+        task_type=TaskType.DATA_ANALYSIS,
+        objective="Analyze revenue trend",
+        output_type=OutputType.REPORT,
+        requirements=["Mention trend"],
+        data_context="sales.csv",
+        complexity=Complexity.MODERATE,
+        budgets=budget_for_complexity(Complexity.MODERATE),
+        analysis_hints=["Compare revenue by date"],
+        warnings=[],
+    )
 
 
 def test_planner_raises_parse_error_for_structured_output_error(
@@ -134,21 +153,24 @@ def test_planner_raises_parse_error_for_wrong_parsed_type(tmp_path: Path) -> Non
 
 
 def test_planner_derives_budget_from_complexity(tmp_path: Path) -> None:
-    expected = TaskBrief(
-        task_type=TaskType.DATA_ANALYSIS,
-        objective="Analyze revenue trend",
-        output_type=OutputType.REPORT,
-        requirements=[],
-        data_context="sales.csv",
-        complexity=Complexity.MODERATE,
-        budgets=Budget(
-            max_rounds=1,
-            max_code_cells=1,
-            max_debug_attempts=0,
-            timeout_seconds=1,
-        ),
+    planner = TaskBriefPlanner(
+        model=FakeModel(
+            payload={
+                "task_type": TaskType.DATA_ANALYSIS,
+                "objective": "Analyze revenue trend",
+                "output_type": OutputType.REPORT,
+                "requirements": [],
+                "data_context": "sales.csv",
+                "complexity": Complexity.MODERATE,
+                "budgets": {
+                    "max_rounds": 1,
+                    "max_code_cells": 1,
+                    "max_debug_attempts": 0,
+                    "timeout_seconds": 1,
+                },
+            }
+        )
     )
-    planner = TaskBriefPlanner(model=FakeModel(expected))
 
     brief = planner.create_brief(
         prompt="Analyze revenue trend",
