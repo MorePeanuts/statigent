@@ -22,7 +22,7 @@ In scope:
 - Refine `TaskBriefPlanner` around LangChain `BaseChatModel`.
 - Make structured output parsing failures explicit errors.
 - Convert budget selection from model-generated numbers to fixed tiers.
-- Rewrite schema descriptions so they guide the LLM.
+- Rewrite schema descriptions so they define each field's meaning for the LLM.
 - Add `agent` and `session` trace metadata.
 - Force `run_analysis_for_eval()` back to `data_analysis` when classification
   is wrong for that entrypoint.
@@ -66,21 +66,25 @@ invent numeric budget values.
 
 ### Schema Descriptions
 
-Structured output schema descriptions are prompts for the LLM, not programmer
-comments. Descriptions should explain selection criteria and constraints. For
-example:
+Structured output schema descriptions are LLM-visible field definitions, not
+programmer comments. Descriptions should explain what each field represents and
+what kind of value belongs there. They should not explain the reasoning
+procedure or analysis method. The "how" belongs in system prompts and action
+prompts.
 
-- `task_type`: explain when to choose `data_analysis`, `data_modeling`,
-  `deep_analysis`, or `unknown`.
-- `output_type`: explain when the user expects a short answer, a report, or a
-  file artifact.
-- `complexity`: explain how to distinguish simple, moderate, and complex tasks.
-- `requirements`: ask the model to preserve explicit user constraints.
-- `analysis_hints`: ask for concrete analysis directions that may guide the
-  Inspector.
+Examples:
+
+- `task_type`: the category of task requested by the user.
+- `output_type`: the deliverable shape requested by the user.
+- `complexity`: the expected effort tier for the task.
+- `requirements`: explicit constraints or requirements stated by the user.
+- `analysis_hints`: concrete observations or directions that may help the
+  exploration layer.
 
 Implementation-facing documentation belongs in class docstrings or project
-docs, not in Pydantic field descriptions intended for structured output.
+docs, not in Pydantic field descriptions intended for structured output. Prompt
+templates should explain how to choose between task types, output types, and
+complexity tiers.
 
 ### Budget Tiers
 
@@ -91,9 +95,9 @@ Recommended tiers:
 
 | Complexity | Rounds | Code cells | Debug attempts | Timeout |
 | --- | ---: | ---: | ---: | ---: |
-| `simple` | 2 | 4 | 1 | 120s |
-| `moderate` | 5 | 10 | 2 | 300s |
-| `complex` | 8 | 18 | 3 | 600s |
+| `simple` | 3 | 6 | 2 | 180s |
+| `moderate` | 7 | 14 | 3 | 480s |
+| `complex` | 12 | 28 | 5 | 900s |
 
 The exact numbers may remain configurable in code, but they should be system
 controlled. The model should not emit arbitrary resource limits.
@@ -242,9 +246,9 @@ descriptions, evidence summaries, warnings, and Reviewer feedback.
 
 ### Reviewer
 
-Reviewer is the structured boundary after Inspector planning. It receives the
-full Inspector text, task brief, profile summary, previous observations, budget
-state, and available DEA action definitions.
+Reviewer is the structured review boundary after Inspector planning. It
+receives the full Inspector text, task brief, profile summary, previous
+observations, budget state, and available DEA action definitions.
 
 Reviewer should output a structured `ReviewerPlanDecision`:
 
@@ -256,7 +260,6 @@ class ReviewerPlanDecision(BaseModel):
     question: str = ""
     evidence_needed: str = ""
     coding_instruction: str = ""
-    action_prompt: str = ""
     constraints: list[str] = Field(default_factory=list)
 ```
 
@@ -266,12 +269,14 @@ Reviewer responsibilities:
   by the available data.
 - Parse the Inspector's action block.
 - Confirm the action is necessary for the task objective.
-- Fuse the predefined DEA action prompt into `action_prompt`.
 - Produce `coding_instruction` that contains only code-relevant instructions for
   Coder.
 
-If Reviewer rejects, `action_kind`, `coding_instruction`, and `action_prompt`
-can be empty. The graph routes back to Inspector with `reason`.
+The graph should fuse the predefined DEA action prompt after an approved
+`ReviewerPlanDecision` returns, using the approved `action_kind`. This keeps
+action-skill selection in code and prevents the model from editing the canonical
+prompt. If `approved` is false, the graph routes back to Inspector with
+`reason`.
 
 ### DEA Action Prompts
 
@@ -299,11 +304,12 @@ question, expected evidence, and risk notes before approval.
 
 ### Coder
 
-Coder receives only the Reviewer-approved code instruction fields. It should not
-receive the full Inspector planning text unless that text has been filtered by
-Reviewer.
+Coder receives only the Reviewer-approved code instruction fields plus the
+canonical DEA action prompt selected by code. It should not receive the full
+Inspector planning text unless that text has been filtered by Reviewer.
 
-Coder should bind an `append_code_cell` tool:
+Coder should work through a bound `append_code_cell` tool rather than structured
+output:
 
 ```python
 append_code_cell(code: str, purpose: str, expected_observation: str) -> CellRef
@@ -371,28 +377,33 @@ Debugger tool:
 
 ```python
 replace_code_cell(
-    cell_id: str,
     code: str,
     purpose: str,
     expected_observation: str,
 ) -> CellRef
 ```
 
-Debugger should only replace the failed cell. It should not append new
-exploration cells and should not alter unrelated cells.
+The tool wrapper should close over the failed `cell_id` supplied by the graph.
+Debugger does not choose which cell to replace. It can only provide corrected
+code, purpose, and expected observation for the failed cell already selected by
+the execution logic. It should not append new exploration cells and should not
+alter unrelated cells.
 
-After debugging, it should return a structured summary:
+Debugger should also bind a task-local lesson tool:
 
 ```python
-class DebugLesson(BaseModel):
-    error_pattern: str
-    root_cause: str
-    fix_strategy: str
-    applies_when: str
+record_debug_lesson(
+    error_pattern: str,
+    root_cause: str,
+    fix_strategy: str,
+    applies_when: str,
+) -> DebugLessonRef
 ```
 
-Lessons are stored only in the current `ExplorationRunState`. They are passed
-to later debugger sessions for the same task and discarded when the task ends.
+Debugger does not need structured output. It should use tools to replace the
+failed cell and record any reusable lesson. Lessons are stored only in the
+current `ExplorationRunState`. They are passed to later debugger sessions for
+the same task and discarded when the task ends.
 
 ### Inspector Observation And Final Draft
 
@@ -424,7 +435,16 @@ future modeling loop.
 
 ### Final Reviewer
 
-Final Reviewer uses structured output. It should check:
+Final Reviewer also uses structured output:
+
+```python
+class FinalReviewDecision(BaseModel):
+    approved: bool
+    reason: str
+    additional_exploration_focus: str = ""
+```
+
+It should check:
 
 - The draft answers the task objective.
 - Claims are supported by exploration evidence.
@@ -465,9 +485,11 @@ Prompt groups:
 - Final Reviewer prompt.
 
 Prompt tests should verify key contract language exists, such as "do not
-execute code", "append one cell", "replace only the failed cell", "Reviewer must
-reject redundant exploration", and "Inspector must end with the action block".
-Tests should not assert exact LLM prose beyond stable contract phrases.
+execute code", "append one cell", "Reviewer must reject redundant exploration",
+and "Inspector must end with the action block". Tool tests should verify that
+the debugger-facing `replace_code_cell` tool is pre-bound to the failed cell and
+does not expose a `cell_id` argument to the model. Tests should not assert exact
+LLM prose beyond stable contract phrases.
 
 ## Error Handling
 
@@ -493,7 +515,9 @@ Exception chains should be preserved with `raise ... from err`.
 - LangChain parsing errors raise `StatigentParseError`.
 - No deterministic fallback is used.
 - Model-selected complexity maps to system-owned budgets.
-- Schema descriptions contain LLM-facing selection guidance.
+- Schema descriptions contain LLM-facing field meanings.
+- Planner prompts contain the task type, output type, and complexity selection
+  guidance.
 
 ### Agent Wrapper
 
@@ -505,12 +529,15 @@ Exception chains should be preserved with `raise ... from err`.
 
 ### LangGraph Routing
 
-- Reviewer rejection routes back to Inspector.
-- Reviewer approval routes to Coder.
-- Coder appends a cell without executing it.
+- Reviewer structured decisions with `approved=false` route back to Inspector.
+- Reviewer structured decisions with `approved=true` route to Coder.
+- Coder `append_code_cell` tool calls append a cell without executing it.
 - Execute node runs the appended cell by id.
 - Failed execution enters Debugger while budget remains.
-- Debugger replaces the failed cell and execution retries by same cell id.
+- Debugger receives a `replace_code_cell` tool bound to the failed cell id.
+- Debugger replaces the failed cell and execution retries by the same cell id.
+- Debugger records reusable lessons through a tool, not through structured
+  output.
 - Debug lessons are available to later debugger sessions in the same run.
 - Debug lessons do not persist after the run.
 - Final review rejection routes back to Inspector when budget remains.
@@ -521,6 +548,7 @@ Exception chains should be preserved with `raise ... from err`.
 
 - `append_code_cell` returns stable cell ids.
 - `replace_code_cell` preserves cell identity while replacing code.
+- The debugger-facing replace tool does not expose a `cell_id` parameter.
 - `execute_cell` records stdout, stderr, duration, artifacts, and status.
 - `get_code_context` returns ordered notebook context.
 - Artifact references remain valid after rendering.
@@ -530,7 +558,8 @@ Exception chains should be preserved with `raise ... from err`.
 - Inspector prompt requires the action block.
 - Reviewer prompt requires relevance, necessity, and redundancy checks.
 - Coder prompt instructs one incremental cell and no execution.
-- Debugger prompt restricts edits to the failed cell.
+- Debugger prompt explains that the provided replace tool is already bound to
+  the failed cell.
 - Final Reviewer prompt checks evidence support and output constraints.
 
 ## Implementation Slices
