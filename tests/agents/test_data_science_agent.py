@@ -13,6 +13,7 @@ from statigent.schemas import (
     TableProfile,
     TaskBrief,
     TaskType,
+    TraceEvent,
 )
 
 if TYPE_CHECKING:
@@ -53,6 +54,33 @@ class FakeOrchestrator:
             steps=[],
             artifacts=[],
             warnings=[],
+        )
+
+
+class TracedExplorationReport(ExplorationReport):
+    trace_events: list[TraceEvent]
+
+
+class TracedFakeOrchestrator:
+    def run(
+        self,
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+    ) -> ExplorationReport:
+        return TracedExplorationReport(
+            status="success",
+            final_draft=FinalDraft(content="Answer is 42", evidence=["computed"]),
+            steps=[],
+            artifacts=[],
+            warnings=[],
+            trace_events=[
+                TraceEvent(
+                    role="assistant",
+                    content="planned",
+                    name="plan",
+                    agent="inspector",
+                )
+            ],
         )
 
 
@@ -205,6 +233,34 @@ def test_analysis_eval_coerces_non_analysis_brief(tmp_path: Path) -> None:
     assert response == "Answer is 42"
     assert seen == [TaskType.DATA_ANALYSIS]
     assert any("coerced" in event["content"].casefold() for event in trace)
+    assert all("agent" in event and "session" in event for event in trace)
+
+
+def test_analysis_eval_appends_orchestrator_trace_events(tmp_path: Path) -> None:
+    profile = make_profile(tmp_path)
+    brief = make_brief(TaskType.DATA_ANALYSIS)
+
+    def factory(
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+        _work_dir: Path,
+    ) -> TracedFakeOrchestrator:
+        return TracedFakeOrchestrator()
+
+    agent = StatigentDataScienceAgent(
+        model_name="fake",
+        profiler=FakeProfiler(profile),
+        planner=FakePlanner(brief),
+        orchestrator_factory=factory,
+    )
+
+    response, trace = agent.run_analysis_for_eval("question", files=[])
+
+    assert response == "Answer is 42"
+    assert any(
+        event["name"] == "plan" and event["agent"] == "inspector"
+        for event in trace
+    )
     assert all("agent" in event and "session" in event for event in trace)
 
 

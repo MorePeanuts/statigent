@@ -142,6 +142,7 @@ class StatigentDataScienceAgent:
 
         orchestrator = self._orchestrator(brief, profile, work_dir)
         report = orchestrator.run(brief, profile)
+        trace_events.extend(self._orchestrator_trace_events(report))
         if brief.warnings:
             report = report.model_copy(
                 update={"warnings": [*brief.warnings, *report.warnings]}
@@ -237,3 +238,10 @@ class StatigentDataScienceAgent:
             debugger=Debugger(model),
             kernel=kernel,
         )
+
+    @staticmethod
+    def _orchestrator_trace_events(report: ExplorationReport) -> list[TraceEvent]:
+        exposed_events = getattr(report, "trace_events", None)
+        if not isinstance(exposed_events, list):
+            return []
+        return [event for event in exposed_events if isinstance(event, TraceEvent)]
