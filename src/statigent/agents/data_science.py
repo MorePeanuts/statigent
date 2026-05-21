@@ -12,7 +12,7 @@ benchmark harness.
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from statigent.benchmarks.base import AgentTrace
 from statigent.exploration import (
@@ -51,6 +51,11 @@ class _Planner(Protocol):
 
 class _Orchestrator(Protocol):
     def run(self, brief: TaskBrief, profile: DatasetProfile) -> ExplorationReport: ...
+
+
+@runtime_checkable
+class _Closable(Protocol):
+    def close(self) -> None: ...
 
 
 OrchestratorFactory = Callable[[TaskBrief, DatasetProfile, Path], _Orchestrator]
@@ -141,7 +146,11 @@ class StatigentDataScienceAgent:
             )
 
         orchestrator = self._orchestrator(brief, profile, work_dir)
-        report = orchestrator.run(brief, profile)
+        try:
+            report = orchestrator.run(brief, profile)
+        finally:
+            if isinstance(orchestrator, _Closable):
+                orchestrator.close()
         trace_events.extend(self._orchestrator_trace_events(report))
         if brief.warnings:
             report = report.model_copy(

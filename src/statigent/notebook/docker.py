@@ -25,6 +25,16 @@ from statigent.schemas import (
     NotebookState,
 )
 
+_ARTIFACT_SUFFIX_KINDS = {
+    ".csv": "table",
+    ".json": "data",
+    ".md": "report",
+    ".png": "chart",
+    ".jpg": "chart",
+    ".jpeg": "chart",
+    ".svg": "chart",
+}
+
 # Python driver that lives inside the container. It decodes the base64
 # cell payload, executes it in a persistent STATE dict, and emits JSON
 # results on stdout. Pickleable values and module bindings are persisted
@@ -173,6 +183,7 @@ class DockerNotebookKernel:
     def start(self, context: NotebookContext) -> None:
         self._context = context
         context.work_dir.mkdir(parents=True, exist_ok=True)
+        (context.work_dir / "artifacts").mkdir(parents=True, exist_ok=True)
         self._sandbox = DockerSandbox(
             image=self.image,
             network=self.network,
@@ -183,6 +194,7 @@ class DockerNotebookKernel:
             for path in context.input_paths
         }
         mounts = [(path, str(path), True) for path in sorted(dirs)]
+        mounts.append((context.work_dir.resolve(), "/workspace", False))
         self._sandbox.start(mounts)
         encoded_driver = base64.b64encode(_DRIVER.encode()).decode()
         self._sandbox.exec(
@@ -263,7 +275,7 @@ class DockerNotebookKernel:
             stderr=stderr,
             exit_code=exit_code,
             duration_ms=duration_ms,
-            artifacts=[],
+            artifacts=self._refresh_artifacts(),
             error_summary=stderr[:500] if exit_code else "",
         )
         cell.latest_result = result
@@ -290,8 +302,6 @@ class DockerNotebookKernel:
         return FileReadResult(path=path, content=raw[:max_bytes], truncated=truncated)
 
     def write_artifact(self, name: str, content: str, kind: str) -> ArtifactRef:
-        # TODO: also write artifact into the container's /workspace so that
-        # subsequent cells can access generated files.
         if self._context is None:
             raise StatigentNotebookError("Docker notebook kernel has not been started")
         path = self._context.work_dir / "artifacts" / name
@@ -307,6 +317,7 @@ class DockerNotebookKernel:
         return self._context.input_paths
 
     def list_artifacts(self) -> list[ArtifactRef]:
+        self._refresh_artifacts()
         return self._state.artifacts
 
     def snapshot(self) -> NotebookState:
@@ -322,3 +333,26 @@ class DockerNotebookKernel:
             if cell.cell_id == cell_id:
                 return index, cell
         raise StatigentNotebookError(f"Unknown notebook cell: {cell_id}")
+
+    def _refresh_artifacts(self) -> list[ArtifactRef]:
+        if self._context is None:
+            return self._state.artifacts
+        artifact_dir = self._context.work_dir / "artifacts"
+        if not artifact_dir.exists():
+            return self._state.artifacts
+        known_paths = {artifact.path.resolve() for artifact in self._state.artifacts}
+        for path in sorted(item for item in artifact_dir.rglob("*") if item.is_file()):
+            resolved = path.resolve()
+            if resolved in known_paths:
+                continue
+            relative_name = path.relative_to(artifact_dir).as_posix()
+            self._state.artifacts.append(
+                ArtifactRef(
+                    name=relative_name,
+                    path=path,
+                    kind=_ARTIFACT_SUFFIX_KINDS.get(path.suffix.casefold(), "file"),
+                    description=f"Generated artifact: {relative_name}",
+                )
+            )
+            known_paths.add(resolved)
+        return self._state.artifacts

@@ -156,10 +156,12 @@ class DSBenchAdapter(BenchmarkAdapter):
         dest_resolved = dest.resolve()
         for member in zf.infolist():
             member_path = (dest / member.filename).resolve()
-            if not str(member_path).startswith(str(dest_resolved)):
+            try:
+                member_path.relative_to(dest_resolved)
+            except ValueError as err:
                 raise StatigentBenchmarkError(
                     f"Zip entry '{member.filename}' escapes target directory"
-                )
+                ) from err
         zf.extractall(dest)
 
     def _load_samples(self, data_path: Path) -> None:

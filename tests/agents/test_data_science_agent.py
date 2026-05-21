@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import pytest
+
 from statigent.agents import StatigentDataScienceAgent
 from statigent.schemas import (
     Budget,
@@ -55,6 +57,23 @@ class FakeOrchestrator:
             artifacts=[],
             warnings=[],
         )
+
+
+class ClosableFakeOrchestrator(FakeOrchestrator):
+    def __init__(self) -> None:
+        self.close_calls = 0
+
+    def close(self) -> None:
+        self.close_calls += 1
+
+
+class FailingClosableOrchestrator(ClosableFakeOrchestrator):
+    def run(
+        self,
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+    ) -> ExplorationReport:
+        raise RuntimeError("orchestrator failed")
 
 
 class TracedFakeOrchestrator:
@@ -183,6 +202,55 @@ def test_agent_keeps_work_dir_for_artifact_references(tmp_path: Path) -> None:
 
     assert work_dirs
     assert work_dirs[0].exists()
+
+
+def test_analysis_eval_closes_orchestrator_after_success(tmp_path: Path) -> None:
+    profile = make_profile(tmp_path)
+    brief = make_brief(TaskType.DATA_ANALYSIS)
+    orchestrator = ClosableFakeOrchestrator()
+
+    def factory(
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+        _work_dir: Path,
+    ) -> ClosableFakeOrchestrator:
+        return orchestrator
+
+    agent = StatigentDataScienceAgent(
+        model_name="fake",
+        profiler=FakeProfiler(profile),
+        planner=FakePlanner(brief),
+        orchestrator_factory=factory,
+    )
+
+    agent.run_analysis_for_eval("question", files=[])
+
+    assert orchestrator.close_calls == 1
+
+
+def test_analysis_eval_closes_orchestrator_after_failure(tmp_path: Path) -> None:
+    profile = make_profile(tmp_path)
+    brief = make_brief(TaskType.DATA_ANALYSIS)
+    orchestrator = FailingClosableOrchestrator()
+
+    def factory(
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+        _work_dir: Path,
+    ) -> FailingClosableOrchestrator:
+        return orchestrator
+
+    agent = StatigentDataScienceAgent(
+        model_name="fake",
+        profiler=FakeProfiler(profile),
+        planner=FakePlanner(brief),
+        orchestrator_factory=factory,
+    )
+
+    with pytest.raises(RuntimeError, match="orchestrator failed"):
+        agent.run_analysis_for_eval("question", files=[])
+
+    assert orchestrator.close_calls == 1
 
 
 def test_analysis_eval_coerces_deep_analysis_brief(tmp_path: Path) -> None:

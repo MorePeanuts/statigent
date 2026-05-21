@@ -58,6 +58,27 @@ def test_fake_kernel_records_artifacts(tmp_path: Path) -> None:
     assert artifact in kernel.list_artifacts()
 
 
+def test_fake_kernel_discovers_artifacts_created_by_cells(tmp_path: Path) -> None:
+    work_dir = tmp_path / "work"
+    kernel = FakeNotebookKernel()
+    kernel.queue_result(stdout="saved chart\n", exit_code=0)
+    kernel.start(NotebookContext(input_paths=[tmp_path], work_dir=work_dir))
+    artifact_path = work_dir / "artifacts" / "plots" / "sales.png"
+    artifact_path.parent.mkdir(parents=True)
+    artifact_path.write_bytes(b"png")
+    cell = kernel.append_code_cell(
+        "save_plot()",
+        "create plot",
+        "Create a sales chart artifact",
+    )
+
+    result = kernel.execute_cell(cell.cell_id)
+
+    assert [artifact.name for artifact in result.artifacts] == ["plots/sales.png"]
+    assert result.artifacts[0].kind == "chart"
+    assert kernel.list_artifacts() == result.artifacts
+
+
 def test_fake_kernel_list_inputs(tmp_path: Path) -> None:
     data = tmp_path / "sales.csv"
     data.write_text("x\n1\n")

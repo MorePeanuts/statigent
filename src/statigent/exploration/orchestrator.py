@@ -143,6 +143,10 @@ class ExplorationOrchestrator:
             trace_events=final_state["trace_events"],
         )
 
+    def close(self) -> None:
+        """Release resources owned by the underlying notebook kernel."""
+        self.kernel.close()
+
     def _build_graph(self) -> _CompiledGraph:
         graph = StateGraph(ExplorationRunState)
         graph.add_node("inspector", self._inspector_node)

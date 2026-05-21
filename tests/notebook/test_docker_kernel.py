@@ -98,6 +98,11 @@ def test_docker_kernel_starts_sandbox_with_mounts(
     sandbox.start.assert_called_once()
     mounts = sandbox.start.call_args[0][0]
     assert any(mount[0] == data.parent for mount in mounts)
+    assert (tmp_path / "work").exists()
+    assert any(
+        mount == ((tmp_path / "work").resolve(), "/workspace", False)
+        for mount in mounts
+    )
 
 
 @patch("statigent.notebook.docker.DockerSandbox")
@@ -125,6 +130,32 @@ def test_docker_kernel_execute_cell_wraps_incremental_driver(
     assert result.purpose == "compute"
     assert context.cells[0].latest_result == result
     assert "statigent_notebook_driver.py" in sandbox.exec.call_args[0][0]
+
+
+@patch("statigent.notebook.docker.DockerSandbox")
+def test_docker_kernel_discovers_artifacts_created_by_cells(
+    mock_sandbox_class: MagicMock,
+    tmp_path: Path,
+) -> None:
+    sandbox = MagicMock()
+    sandbox.exec.return_value = '{"stdout": "saved\\n", "stderr": "", "exit_code": 0}'
+    mock_sandbox_class.return_value = sandbox
+    work_dir = tmp_path / "work"
+    kernel = DockerNotebookKernel(image="image", network=False)
+    kernel.start(NotebookContext(input_paths=[], work_dir=work_dir))
+    artifact_path = work_dir / "artifacts" / "summary.csv"
+    artifact_path.write_text("x\n1\n")
+    cell = kernel.append_code_cell(
+        "write_summary()",
+        "write summary",
+        "Create a summary table artifact",
+    )
+
+    result = kernel.execute_cell(cell.cell_id)
+
+    assert [artifact.name for artifact in result.artifacts] == ["summary.csv"]
+    assert result.artifacts[0].kind == "table"
+    assert kernel.list_artifacts() == result.artifacts
 
 
 @patch("statigent.notebook.docker.DockerSandbox")
