@@ -103,7 +103,7 @@ class FakeCoder:
         _brief: TaskBrief,
         instruction: ApprovedCodeInstruction,
         kernel: FakeNotebookKernel,
-    ) -> object:
+    ) -> NotebookCell:
         self.instructions.append(instruction)
         return kernel.append_code_cell(
             code="print('mean=15')",
@@ -351,8 +351,14 @@ def test_final_review_rejection_routes_back_to_inspector_when_budget_remains(
 ) -> None:
     kernel = started_kernel(tmp_path)
     kernel.queue_result(stdout="mean=15\n")
+    kernel.queue_result(stdout="count=2\n")
     inspector = FakeInspector(
-        plans=["ACTION: summarize_numeric\nSTOP: no", "STOP: yes"],
+        plans=[
+            "ACTION: summarize_numeric\nSTOP: no",
+            "STOP: yes",
+            "ACTION: summarize_numeric\nSTOP: no",
+            "STOP: yes",
+        ],
         draft=FinalDraft(content="Average revenue is 15.", evidence=["mean=15"]),
     )
     reviewer = FakeReviewer(
@@ -371,14 +377,16 @@ def test_final_review_rejection_routes_back_to_inspector_when_budget_remains(
         reviewer=reviewer,
     )
 
-    report = orchestrator.run(make_brief(), make_profile(tmp_path))
+    report = orchestrator.run(make_brief(max_rounds=4), make_profile(tmp_path))
 
     assert report.status == "success"
-    assert inspector.feedback_seen[-1] == "Show the exact calculation."
+    assert inspector.feedback_seen[2] == "Show the exact calculation."
     assert len(reviewer.final_drafts_seen) == 2
+    assert len(report.steps) == 2
+    assert len(kernel.snapshot().executed_cells) == 2
 
 
-def test_budget_exhaustion_produces_partial_output(tmp_path: Path) -> None:
+def test_round_budget_exhaustion_produces_partial_output(tmp_path: Path) -> None:
     kernel = started_kernel(tmp_path)
     kernel.queue_result(stdout="mean=15\n")
     orchestrator = make_orchestrator(
@@ -402,6 +410,58 @@ def test_budget_exhaustion_produces_partial_output(tmp_path: Path) -> None:
 
     assert report.status == "partial"
     assert any("budget exhausted" in warning.lower() for warning in report.warnings)
+
+
+def test_code_cell_budget_exhaustion_produces_partial_output(
+    tmp_path: Path,
+) -> None:
+    kernel = started_kernel(tmp_path)
+    kernel.queue_result(stdout="mean=15\n")
+    orchestrator = make_orchestrator(
+        kernel,
+        inspector=FakeInspector(
+            plans=[
+                "ACTION: summarize_numeric\nSTOP: no",
+                "ACTION: summarize_numeric\nSTOP: no",
+            ]
+        ),
+    )
+
+    report = orchestrator.run(
+        make_brief(max_code_cells=1),
+        make_profile(tmp_path),
+    )
+
+    assert report.status == "partial"
+    assert len(report.steps) == 1
+    assert len(kernel.snapshot().executed_cells) == 1
+    assert any(
+        "code cell budget exhausted" in warning.lower()
+        for warning in report.warnings
+    )
+
+
+def test_debug_budget_exhaustion_produces_partial_output(
+    tmp_path: Path,
+) -> None:
+    kernel = started_kernel(tmp_path)
+    kernel.queue_result(stderr="NameError", exit_code=1)
+    kernel.queue_result(stderr="NameError again", exit_code=1)
+    orchestrator = make_orchestrator(kernel)
+
+    report = orchestrator.run(
+        make_brief(max_debug_attempts=1),
+        make_profile(tmp_path),
+    )
+
+    assert report.status == "partial"
+    assert report.steps[0].debug_attempts == 1
+    assert report.steps[0].result is not None
+    assert not report.steps[0].result.ok
+    assert any(
+        "debug budget exhausted" in warning.lower()
+        for warning in report.warnings
+    )
 
 
 def test_final_review_approval_produces_success_output(tmp_path: Path) -> None:

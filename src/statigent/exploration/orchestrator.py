@@ -363,11 +363,13 @@ class ExplorationOrchestrator:
             expected_observation=cell.expected_observation,
         )
         warnings = list(state["warnings"])
+        status = state.get("status", "")
         if not result.ok:
             error = result.error_summary or result.stderr
             warnings.append(f"Exploration cell failed: {error}")
             if not can_debug(state):
                 warnings.append("Debug budget exhausted.")
+                status = "partial"
         step = ExplorationStep(
             action=action,
             review=review,
@@ -383,6 +385,7 @@ class ExplorationOrchestrator:
             "last_cell_id": "",
             "last_result": None,
             "debug_attempts": 0,
+            "status": status,
             "trace_events": [
                 *state["trace_events"],
                 self._trace("orchestrator", "observe", action.title),
