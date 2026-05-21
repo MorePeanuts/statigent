@@ -95,6 +95,26 @@ def test_reviewer_plan_decision_allows_rejection_without_action() -> None:
     assert decision.constraints == []
 
 
+def test_reviewer_plan_decision_allows_complete_approval() -> None:
+    decision = ReviewerPlanDecision(
+        approved=True,
+        reason="Relevant next step",
+        action_kind=ExplorationActionKind.SUMMARIZE_NUMERIC,
+        question="What is the revenue distribution?",
+        evidence_needed="Summary statistics for revenue",
+        coding_instruction="Compute descriptive statistics for revenue.",
+        constraints=["Use profiled table names only"],
+    )
+
+    assert decision.action_kind is ExplorationActionKind.SUMMARIZE_NUMERIC
+    assert decision.question == "What is the revenue distribution?"
+
+
+def test_reviewer_plan_decision_rejects_approval_without_payload() -> None:
+    with pytest.raises(ValidationError, match="approved plan requires"):
+        ReviewerPlanDecision(approved=True, reason="Relevant next step")
+
+
 def test_debug_lesson_records_task_local_fix() -> None:
     lesson = DebugLesson(
         error_pattern="NameError",

@@ -288,6 +288,21 @@ class ReviewerPlanDecision(BaseModel):
         default_factory=list, description="Execution or analysis constraints"
     )
 
+    @model_validator(mode="after")
+    def validate_approved_payload(self) -> "ReviewerPlanDecision":
+        if not self.approved:
+            return self
+        missing = []
+        if self.action_kind is None:
+            missing.append("action_kind")
+        for name in ("question", "evidence_needed", "coding_instruction"):
+            if not getattr(self, name).strip():
+                missing.append(name)
+        if missing:
+            missing_text = ", ".join(missing)
+            raise ValueError(f"approved plan requires: {missing_text}")
+        return self
+
 
 class FinalReviewDecision(BaseModel):
     """Structured Final Reviewer decision for an Inspector final draft."""
