@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from statigent.exploration import ExplorationOrchestrator
+from statigent.exploration.state import ExplorationRunState
 from statigent.notebook import FakeNotebookKernel, NotebookContext
 from statigent.schemas import (
     ApprovedCodeInstruction,
@@ -233,6 +234,38 @@ def make_orchestrator(
     )
 
 
+def make_state(
+    tmp_path: Path,
+    *,
+    kernel: FakeNotebookKernel | None = None,
+    debug_lessons: list[DebugLesson] | None = None,
+) -> ExplorationRunState:
+    cell = None
+    if kernel is not None:
+        cell = kernel.append_code_cell("print(missing)", "Fail", "error")
+    return {
+        "brief": make_brief(),
+        "profile": make_profile(tmp_path),
+        "steps": [],
+        "pending_plan_text": "",
+        "review_feedback": "",
+        "approved_instruction": None,
+        "last_cell_id": cell.cell_id if cell is not None else "",
+        "debug_lessons": debug_lessons or [],
+        "final_draft": None,
+        "final_review": None,
+        "warnings": [],
+        "trace_events": [],
+        "round_count": 0,
+        "cell_count": 0,
+        "debug_attempts": 0,
+        "plan_review": None,
+        "last_cell": cell,
+        "last_result": None,
+        "status": "",
+    }
+
+
 def test_reviewer_rejection_routes_back_to_inspector(tmp_path: Path) -> None:
     kernel = started_kernel(tmp_path)
     inspector = FakeInspector(plans=["bad plan", "STOP: yes"])
@@ -409,7 +442,30 @@ def test_round_budget_exhaustion_produces_partial_output(tmp_path: Path) -> None
     )
 
     assert report.status == "partial"
-    assert any("budget exhausted" in warning.lower() for warning in report.warnings)
+    assert any(
+        "final review did not approve" in warning.lower()
+        for warning in report.warnings
+    )
+
+
+def test_exact_round_budget_with_approved_final_review_returns_success(
+    tmp_path: Path,
+) -> None:
+    kernel = started_kernel(tmp_path)
+    kernel.queue_result(stdout="mean=15\n")
+    orchestrator = make_orchestrator(
+        kernel,
+        inspector=FakeInspector(plans=["ACTION: summarize_numeric\nSTOP: no"]),
+    )
+
+    report = orchestrator.run(
+        make_brief(max_rounds=1),
+        make_profile(tmp_path),
+    )
+
+    assert report.status == "success"
+    assert len(report.steps) == 1
+    assert len(kernel.snapshot().executed_cells) == 1
 
 
 def test_code_cell_budget_exhaustion_produces_partial_output(
@@ -462,6 +518,55 @@ def test_debug_budget_exhaustion_produces_partial_output(
         "debug budget exhausted" in warning.lower()
         for warning in report.warnings
     )
+
+
+def test_invalid_approved_plan_without_instruction_routes_to_inspector(
+    tmp_path: Path,
+) -> None:
+    kernel = started_kernel(tmp_path)
+    orchestrator = make_orchestrator(kernel)
+    invalid_decision = ReviewerPlanDecision.model_construct(
+        approved=True,
+        reason="Missing action",
+        action_kind=None,
+        question="",
+        evidence_needed="",
+        coding_instruction="",
+        constraints=[],
+    )
+    state = make_state(tmp_path)
+    state["plan_review"] = invalid_decision
+    state["approved_instruction"] = None
+
+    route = orchestrator._route_after_plan_review(state)
+
+    assert route == "inspector"
+
+
+def test_debug_node_returns_new_lesson_list_without_mutating_state(
+    tmp_path: Path,
+) -> None:
+    kernel = started_kernel(tmp_path)
+    kernel.queue_result(stderr="NameError", exit_code=1)
+    original_lesson = DebugLesson(
+        error_pattern="KeyError",
+        root_cause="Missing key",
+        fix_strategy="Check key before access",
+        applies_when="Dictionary lookup fails",
+    )
+    state = make_state(tmp_path, kernel=kernel, debug_lessons=[original_lesson])
+    assert state["last_cell_id"]
+    result = kernel.execute_cell(state["last_cell_id"])
+    state["last_result"] = result
+    orchestrator = make_orchestrator(kernel, debugger=FakeDebugger())
+
+    updates = orchestrator._debug_node(state)
+
+    updated_lessons = updates["debug_lessons"]
+    assert isinstance(updated_lessons, list)
+    assert updated_lessons is not state["debug_lessons"]
+    assert state["debug_lessons"] == [original_lesson]
+    assert len(updated_lessons) == 2
 
 
 def test_final_review_approval_produces_success_output(tmp_path: Path) -> None:

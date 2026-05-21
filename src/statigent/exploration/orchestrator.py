@@ -187,6 +187,22 @@ class ExplorationOrchestrator:
         state: ExplorationRunState,
     ) -> dict[str, object]:
         if not can_continue_exploration(state):
+            if state["steps"]:
+                return {
+                    "final_draft": self.inspector.final_draft(
+                        state["brief"],
+                        state["profile"],
+                        state["steps"],
+                    ),
+                    "trace_events": [
+                        *state["trace_events"],
+                        self._trace(
+                            "inspector",
+                            "final_draft",
+                            "Round budget reached after completed exploration.",
+                        ),
+                    ],
+                }
             return self._budget_draft_update(state, "Round budget exhausted.")
 
         plan_text = self.inspector.next_plan(
@@ -315,17 +331,18 @@ class ExplorationOrchestrator:
                 ],
             }
         error = result.error_summary or result.stderr
+        lesson_snapshot = list(state["debug_lessons"])
         lessons = self.debugger.debug_cell(
             state["brief"],
             self.kernel,
             failed_cell,
             error,
-            state["debug_lessons"],
+            lesson_snapshot,
         )
         updated_cell = self._find_cell(failed_cell.cell_id) or failed_cell
         return {
             "debug_attempts": state["debug_attempts"] + 1,
-            "debug_lessons": lessons,
+            "debug_lessons": list(lessons),
             "last_cell": updated_cell,
             "trace_events": [
                 *state["trace_events"],
@@ -439,7 +456,11 @@ class ExplorationOrchestrator:
 
     def _route_after_plan_review(self, state: ExplorationRunState) -> str:
         decision = state.get("plan_review")
-        if decision is not None and decision.approved:
+        if (
+            decision is not None
+            and decision.approved
+            and state["approved_instruction"] is not None
+        ):
             return "code"
         return "inspector"
 
