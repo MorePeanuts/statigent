@@ -267,6 +267,77 @@ class ArtifactRef(BaseModel):
     )
 
 
+class ReviewerPlanDecision(BaseModel):
+    """Structured Reviewer decision for an Inspector planning response."""
+
+    approved: bool = Field(description="Whether the plan is approved")
+    reason: str = Field(description="Reviewer rationale for approving or rejecting")
+    action_kind: ExplorationActionKind | None = Field(
+        default=None, description="Approved exploration action kind, if any"
+    )
+    question: str = Field(
+        default="", description="Specific question approved for the Coder"
+    )
+    evidence_needed: str = Field(
+        default="", description="Evidence the approved code cell should produce"
+    )
+    coding_instruction: str = Field(
+        default="", description="Concrete instruction for the Coder"
+    )
+    constraints: list[str] = Field(
+        default_factory=list, description="Execution or analysis constraints"
+    )
+
+
+class FinalReviewDecision(BaseModel):
+    """Structured Final Reviewer decision for an Inspector final draft."""
+
+    approved: bool = Field(description="Whether the final draft is accepted")
+    reason: str = Field(description="Reason for approval or rejection")
+    additional_exploration_focus: str = Field(
+        default="", description="Targeted focus for more exploration if rejected"
+    )
+
+
+class ApprovedCodeInstruction(BaseModel):
+    """Coder-facing instruction assembled from an approved Reviewer decision."""
+
+    action_kind: ExplorationActionKind = Field(
+        description="Approved exploration action kind"
+    )
+    question: str = Field(description="Specific question the code should answer")
+    evidence_needed: str = Field(description="Evidence the code should produce")
+    coding_instruction: str = Field(description="Concrete instruction for the Coder")
+    action_prompt: str = Field(description="Reusable DEA action prompt text")
+    constraints: list[str] = Field(
+        default_factory=list, description="Execution or analysis constraints"
+    )
+
+
+class DebugLesson(BaseModel):
+    """Task-local debugging lesson that can guide later repair attempts."""
+
+    error_pattern: str = Field(description="Recognizable error signature or symptom")
+    root_cause: str = Field(description="Underlying cause of the failure")
+    fix_strategy: str = Field(description="Reusable strategy that fixed the issue")
+    applies_when: str = Field(description="Conditions where this lesson is relevant")
+
+
+class ExplorationObservation(BaseModel):
+    """Inspector-facing summary of a completed exploration cell result."""
+
+    question: str = Field(description="Question the cell attempted to answer")
+    purpose: str = Field(description="Why the cell was executed")
+    stdout: str = Field(default="", description="Relevant standard output summary")
+    artifacts: list[ArtifactRef] = Field(
+        default_factory=list, description="Artifacts produced by the cell"
+    )
+    error_summary: str = Field(
+        default="", description="Failure summary if the cell did not complete"
+    )
+    warning: str = Field(default="", description="Caveat or warning for Inspector")
+
+
 class NotebookCellResult(BaseModel):
     """Result of executing a single notebook cell."""
 
@@ -427,17 +498,21 @@ class TraceEvent(BaseModel):
 
 
 __all__ = [
+    "ApprovedCodeInstruction",
     "ArtifactRef",
     "Budget",
     "CodeDraft",
     "Complexity",
     "DatasetProfile",
     "DebugDecision",
+    "DebugLesson",
     "ExplorationAction",
     "ExplorationActionKind",
+    "ExplorationObservation",
     "ExplorationReport",
     "ExplorationStep",
     "FinalDraft",
+    "FinalReviewDecision",
     "InputFileInfo",
     "NotebookCell",
     "NotebookCellResult",
@@ -447,6 +522,7 @@ __all__ = [
     "OutputStatus",
     "OutputType",
     "ReviewDecision",
+    "ReviewerPlanDecision",
     "TableProfile",
     "TaskBrief",
     "TaskType",

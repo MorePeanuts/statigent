@@ -8,12 +8,14 @@ from statigent.schemas import (
     Budget,
     Complexity,
     DatasetProfile,
+    DebugLesson,
     ExplorationAction,
     ExplorationActionKind,
     InputFileInfo,
     OutputBundle,
     OutputStatus,
     OutputType,
+    ReviewerPlanDecision,
     TableProfile,
     TaskBrief,
     TaskType,
@@ -84,6 +86,25 @@ def test_trace_event_requires_agent_and_session() -> None:
 
     assert event.model_dump()["agent"] == "task_brief_planner"
     assert event.model_dump()["session"] == 1
+
+
+def test_reviewer_plan_decision_allows_rejection_without_action() -> None:
+    decision = ReviewerPlanDecision(approved=False, reason="Redundant")
+
+    assert decision.action_kind is None
+    assert decision.constraints == []
+
+
+def test_debug_lesson_records_task_local_fix() -> None:
+    lesson = DebugLesson(
+        error_pattern="NameError",
+        root_cause="Column variable was misspelled",
+        fix_strategy="Use df.columns to confirm names",
+        applies_when="Column access fails",
+    )
+
+    assert lesson.error_pattern == "NameError"
+    assert lesson.fix_strategy == "Use df.columns to confirm names"
 
 
 def test_custom_action_requires_rationale_expected_evidence_and_risk_notes() -> None:
