@@ -390,13 +390,17 @@ class OutputBundle(BaseModel):
 
 
 class TraceEvent(BaseModel):
-    """Single event in an agent trace for benchmarking / observability."""
+    """Single event in an agent trace for benchmarking and observability."""
 
-    role: str = Field(description="Who produced this event (system, user, assistant)")
-    content: str = Field(description="The event payload text")
-    name: str = Field(default="", description="Tool name or action identifier")
+    role: str = Field(description="Message role for benchmark trace compatibility")
+    content: str = Field(description="Event payload")
+    name: str = Field(default="", description="Tool, phase, or action identifier")
+    agent: str = Field(description="Agent or layer that produced the event")
+    session: int = Field(
+        default=1, ge=1, description="Independent session number for this agent"
+    )
     metadata: dict[str, object] = Field(
-        default_factory=dict, description="Extra key-value data for this event"
+        default_factory=dict, description="Additional event metadata"
     )
 
 

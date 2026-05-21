@@ -161,14 +161,51 @@ def test_agent_keeps_work_dir_for_artifact_references(tmp_path: Path) -> None:
     assert work_dirs[0].exists()
 
 
-def test_agent_returns_unsupported_for_deep_analysis(tmp_path: Path) -> None:
+def test_analysis_eval_coerces_deep_analysis_brief(tmp_path: Path) -> None:
     profile = make_profile(tmp_path)
     agent = make_agent(profile, make_brief(TaskType.DEEP_ANALYSIS))
 
-    response, _trace = agent.run_analysis_for_eval("deep report", files=[])
+    response, trace = agent.run_analysis_for_eval("deep report", files=[])
 
-    assert "deep_analysis" in response
-    assert "not implemented" in response
+    assert response == "Answer is 42"
+    assert any("coerced" in event["content"].casefold() for event in trace)
+    assert all("agent" in event and "session" in event for event in trace)
+
+
+def test_analysis_eval_coerces_non_analysis_brief(tmp_path: Path) -> None:
+    profile = make_profile(tmp_path)
+    brief = make_brief(TaskType.DATA_MODELING)
+    seen: list[TaskType] = []
+
+    class CapturingOrchestrator:
+        def run(
+            self,
+            run_brief: TaskBrief,
+            run_profile: DatasetProfile,
+        ) -> ExplorationReport:
+            seen.append(run_brief.task_type)
+            return FakeOrchestrator().run(run_brief, run_profile)
+
+    def factory(
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+        _work_dir: Path,
+    ) -> CapturingOrchestrator:
+        return CapturingOrchestrator()
+
+    agent = StatigentDataScienceAgent(
+        model_name="fake",
+        profiler=FakeProfiler(profile),
+        planner=FakePlanner(brief),
+        orchestrator_factory=factory,
+    )
+
+    response, trace = agent.run_analysis_for_eval("predict", files=[])
+
+    assert response == "Answer is 42"
+    assert seen == [TaskType.DATA_ANALYSIS]
+    assert any("coerced" in event["content"].casefold() for event in trace)
+    assert all("agent" in event and "session" in event for event in trace)
 
 
 def test_modeling_eval_returns_unsupported_submission_path(tmp_path: Path) -> None:

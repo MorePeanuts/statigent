@@ -17,6 +17,7 @@ from statigent.schemas import (
     TableProfile,
     TaskBrief,
     TaskType,
+    TraceEvent,
     budget_for_complexity,
 )
 
@@ -70,6 +71,19 @@ def test_task_brief_supports_deep_analysis() -> None:
 
     assert brief.task_type is TaskType.DEEP_ANALYSIS
     assert brief.budgets.max_rounds == 12
+
+
+def test_trace_event_requires_agent_and_session() -> None:
+    event = TraceEvent(
+        role="assistant",
+        content="planned",
+        name="task_brief",
+        agent="task_brief_planner",
+        session=1,
+    )
+
+    assert event.model_dump()["agent"] == "task_brief_planner"
+    assert event.model_dump()["session"] == 1
 
 
 def test_custom_action_requires_rationale_expected_evidence_and_risk_notes() -> None:
