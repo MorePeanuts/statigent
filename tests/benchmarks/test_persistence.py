@@ -364,9 +364,7 @@ class TestExecutePersistence:
         # No files should be written to tmp_path
         assert not any(tmp_path.iterdir())
 
-    def test_execute_persists_predictions_incrementally(
-        self, tmp_path: Path
-    ) -> None:
+    def test_execute_persists_predictions_incrementally(self, tmp_path: Path) -> None:
         """Verify that execute() writes predictions to disk via the persister."""
         num_tasks = 3
 
@@ -376,9 +374,7 @@ class TestExecutePersistence:
             def prepare(self) -> None:
                 pass
 
-            def run(
-                self, agent: DataScienceAgent, **kwargs: Any
-            ) -> BenchmarkRunResult:
+            def run(self, agent: DataScienceAgent, **kwargs: Any) -> BenchmarkRunResult:
                 persister = kwargs.get("persister")
                 predictions: list[dict[str, Any]] = []
                 traces: dict[str, AgentTrace] = {}

@@ -19,9 +19,7 @@ class TestMLEBenchAdapter:
         mock_competition = MagicMock()
         mock_registry.get_competition.return_value = mock_competition
 
-        with patch(
-            "mlebench.data.download_and_prepare_dataset"
-        ) as mock_dl:
+        with patch("mlebench.data.download_and_prepare_dataset") as mock_dl:
             adapter = MLEBenchAdapter(data_dir=tmp_path, lite=True)
             adapter.prepare()
             mock_dl.assert_called_once_with(mock_competition)

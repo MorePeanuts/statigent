@@ -40,6 +40,7 @@ class NotebookKernel(Protocol):
 
     Implementations: FakeNotebookKernel (test), DockerNotebookKernel (prod).
     """
+
     def start(self, context: NotebookContext) -> None: ...
 
     def close(self) -> None: ...

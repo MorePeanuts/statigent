@@ -232,10 +232,7 @@ class BenchmarkAdapter(ABC):
         )
 
         if persister is not None:
-            if (
-                persister.prediction_count == 0
-                and run_result.predictions
-            ):
+            if persister.prediction_count == 0 and run_result.predictions:
                 logger.warning(
                     "RunPersister was provided but no predictions were persisted. "
                     "The adapter may not support incremental persistence."

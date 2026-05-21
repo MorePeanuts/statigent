@@ -254,8 +254,7 @@ def test_analysis_eval_appends_orchestrator_trace_events(tmp_path: Path) -> None
 
     assert response == "Answer is 42"
     assert any(
-        event["name"] == "plan" and event["agent"] == "inspector"
-        for event in trace
+        event["name"] == "plan" and event["agent"] == "inspector" for event in trace
     )
     assert all("agent" in event and "session" in event for event in trace)
 

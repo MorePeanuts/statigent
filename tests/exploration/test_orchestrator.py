@@ -465,8 +465,7 @@ def test_round_budget_exhaustion_produces_partial_output(tmp_path: Path) -> None
 
     assert report.status == "partial"
     assert any(
-        "final review did not approve" in warning.lower()
-        for warning in report.warnings
+        "final review did not approve" in warning.lower() for warning in report.warnings
     )
 
 
@@ -514,8 +513,7 @@ def test_code_cell_budget_exhaustion_produces_partial_output(
     assert len(report.steps) == 1
     assert len(kernel.snapshot().executed_cells) == 1
     assert any(
-        "code cell budget exhausted" in warning.lower()
-        for warning in report.warnings
+        "code cell budget exhausted" in warning.lower() for warning in report.warnings
     )
 
 
@@ -537,8 +535,7 @@ def test_debug_budget_exhaustion_produces_partial_output(
     assert report.steps[0].result is not None
     assert not report.steps[0].result.ok
     assert any(
-        "debug budget exhausted" in warning.lower()
-        for warning in report.warnings
+        "debug budget exhausted" in warning.lower() for warning in report.warnings
     )
 
 
