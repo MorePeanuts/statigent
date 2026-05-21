@@ -11,6 +11,8 @@ from statigent.schemas import (
     DebugLesson,
     ExplorationAction,
     ExplorationActionKind,
+    ExplorationReport,
+    FinalDraft,
     InputFileInfo,
     OutputBundle,
     OutputStatus,
@@ -86,6 +88,17 @@ def test_trace_event_requires_agent_and_session() -> None:
 
     assert event.model_dump()["agent"] == "task_brief_planner"
     assert event.model_dump()["session"] == 1
+
+
+def test_exploration_report_exposes_trace_events() -> None:
+    report = ExplorationReport(
+        status="success",
+        final_draft=FinalDraft(content="Done"),
+        steps=[],
+        artifacts=[],
+    )
+
+    assert report.trace_events == []
 
 
 def test_reviewer_plan_decision_allows_rejection_without_action() -> None:

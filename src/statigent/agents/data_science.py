@@ -241,7 +241,4 @@ class StatigentDataScienceAgent:
 
     @staticmethod
     def _orchestrator_trace_events(report: ExplorationReport) -> list[TraceEvent]:
-        exposed_events = getattr(report, "trace_events", None)
-        if not isinstance(exposed_events, list):
-            return []
-        return [event for event in exposed_events if isinstance(event, TraceEvent)]
+        return list(report.trace_events)

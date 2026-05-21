@@ -140,6 +140,7 @@ class ExplorationOrchestrator:
             steps=final_state["steps"],
             artifacts=self.kernel.list_artifacts(),
             warnings=[*final_state["warnings"], *draft.warnings],
+            trace_events=final_state["trace_events"],
         )
 
     def _build_graph(self) -> _CompiledGraph:

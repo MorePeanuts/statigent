@@ -57,17 +57,13 @@ class FakeOrchestrator:
         )
 
 
-class TracedExplorationReport(ExplorationReport):
-    trace_events: list[TraceEvent]
-
-
 class TracedFakeOrchestrator:
     def run(
         self,
         _brief: TaskBrief,
         _profile: DatasetProfile,
     ) -> ExplorationReport:
-        return TracedExplorationReport(
+        return ExplorationReport(
             status="success",
             final_draft=FinalDraft(content="Answer is 42", evidence=["computed"]),
             steps=[],

@@ -305,6 +305,28 @@ def test_reviewer_approval_routes_to_coder_and_execute_by_cell_id(
     assert kernel.snapshot().executed_cells[0].cell_id == "cell-1"
 
 
+def test_orchestrator_report_includes_langgraph_trace_events(
+    tmp_path: Path,
+) -> None:
+    kernel = started_kernel(tmp_path)
+    kernel.queue_result(stdout="mean=15\n")
+    orchestrator = make_orchestrator(kernel)
+
+    report = orchestrator.run(make_brief(), make_profile(tmp_path))
+
+    assert [event.name for event in report.trace_events] == [
+        "plan",
+        "plan_approved",
+        "append_code_cell",
+        "execute_cell",
+        "observe",
+        "plan",
+        "final_draft",
+        "approved",
+    ]
+    assert all(event.agent and event.session == 1 for event in report.trace_events)
+
+
 def test_coder_appends_without_executing_then_execute_node_runs_cell(
     tmp_path: Path,
 ) -> None:
