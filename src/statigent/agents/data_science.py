@@ -170,29 +170,37 @@ class StatigentDataScienceAgent:
     ) -> tuple[Path, AgentTrace]:
         """Placeholder for modeling tasks — returns an unsupported submission path.
 
-        Currently delegates to run_analysis_for_eval which returns an
-        unsupported response. The returned submission.csv path does not
-        exist on disk.
+        The returned submission.csv path does not exist on disk.
         """
-        # WARNING: run_modeling_for_eval is a stub — no model training,
-        # prediction, or submission file generation is implemented yet.
         target_dir = work_dir or Path(tempfile.mkdtemp(prefix="statigent-modeling-"))
-        response, trace = self.run_analysis_for_eval(
-            prompt,
-            files=[train_path, test_path, sample_submission_path],
-            task_instructions=task_instructions,
+        content = (
+            "Modeling submission generation is not implemented. "
+            f"Received prompt: {prompt}"
         )
-        trace.append(
-            {
-                "role": "assistant",
-                "content": (
-                    f"Modeling submission generation is not implemented: {response}"
+        trace_events = [
+            TraceEvent(
+                role="system",
+                content=(
+                    "Modeling evaluation placeholder received train, test, "
+                    "and sample submission paths."
                 ),
-                "name": "modeling_placeholder",
-                "agent": "data_science_agent",
-                "session": 1,
-            }
-        )
+                name="modeling_input",
+                agent="data_science_agent",
+                metadata={
+                    "train_path": str(train_path),
+                    "test_path": str(test_path),
+                    "sample_submission_path": str(sample_submission_path),
+                    "task_instructions": task_instructions,
+                },
+            ),
+            TraceEvent(
+                role="assistant",
+                content=content,
+                name="modeling_placeholder",
+                agent="data_science_agent",
+            ),
+        ]
+        trace: AgentTrace = [event.model_dump() for event in trace_events]
         return target_dir / "submission.csv", trace
 
     def _profiler(self, work_dir: Path) -> _Profiler:

@@ -210,7 +210,22 @@ def test_analysis_eval_coerces_non_analysis_brief(tmp_path: Path) -> None:
 
 def test_modeling_eval_returns_unsupported_submission_path(tmp_path: Path) -> None:
     profile = make_profile(tmp_path)
-    agent = make_agent(profile, make_brief(TaskType.DATA_MODELING))
+    orchestrator_calls: list[TaskType] = []
+
+    def factory(
+        brief: TaskBrief,
+        _profile: DatasetProfile,
+        _work_dir: Path,
+    ) -> FakeOrchestrator:
+        orchestrator_calls.append(brief.task_type)
+        return FakeOrchestrator()
+
+    agent = StatigentDataScienceAgent(
+        model_name="fake",
+        profiler=FakeProfiler(profile),
+        planner=FakePlanner(make_brief(TaskType.DATA_MODELING)),
+        orchestrator_factory=factory,
+    )
     train = tmp_path / "train.csv"
     test = tmp_path / "test.csv"
     sample = tmp_path / "sample_submission.csv"
@@ -227,4 +242,6 @@ def test_modeling_eval_returns_unsupported_submission_path(tmp_path: Path) -> No
 
     assert submission_path.name == "submission.csv"
     assert not submission_path.exists()
+    assert orchestrator_calls == []
     assert any("not implemented" in msg["content"] for msg in trace)
+    assert all("agent" in event and "session" in event for event in trace)
