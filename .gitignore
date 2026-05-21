@@ -34,8 +34,8 @@ coverage/
 # uv
 cache/
 
-# Superpowers specs (local only)
-docs/superpowers/
+# Superpowers plans (local only)
+docs/superpowers/plans/
 .worktrees/
 
 # Benchmark data (large datasets)
