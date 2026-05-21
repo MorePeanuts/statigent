@@ -17,6 +17,7 @@ from statigent.schemas import (
     ExplorationReport,
     ExplorationStep,
     FinalDraft,
+    FinalReviewDecision,
     ReviewDecision,
     TaskBrief,
 )
@@ -46,7 +47,9 @@ class _Reviewer(Protocol):
         action: ExplorationAction,
     ) -> ReviewDecision: ...
 
-    def review_final(self, brief: TaskBrief, draft: FinalDraft) -> ReviewDecision: ...
+    def review_final(
+        self, brief: TaskBrief, draft: FinalDraft
+    ) -> ReviewDecision | FinalReviewDecision: ...
 
 
 class _Coder(Protocol):
