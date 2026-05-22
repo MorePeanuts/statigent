@@ -79,20 +79,13 @@ class DABenchAdapter(BenchmarkAdapter):
         traces: dict[str, AgentTrace] = {}
         for q in questions:
             csv_path = self.data_dir / "da-dev-tables" / q["file_name"]
-            task_instructions = (
-                "## Task Instructions\n"
-                "You are answering a closed-form data analysis question. "
-                "Follow these rules strictly:\n"
-                "- Print the final answer in the required output format\n"
-                f"- Output format: {q['format']}\n"
-                "- If the format is @answer_name[value], follow it exactly\n"
-                f"- Constraints: {q['constraints']}\n"
-                "- For numerical answers, print the number clearly\n"
+            prompt = (
+                "Answer the following question based on the given dataset.\n"
+                f"\n## Question\n{q['question']}\n"
+                f"\n## Requirements\n{q['constraints']}\n"
+                f"\n## Output Format\n{q['format']}\n"
             )
-            prompt = f"Question: {q['question']}"
-            response, trace = agent.run_analysis_for_eval(
-                prompt, files=[csv_path], task_instructions=task_instructions
-            )
+            response, trace = agent.run_analysis_for_eval(prompt, files=[csv_path])
             qid = str(q["id"])
             pred = {"id": q["id"], "response": response}
             predictions.append(pred)

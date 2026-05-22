@@ -196,7 +196,6 @@ class DSBenchAdapter(BenchmarkAdapter):
         return self._run_data_modeling(agent, **kwargs)
 
     _DA_TASK_INSTRUCTIONS = (
-        "## Task Instructions\n"
         "You are answering a data analysis question about a financial or business "
         "scenario. Provide a clear, concise answer based on the data. "
         "If the question asks for a specific value, state it explicitly.\n"
@@ -273,7 +272,6 @@ class DSBenchAdapter(BenchmarkAdapter):
         return BenchmarkRunResult(predictions=predictions, traces=traces)
 
     _DM_TASK_INSTRUCTIONS = (
-        "## Task Instructions\n"
         "You are building a predictive model for a data science competition. "
         "Follow these steps:\n"
         "1. Read the training data and understand the features\n"
