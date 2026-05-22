@@ -205,6 +205,25 @@ to preview the structure and column names before loading with Python.
 - Print results clearly so they can be captured
 """
 
+_LITE_SYSTEM_PROMPT = """You are a data science assistant with access to the following \
+tools:
+1. read_file — Read the contents of a text file (CSV, etc.)
+2. read_excel — Read an Excel file (.xlsx, .xls)
+3. python — Execute Python code
+
+Your working directory is /workspace. Data files are located at the
+paths specified in the task — use read_file or read_excel to preview them first.
+
+General guidelines:
+- Each python call starts a fresh interpreter — import modules and \
+load data in every call.
+- Data files can be very large. Always use read_file with max_lines=5 first \
+to preview the structure and column names before loading with Python.
+- Read relevant data files before attempting analysis
+- Write and execute Python code to perform computations
+- Print results clearly so they can be captured
+"""
+
 
 class ReactBaselineAgent:
     """Simple react baseline agent using langchain's create_agent."""
@@ -217,23 +236,33 @@ class ReactBaselineAgent:
         sandbox_image: str = "statigent/ds-sandbox",
         sandbox_network: bool = False,
         sandbox_timeout: int = 600,
+        lite_version: bool = True,
     ) -> None:
         self.model_name = model_name
         self.sandbox_image = sandbox_image
         self.sandbox_network = sandbox_network
         self.sandbox_timeout = sandbox_timeout
+        self.lite_version = lite_version
 
     def _create_agent(self, sandbox: DockerSandbox) -> Any:
-        tools = [
-            make_bash_tool(sandbox),
-            make_python_tool(sandbox),
-            make_read_file_tool(sandbox),
-            make_read_excel_tool(sandbox),
-            make_write_file_tool(sandbox),
-            make_list_dir_tool(sandbox),
-        ]
+        if self.lite_version:
+            tools = [
+                make_read_file_tool(sandbox),
+                make_read_excel_tool(sandbox),
+                make_python_tool(sandbox),
+            ]
+        else:
+            tools = [
+                make_bash_tool(sandbox),
+                make_python_tool(sandbox),
+                make_read_file_tool(sandbox),
+                make_read_excel_tool(sandbox),
+                make_write_file_tool(sandbox),
+                make_list_dir_tool(sandbox),
+            ]
         llm = get_model(self.model_name)
-        return create_agent(llm, tools, system_prompt=_SYSTEM_PROMPT)
+        system_prompt = _LITE_SYSTEM_PROMPT if self.lite_version else _SYSTEM_PROMPT
+        return create_agent(llm, tools, system_prompt=system_prompt)
 
     def _make_sandbox(self) -> DockerSandbox:
         return DockerSandbox(
