@@ -62,6 +62,13 @@ def main(
 ) -> None:
     console = Console()
 
+    if resume_dir is not None:
+        import json
+
+        meta = json.loads((resume_dir / "meta.json").read_text())
+        model = meta.get("model_name", model)
+        console.print(f"[dim]Resuming — using model '{model}' from meta.json[/dim]")
+
     if registry_path is not None:
         if registry_path.exists():
             path = str(registry_path)

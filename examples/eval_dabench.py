@@ -60,6 +60,14 @@ def main(
 ) -> None:
     """Run DABench data analysis evaluation with the Statigent agent."""
     console = Console()
+
+    if resume_dir is not None:
+        import json
+
+        meta = json.loads((resume_dir / "meta.json").read_text())
+        model = meta.get("model_name", model)
+        console.print(f"[dim]Resuming — using model '{model}' from meta.json[/dim]")
+
     path = _resolve_registry_path(registry_path, console)
     registry = load_registry(path)
     if not registry.has_model(model):
@@ -106,7 +114,7 @@ def main(
         table.add_row("Score", f"{result.score:.4f}")
         console.print(table)
 
-        total = result.details.get("total", "?")
+        total = result.details.get("total_questions", "?")
         console.print(f"\n[bold green]Done - evaluated {total} questions[/bold green]")
 
 
@@ -155,7 +163,7 @@ def _resume_run(
     table.add_row("Score", f"{result.score:.4f}")
     console.print(table)
 
-    total = result.details.get("total", "?")
+    total = result.details.get("total_questions", "?")
     console.print(f"\n[bold green]Done - evaluated {total} questions[/bold green]")
 
 

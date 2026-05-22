@@ -62,6 +62,13 @@ def main(
 ) -> None:
     console = Console()
 
+    if resume_dir is not None:
+        import json
+
+        meta = json.loads((resume_dir / "meta.json").read_text())
+        model = meta.get("model_name", model)
+        console.print(f"[dim]Resuming — using model '{model}' from meta.json[/dim]")
+
     if registry_path is not None:
         if registry_path.exists():
             path = str(registry_path)
@@ -169,7 +176,7 @@ def _resume_run(
     table.add_row("Score", f"{result.score:.4f}")
     console.print(table)
 
-    n = result.details.get("total", "?")
+    n = result.details.get("total_questions", "?")
     console.print(f"\n[bold green]Done — evaluated {n} questions[/bold green]")
 
 

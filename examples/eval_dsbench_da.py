@@ -70,6 +70,14 @@ def main(
 ) -> None:
     """Run DSBench data analysis evaluation with the Statigent agent."""
     console = Console()
+
+    if resume_dir is not None:
+        import json
+
+        meta = json.loads((resume_dir / "meta.json").read_text())
+        model = meta.get("model_name", model)
+        console.print(f"[dim]Resuming — using model '{model}' from meta.json[/dim]")
+
     path = _resolve_registry_path(registry_path, console)
     registry = load_registry(path)
     if not registry.has_model(model):
@@ -79,7 +87,8 @@ def main(
     if not registry.has_model(judge_model):
         available = ", ".join(registry.list_models())
         console.print(
-            f"[red]Unknown judge model: {judge_model}. Available: {available}[/red]"
+            f"[red]Unknown judge model: {judge_model}. "
+            f"Available: {available}[/red]"
         )
         raise typer.Exit(code=1)
 
