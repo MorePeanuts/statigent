@@ -41,6 +41,8 @@ def test_single_table_summary_shows_only_head_rows(tmp_path: Path) -> None:
     summary = profile.compact_summary()
 
     assert profile.kind is DatasetKind.SINGLE_TABLE
+    assert "Data files:" in summary
+    assert f"- {data}" in summary
     assert "Single table dataset" in summary
     assert "sales.csv" in summary
     assert "First 5 rows" in summary
@@ -63,6 +65,21 @@ def test_profile_csv_with_blank_first_header_treats_first_column_as_index(
         {"revenue": 10, "region": "East"},
         {"revenue": 20, "region": "West"},
     ]
+
+
+def test_compact_summary_preserves_relative_input_paths(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    data = tmp_path / "sales.csv"
+    data.write_text("id,revenue\n1,10\n")
+    monkeypatch.chdir(tmp_path)
+
+    profile = InputProfiler(work_dir=tmp_path / "work").profile_paths(
+        [Path("sales.csv")]
+    )
+
+    assert "- sales.csv" in profile.compact_summary()
 
 
 def test_profile_directory_scans_nested_tabular_files(tmp_path: Path) -> None:
@@ -161,6 +178,8 @@ def test_non_tabular_excel_workbook_uses_grid_preview(tmp_path: Path) -> None:
     ]
     assert profile.spreadsheet_workbooks[0].sheets[1].formula_cells == 1
     assert "Spreadsheet workbook dataset" in summary
+    assert "Data files:" in summary
+    assert f"- {workbook_path}" in summary
     assert "financial_model.xlsx" in summary
     assert "Sheet: Assumptions" in summary
     assert "R1: ModelOff 2016 - Round 1 - Section 2" in summary
@@ -208,15 +227,17 @@ def test_image_collection_summary_shows_formats_resolutions_and_directory_counts
     Image.new("RGB", (32, 32)).save(cats / "cat2.png")
     Image.new("RGB", (64, 32)).save(dogs / "dog1.jpg")
 
-    profile = InputProfiler(work_dir=tmp_path / "work").profile_paths(
-        [tmp_path / "images"]
-    )
+    image_root = tmp_path / "images"
+    profile = InputProfiler(work_dir=tmp_path / "work").profile_paths([image_root])
     summary = profile.compact_summary()
 
     assert profile.kind is DatasetKind.IMAGE_COLLECTION
     assert profile.image_collections
     assert profile.image_collections[0].total_images == 3
     assert "Image collection dataset" in summary
+    assert "Data files:" in summary
+    assert f"- {image_root}" in summary
+    assert "Image folders:" in summary
     assert "Formats: .jpg=1, .png=2" in summary
     assert "32x32=2" in summary
     assert "cats: 2 images" in summary

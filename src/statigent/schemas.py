@@ -236,6 +236,9 @@ class DatasetProfile(BaseModel):
     """
 
     root: Path = Field(description="Root directory of the dataset")
+    input_paths: list[Path] = Field(
+        default_factory=list, description="Paths originally passed to the profiler"
+    )
     kind: DatasetKind = Field(
         default=DatasetKind.MIXED, description="High-level shape of the dataset"
     )
@@ -272,10 +275,12 @@ class DatasetProfile(BaseModel):
     def _single_table_summary(self) -> str:
         if not self.tables:
             return self._append_warning_text(
-                "Single table dataset\n- No table profiled."
+                self._data_files_summary()
+                + "\nSingle table dataset\n- No table profiled."
             )
         table = self.tables[0]
         lines = [
+            self._data_files_summary(),
             "Single table dataset",
             f"- Table: {table.source_label or table.relative_path}",
             f"- Shape: {table.rows} rows x {table.columns} columns",
@@ -292,7 +297,7 @@ class DatasetProfile(BaseModel):
         return self._append_warning_text("\n".join(lines))
 
     def _multi_table_summary(self) -> str:
-        lines = ["Multi-table dataset"]
+        lines = [self._data_files_summary(), "Multi-table dataset"]
         for table in self.tables:
             lines.append(
                 f"- {table.source_label or table.relative_path}: "
@@ -306,7 +311,7 @@ class DatasetProfile(BaseModel):
         return self._append_warning_text("\n".join(lines))
 
     def _modeling_split_summary(self) -> str:
-        lines = ["Modeling split tabular dataset"]
+        lines = [self._data_files_summary(), "Modeling split tabular dataset"]
         for table in self.tables:
             lines.append(
                 f"- {table.source_label or table.relative_path} [{table.role.value}]: "
@@ -334,7 +339,7 @@ class DatasetProfile(BaseModel):
         return self._append_warning_text("\n".join(lines))
 
     def _image_collection_summary(self) -> str:
-        lines = ["Image collection dataset"]
+        lines = [self._data_files_summary(), "Image collection dataset"]
         for collection in self.image_collections:
             lines.append(f"- Root: {collection.relative_root}")
             lines.append(f"- Total images: {collection.total_images}")
@@ -354,7 +359,7 @@ class DatasetProfile(BaseModel):
                     )
                 )
             )
-            lines.append("Directory counts:")
+            lines.append("Image folders:")
             for directory, count in sorted(collection.directory_counts.items()):
                 lines.append(f"- {directory}: {count} images")
         if not self.image_collections:
@@ -362,7 +367,7 @@ class DatasetProfile(BaseModel):
         return self._append_warning_text("\n".join(lines))
 
     def _spreadsheet_workbook_summary(self) -> str:
-        lines = ["Spreadsheet workbook dataset"]
+        lines = [self._data_files_summary(), "Spreadsheet workbook dataset"]
         for workbook in self.spreadsheet_workbooks:
             lines.append(f"Workbook: {workbook.relative_path}")
             for sheet in workbook.sheets:
@@ -387,17 +392,27 @@ class DatasetProfile(BaseModel):
         ]
         if not table_lines:
             table_lines = ["- No tabular files were profiled."]
-        file_lines = [
-            f"- {file.relative_path}: {file.suffix or '<no suffix>'}, "
-            f"{file.size_bytes} bytes"
-            for file in self.files[:20]
-        ]
-        if not file_lines:
-            file_lines = ["- No files discovered."]
-        summary = "Mixed or unknown dataset\nFiles:\n"
-        summary += "\n".join(file_lines)
+        summary = self._data_files_summary()
+        summary += "\nMixed or unknown dataset"
         summary += "\nTables:\n" + "\n".join(table_lines)
         return self._append_warning_text(summary)
+
+    def _data_files_summary(self) -> str:
+        lines = ["Data files:"]
+        if self.input_paths:
+            for path in self.input_paths[:20]:
+                lines.append(f"- {path}")
+            if len(self.input_paths) > 20:
+                lines.append(f"- ... {len(self.input_paths) - 20} more paths")
+            return "\n".join(lines)
+        if not self.files:
+            lines.append("- No files discovered.")
+            return "\n".join(lines)
+        for file in self.files[:20]:
+            lines.append(f"- {file.relative_path}")
+        if len(self.files) > 20:
+            lines.append(f"- ... {len(self.files) - 20} more files")
+        return "\n".join(lines)
 
     def _append_warning_text(self, summary: str) -> str:
         warning_text = ""

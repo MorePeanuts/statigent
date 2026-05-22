@@ -7,6 +7,7 @@ from statigent.schemas import (
     ArtifactRef,
     Budget,
     Complexity,
+    DatasetKind,
     DatasetProfile,
     DebugLesson,
     ExplorationAction,
@@ -194,6 +195,30 @@ def test_dataset_profile_records_table_and_non_table_files(tmp_path: Path) -> No
 
     assert profile.tables[0].rows == 2
     assert "sales.csv" in profile.compact_summary()
+
+
+def test_dataset_profile_mixed_summary_prefers_input_paths(tmp_path: Path) -> None:
+    profile = DatasetProfile(
+        root=tmp_path,
+        input_paths=[Path("inputs")],
+        kind=DatasetKind.MIXED,
+        files=[
+            InputFileInfo(
+                path=tmp_path / "inputs" / "notes.txt",
+                relative_path="inputs/notes.txt",
+                suffix=".txt",
+                size_bytes=12,
+                is_tabular=False,
+            )
+        ],
+        tables=[],
+        warnings=[],
+    )
+
+    summary = profile.compact_summary()
+
+    assert "Data files:\n- inputs" in summary
+    assert "inputs/notes.txt: .txt" not in summary
 
 
 def test_output_bundle_has_status_content_and_artifacts(tmp_path: Path) -> None:

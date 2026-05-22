@@ -64,6 +64,7 @@ class _DiscoveryResult:
 
 @dataclass(frozen=True)
 class _ProfileContext:
+    input_paths: list[Path]
     files: list[_DiscoveredFile]
     input_file_infos: list[InputFileInfo]
     warnings: list[str]
@@ -95,6 +96,7 @@ class _EmptyDatasetProfiler:
     def profile(self, context: _ProfileContext) -> DatasetProfile:
         return DatasetProfile(
             root=self.owner.work_dir,
+            input_paths=context.input_paths,
             kind=DatasetKind.EMPTY,
             files=list(context.input_file_infos),
             tables=[],
@@ -113,6 +115,7 @@ class _SingleTableProfiler:
         )
         return DatasetProfile(
             root=self.owner.work_dir,
+            input_paths=context.input_paths,
             kind=DatasetKind.SINGLE_TABLE,
             files=files,
             tables=tables,
@@ -131,6 +134,7 @@ class _MultiTableProfiler:
         )
         return DatasetProfile(
             root=self.owner.work_dir,
+            input_paths=context.input_paths,
             kind=DatasetKind.MULTI_TABLE,
             files=files,
             tables=tables,
@@ -149,6 +153,7 @@ class _ModelingSplitTableProfiler:
         )
         return DatasetProfile(
             root=self.owner.work_dir,
+            input_paths=context.input_paths,
             kind=DatasetKind.MODELING_SPLIT_TABLES,
             files=files,
             tables=tables,
@@ -165,6 +170,7 @@ class _ImageCollectionProfiler:
         collection, warnings = self.owner._profile_image_collection(context)
         return DatasetProfile(
             root=self.owner.work_dir,
+            input_paths=context.input_paths,
             kind=DatasetKind.IMAGE_COLLECTION,
             files=files,
             tables=[],
@@ -182,6 +188,7 @@ class _SpreadsheetWorkbookProfiler:
         workbooks, warnings = self.owner._profile_spreadsheet_workbooks(context)
         return DatasetProfile(
             root=self.owner.work_dir,
+            input_paths=context.input_paths,
             kind=DatasetKind.SPREADSHEET_WORKBOOK,
             files=files,
             tables=[],
@@ -201,6 +208,7 @@ class _FallbackProfiler:
         )
         return DatasetProfile(
             root=self.owner.work_dir,
+            input_paths=context.input_paths,
             kind=DatasetKind.MIXED,
             files=files,
             tables=tables,
@@ -238,6 +246,7 @@ class InputProfiler:
         warnings: list[str] = []
         discovery = self._discover_paths(paths, warnings)
         context = _ProfileContext(
+            input_paths=list(paths or []),
             files=discovery.files,
             input_file_infos=discovery.input_file_infos,
             warnings=[*warnings, *discovery.warnings],
