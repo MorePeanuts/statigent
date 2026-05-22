@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from openpyxl import Workbook
 from PIL import Image
 
 from statigent.errors import StatigentInputError
@@ -76,6 +77,18 @@ def test_profile_directory_scans_nested_tabular_files(tmp_path: Path) -> None:
     )
 
 
+def test_profile_directory_skips_office_temporary_lock_files(tmp_path: Path) -> None:
+    data = tmp_path / "sales.csv"
+    lock_file = tmp_path / "~$workbook.xlsx"
+    data.write_text("id,revenue\n1,10\n")
+    lock_file.write_bytes(b"not a real workbook")
+
+    profile = InputProfiler(work_dir=tmp_path / "work").profile_paths([tmp_path])
+
+    assert [file.relative_path for file in profile.files] == ["sales.csv"]
+    assert profile.warnings == []
+
+
 def test_multi_table_summary_shows_each_table_schema(tmp_path: Path) -> None:
     orders = tmp_path / "orders.csv"
     customers = tmp_path / "customers.csv"
@@ -116,6 +129,44 @@ def test_excel_workbook_profiles_each_sheet_as_logical_table(tmp_path: Path) -> 
         "workbook.xlsx::Orders",
         "workbook.xlsx::Customers",
     ]
+
+
+def test_non_tabular_excel_workbook_uses_grid_preview(tmp_path: Path) -> None:
+    workbook_path = tmp_path / "financial_model.xlsx"
+    workbook = Workbook()
+    assumptions = workbook.active
+    assumptions.title = "Assumptions"
+    assumptions["A1"] = "ModelOff 2016 - Round 1 - Section 2"
+    assumptions["C3"] = "Assumptions"
+    assumptions["E6"] = "Period Start"
+    assumptions["E7"] = "Period End"
+    assumptions["H7"] = "Units"
+    assumptions["J7"] = "Sum"
+    calculations = workbook.create_sheet("Calculations")
+    calculations["A1"] = "ModelOff 2016 - Round 1 - Section 2"
+    calculations["C3"] = "Calculations"
+    calculations["E6"] = "Period Start"
+    calculations["J7"] = "=SUM(A1:A1)"
+    workbook.save(workbook_path)
+
+    profile = InputProfiler(work_dir=tmp_path / "work").profile_paths([workbook_path])
+    summary = profile.compact_summary()
+
+    assert profile.kind is DatasetKind.SPREADSHEET_WORKBOOK
+    assert profile.tables == []
+    assert profile.spreadsheet_workbooks
+    assert [sheet.name for sheet in profile.spreadsheet_workbooks[0].sheets] == [
+        "Assumptions",
+        "Calculations",
+    ]
+    assert profile.spreadsheet_workbooks[0].sheets[1].formula_cells == 1
+    assert "Spreadsheet workbook dataset" in summary
+    assert "financial_model.xlsx" in summary
+    assert "Sheet: Assumptions" in summary
+    assert "R1: ModelOff 2016 - Round 1 - Section 2" in summary
+    assert "R6:" in summary
+    assert "Period Start" in summary
+    assert "Unnamed:" not in summary
 
 
 def test_modeling_split_summary_shows_split_rows_and_column_differences(

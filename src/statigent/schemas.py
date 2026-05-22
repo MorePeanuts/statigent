@@ -54,6 +54,7 @@ class DatasetKind(StrEnum):
     SINGLE_TABLE = "single_table"
     MULTI_TABLE = "multi_table"
     MODELING_SPLIT_TABLES = "modeling_split_tables"
+    SPREADSHEET_WORKBOOK = "spreadsheet_workbook"
     IMAGE_COLLECTION = "image_collection"
     MIXED = "mixed"
 
@@ -198,6 +199,35 @@ class ImageCollectionProfile(BaseModel):
     )
 
 
+class SpreadsheetSheetProfile(BaseModel):
+    """Grid profile of a non-tabular spreadsheet worksheet."""
+
+    name: str = Field(description="Worksheet name")
+    rows: int = Field(ge=0, description="Worksheet used-range row count")
+    columns: int = Field(ge=0, description="Worksheet used-range column count")
+    non_empty_cells: int = Field(ge=0, description="Number of non-empty cells")
+    formula_cells: int = Field(ge=0, description="Number of formula cells")
+    preview_rows: list[str] = Field(
+        description="Sparse top-left grid preview with row numbers"
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Issues found during sheet profiling"
+    )
+
+
+class SpreadsheetWorkbookProfile(BaseModel):
+    """Grid profile of a non-tabular spreadsheet workbook."""
+
+    path: Path = Field(description="Absolute path to the workbook")
+    relative_path: str = Field(description="Path relative to the dataset root")
+    sheets: list[SpreadsheetSheetProfile] = Field(
+        description="Profiles of workbook sheets"
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Issues found during workbook profiling"
+    )
+
+
 class DatasetProfile(BaseModel):
     """Complete profile of all input files and tables discovered by the profiler.
 
@@ -216,6 +246,10 @@ class DatasetProfile(BaseModel):
     image_collections: list[ImageCollectionProfile] = Field(
         default_factory=list, description="Profiles of discovered image collections"
     )
+    spreadsheet_workbooks: list[SpreadsheetWorkbookProfile] = Field(
+        default_factory=list,
+        description="Profiles of non-tabular spreadsheet workbooks",
+    )
     warnings: list[str] = Field(
         default_factory=list, description="Cross-file issues found during scanning"
     )
@@ -227,6 +261,8 @@ class DatasetProfile(BaseModel):
             return self._multi_table_summary()
         if self.kind is DatasetKind.MODELING_SPLIT_TABLES:
             return self._modeling_split_summary()
+        if self.kind is DatasetKind.SPREADSHEET_WORKBOOK:
+            return self._spreadsheet_workbook_summary()
         if self.kind is DatasetKind.IMAGE_COLLECTION:
             return self._image_collection_summary()
         if self.kind is DatasetKind.EMPTY:
@@ -323,6 +359,24 @@ class DatasetProfile(BaseModel):
                 lines.append(f"- {directory}: {count} images")
         if not self.image_collections:
             lines.append("- No image files were profiled.")
+        return self._append_warning_text("\n".join(lines))
+
+    def _spreadsheet_workbook_summary(self) -> str:
+        lines = ["Spreadsheet workbook dataset"]
+        for workbook in self.spreadsheet_workbooks:
+            lines.append(f"Workbook: {workbook.relative_path}")
+            for sheet in workbook.sheets:
+                lines.append(
+                    f"- Sheet: {sheet.name} "
+                    f"({sheet.rows} rows x {sheet.columns} columns; "
+                    f"non-empty cells: {sheet.non_empty_cells}; "
+                    f"formula cells: {sheet.formula_cells})"
+                )
+                lines.append("  Grid preview:")
+                for row in sheet.preview_rows:
+                    lines.append(f"  {row}")
+        if not self.spreadsheet_workbooks:
+            lines.append("- No spreadsheet workbook details were profiled.")
         return self._append_warning_text("\n".join(lines))
 
     def _fallback_summary(self) -> str:
@@ -716,6 +770,8 @@ __all__ = [
     "OutputType",
     "ReviewDecision",
     "ReviewerPlanDecision",
+    "SpreadsheetSheetProfile",
+    "SpreadsheetWorkbookProfile",
     "TableProfile",
     "TableRole",
     "TaskBrief",

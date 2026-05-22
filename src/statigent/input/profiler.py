@@ -22,6 +22,7 @@ from shutil import copyfileobj, rmtree
 from typing import Protocol
 
 import pandas as pd
+from openpyxl import load_workbook  # type: ignore[import-untyped]
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
 from pandas.errors import ParserError
 from PIL import Image, UnidentifiedImageError
@@ -32,6 +33,8 @@ from statigent.schemas import (
     DatasetProfile,
     ImageCollectionProfile,
     InputFileInfo,
+    SpreadsheetSheetProfile,
+    SpreadsheetWorkbookProfile,
     TableProfile,
     TableRole,
 )
@@ -68,6 +71,21 @@ class _ProfileContext:
 
 class _DatasetProfiler(Protocol):
     def profile(self, context: _ProfileContext) -> DatasetProfile: ...
+
+
+class _WorksheetLike(Protocol):
+    title: str
+    max_row: int
+    max_column: int
+
+    def iter_rows(
+        self,
+        min_row: int | None = None,
+        max_row: int | None = None,
+        min_col: int | None = None,
+        max_col: int | None = None,
+        values_only: bool = False,
+    ) -> Iterable[tuple[object, ...]]: ...
 
 
 class _EmptyDatasetProfiler:
@@ -155,6 +173,23 @@ class _ImageCollectionProfiler:
         )
 
 
+class _SpreadsheetWorkbookProfiler:
+    def __init__(self, owner: "InputProfiler") -> None:
+        self.owner = owner
+
+    def profile(self, context: _ProfileContext) -> DatasetProfile:
+        files = self.owner._input_file_infos(context)
+        workbooks, warnings = self.owner._profile_spreadsheet_workbooks(context)
+        return DatasetProfile(
+            root=self.owner.work_dir,
+            kind=DatasetKind.SPREADSHEET_WORKBOOK,
+            files=files,
+            tables=[],
+            spreadsheet_workbooks=workbooks,
+            warnings=[*context.warnings, *warnings],
+        )
+
+
 class _FallbackProfiler:
     def __init__(self, owner: "InputProfiler") -> None:
         self.owner = owner
@@ -224,6 +259,8 @@ class InputProfiler:
             if not path.exists():
                 msg = f"Input path does not exist: {path}"
                 raise StatigentInputError(msg)
+            if self._is_ignored_input_file(path):
+                continue
 
             if path.is_dir():
                 self._add_discovered(
@@ -266,11 +303,16 @@ class InputProfiler:
                 return
             discovered.append(item)
 
+    def _is_ignored_input_file(self, path: Path) -> bool:
+        return path.name.startswith("~$")
+
     def _scan_directory(self, directory: Path) -> list[_DiscoveredFile]:
         items: list[_DiscoveredFile] = []
         work_dir = self.work_dir.resolve()
         for path in sorted(directory.rglob("*")):
             if not path.is_file():
+                continue
+            if self._is_ignored_input_file(path):
                 continue
             if self._is_relative_to(path.resolve(), work_dir):
                 continue
@@ -381,6 +423,8 @@ class InputProfiler:
 
         if image_files and len(image_files) == len(context.files):
             return _ImageCollectionProfiler(self)
+        if self._has_spreadsheet_grid_workbook(context.files):
+            return _SpreadsheetWorkbookProfiler(self)
         if not tabular_files:
             return _FallbackProfiler(self)
         if len(tabular_files) != len(context.files):
@@ -491,6 +535,145 @@ class InputProfiler:
             except (OSError, ValueError, ImportError, zipfile.BadZipFile):
                 count += 1
         return count
+
+    def _has_spreadsheet_grid_workbook(self, files: list[_DiscoveredFile]) -> bool:
+        workbook_files = [
+            item
+            for item in files
+            if item.path.suffix.lower() in EXCEL_WORKBOOK_SUFFIXES
+        ]
+        if not workbook_files or len(workbook_files) != len(files):
+            return False
+        return any(self._workbook_looks_like_grid(item) for item in workbook_files)
+
+    def _workbook_looks_like_grid(self, item: _DiscoveredFile) -> bool:
+        try:
+            workbook = load_workbook(item.path, read_only=True, data_only=True)
+        except (OSError, ValueError, zipfile.BadZipFile):
+            return False
+        try:
+            for worksheet in workbook.worksheets:
+                for row in worksheet.iter_rows(values_only=True):
+                    non_empty = [
+                        value
+                        for value in row
+                        if value is not None and str(value).strip() != ""
+                    ]
+                    if not non_empty:
+                        continue
+                    return len(non_empty) <= 1
+        finally:
+            workbook.close()
+        return False
+
+    def _profile_spreadsheet_workbooks(
+        self,
+        context: _ProfileContext,
+    ) -> tuple[list[SpreadsheetWorkbookProfile], list[str]]:
+        workbooks: list[SpreadsheetWorkbookProfile] = []
+        warnings: list[str] = []
+        for item in context.files:
+            if item.path.suffix.lower() not in EXCEL_WORKBOOK_SUFFIXES:
+                continue
+            try:
+                workbooks.append(self._profile_spreadsheet_workbook(item))
+            except (OSError, ValueError, zipfile.BadZipFile) as err:
+                warnings.append(
+                    "Failed to profile spreadsheet workbook "
+                    f"{item.relative_path}: {err}"
+                )
+        return workbooks, warnings
+
+    def _profile_spreadsheet_workbook(
+        self,
+        item: _DiscoveredFile,
+    ) -> SpreadsheetWorkbookProfile:
+        values_workbook = load_workbook(item.path, read_only=True, data_only=True)
+        formulas_workbook = load_workbook(item.path, read_only=True, data_only=False)
+        try:
+            formula_sheets = {
+                worksheet.title: worksheet for worksheet in formulas_workbook.worksheets
+            }
+            sheets = [
+                self._profile_spreadsheet_sheet(
+                    values_worksheet=worksheet,
+                    formula_worksheet=formula_sheets[worksheet.title],
+                )
+                for worksheet in values_workbook.worksheets
+            ]
+        finally:
+            values_workbook.close()
+            formulas_workbook.close()
+        return SpreadsheetWorkbookProfile(
+            path=item.path,
+            relative_path=item.relative_path,
+            sheets=sheets,
+        )
+
+    def _profile_spreadsheet_sheet(
+        self,
+        *,
+        values_worksheet: _WorksheetLike,
+        formula_worksheet: _WorksheetLike,
+    ) -> SpreadsheetSheetProfile:
+        row_count = int(values_worksheet.max_row or 0)
+        column_count = int(values_worksheet.max_column or 0)
+        non_empty_cells = self._count_non_empty_cells(values_worksheet)
+        formula_cells = self._count_formula_cells(formula_worksheet)
+        return SpreadsheetSheetProfile(
+            name=values_worksheet.title,
+            rows=row_count,
+            columns=column_count,
+            non_empty_cells=non_empty_cells,
+            formula_cells=formula_cells,
+            preview_rows=self._spreadsheet_preview_rows(values_worksheet),
+        )
+
+    def _count_non_empty_cells(self, worksheet: _WorksheetLike) -> int:
+        count = 0
+        for row in worksheet.iter_rows(values_only=True):
+            count += sum(
+                1 for value in row if value is not None and str(value).strip() != ""
+            )
+        return count
+
+    def _count_formula_cells(self, worksheet: _WorksheetLike) -> int:
+        count = 0
+        for row in worksheet.iter_rows(values_only=True):
+            count += sum(
+                1 for value in row if isinstance(value, str) and value.startswith("=")
+            )
+        return count
+
+    def _spreadsheet_preview_rows(self, worksheet: _WorksheetLike) -> list[str]:
+        rows: list[str] = []
+        max_row = min(int(worksheet.max_row or 0), 20)
+        max_col = min(int(worksheet.max_column or 0), 10)
+        for index, row in enumerate(
+            worksheet.iter_rows(
+                min_row=1,
+                max_row=max_row,
+                min_col=1,
+                max_col=max_col,
+                values_only=True,
+            ),
+            start=1,
+        ):
+            values = [
+                self._format_spreadsheet_cell(value)
+                for value in row
+                if value is not None and str(value).strip() != ""
+            ]
+            if values:
+                rows.append(f"R{index}: " + " | ".join(values))
+            if len(rows) >= 8:
+                break
+        return rows
+
+    def _format_spreadsheet_cell(self, value: object) -> str:
+        if value is None:
+            return ""
+        return str(value)
 
     def _profile_image_collection(
         self,
