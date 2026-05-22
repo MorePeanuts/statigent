@@ -9,9 +9,9 @@ back to DATA_ANALYSIS because that entrypoint is already selected by the
 benchmark harness.
 """
 
-import tempfile
 from collections.abc import Callable
 from pathlib import Path
+from tempfile import TemporaryDirectory, mkdtemp
 from typing import Protocol, runtime_checkable
 
 from statigent.benchmarks.base import AgentTrace
@@ -68,7 +68,7 @@ class StatigentDataScienceAgent:
     planner, orchestrator_factory, or renderer for testing.
     """
 
-    name = "statigent-data-science"
+    name = "statigent"
 
     def __init__(
         self,
@@ -94,79 +94,81 @@ class StatigentDataScienceAgent:
     ) -> tuple[str, AgentTrace]:
         """Run the full analysis pipeline and return (answer, trace).
 
-        Creates a temporary work directory for inputs and artifacts.
-        The directory is intentionally left on disk because rendered outputs
-        and traces may reference generated artifact paths.
+        Creates a temporary runtime directory for profiler scratch files,
+        notebook workspace files, and artifacts. The directory is cleaned after
+        rendering because benchmark callers consume the returned answer and
+        trace directly.
         Non-analysis task classifications are treated as planning errors for
         this entrypoint. They are traced, added to the brief warnings, and
         coerced to DATA_ANALYSIS before exploration runs.
         """
-        work_dir = Path(tempfile.mkdtemp(prefix="statigent-agent-"))
-        profile = self._profiler(work_dir).profile_paths(files)
-        brief = self._planner().create_brief(
-            prompt=prompt,
-            task_instructions=task_instructions,
-            profile=profile,
-        )
-        trace_events = [
-            TraceEvent(
-                role="system",
-                content=profile.compact_summary(),
-                name="input",
-                agent="input_profiler",
-            ),
-            TraceEvent(
-                role="assistant",
-                content=brief.model_dump_json(),
-                name="task_brief",
-                agent="task_brief_planner",
-            ),
-        ]
+        with TemporaryDirectory(prefix="statigent-") as tmpdir:
+            work_dir = Path(tmpdir)
+            profile = self._profiler(work_dir).profile_paths(files)
+            brief = self._planner().create_brief(
+                prompt=prompt,
+                task_instructions=task_instructions,
+                profile=profile,
+            )
+            trace_events = [
+                TraceEvent(
+                    role="system",
+                    content=profile.compact_summary(),
+                    name="input",
+                    agent="input_profiler",
+                ),
+                TraceEvent(
+                    role="assistant",
+                    content=brief.model_dump_json(),
+                    name="task_brief",
+                    agent="task_brief_planner",
+                ),
+            ]
 
-        if brief.task_type is not TaskType.DATA_ANALYSIS:
-            original_task_type = brief.task_type
-            warning = (
-                f"run_analysis_for_eval received {original_task_type}; "
-                "coerced to data_analysis."
-            )
-            brief = brief.model_copy(
-                update={
-                    "task_type": TaskType.DATA_ANALYSIS,
-                    "warnings": [*brief.warnings, warning],
-                }
-            )
+            if brief.task_type is not TaskType.DATA_ANALYSIS:
+                original_task_type = brief.task_type
+                warning = (
+                    f"run_analysis_for_eval received {original_task_type}; "
+                    "coerced to data_analysis."
+                )
+                brief = brief.model_copy(
+                    update={
+                        "task_type": TaskType.DATA_ANALYSIS,
+                        "warnings": [*brief.warnings, warning],
+                    }
+                )
+                trace_events.append(
+                    TraceEvent(
+                        role="assistant",
+                        content=warning,
+                        name="task_type_coercion",
+                        agent="data_science_agent",
+                        metadata={"original_task_type": original_task_type.value},
+                    )
+                )
+
+            orchestrator = self._orchestrator(brief, profile, work_dir)
+            try:
+                report = orchestrator.run(brief, profile)
+            finally:
+                if isinstance(orchestrator, _Closable):
+                    orchestrator.close()
+            trace_events.extend(self._orchestrator_trace_events(report))
+            if brief.warnings:
+                report = report.model_copy(
+                    update={"warnings": [*brief.warnings, *report.warnings]}
+                )
+            bundle = self.renderer.render(brief, report)
             trace_events.append(
                 TraceEvent(
                     role="assistant",
-                    content=warning,
-                    name="task_type_coercion",
-                    agent="data_science_agent",
-                    metadata={"original_task_type": original_task_type.value},
+                    content=bundle.model_dump_json(),
+                    name="output",
+                    agent="output_renderer",
                 )
             )
-
-        orchestrator = self._orchestrator(brief, profile, work_dir)
-        try:
-            report = orchestrator.run(brief, profile)
-        finally:
-            if isinstance(orchestrator, _Closable):
-                orchestrator.close()
-        trace_events.extend(self._orchestrator_trace_events(report))
-        if brief.warnings:
-            report = report.model_copy(
-                update={"warnings": [*brief.warnings, *report.warnings]}
-            )
-        bundle = self.renderer.render(brief, report)
-        trace_events.append(
-            TraceEvent(
-                role="assistant",
-                content=bundle.model_dump_json(),
-                name="output",
-                agent="output_renderer",
-            )
-        )
-        trace: AgentTrace = [event.model_dump() for event in trace_events]
-        return bundle.content, trace
+            trace: AgentTrace = [event.model_dump() for event in trace_events]
+            return bundle.content, trace
 
     def run_modeling_for_eval(
         self,
@@ -182,7 +184,7 @@ class StatigentDataScienceAgent:
 
         The returned submission.csv path does not exist on disk.
         """
-        target_dir = work_dir or Path(tempfile.mkdtemp(prefix="statigent-modeling-"))
+        target_dir = work_dir or Path(mkdtemp(prefix="statigent-modeling-"))
         content = (
             "Modeling submission generation is not implemented. "
             f"Received prompt: {prompt}"
@@ -216,6 +218,8 @@ class StatigentDataScienceAgent:
     def _profiler(self, work_dir: Path) -> _Profiler:
         if self.profiler is not None:
             return self.profiler
+        # The profiler work directory is scratch space for archive extraction
+        # and relative-path bookkeeping, not the location of source data files.
         return InputProfiler(work_dir=work_dir)
 
     def _planner(self) -> _Planner:

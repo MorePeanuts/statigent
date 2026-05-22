@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 def test_public_agent_export_exists() -> None:
     agent = StatigentDataScienceAgent(model_name="fake")
 
-    assert agent.name == "statigent-data-science"
+    assert agent.name == "statigent"
 
 
 def test_agent_has_data_science_protocol_methods() -> None:
