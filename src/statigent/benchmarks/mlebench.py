@@ -74,8 +74,11 @@ class MLEBenchAdapter(BenchmarkAdapter):
         """Run agent on MLE-Bench competitions."""
         persister = kwargs.get("persister")
         limit = kwargs.get("limit")
+        skip = kwargs.get("skip", 0)
 
         competition_ids = self._get_competition_ids()
+        if skip:
+            competition_ids = competition_ids[skip:]
         if limit:
             competition_ids = competition_ids[: int(limit)]
 

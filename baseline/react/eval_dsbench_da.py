@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from statigent.baseline import ReactBaselineAgent
+from statigent.benchmarks.base import BenchmarkAdapter, RunPersister
 from statigent.benchmarks.dsbench import DSBenchAdapter
 from statigent.models import load_registry
 
@@ -36,6 +37,17 @@ def main(
             "Sample ID (e.g. 00000001) or question ID (e.g. 00000001/question6).",
         ),
     ] = None,
+    resume_dir: Annotated[
+        Path | None,
+        typer.Option(
+            help="Resume from a previous run's output directory. "
+            "Skips tasks already completed and appends new results."
+        ),
+    ] = None,
+    skip: Annotated[
+        int,
+        typer.Option(help="Skip the first N tasks. Ignored when --resume-dir is set."),
+    ] = 0,
     model: Annotated[
         str,
         typer.Option(help="Model profile name from defaults.toml."),
@@ -79,6 +91,8 @@ def main(
     console.print(f"  Judge model: {judge_model}")
     console.print(f"  Limit: {limit or 'all'}")
     console.print(f"  Task ID: {task_id or 'all'}")
+    console.print(f"  Resume dir: {resume_dir or 'N/A'}")
+    console.print(f"  Skip: {skip or 'none'}")
     console.print(f"  Output: {output_dir}")
     console.print(f"  Registry: {path or 'bundled defaults'}")
 
@@ -91,19 +105,68 @@ def main(
     console.print("\n[blue]Preparing DSBench data analysis data...[/blue]")
     adapter.prepare()
     total = len(adapter._samples)
-    total_questions = sum(
-        len(s.get("questions", [])) for s in adapter._samples
-    )
+    total_questions = sum(len(s.get("questions", [])) for s in adapter._samples)
     console.print(f"  {total} samples ({total_questions} questions) available")
 
-    console.print("\n[blue]Running evaluation...[/blue]")
-    kwargs: dict = {"output_dir": str(output_dir)}
-    if limit is not None:
-        kwargs["limit"] = limit
-    if task_id is not None:
-        kwargs["task_id"] = task_id
+    if resume_dir is not None:
+        _resume_run(adapter, agent, resume_dir, limit, task_id, judge_model, console)
+    else:
+        kwargs: dict[str, object] = {"output_dir": str(output_dir), "skip": skip}
+        if limit is not None:
+            kwargs["limit"] = limit
+        if task_id is not None:
+            kwargs["task_id"] = task_id
 
-    result = adapter.execute(agent, **kwargs)
+        result = adapter.execute(agent, **kwargs)
+
+        table = Table(title="Evaluation Results")
+        table.add_column("Metric", style="cyan")
+        table.add_column("Value", style="green")
+        table.add_row("Accuracy", f"{result.score:.4f}")
+        table.add_row("Total Questions", str(result.details.get("total", "N/A")))
+        table.add_row("Agent", result.agent_name)
+        table.add_row("Model", result.model_name)
+        table.add_row("Judge", judge_model)
+        console.print(table)
+
+        n = result.details.get("total", "?")
+        console.print(f"\n[bold green]Done — evaluated {n} questions[/bold green]")
+
+
+def _resume_run(
+    adapter: DSBenchAdapter,
+    agent: ReactBaselineAgent,
+    resume_dir: Path,
+    limit: int | None,
+    task_id: str | None,
+    judge_model: str,
+    console: Console,
+) -> None:
+    """Resume an interrupted run by loading existing predictions and continuing."""
+    persister = RunPersister.open(resume_dir)
+    old_predictions = BenchmarkAdapter.load_predictions(resume_dir)
+    skip = len(old_predictions)
+    console.print(f"  Resuming with {skip} existing predictions")
+
+    console.print("\n[blue]Running agent on remaining tasks...[/blue]")
+    run_kwargs: dict[str, object] = {"persister": persister, "skip": skip}
+    if limit is not None:
+        run_kwargs["limit"] = limit
+    if task_id is not None:
+        run_kwargs["task_id"] = task_id
+
+    run_result = adapter.run(agent, **run_kwargs)
+    console.print(f"  Generated {len(run_result.predictions)} new predictions")
+
+    all_predictions = old_predictions + run_result.predictions
+    console.print(f"\n[blue]Evaluating {len(all_predictions)} predictions...[/blue]")
+    result = adapter.evaluate(
+        all_predictions,
+        agent_name=agent.name,
+        model_name=agent.model_name,
+    )
+
+    persister.finalize(result)
 
     table = Table(title="Evaluation Results")
     table.add_column("Metric", style="cyan")

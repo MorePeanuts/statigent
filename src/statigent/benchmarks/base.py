@@ -65,6 +65,26 @@ class RunPersister:
         self._seen_dests: set[str] = set()
         self._pred_count = 0
 
+    @classmethod
+    def open(cls, output_dir: Path) -> "RunPersister":
+        """Open an existing output directory for appending.
+
+        Use this when resuming a previously interrupted run so that new
+        predictions and traces are appended to the same directory.
+        """
+        persister = cls.__new__(cls)
+        persister.output_dir = output_dir
+        persister._pred_dir = output_dir / "predictions"
+        persister._pred_path = persister._pred_dir / "responses.jsonl"
+        persister._trace_dir = output_dir / "traces"
+        persister._eval_dir = output_dir / "evaluation"
+        persister._seen_dests = set()
+        persister._pred_count = 0
+        if persister._pred_path.exists():
+            with open(persister._pred_path) as f:
+                persister._pred_count = sum(1 for line in f if line.strip())
+        return persister
+
     def add_prediction(self, prediction: dict[str, Any]) -> None:
         """Persist one prediction immediately.
 
@@ -240,6 +260,26 @@ class BenchmarkAdapter(ABC):
             persister.finalize(result)
 
         return result
+
+    @staticmethod
+    def load_predictions(output_dir: Path) -> list[dict[str, Any]]:
+        """Load predictions from a previous run's output directory.
+
+        Reads the ``predictions/responses.jsonl`` file produced by
+        :class:`RunPersister`.  Useful when resuming an interrupted run
+        so that old predictions can be combined with newly generated ones
+        before calling :meth:`evaluate`.
+        """
+        pred_path = output_dir / "predictions" / "responses.jsonl"
+        if not pred_path.exists():
+            return []
+        predictions: list[dict[str, Any]] = []
+        with open(pred_path) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    predictions.append(json.loads(line))
+        return predictions
 
     @staticmethod
     def persist(

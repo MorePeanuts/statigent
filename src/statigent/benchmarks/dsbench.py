@@ -208,10 +208,11 @@ class DSBenchAdapter(BenchmarkAdapter):
         persister = kwargs.get("persister")
         limit = kwargs.get("limit")
         task_id = kwargs.get("task_id")
+        skip = kwargs.get("skip", 0)
 
         # task_id: "00000001" → run all questions in that sample;
         #          "00000001/question6" → run a single question.
-        # When task_id is set, limit is ignored.
+        # When task_id is set, limit and skip are ignored.
         target_sid: str | None = None
         target_qname: str | None = None
         if task_id:
@@ -242,7 +243,10 @@ class DSBenchAdapter(BenchmarkAdapter):
             ]
 
             for qname in sample["questions"]:
-                if limit and question_count >= limit:
+                if skip and question_count < skip:
+                    question_count += 1
+                    continue
+                if limit and question_count - skip >= limit:
                     break
                 if target_qname and qname != target_qname:
                     continue
@@ -263,7 +267,7 @@ class DSBenchAdapter(BenchmarkAdapter):
                     persister.add_trace(qid, trace)
                 question_count += 1
                 logger.debug("DSBench DA id={} q={}: response received", sid, qname)
-            if limit and question_count >= limit:
+            if limit and question_count - skip >= limit:
                 break
 
         if task_id and not predictions:
@@ -287,13 +291,17 @@ class DSBenchAdapter(BenchmarkAdapter):
         persister = kwargs.get("persister")
         limit = kwargs.get("limit")
         task_id = kwargs.get("task_id")
+        skip = kwargs.get("skip", 0)
 
         samples = self._samples
         if task_id:
             # Match by sample name (e.g. "titanic")
             samples = [s for s in samples if str(s["name"]) == str(task_id)]
-        elif limit:
-            samples = samples[:limit]
+        else:
+            if skip:
+                samples = samples[skip:]
+            if limit:
+                samples = samples[:limit]
 
         predictions: list[dict[str, Any]] = []
         traces: dict[str, AgentTrace] = {}

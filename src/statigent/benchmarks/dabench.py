@@ -65,12 +65,16 @@ class DABenchAdapter(BenchmarkAdapter):
         persister = kwargs.get("persister")
         limit = kwargs.get("limit")
         task_id = kwargs.get("task_id")
+        skip = kwargs.get("skip", 0)
 
         questions = self._questions
         if task_id:
             questions = [q for q in questions if str(q["id"]) == task_id]
-        elif limit:
-            questions = questions[:limit]
+        else:
+            if skip:
+                questions = questions[skip:]
+            if limit:
+                questions = questions[:limit]
 
         if task_id and not questions:
             logger.warning("task_id '{}' did not match any question", task_id)
