@@ -47,6 +47,23 @@ def test_single_table_summary_shows_only_head_rows(tmp_path: Path) -> None:
     assert "70" not in summary
 
 
+def test_profile_csv_with_blank_first_header_treats_first_column_as_index(
+    tmp_path: Path,
+) -> None:
+    data = tmp_path / "indexed.csv"
+    data.write_text(",revenue,region\nrow-a,10,East\nrow-b,20,West\n")
+
+    profile = InputProfiler(work_dir=tmp_path / "work").profile_paths([data])
+
+    table = profile.tables[0]
+    assert table.column_names == ["revenue", "region"]
+    assert not any(name.startswith("Unnamed") for name in table.column_names)
+    assert table.sample_rows == [
+        {"revenue": 10, "region": "East"},
+        {"revenue": 20, "region": "West"},
+    ]
+
+
 def test_profile_directory_scans_nested_tabular_files(tmp_path: Path) -> None:
     nested = tmp_path / "nested"
     nested.mkdir()

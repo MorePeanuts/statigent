@@ -11,6 +11,7 @@ target directory (path-traversal protection) and enforces total
 uncompressed size limits.
 """
 
+import csv
 import zipfile
 from collections import Counter
 from collections.abc import Callable, Iterable
@@ -596,9 +597,20 @@ class InputProfiler:
         suffix = path.suffix.lower()
         match suffix:
             case ".csv":
-                return pd.read_csv(path)
+                return pd.read_csv(
+                    path,
+                    index_col=0
+                    if self._first_header_cell_is_blank(path, ",")
+                    else None,
+                )
             case ".tsv":
-                return pd.read_csv(path, sep="\t")
+                return pd.read_csv(
+                    path,
+                    sep="\t",
+                    index_col=0
+                    if self._first_header_cell_is_blank(path, "\t")
+                    else None,
+                )
             case ".xlsx" | ".xls":
                 return pd.read_excel(path)
             case ".parquet":
@@ -606,6 +618,11 @@ class InputProfiler:
 
         msg = f"Unsupported tabular suffix: {suffix}"
         raise ValueError(msg)
+
+    def _first_header_cell_is_blank(self, path: Path, delimiter: str) -> bool:
+        with path.open(newline="") as f:
+            first_row = next(csv.reader(f, delimiter=delimiter), [])
+        return bool(first_row) and first_row[0].strip() == ""
 
     def _numeric_summaries(self, frame: pd.DataFrame) -> dict[str, dict[str, float]]:
         summaries: dict[str, dict[str, float]] = {}
