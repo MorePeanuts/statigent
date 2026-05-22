@@ -1,5 +1,6 @@
 import shutil
 import tempfile
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
@@ -11,6 +12,7 @@ from statigent.benchmarks.base import (
     BenchmarkRunResult,
     EvalResult,
     ScoreResult,
+    _sum_trace_tokens,
 )
 
 if TYPE_CHECKING:
@@ -82,6 +84,8 @@ class MLEBenchAdapter(BenchmarkAdapter):
         if limit:
             competition_ids = competition_ids[: int(limit)]
 
+        start_time = time.monotonic()
+        total_tokens = 0
         predictions: list[dict[str, Any]] = []
         traces: dict[str, AgentTrace] = {}
         for comp_id in competition_ids:
@@ -102,6 +106,7 @@ class MLEBenchAdapter(BenchmarkAdapter):
                 pred = {"competition_id": comp_id, "submission_path": str(pred_path)}
                 predictions.append(pred)
                 traces[comp_id] = trace
+                total_tokens += _sum_trace_tokens(trace)
                 if persister is not None:
                     persister.add_prediction(pred)
                     persister.add_trace(comp_id, trace)
@@ -110,7 +115,16 @@ class MLEBenchAdapter(BenchmarkAdapter):
                 raise
             logger.debug("MLE-Bench {}: submission created", comp_id)
 
-        return BenchmarkRunResult(predictions=predictions, traces=traces)
+        duration = time.monotonic() - start_time
+        if persister is not None:
+            persister.set_duration(duration)
+
+        return BenchmarkRunResult(
+            predictions=predictions,
+            traces=traces,
+            total_tokens=total_tokens,
+            duration_seconds=round(duration, 2),
+        )
 
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score MLE-Bench predictions using mlebench grade."""

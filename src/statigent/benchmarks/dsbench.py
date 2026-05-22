@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -16,6 +17,7 @@ from statigent.benchmarks.base import (
     BenchmarkRunResult,
     EvalResult,
     ScoreResult,
+    _sum_trace_tokens,
 )
 from statigent.benchmarks.evaluators import LLMJudgeEvaluator
 from statigent.errors import StatigentBenchmarkError
@@ -221,6 +223,8 @@ class DSBenchAdapter(BenchmarkAdapter):
             if len(parts) == 2:
                 target_qname = parts[1]
 
+        start_time = time.monotonic()
+        total_tokens = 0
         predictions: list[dict[str, Any]] = []
         traces: dict[str, AgentTrace] = {}
         question_count = 0
@@ -262,6 +266,7 @@ class DSBenchAdapter(BenchmarkAdapter):
                 pred = {"id": qid, "response": response}
                 predictions.append(pred)
                 traces[qid] = trace
+                total_tokens += _sum_trace_tokens(trace)
                 if persister is not None:
                     persister.add_prediction(pred)
                     persister.add_trace(qid, trace)
@@ -273,7 +278,16 @@ class DSBenchAdapter(BenchmarkAdapter):
         if task_id and not predictions:
             logger.warning("task_id '{}' did not match any sample/question", task_id)
 
-        return BenchmarkRunResult(predictions=predictions, traces=traces)
+        duration = time.monotonic() - start_time
+        if persister is not None:
+            persister.set_duration(duration)
+
+        return BenchmarkRunResult(
+            predictions=predictions,
+            traces=traces,
+            total_tokens=total_tokens,
+            duration_seconds=round(duration, 2),
+        )
 
     _DM_TASK_INSTRUCTIONS = (
         "You are building a predictive model for a data science competition. "
@@ -303,6 +317,8 @@ class DSBenchAdapter(BenchmarkAdapter):
             if limit:
                 samples = samples[:limit]
 
+        start_time = time.monotonic()
+        total_tokens = 0
         predictions: list[dict[str, Any]] = []
         traces: dict[str, AgentTrace] = {}
         for sample in samples:
@@ -336,6 +352,7 @@ class DSBenchAdapter(BenchmarkAdapter):
                 pred = {"name": name, "prediction_path": str(pred_path)}
                 predictions.append(pred)
                 traces[name] = trace
+                total_tokens += _sum_trace_tokens(trace)
                 if persister is not None:
                     persister.add_prediction(pred)
                     persister.add_trace(name, trace)
@@ -347,7 +364,16 @@ class DSBenchAdapter(BenchmarkAdapter):
         if task_id and not predictions:
             logger.warning("task_id '{}' did not match any sample name", task_id)
 
-        return BenchmarkRunResult(predictions=predictions, traces=traces)
+        duration = time.monotonic() - start_time
+        if persister is not None:
+            persister.set_duration(duration)
+
+        return BenchmarkRunResult(
+            predictions=predictions,
+            traces=traces,
+            total_tokens=total_tokens,
+            duration_seconds=round(duration, 2),
+        )
 
     @staticmethod
     def _compute_normalized_score(

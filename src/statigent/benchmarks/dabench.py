@@ -1,4 +1,5 @@
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,7 @@ from statigent.benchmarks.base import (
     BenchmarkRunResult,
     DataScienceAgent,
     EvalResult,
+    _sum_trace_tokens,
 )
 from statigent.benchmarks.evaluators import ExactMatchEvaluator, ReformatEvaluator
 
@@ -79,6 +81,8 @@ class DABenchAdapter(BenchmarkAdapter):
         if task_id and not questions:
             logger.warning("task_id '{}' did not match any question", task_id)
 
+        start_time = time.monotonic()
+        total_tokens = 0
         predictions: list[dict[str, Any]] = []
         traces: dict[str, AgentTrace] = {}
         for q in questions:
@@ -94,12 +98,22 @@ class DABenchAdapter(BenchmarkAdapter):
             pred = {"id": q["id"], "response": response}
             predictions.append(pred)
             traces[qid] = trace
+            total_tokens += _sum_trace_tokens(trace)
             if persister is not None:
                 persister.add_prediction(pred)
                 persister.add_trace(qid, trace)
             logger.debug("DABench question id={}: response received", q["id"])
 
-        return BenchmarkRunResult(predictions=predictions, traces=traces)
+        duration = time.monotonic() - start_time
+        if persister is not None:
+            persister.set_duration(duration)
+
+        return BenchmarkRunResult(
+            predictions=predictions,
+            traces=traces,
+            total_tokens=total_tokens,
+            duration_seconds=round(duration, 2),
+        )
 
     def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
         """Score DABench predictions."""

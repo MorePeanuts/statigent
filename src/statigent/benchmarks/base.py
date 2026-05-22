@@ -15,12 +15,24 @@ AgentTrace = list[dict[str, Any]]
 """Serialized execution trace: each dict is one message with role, content, etc."""
 
 
+def _sum_trace_tokens(trace: AgentTrace) -> int:
+    """Sum output_tokens from usage_metadata in a trace."""
+    total = 0
+    for entry in trace:
+        usage = entry.get("usage_metadata")
+        if usage:
+            total += usage.get("output_tokens", 0)
+    return total
+
+
 @dataclass
 class BenchmarkRunResult:
     """Result from running an agent on a benchmark."""
 
     predictions: list[dict[str, Any]]
     traces: dict[str, AgentTrace]
+    total_tokens: int = 0
+    duration_seconds: float = 0.0
 
 
 class RunPersister:
@@ -64,6 +76,8 @@ class RunPersister:
 
         self._seen_dests: set[str] = set()
         self._pred_count = 0
+        self._total_tokens = 0
+        self._duration_seconds = 0.0
 
     @classmethod
     def open(cls, output_dir: Path) -> "RunPersister":
@@ -80,9 +94,16 @@ class RunPersister:
         persister._eval_dir = output_dir / "evaluation"
         persister._seen_dests = set()
         persister._pred_count = 0
+        persister._total_tokens = 0
+        persister._duration_seconds = 0.0
         if persister._pred_path.exists():
             with open(persister._pred_path) as f:
                 persister._pred_count = sum(1 for line in f if line.strip())
+        meta_path = output_dir / "meta.json"
+        if meta_path.exists():
+            meta = json.loads(meta_path.read_text())
+            persister._total_tokens = meta.get("total_tokens", 0)
+            persister._duration_seconds = meta.get("duration_seconds", 0.0)
         return persister
 
     def add_prediction(self, prediction: dict[str, Any]) -> None:
@@ -131,7 +152,7 @@ class RunPersister:
                 src.parent.rmdir()
 
     def add_trace(self, question_id: str, trace: AgentTrace) -> None:
-        """Write one trace file immediately."""
+        """Write one trace file immediately and accumulate token usage."""
         if not self._trace_dir.exists():
             self._trace_dir.mkdir(parents=True, exist_ok=True)
         trace_path = self._trace_dir / f"{question_id}.jsonl"
@@ -139,8 +160,13 @@ class RunPersister:
         trace_lines = [json.dumps(msg) for msg in trace]
         trace_path.write_text("\n".join(trace_lines) + "\n")
 
+        for entry in trace:
+            usage = entry.get("usage_metadata")
+            if usage:
+                self._total_tokens += usage.get("output_tokens", 0)
+
     def finalize(self, result: "EvalResult") -> None:
-        """Write scores.json.  Call after ``evaluate()`` returns."""
+        """Write scores.json and update meta.json with tokens/duration."""
         self._eval_dir.mkdir(parents=True, exist_ok=True)
         scores: dict[str, Any] = {
             "score": result.score,
@@ -151,8 +177,20 @@ class RunPersister:
         }
         (self._eval_dir / "scores.json").write_text(json.dumps(scores, indent=2))
 
+        meta_path = self.output_dir / "meta.json"
+        meta: dict[str, Any] = {}
+        if meta_path.exists():
+            meta = json.loads(meta_path.read_text())
+        meta["total_tokens"] = self._total_tokens
+        meta["duration_seconds"] = self._duration_seconds
+        meta_path.write_text(json.dumps(meta, indent=2))
+
         if self._pred_count == 0:
             self._pred_path.write_text("")
+
+    def set_duration(self, seconds: float) -> None:
+        """Set the total run duration (adds to existing for resume)."""
+        self._duration_seconds += seconds
 
     @property
     def prediction_count(self) -> int:

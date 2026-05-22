@@ -52,6 +52,12 @@ def _serialize_messages(messages: list[AnyMessage]) -> AgentTrace:
                     {"name": tc["name"], "args": tc["args"], "id": tc.get("id", "")}
                     for tc in msg.tool_calls
                 ]
+            if msg.usage_metadata:
+                entry["usage_metadata"] = {
+                    "input_tokens": msg.usage_metadata.get("input_tokens", 0),
+                    "output_tokens": msg.usage_metadata.get("output_tokens", 0),
+                    "total_tokens": msg.usage_metadata.get("total_tokens", 0),
+                }
         elif isinstance(msg, ToolMessage):
             entry["role"] = "tool"
             entry["name"] = msg.name or ""
