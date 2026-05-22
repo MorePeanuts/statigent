@@ -47,6 +47,27 @@ class OutputStatus(StrEnum):
     ERROR = "error"
 
 
+class DatasetKind(StrEnum):
+    """High-level shape of discovered input data."""
+
+    EMPTY = "empty"
+    SINGLE_TABLE = "single_table"
+    MULTI_TABLE = "multi_table"
+    MODELING_SPLIT_TABLES = "modeling_split_tables"
+    IMAGE_COLLECTION = "image_collection"
+    MIXED = "mixed"
+
+
+class TableRole(StrEnum):
+    """Role of a logical table inside a dataset."""
+
+    TABLE = "table"
+    TRAIN = "train"
+    VALIDATION = "validation"
+    TEST = "test"
+    SAMPLE_SUBMISSION = "sample_submission"
+
+
 class ExplorationActionKind(StrEnum):
     """Predefined data exploration actions the Inspector can choose from.
 
@@ -123,6 +144,15 @@ class TableProfile(BaseModel):
 
     path: Path = Field(description="Absolute path to the table file")
     relative_path: str = Field(description="Path relative to the dataset root")
+    source_file: Path | None = Field(
+        default=None, description="Physical source file for this logical table"
+    )
+    source_label: str = Field(
+        default="", description="Human-readable logical table identifier"
+    )
+    role: TableRole = Field(
+        default=TableRole.TABLE, description="Semantic role of this table"
+    )
     rows: int = Field(ge=0, description="Number of rows in the table")
     columns: int = Field(ge=0, description="Number of columns in the table")
     column_names: list[str] = Field(description="Ordered list of column names")
@@ -150,6 +180,24 @@ class TableProfile(BaseModel):
     )
 
 
+class ImageCollectionProfile(BaseModel):
+    """Profile of an image dataset discovered from files and directories."""
+
+    root: Path = Field(description="Root path of the image collection")
+    relative_root: str = Field(description="Root path relative to the dataset input")
+    total_images: int = Field(ge=0, description="Number of image files discovered")
+    format_counts: dict[str, int] = Field(description="Image counts by file suffix")
+    resolution_counts: dict[str, int] = Field(
+        description="Image counts by WIDTHxHEIGHT resolution"
+    )
+    directory_counts: dict[str, int] = Field(
+        description="Image counts by containing directory"
+    )
+    warnings: list[str] = Field(
+        default_factory=list, description="Issues found during image profiling"
+    )
+
+
 class DatasetProfile(BaseModel):
     """Complete profile of all input files and tables discovered by the profiler.
 
@@ -158,15 +206,126 @@ class DatasetProfile(BaseModel):
     """
 
     root: Path = Field(description="Root directory of the dataset")
+    kind: DatasetKind = Field(
+        default=DatasetKind.MIXED, description="High-level shape of the dataset"
+    )
     files: list[InputFileInfo] = Field(
         description="All files discovered during scanning"
     )
     tables: list[TableProfile] = Field(description="Profiles of tabular data sources")
+    image_collections: list[ImageCollectionProfile] = Field(
+        default_factory=list, description="Profiles of discovered image collections"
+    )
     warnings: list[str] = Field(
         default_factory=list, description="Cross-file issues found during scanning"
     )
 
     def compact_summary(self) -> str:
+        if self.kind is DatasetKind.SINGLE_TABLE:
+            return self._single_table_summary()
+        if self.kind is DatasetKind.MULTI_TABLE:
+            return self._multi_table_summary()
+        if self.kind is DatasetKind.MODELING_SPLIT_TABLES:
+            return self._modeling_split_summary()
+        if self.kind is DatasetKind.IMAGE_COLLECTION:
+            return self._image_collection_summary()
+        if self.kind is DatasetKind.EMPTY:
+            return self._append_warning_text("No input files were provided.")
+        return self._fallback_summary()
+
+    def _single_table_summary(self) -> str:
+        if not self.tables:
+            return self._append_warning_text(
+                "Single table dataset\n- No table profiled."
+            )
+        table = self.tables[0]
+        lines = [
+            "Single table dataset",
+            f"- Table: {table.source_label or table.relative_path}",
+            f"- Shape: {table.rows} rows x {table.columns} columns",
+            "- Columns:",
+            *[
+                f"  - {name}: {table.dtypes.get(name, 'unknown')}"
+                for name in table.column_names
+            ],
+            "- First 5 rows:",
+        ]
+        for row in table.sample_rows[:5]:
+            values = ", ".join(f"{key}={value}" for key, value in row.items())
+            lines.append(f"  - {values}")
+        return self._append_warning_text("\n".join(lines))
+
+    def _multi_table_summary(self) -> str:
+        lines = ["Multi-table dataset"]
+        for table in self.tables:
+            lines.append(
+                f"- {table.source_label or table.relative_path}: "
+                f"{table.rows} rows x {table.columns} columns"
+            )
+            lines.append("  Columns:")
+            for name in table.column_names:
+                lines.append(f"  - {name}: {table.dtypes.get(name, 'unknown')}")
+        if not self.tables:
+            lines.append("- No tabular files were profiled.")
+        return self._append_warning_text("\n".join(lines))
+
+    def _modeling_split_summary(self) -> str:
+        lines = ["Modeling split tabular dataset"]
+        for table in self.tables:
+            lines.append(
+                f"- {table.source_label or table.relative_path} [{table.role.value}]: "
+                f"{table.rows} rows x {table.columns} columns"
+            )
+        if self.tables:
+            column_sets = [set(table.column_names) for table in self.tables]
+            common_columns = sorted(set.intersection(*column_sets))
+            all_columns = sorted(set.union(*column_sets))
+            lines.append(f"Common columns: {', '.join(common_columns) or 'none'}")
+            differing_columns = [
+                column for column in all_columns if column not in set(common_columns)
+            ]
+            if differing_columns:
+                lines.append(f"Split-specific columns: {', '.join(differing_columns)}")
+            lines.append("Column dtypes:")
+            dtype_by_column: dict[str, str] = {}
+            for table in self.tables:
+                for name, dtype in table.dtypes.items():
+                    dtype_by_column.setdefault(name, dtype)
+            for name in all_columns:
+                lines.append(f"  - {name}: {dtype_by_column.get(name, 'unknown')}")
+        else:
+            lines.append("- No split tables were profiled.")
+        return self._append_warning_text("\n".join(lines))
+
+    def _image_collection_summary(self) -> str:
+        lines = ["Image collection dataset"]
+        for collection in self.image_collections:
+            lines.append(f"- Root: {collection.relative_root}")
+            lines.append(f"- Total images: {collection.total_images}")
+            lines.append(
+                "Formats: "
+                + ", ".join(
+                    f"{suffix}={count}"
+                    for suffix, count in sorted(collection.format_counts.items())
+                )
+            )
+            lines.append(
+                "Resolutions: "
+                + ", ".join(
+                    f"{resolution}={count}"
+                    for resolution, count in sorted(
+                        collection.resolution_counts.items()
+                    )
+                )
+            )
+            lines.append("Directory counts:")
+            for directory, count in sorted(collection.directory_counts.items()):
+                lines.append(f"- {directory}: {count} images")
+        if not self.image_collections:
+            lines.append("- No image files were profiled.")
+        return self._append_warning_text("\n".join(lines))
+
+    def _fallback_summary(self) -> str:
         table_lines = [
             f"- {table.relative_path}: {table.rows} rows x {table.columns} columns; "
             f"columns={', '.join(table.column_names[:12])}"
@@ -174,10 +333,23 @@ class DatasetProfile(BaseModel):
         ]
         if not table_lines:
             table_lines = ["- No tabular files were profiled."]
+        file_lines = [
+            f"- {file.relative_path}: {file.suffix or '<no suffix>'}, "
+            f"{file.size_bytes} bytes"
+            for file in self.files[:20]
+        ]
+        if not file_lines:
+            file_lines = ["- No files discovered."]
+        summary = "Mixed or unknown dataset\nFiles:\n"
+        summary += "\n".join(file_lines)
+        summary += "\nTables:\n" + "\n".join(table_lines)
+        return self._append_warning_text(summary)
+
+    def _append_warning_text(self, summary: str) -> str:
         warning_text = ""
         if self.warnings:
             warning_text = "\nWarnings:\n" + "\n".join(f"- {w}" for w in self.warnings)
-        return "Tables:\n" + "\n".join(table_lines) + warning_text
+        return summary + warning_text
 
 
 class TaskBrief(BaseModel):
@@ -522,6 +694,7 @@ __all__ = [
     "Budget",
     "CodeDraft",
     "Complexity",
+    "DatasetKind",
     "DatasetProfile",
     "DebugDecision",
     "DebugLesson",
@@ -532,6 +705,7 @@ __all__ = [
     "ExplorationStep",
     "FinalDraft",
     "FinalReviewDecision",
+    "ImageCollectionProfile",
     "InputFileInfo",
     "NotebookCell",
     "NotebookCellResult",
@@ -543,6 +717,7 @@ __all__ = [
     "ReviewDecision",
     "ReviewerPlanDecision",
     "TableProfile",
+    "TableRole",
     "TaskBrief",
     "TaskType",
     "TraceEvent",

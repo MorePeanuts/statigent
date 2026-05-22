@@ -1,11 +1,10 @@
-"""Input file discovery and tabular data profiling.
+"""Input file discovery and dataset-shape-specific profiling.
 
 The InputProfiler is the first stage of the data science pipeline:
 1. Discover files from paths, directories, and zip archives.
-2. Classify each file as tabular or non-tabular by suffix.
-3. Profile each tabular file (shape, dtypes, missing rates, numeric stats,
-   time column heuristics, categorical column heuristics, sample rows).
-4. Return a DatasetProfile with all results and warnings.
+2. Classify the discovered dataset shape.
+3. Dispatch to a shape-specific profiler.
+4. Return a DatasetProfile whose compact_summary is tailored to the shape.
 
 Security: zip extraction validates that every member stays within the
 target directory (path-traversal protection) and enforces total
@@ -13,19 +12,32 @@ uncompressed size limits.
 """
 
 import zipfile
-from collections.abc import Iterable
+from collections import Counter
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from os.path import commonpath
 from pathlib import Path
 from shutil import copyfileobj, rmtree
+from typing import Protocol
 
 import pandas as pd
 from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
 from pandas.errors import ParserError
+from PIL import Image, UnidentifiedImageError
 
 from statigent.errors import StatigentInputError
-from statigent.schemas import DatasetProfile, InputFileInfo, TableProfile
+from statigent.schemas import (
+    DatasetKind,
+    DatasetProfile,
+    ImageCollectionProfile,
+    InputFileInfo,
+    TableProfile,
+    TableRole,
+)
 
 TABULAR_SUFFIXES = frozenset({".csv", ".tsv", ".xlsx", ".xls", ".parquet"})
+EXCEL_WORKBOOK_SUFFIXES = frozenset({".xlsx"})
+IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"})
 ZIP_COPY_CHUNK_BYTES = 1024 * 1024
 
 
@@ -44,6 +56,120 @@ class _DiscoveryResult:
     files: list[_DiscoveredFile]
     input_file_infos: list[InputFileInfo]
     warnings: list[str]
+
+
+@dataclass(frozen=True)
+class _ProfileContext:
+    files: list[_DiscoveredFile]
+    input_file_infos: list[InputFileInfo]
+    warnings: list[str]
+
+
+class _DatasetProfiler(Protocol):
+    def profile(self, context: _ProfileContext) -> DatasetProfile: ...
+
+
+class _EmptyDatasetProfiler:
+    def __init__(self, owner: "InputProfiler") -> None:
+        self.owner = owner
+
+    def profile(self, context: _ProfileContext) -> DatasetProfile:
+        return DatasetProfile(
+            root=self.owner.work_dir,
+            kind=DatasetKind.EMPTY,
+            files=list(context.input_file_infos),
+            tables=[],
+            warnings=list(context.warnings),
+        )
+
+
+class _SingleTableProfiler:
+    def __init__(self, owner: "InputProfiler") -> None:
+        self.owner = owner
+
+    def profile(self, context: _ProfileContext) -> DatasetProfile:
+        files, tables, warnings = self.owner._profile_tabular_files(
+            context,
+            role_detector=self.owner._table_role,
+        )
+        return DatasetProfile(
+            root=self.owner.work_dir,
+            kind=DatasetKind.SINGLE_TABLE,
+            files=files,
+            tables=tables,
+            warnings=warnings,
+        )
+
+
+class _MultiTableProfiler:
+    def __init__(self, owner: "InputProfiler") -> None:
+        self.owner = owner
+
+    def profile(self, context: _ProfileContext) -> DatasetProfile:
+        files, tables, warnings = self.owner._profile_tabular_files(
+            context,
+            role_detector=self.owner._table_role,
+        )
+        return DatasetProfile(
+            root=self.owner.work_dir,
+            kind=DatasetKind.MULTI_TABLE,
+            files=files,
+            tables=tables,
+            warnings=warnings,
+        )
+
+
+class _ModelingSplitTableProfiler:
+    def __init__(self, owner: "InputProfiler") -> None:
+        self.owner = owner
+
+    def profile(self, context: _ProfileContext) -> DatasetProfile:
+        files, tables, warnings = self.owner._profile_tabular_files(
+            context,
+            role_detector=self.owner._table_role,
+        )
+        return DatasetProfile(
+            root=self.owner.work_dir,
+            kind=DatasetKind.MODELING_SPLIT_TABLES,
+            files=files,
+            tables=tables,
+            warnings=warnings,
+        )
+
+
+class _ImageCollectionProfiler:
+    def __init__(self, owner: "InputProfiler") -> None:
+        self.owner = owner
+
+    def profile(self, context: _ProfileContext) -> DatasetProfile:
+        files = self.owner._input_file_infos(context)
+        collection, warnings = self.owner._profile_image_collection(context)
+        return DatasetProfile(
+            root=self.owner.work_dir,
+            kind=DatasetKind.IMAGE_COLLECTION,
+            files=files,
+            tables=[],
+            image_collections=[collection] if collection is not None else [],
+            warnings=[*context.warnings, *warnings],
+        )
+
+
+class _FallbackProfiler:
+    def __init__(self, owner: "InputProfiler") -> None:
+        self.owner = owner
+
+    def profile(self, context: _ProfileContext) -> DatasetProfile:
+        files, tables, warnings = self.owner._profile_tabular_files(
+            context,
+            role_detector=self.owner._table_role,
+        )
+        return DatasetProfile(
+            root=self.owner.work_dir,
+            kind=DatasetKind.MIXED,
+            files=files,
+            tables=tables,
+            warnings=warnings,
+        )
 
 
 class InputProfiler:
@@ -75,55 +201,13 @@ class InputProfiler:
         """
         warnings: list[str] = []
         discovery = self._discover_paths(paths, warnings)
-        files: list[InputFileInfo] = list(discovery.input_file_infos)
-        warnings.extend(discovery.warnings)
-        tables: list[TableProfile] = []
-
-        for item in discovery.files:
-            suffix = item.path.suffix.lower()
-            size_bytes = item.path.stat().st_size
-            is_tabular = suffix in TABULAR_SUFFIXES
-            files.append(
-                InputFileInfo(
-                    path=item.path,
-                    relative_path=item.relative_path,
-                    suffix=suffix,
-                    size_bytes=size_bytes,
-                    is_tabular=is_tabular,
-                )
-            )
-            if not is_tabular:
-                continue
-
-            if size_bytes > self.max_file_bytes:
-                warning = (
-                    f"Skipped table profiling for {item.relative_path}: "
-                    f"{size_bytes} bytes exceeds max_file_bytes={self.max_file_bytes}."
-                )
-                warnings.append(warning)
-                continue
-
-            try:
-                table = self._profile_table(item)
-            except (
-                OSError,
-                ValueError,
-                ImportError,
-                ParserError,
-                _TableProfilingError,
-                zipfile.BadZipFile,
-            ) as err:
-                warning = f"Failed to profile {item.relative_path}: {err}"
-                warnings.append(warning)
-                continue
-            tables.append(table)
-
-        return DatasetProfile(
-            root=self.work_dir,
-            files=files,
-            tables=tables,
-            warnings=warnings,
+        context = _ProfileContext(
+            files=discovery.files,
+            input_file_infos=discovery.input_file_infos,
+            warnings=[*warnings, *discovery.warnings],
         )
+        profiler = self._select_profiler(context)
+        return profiler.profile(context)
 
     def _discover_paths(
         self, paths: list[Path] | None, warnings: list[str]
@@ -281,9 +365,206 @@ class InputProfiler:
             else:
                 target_dir.unlink()
 
-    def _profile_table(self, item: _DiscoveredFile) -> TableProfile:
+    def _select_profiler(self, context: _ProfileContext) -> _DatasetProfiler:
+        if not context.files and not context.input_file_infos:
+            return _EmptyDatasetProfiler(self)
+
+        tabular_files = [
+            item
+            for item in context.files
+            if item.path.suffix.lower() in TABULAR_SUFFIXES
+        ]
+        image_files = [
+            item for item in context.files if item.path.suffix.lower() in IMAGE_SUFFIXES
+        ]
+
+        if image_files and len(image_files) == len(context.files):
+            return _ImageCollectionProfiler(self)
+        if not tabular_files:
+            return _FallbackProfiler(self)
+        if len(tabular_files) != len(context.files):
+            return _FallbackProfiler(self)
+
+        roles = {self._table_role(item.relative_path) for item in tabular_files}
+        if TableRole.TRAIN in roles and TableRole.TEST in roles:
+            return _ModelingSplitTableProfiler(self)
+        if TableRole.TRAIN in roles and TableRole.VALIDATION in roles:
+            return _ModelingSplitTableProfiler(self)
+
+        logical_table_count = self._logical_table_count(tabular_files)
+        if logical_table_count == 1:
+            return _SingleTableProfiler(self)
+        return _MultiTableProfiler(self)
+
+    def _input_file_infos(self, context: _ProfileContext) -> list[InputFileInfo]:
+        files = list(context.input_file_infos)
+        for item in context.files:
+            suffix = item.path.suffix.lower()
+            files.append(
+                InputFileInfo(
+                    path=item.path,
+                    relative_path=item.relative_path,
+                    suffix=suffix,
+                    size_bytes=item.path.stat().st_size,
+                    is_tabular=suffix in TABULAR_SUFFIXES,
+                )
+            )
+        return files
+
+    def _profile_tabular_files(
+        self,
+        context: _ProfileContext,
+        *,
+        role_detector: Callable[[str], TableRole],
+    ) -> tuple[list[InputFileInfo], list[TableProfile], list[str]]:
+        files = self._input_file_infos(context)
+        tables: list[TableProfile] = []
+        warnings = list(context.warnings)
+
+        for item in context.files:
+            suffix = item.path.suffix.lower()
+            if suffix not in TABULAR_SUFFIXES:
+                continue
+            size_bytes = item.path.stat().st_size
+            if size_bytes > self.max_file_bytes:
+                warning = (
+                    f"Skipped table profiling for {item.relative_path}: "
+                    f"{size_bytes} bytes exceeds max_file_bytes={self.max_file_bytes}."
+                )
+                warnings.append(warning)
+                continue
+
+            try:
+                tables.extend(self._profile_logical_tables(item, role_detector))
+            except (
+                OSError,
+                ValueError,
+                ImportError,
+                ParserError,
+                _TableProfilingError,
+                zipfile.BadZipFile,
+            ) as err:
+                warning = f"Failed to profile {item.relative_path}: {err}"
+                warnings.append(warning)
+                continue
+
+        return files, tables, warnings
+
+    def _profile_logical_tables(
+        self,
+        item: _DiscoveredFile,
+        role_detector: Callable[[str], TableRole],
+    ) -> list[TableProfile]:
+        suffix = item.path.suffix.lower()
+        if suffix in EXCEL_WORKBOOK_SUFFIXES:
+            workbook = pd.ExcelFile(item.path)
+            return [
+                self._profile_table(
+                    item,
+                    frame=pd.read_excel(workbook, sheet_name=sheet_name),
+                    relative_path=f"{item.relative_path}::{sheet_name}",
+                    source_label=f"{item.relative_path}::{sheet_name}",
+                    role=role_detector(f"{item.relative_path}::{sheet_name}"),
+                )
+                for sheet_name in workbook.sheet_names
+            ]
+
+        return [
+            self._profile_table(
+                item,
+                frame=self._read_table(item.path),
+                relative_path=item.relative_path,
+                source_label=item.relative_path,
+                role=role_detector(item.relative_path),
+            )
+        ]
+
+    def _logical_table_count(self, tabular_files: list[_DiscoveredFile]) -> int:
+        count = 0
+        for item in tabular_files:
+            if item.path.suffix.lower() not in EXCEL_WORKBOOK_SUFFIXES:
+                count += 1
+                continue
+            try:
+                count += len(pd.ExcelFile(item.path).sheet_names)
+            except (OSError, ValueError, ImportError, zipfile.BadZipFile):
+                count += 1
+        return count
+
+    def _profile_image_collection(
+        self,
+        context: _ProfileContext,
+    ) -> tuple[ImageCollectionProfile | None, list[str]]:
+        image_items = [
+            item for item in context.files if item.path.suffix.lower() in IMAGE_SUFFIXES
+        ]
+        if not image_items:
+            return None, []
+
+        root = self._common_image_root(image_items)
+        format_counts: Counter[str] = Counter()
+        resolution_counts: Counter[str] = Counter()
+        directory_counts: Counter[str] = Counter()
+        warnings: list[str] = []
+
+        for item in image_items:
+            suffix = item.path.suffix.lower()
+            format_counts[suffix] += 1
+            parent = item.path.parent
+            if self._is_relative_to(parent.resolve(), root.resolve()):
+                directory = parent.relative_to(root).as_posix()
+            else:
+                directory = parent.name
+            directory_counts[directory if directory != "." else root.name] += 1
+            try:
+                with Image.open(item.path) as image:
+                    width, height = image.size
+            except (OSError, UnidentifiedImageError) as err:
+                warnings.append(f"Failed to profile image {item.relative_path}: {err}")
+                continue
+            resolution_counts[f"{width}x{height}"] += 1
+
+        return (
+            ImageCollectionProfile(
+                root=root,
+                relative_root=root.name,
+                total_images=len(image_items),
+                format_counts=dict(format_counts),
+                resolution_counts=dict(resolution_counts),
+                directory_counts=dict(directory_counts),
+                warnings=warnings,
+            ),
+            warnings,
+        )
+
+    def _common_image_root(self, image_items: list[_DiscoveredFile]) -> Path:
+        parents = [item.path.parent.resolve() for item in image_items]
+        return Path(commonpath([str(path) for path in parents]))
+
+    def _table_role(self, label: str) -> TableRole:
+        normalized = Path(label.split("::", 1)[0]).stem.lower()
+        tokens = normalized.replace("-", "_").split("_")
+        token_set = set(tokens)
+        if {"sample", "submission"}.issubset(token_set):
+            return TableRole.SAMPLE_SUBMISSION
+        if "train" in token_set or normalized == "training":
+            return TableRole.TRAIN
+        if "valid" in token_set or "validation" in token_set or "val" in token_set:
+            return TableRole.VALIDATION
+        if "test" in token_set:
+            return TableRole.TEST
+        return TableRole.TABLE
+
+    def _profile_table(
+        self,
+        item: _DiscoveredFile,
+        *,
+        frame: pd.DataFrame,
+        relative_path: str,
+        source_label: str,
+        role: TableRole,
+    ) -> TableProfile:
         table_warnings: list[str] = []
-        frame = self._read_table(item.path)
 
         numeric_summaries = self._numeric_summaries(frame)
         likely_time_columns = self._likely_time_columns(frame)
@@ -291,7 +572,10 @@ class InputProfiler:
 
         return TableProfile(
             path=item.path,
-            relative_path=item.relative_path,
+            relative_path=relative_path,
+            source_file=item.path,
+            source_label=source_label,
+            role=role,
             rows=len(frame),
             columns=len(frame.columns),
             column_names=[str(column) for column in frame.columns],

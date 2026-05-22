@@ -3,9 +3,11 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
+from PIL import Image
 
 from statigent.errors import StatigentInputError
 from statigent.input import InputProfiler
+from statigent.schemas import DatasetKind, TableRole
 
 
 def test_profile_csv_file_records_shape_and_columns(tmp_path: Path) -> None:
@@ -29,6 +31,22 @@ def test_profile_csv_file_records_shape_and_columns(tmp_path: Path) -> None:
     assert "region" in table.likely_categorical_columns
 
 
+def test_single_table_summary_shows_only_head_rows(tmp_path: Path) -> None:
+    data = tmp_path / "sales.csv"
+    frame = pd.DataFrame({"id": range(1, 8), "revenue": [10, 20, 30, 40, 50, 60, 70]})
+    frame.to_csv(data, index=False)
+
+    profile = InputProfiler(work_dir=tmp_path / "work").profile_paths([data])
+    summary = profile.compact_summary()
+
+    assert profile.kind is DatasetKind.SINGLE_TABLE
+    assert "Single table dataset" in summary
+    assert "sales.csv" in summary
+    assert "First 5 rows" in summary
+    assert "revenue" in summary
+    assert "70" not in summary
+
+
 def test_profile_directory_scans_nested_tabular_files(tmp_path: Path) -> None:
     nested = tmp_path / "nested"
     nested.mkdir()
@@ -39,6 +57,102 @@ def test_profile_directory_scans_nested_tabular_files(tmp_path: Path) -> None:
     assert any(
         table.relative_path.endswith("customers.tsv") for table in profile.tables
     )
+
+
+def test_multi_table_summary_shows_each_table_schema(tmp_path: Path) -> None:
+    orders = tmp_path / "orders.csv"
+    customers = tmp_path / "customers.csv"
+    orders.write_text("order_id,customer_id,total\n1,10,99.5\n2,11,12.0\n")
+    customers.write_text("customer_id,segment\n10,A\n11,B\n")
+
+    profile = InputProfiler(work_dir=tmp_path / "work").profile_paths(
+        [orders, customers]
+    )
+    summary = profile.compact_summary()
+
+    assert profile.kind is DatasetKind.MULTI_TABLE
+    assert "Multi-table dataset" in summary
+    assert "orders.csv: 2 rows x 3 columns" in summary
+    assert "customers.csv: 2 rows x 2 columns" in summary
+    assert "customer_id: int64" in summary
+
+
+def test_excel_workbook_profiles_each_sheet_as_logical_table(tmp_path: Path) -> None:
+    workbook = tmp_path / "workbook.xlsx"
+    with pd.ExcelWriter(workbook) as writer:
+        pd.DataFrame({"order_id": [1], "total": [10.0]}).to_excel(
+            writer, sheet_name="Orders", index=False
+        )
+        pd.DataFrame({"customer_id": [10], "segment": ["A"]}).to_excel(
+            writer, sheet_name="Customers", index=False
+        )
+
+    profile = InputProfiler(work_dir=tmp_path / "work").profile_paths([workbook])
+
+    assert profile.kind is DatasetKind.MULTI_TABLE
+    assert [table.relative_path for table in profile.tables] == [
+        "workbook.xlsx::Orders",
+        "workbook.xlsx::Customers",
+    ]
+    assert all(table.source_file == workbook for table in profile.tables)
+    assert [table.source_label for table in profile.tables] == [
+        "workbook.xlsx::Orders",
+        "workbook.xlsx::Customers",
+    ]
+
+
+def test_modeling_split_summary_shows_split_rows_and_column_differences(
+    tmp_path: Path,
+) -> None:
+    train = tmp_path / "train.csv"
+    valid = tmp_path / "valid.csv"
+    test = tmp_path / "test.csv"
+    train.write_text("id,feature,target\n1,0.5,yes\n2,0.8,no\n")
+    valid.write_text("id,feature,target\n3,0.2,yes\n")
+    test.write_text("id,feature\n4,0.1\n5,0.3\n")
+
+    profile = InputProfiler(work_dir=tmp_path / "work").profile_paths(
+        [train, valid, test]
+    )
+    summary = profile.compact_summary()
+
+    assert profile.kind is DatasetKind.MODELING_SPLIT_TABLES
+    assert {table.role for table in profile.tables} == {
+        TableRole.TRAIN,
+        TableRole.VALIDATION,
+        TableRole.TEST,
+    }
+    assert "Modeling split tabular dataset" in summary
+    assert "train.csv [train]: 2 rows x 3 columns" in summary
+    assert "test.csv [test]: 2 rows x 2 columns" in summary
+    assert "Common columns: feature, id" in summary
+    assert "target" in summary
+
+
+def test_image_collection_summary_shows_formats_resolutions_and_directory_counts(
+    tmp_path: Path,
+) -> None:
+    cats = tmp_path / "images" / "cats"
+    dogs = tmp_path / "images" / "dogs"
+    cats.mkdir(parents=True)
+    dogs.mkdir(parents=True)
+    Image.new("RGB", (32, 32)).save(cats / "cat1.png")
+    Image.new("RGB", (32, 32)).save(cats / "cat2.png")
+    Image.new("RGB", (64, 32)).save(dogs / "dog1.jpg")
+
+    profile = InputProfiler(work_dir=tmp_path / "work").profile_paths(
+        [tmp_path / "images"]
+    )
+    summary = profile.compact_summary()
+
+    assert profile.kind is DatasetKind.IMAGE_COLLECTION
+    assert profile.image_collections
+    assert profile.image_collections[0].total_images == 3
+    assert "Image collection dataset" in summary
+    assert "Formats: .jpg=1, .png=2" in summary
+    assert "32x32=2" in summary
+    assert "cats: 2 images" in summary
+    assert "dogs: 1 images" in summary
 
 
 def test_profile_zip_extracts_and_profiles_csv(tmp_path: Path) -> None:
@@ -191,7 +305,7 @@ def test_profile_table_failure_adds_warning_without_failing(
     data = tmp_path / "bad.csv"
     data.write_text("id\n1\n")
 
-    def raise_bad_table(*_args: object) -> None:
+    def raise_bad_table(*_args: object, **_kwargs: object) -> None:
         raise ValueError("bad table")
 
     monkeypatch.setattr(InputProfiler, "_profile_table", raise_bad_table)
