@@ -528,6 +528,9 @@ class ReviewerPlanDecision(BaseModel):
     constraints: list[str] = Field(
         default_factory=list, description="Execution or analysis constraints"
     )
+    risk_notes: str = Field(
+        default="", description="Potential pitfalls for custom analysis"
+    )
 
     @model_validator(mode="after")
     def validate_approved_payload(self) -> "ReviewerPlanDecision":
@@ -539,6 +542,11 @@ class ReviewerPlanDecision(BaseModel):
         for name in ("question", "evidence_needed", "coding_instruction"):
             if not getattr(self, name).strip():
                 missing.append(name)
+        if self.action_kind is ExplorationActionKind.CUSTOM_ANALYSIS:
+            if not self.reason.strip():
+                missing.append("reason")
+            if not self.risk_notes.strip():
+                missing.append("risk_notes")
         if missing:
             missing_text = ", ".join(missing)
             raise ValueError(f"approved plan requires: {missing_text}")
@@ -565,6 +573,10 @@ class ApprovedCodeInstruction(BaseModel):
     evidence_needed: str = Field(description="Evidence the code should produce")
     coding_instruction: str = Field(description="Concrete instruction for the Coder")
     action_prompt: str = Field(description="Reusable DEA action prompt text")
+    rationale: str = Field(default="", description="Why this action was approved")
+    risk_notes: str = Field(
+        default="", description="Potential pitfalls or side effects"
+    )
     constraints: list[str] = Field(
         default_factory=list, description="Execution or analysis constraints"
     )

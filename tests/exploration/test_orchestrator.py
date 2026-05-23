@@ -305,6 +305,34 @@ def test_reviewer_approval_routes_to_coder_and_execute_by_cell_id(
     assert kernel.snapshot().executed_cells[0].cell_id == "cell-1"
 
 
+def test_custom_analysis_approval_records_required_action_fields(
+    tmp_path: Path,
+) -> None:
+    kernel = started_kernel(tmp_path)
+    kernel.queue_result(stdout="segments=3\n")
+    reviewer = FakeReviewer(
+        plan_decisions=[
+            ReviewerPlanDecision(
+                approved=True,
+                reason="The task asks for hidden patterns.",
+                action_kind=ExplorationActionKind.CUSTOM_ANALYSIS,
+                question="Are there hidden revenue segments?",
+                evidence_needed="Segment summary",
+                coding_instruction="Cluster stores by revenue seasonality.",
+                risk_notes="Clusters may overfit noisy history.",
+            )
+        ]
+    )
+    orchestrator = make_orchestrator(kernel, reviewer=reviewer)
+
+    report = orchestrator.run(make_brief(), make_profile(tmp_path))
+
+    action = report.steps[0].action
+    assert action.kind is ExplorationActionKind.CUSTOM_ANALYSIS
+    assert action.rationale == "The task asks for hidden patterns."
+    assert action.risk_notes == "Clusters may overfit noisy history."
+
+
 def test_orchestrator_report_includes_langgraph_trace_events(
     tmp_path: Path,
 ) -> None:

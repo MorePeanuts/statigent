@@ -274,6 +274,8 @@ class ExplorationOrchestrator:
             evidence_needed=decision.evidence_needed,
             coding_instruction=decision.coding_instruction,
             action_prompt=DEA_ACTION_PROMPTS[decision.action_kind],
+            rationale=decision.reason,
+            risk_notes=decision.risk_notes,
             constraints=decision.constraints,
         )
         return {
@@ -372,7 +374,9 @@ class ExplorationOrchestrator:
             kind=instruction.action_kind,
             title=instruction.question,
             description=instruction.coding_instruction,
+            rationale=instruction.rationale,
             expected_evidence=instruction.evidence_needed,
+            risk_notes=instruction.risk_notes,
         )
         plan_review = state.get("plan_review")
         review = ReviewDecision(
