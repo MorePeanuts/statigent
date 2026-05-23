@@ -12,7 +12,8 @@ from statigent.benchmarks.base import (
     BenchmarkRunResult,
     EvalResult,
     ScoreResult,
-    _sum_trace_tokens,
+    _sum_trace_input_tokens,
+    _sum_trace_output_tokens,
 )
 
 if TYPE_CHECKING:
@@ -85,7 +86,8 @@ class MLEBenchAdapter(BenchmarkAdapter):
             competition_ids = competition_ids[: int(limit)]
 
         start_time = time.monotonic()
-        total_tokens = 0
+        input_tokens = 0
+        output_tokens = 0
         predictions: list[dict[str, Any]] = []
         traces: dict[str, AgentTrace] = {}
         for comp_id in competition_ids:
@@ -106,7 +108,8 @@ class MLEBenchAdapter(BenchmarkAdapter):
                 pred = {"competition_id": comp_id, "submission_path": str(pred_path)}
                 predictions.append(pred)
                 traces[comp_id] = trace
-                total_tokens += _sum_trace_tokens(trace)
+                input_tokens += _sum_trace_input_tokens(trace)
+                output_tokens += _sum_trace_output_tokens(trace)
                 if persister is not None:
                     persister.add_prediction(pred)
                     persister.add_trace(comp_id, trace)
@@ -122,7 +125,8 @@ class MLEBenchAdapter(BenchmarkAdapter):
         return BenchmarkRunResult(
             predictions=predictions,
             traces=traces,
-            total_tokens=total_tokens,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
             duration_seconds=round(duration, 2),
         )
 

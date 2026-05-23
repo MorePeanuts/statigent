@@ -118,7 +118,7 @@ class TestPersist:
             model_name="test-model",
             benchmark_name="dabench",
         )
-        traces = {
+        traces: dict[str, AgentTrace] = {
             "0": [
                 {"role": "user", "content": "What is the mean?"},
                 {
@@ -161,6 +161,45 @@ class TestPersist:
         assert trace_1.exists()
         lines_1 = trace_1.read_text().strip().split("\n")
         assert len(lines_1) == 2
+
+    def test_meta_json_records_input_and_output_tokens(self, tmp_path: Path) -> None:
+        result = EvalResult(
+            score=1.0,
+            details={},
+            agent_name="test-agent",
+            model_name="test-model",
+            benchmark_name="dabench",
+        )
+        traces: dict[str, AgentTrace] = {
+            "0": [
+                {
+                    "role": "assistant",
+                    "content": "first",
+                    "usage_metadata": {
+                        "input_tokens": 10,
+                        "output_tokens": 3,
+                        "total_tokens": 13,
+                    },
+                },
+                {
+                    "role": "assistant",
+                    "content": "second",
+                    "usage_metadata": {
+                        "input_tokens": 20,
+                        "output_tokens": 7,
+                        "total_tokens": 27,
+                    },
+                },
+            ],
+        }
+        output_dir = BenchmarkAdapter.persist(
+            result, predictions=[], traces=traces, base_dir=tmp_path
+        )
+
+        meta = json.loads((output_dir / "meta.json").read_text())
+        assert meta["input_tokens"] == 30
+        assert meta["output_tokens"] == 10
+        assert "total_tokens" not in meta
 
     def test_no_traces_dir_when_traces_none(self, tmp_path: Path) -> None:
         result = EvalResult(
@@ -518,6 +557,40 @@ class TestRunPersister:
         pred_file = persister.output_dir / "predictions" / "responses.jsonl"
         assert pred_file.exists()
         assert pred_file.read_text() == ""
+
+    def test_open_migrates_total_tokens_to_output_tokens(self, tmp_path: Path) -> None:
+        persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
+        meta_path = persister.output_dir / "meta.json"
+        meta = json.loads(meta_path.read_text())
+        meta["total_tokens"] = 11
+        meta["duration_seconds"] = 2.5
+        meta_path.write_text(json.dumps(meta))
+
+        resumed = RunPersister.open(persister.output_dir)
+        resumed.add_trace(
+            "0",
+            [
+                {
+                    "role": "assistant",
+                    "content": "x",
+                    "usage_metadata": {"input_tokens": 5, "output_tokens": 7},
+                }
+            ],
+        )
+        resumed.finalize(
+            EvalResult(
+                score=0.0,
+                details={},
+                agent_name="test-agent",
+                model_name="test-model",
+                benchmark_name="test-bench",
+            )
+        )
+
+        updated_meta = json.loads(meta_path.read_text())
+        assert updated_meta["input_tokens"] == 5
+        assert updated_meta["output_tokens"] == 18
+        assert "total_tokens" not in updated_meta
 
     def test_crash_recovery(self, tmp_path: Path) -> None:
         """Partial results survive interruption — no finalize() called."""

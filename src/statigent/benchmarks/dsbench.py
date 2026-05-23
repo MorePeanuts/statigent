@@ -17,7 +17,8 @@ from statigent.benchmarks.base import (
     BenchmarkRunResult,
     EvalResult,
     ScoreResult,
-    _sum_trace_tokens,
+    _sum_trace_input_tokens,
+    _sum_trace_output_tokens,
 )
 from statigent.benchmarks.evaluators import LLMJudgeEvaluator
 from statigent.errors import StatigentBenchmarkError
@@ -224,7 +225,8 @@ class DSBenchAdapter(BenchmarkAdapter):
                 target_qname = parts[1]
 
         start_time = time.monotonic()
-        total_tokens = 0
+        input_tokens = 0
+        output_tokens = 0
         predictions: list[dict[str, Any]] = []
         traces: dict[str, AgentTrace] = {}
         question_count = 0
@@ -266,7 +268,8 @@ class DSBenchAdapter(BenchmarkAdapter):
                 pred = {"id": qid, "response": response}
                 predictions.append(pred)
                 traces[qid] = trace
-                total_tokens += _sum_trace_tokens(trace)
+                input_tokens += _sum_trace_input_tokens(trace)
+                output_tokens += _sum_trace_output_tokens(trace)
                 if persister is not None:
                     persister.add_prediction(pred)
                     persister.add_trace(qid, trace)
@@ -285,7 +288,8 @@ class DSBenchAdapter(BenchmarkAdapter):
         return BenchmarkRunResult(
             predictions=predictions,
             traces=traces,
-            total_tokens=total_tokens,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
             duration_seconds=round(duration, 2),
         )
 
@@ -318,7 +322,8 @@ class DSBenchAdapter(BenchmarkAdapter):
                 samples = samples[:limit]
 
         start_time = time.monotonic()
-        total_tokens = 0
+        input_tokens = 0
+        output_tokens = 0
         predictions: list[dict[str, Any]] = []
         traces: dict[str, AgentTrace] = {}
         for sample in samples:
@@ -352,7 +357,8 @@ class DSBenchAdapter(BenchmarkAdapter):
                 pred = {"name": name, "prediction_path": str(pred_path)}
                 predictions.append(pred)
                 traces[name] = trace
-                total_tokens += _sum_trace_tokens(trace)
+                input_tokens += _sum_trace_input_tokens(trace)
+                output_tokens += _sum_trace_output_tokens(trace)
                 if persister is not None:
                     persister.add_prediction(pred)
                     persister.add_trace(name, trace)
@@ -371,7 +377,8 @@ class DSBenchAdapter(BenchmarkAdapter):
         return BenchmarkRunResult(
             predictions=predictions,
             traces=traces,
-            total_tokens=total_tokens,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
             duration_seconds=round(duration, 2),
         )
 
