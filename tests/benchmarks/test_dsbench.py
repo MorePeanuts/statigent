@@ -172,7 +172,9 @@ class TestDSBenchAdapterDA:
             predictions, agent_name="test", model_name="test-model"
         )
         assert result.benchmark_name == "dsbench-da"
-        assert result.score > 0
+        assert result.score["TLAcc"] > 0
+        assert result.total_tasks == 1
+        assert "total" not in result.details
 
     @patch("statigent.benchmarks.evaluators.get_model")
     def test_evaluate_only_judges_predicted_ids(
@@ -207,7 +209,9 @@ class TestDSBenchAdapterDA:
         # The judge should only be called once (for the single predicted ID),
         # not 3 times (once per all samples).
         assert mock_structured.invoke.call_count == 1
-        assert result.details["total"] == 1
+        assert result.total_tasks == 1
+        assert result.others["judged_tasks"] == 1
+        assert "total" not in result.details
 
 
 class TestDSBenchAdapterDM:
@@ -435,7 +439,10 @@ class TestEvaluateDataModeling:
         assert isinstance(result, EvalResult)
         assert result.benchmark_name == "dsbench-dm"
         expected = max(0, (0.785 - 0.4972) / (1.0 - 0.4972))
-        assert abs(result.score - round(expected, 4)) < 0.001
+        assert abs(result.score["RPG"] - round(expected, 4)) < 0.001
+        assert result.total_tasks == 1
+        assert result.others["total_competitions"] == 1
+        assert "total_competitions" not in result.details
 
     def test_missing_prediction_file(self, tmp_path: Path) -> None:
         adapter = DSBenchAdapter(task="data_modeling", data_dir=tmp_path)
@@ -450,7 +457,7 @@ class TestEvaluateDataModeling:
         result = adapter._evaluate_data_modeling(
             predictions, agent_name="test_agent", model_name="test_model"
         )
-        assert result.score == 0.0
+        assert result.score == {"task_competion_rate": 0.0, "RPG": 0.0}
 
     def test_task_completion_rate(self, tmp_path: Path) -> None:
         adapter = DSBenchAdapter(task="data_modeling", data_dir=tmp_path)
@@ -472,7 +479,7 @@ class TestEvaluateDataModeling:
                 predictions, agent_name="test_agent", model_name="test_model"
             )
 
-        assert result.details["task_completion_rate"] == 0.5
+        assert result.score["task_competion_rate"] == 0.5
 
     def test_nan_result_counts_as_completed(self, tmp_path: Path) -> None:
         """Original DSBench counts task_complete when result.txt exists even
@@ -493,7 +500,7 @@ class TestEvaluateDataModeling:
                 predictions, agent_name="test_agent", model_name="test_model"
             )
 
-        assert result.details["task_completion_rate"] == 1.0
+        assert result.score["task_competion_rate"] == 1.0
         # nan raw_score → normalized_score should be 0.0
         assert result.details["per_competition"][0]["normalized_score"] == 0.0
 
@@ -504,7 +511,7 @@ class TestEvaluateDataModeling:
         result = adapter._evaluate_data_modeling(
             [], agent_name="test_agent", model_name="test_model"
         )
-        assert result.score == 0.0
+        assert result.score == {"task_competion_rate": 0.0, "RPG": 0.0}
 
 
 class TestPrepareExtractsSavePerformance:

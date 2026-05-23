@@ -13,37 +13,76 @@ from statigent.benchmarks.base import (
 
 class TestScoreResult:
     def test_score_result_creation(self):
-        result = ScoreResult(score=0.85, details={"metric": "accuracy"})
-        assert result.score == 0.85
-        assert result.details == {"metric": "accuracy"}
+        result = ScoreResult(
+            score={"accuracy": 0.85},
+            details={"per_task": []},
+            total_tasks=3,
+            others={"total_competitions": 1},
+        )
+        assert result.score == {"accuracy": 0.85}
+        assert result.details == {"per_task": []}
+        assert result.total_tasks == 3
+        assert result.others == {"total_competitions": 1}
 
 
 class TestEvalResult:
     def test_eval_result_creation(self):
         result = EvalResult(
-            score=0.85,
+            score={"ABQ": 0.85, "PSAQ": 0.9, "UASQ": 0.8},
             details={"metric": "accuracy"},
             agent_name="react",
             model_name="deepseek-v4-flash",
             benchmark_name="dabench",
+            total_tasks=10,
+            others={"total_competitions": 2},
         )
-        assert result.score == 0.85
+        assert result.score == {"ABQ": 0.85, "PSAQ": 0.9, "UASQ": 0.8}
+        assert result.total_tasks == 10
+        assert result.others == {"total_competitions": 2}
         assert result.agent_name == "react"
         assert result.model_name == "deepseek-v4-flash"
         assert result.benchmark_name == "dabench"
 
     def test_eval_result_from_score_result(self):
-        sr = ScoreResult(score=0.9, details={"abq": 0.8, "psaq": 0.9})
+        sr = ScoreResult(
+            score={"ABQ": 0.8, "PSAQ": 0.9, "UASQ": 0.85},
+            details={"per_question": []},
+            total_tasks=10,
+            others={"source": "test"},
+        )
         er = EvalResult.from_score_result(
             sr,
             agent_name="my-agent",
             model_name="my-model",
             benchmark_name="dsbench",
         )
-        assert er.score == 0.9
-        assert er.details == {"abq": 0.8, "psaq": 0.9}
+        assert er.score == {"ABQ": 0.8, "PSAQ": 0.9, "UASQ": 0.85}
+        assert er.details == {"per_question": []}
+        assert er.total_tasks == 10
+        assert er.others == {"source": "test"}
         assert er.agent_name == "my-agent"
         assert er.benchmark_name == "dsbench"
+
+    def test_eval_result_to_dict(self):
+        result = EvalResult(
+            score={"TLAcc": 0.75, "CLAcc": 0.5},
+            details={"per_question": []},
+            agent_name="react",
+            model_name="deepseek-v4-flash",
+            benchmark_name="dsbench-da",
+            total_tasks=4,
+            others={"judge_model": "judge"},
+        )
+
+        assert result.to_dict() == {
+            "score": {"TLAcc": 0.75, "CLAcc": 0.5},
+            "total_tasks": 4,
+            "others": {"judge_model": "judge"},
+            "details": {"per_question": []},
+            "agent_name": "react",
+            "model_name": "deepseek-v4-flash",
+            "benchmark_name": "dsbench-da",
+        }
 
 
 class TestBenchmarkAdapterABC:
@@ -70,7 +109,7 @@ class TestBenchmarkAdapterABC:
 
             def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
                 return EvalResult(
-                    score=0.0,
+                    score={"score": 0.0},
                     details={},
                     agent_name="dummy-agent",
                     model_name="dummy-model",

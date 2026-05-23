@@ -2,7 +2,7 @@ import contextlib
 import json
 import shutil
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol, Self
@@ -185,14 +185,9 @@ class RunPersister:
     def finalize(self, result: "EvalResult") -> None:
         """Write scores.json and update meta.json with tokens/duration."""
         self._eval_dir.mkdir(parents=True, exist_ok=True)
-        scores: dict[str, Any] = {
-            "score": result.score,
-            "details": result.details,
-            "agent_name": result.agent_name,
-            "model_name": result.model_name,
-            "benchmark_name": result.benchmark_name,
-        }
-        (self._eval_dir / "scores.json").write_text(json.dumps(scores, indent=2))
+        (self._eval_dir / "scores.json").write_text(
+            json.dumps(result.to_dict(), indent=2)
+        )
 
         meta_path = self.output_dir / "meta.json"
         meta: dict[str, Any] = {}
@@ -218,21 +213,25 @@ class RunPersister:
 
 @dataclass
 class ScoreResult:
-    """Result returned by an Evaluator (score + details only)."""
+    """Result returned by an Evaluator (metric scores + details only)."""
 
-    score: float
+    score: dict[str, float]
     details: dict[str, Any]
+    total_tasks: int = 0
+    others: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class EvalResult:
     """Full evaluation result with agent/model/benchmark context."""
 
-    score: float
+    score: dict[str, float]
     details: dict[str, Any]
     agent_name: str
     model_name: str
     benchmark_name: str
+    total_tasks: int = 0
+    others: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_score_result(
@@ -249,7 +248,21 @@ class EvalResult:
             agent_name=agent_name,
             model_name=model_name,
             benchmark_name=benchmark_name,
+            total_tasks=score_result.total_tasks,
+            others=score_result.others,
         )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the evaluation result for persistence."""
+        return {
+            "score": self.score,
+            "total_tasks": self.total_tasks,
+            "others": self.others,
+            "details": self.details,
+            "agent_name": self.agent_name,
+            "model_name": self.model_name,
+            "benchmark_name": self.benchmark_name,
+        }
 
 
 class Evaluator(ABC):

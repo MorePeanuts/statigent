@@ -28,4 +28,4 @@ class TestMLEBenchAdapter:
         adapter = MLEBenchAdapter(data_dir=tmp_path)
         result = adapter.evaluate([], agent_name="test", model_name="test-model")
         assert result.benchmark_name == "mlebench"
-        assert result.score == 0.0
+        assert result.score == {"score": 0.0}

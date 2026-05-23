@@ -93,7 +93,10 @@ class TestDABenchAdapter:
         result = adapter.evaluate(
             predictions, agent_name="test", model_name="test-model"
         )
-        assert result.score == 1.0
+        assert result.score == {"ABQ": 1.0, "PSAQ": 1.0, "UASQ": 1.0}
+        assert result.total_tasks == 2
+        assert result.others == {}
+        assert "total_questions" not in result.details
         assert result.benchmark_name == "dabench"
 
     def test_evaluate_partial_correct(self, tmp_path: Path) -> None:
@@ -108,4 +111,4 @@ class TestDABenchAdapter:
         result = adapter.evaluate(
             predictions, agent_name="test", model_name="test-model"
         )
-        assert result.details["abq"] == 0.5
+        assert result.score["ABQ"] == 0.5

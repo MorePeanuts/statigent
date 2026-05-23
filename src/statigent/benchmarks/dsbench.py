@@ -20,7 +20,7 @@ from statigent.benchmarks.base import (
     _sum_trace_input_tokens,
     _sum_trace_output_tokens,
 )
-from statigent.benchmarks.evaluators import LLMJudgeEvaluator
+from statigent.benchmarks.evaluators import DSBenchDAJudgeEvaluator
 from statigent.errors import StatigentBenchmarkError
 
 if TYPE_CHECKING:
@@ -546,19 +546,23 @@ class DSBenchAdapter(BenchmarkAdapter):
                 }
             )
 
-        total = len(results) if results else 1
+        total = len(results)
+        denominator = total if total else 1
         scores = [r["normalized_score"] for r in results]
-        overall = sum(scores) / total if total else 0.0
-        completion_rate = task_complete / total if total else 0.0
+        overall = sum(scores) / denominator if total else 0.0
+        completion_rate = task_complete / denominator if total else 0.0
 
         return EvalResult.from_score_result(
             ScoreResult(
-                score=round(overall, 4),
+                score={
+                    "task_competion_rate": round(completion_rate, 4),
+                    "RPG": round(overall, 4),
+                },
                 details={
                     "per_competition": results,
-                    "task_completion_rate": round(completion_rate, 4),
-                    "total_competitions": total,
                 },
+                total_tasks=len(predictions),
+                others={"total_competitions": total},
             ),
             agent_name=agent_name,
             model_name=model_name,
@@ -599,7 +603,7 @@ class DSBenchAdapter(BenchmarkAdapter):
                     }
                 )
 
-        evaluator = LLMJudgeEvaluator(judge_model_name=self.judge_model_name)
+        evaluator = DSBenchDAJudgeEvaluator(judge_model_name=self.judge_model_name)
         score_result = evaluator.evaluate(predictions, refs)
 
         # Compute per-challenge accuracy to align with original DSBench eval logic.
@@ -617,7 +621,7 @@ class DSBenchAdapter(BenchmarkAdapter):
             else 0.0
         )
         score_result.details["challenge_accuracies"] = challenge_accuracies
-        score_result.details["avg_challenge_accuracy"] = round(avg_challenge_acc, 4)
+        score_result.score["CLAcc"] = round(avg_challenge_acc, 4)
 
         return EvalResult.from_score_result(
             score_result,

@@ -14,7 +14,10 @@ from statigent.benchmarks.base import (
     _sum_trace_input_tokens,
     _sum_trace_output_tokens,
 )
-from statigent.benchmarks.evaluators import ExactMatchEvaluator, ReformatEvaluator
+from statigent.benchmarks.evaluators import (
+    DABenchExactMatchEvaluator,
+    ReformatEvaluator,
+)
 
 _DABENCH_DATA_DIR = (
     Path(__file__).resolve().parents[3]
@@ -129,7 +132,7 @@ class DABenchAdapter(BenchmarkAdapter):
             reformatter = ReformatEvaluator(model_name=self.reformat_model)
             responses = reformatter.reformat(responses, self._questions)
 
-        evaluator = ExactMatchEvaluator()
+        evaluator = DABenchExactMatchEvaluator()
         score_result = evaluator.evaluate(responses, self._labels)
 
         return EvalResult.from_score_result(

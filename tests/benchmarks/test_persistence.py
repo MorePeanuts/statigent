@@ -19,8 +19,8 @@ from statigent.errors import StatigentBenchmarkError
 class TestPersist:
     def test_creates_directory_structure(self, tmp_path: Path) -> None:
         result = EvalResult(
-            score=0.85,
-            details={"abq": 0.85, "psaq": 0.9},
+            score={"score": 0.85},
+            details={"ABQ": 0.85, "PSAQ": 0.9},
             agent_name="react",
             model_name="deepseek-v4-flash",
             benchmark_name="dabench",
@@ -33,8 +33,8 @@ class TestPersist:
 
     def test_meta_json_contains_context(self, tmp_path: Path) -> None:
         result = EvalResult(
-            score=0.85,
-            details={"abq": 0.85},
+            score={"score": 0.85},
+            details={"ABQ": 0.85},
             agent_name="react",
             model_name="deepseek-v4-flash",
             benchmark_name="dabench",
@@ -48,7 +48,7 @@ class TestPersist:
 
     def test_predictions_saved_as_jsonl(self, tmp_path: Path) -> None:
         result = EvalResult(
-            score=0.5,
+            score={"score": 0.5},
             details={},
             agent_name="test-agent",
             model_name="test-model",
@@ -69,21 +69,23 @@ class TestPersist:
 
     def test_scores_json_contains_result(self, tmp_path: Path) -> None:
         result = EvalResult(
-            score=0.75,
-            details={"abq": 0.75, "psaq": 0.8},
+            score={"score": 0.75},
+            details={"ABQ": 0.75, "PSAQ": 0.8},
             agent_name="test-agent",
             model_name="test-model",
             benchmark_name="dsbench-da",
         )
         output_dir = BenchmarkAdapter.persist(result, predictions=[], base_dir=tmp_path)
         scores = json.loads((output_dir / "evaluation" / "scores.json").read_text())
-        assert scores["score"] == 0.75
-        assert scores["details"]["abq"] == 0.75
+        assert scores["score"] == {"score": 0.75}
+        assert scores["total_tasks"] == 0
+        assert scores["others"] == {}
+        assert scores["details"]["ABQ"] == 0.75
         assert scores["benchmark_name"] == "dsbench-da"
 
     def test_directory_name_format(self, tmp_path: Path) -> None:
         result = EvalResult(
-            score=0.0,
+            score={"score": 0.0},
             details={},
             agent_name="react",
             model_name="deepseek-v4-flash",
@@ -95,7 +97,7 @@ class TestPersist:
 
     def test_io_error_wrapped_as_benchmark_error(self, tmp_path: Path) -> None:
         result = EvalResult(
-            score=0.0,
+            score={"score": 0.0},
             details={},
             agent_name="test",
             model_name="test",
@@ -112,7 +114,7 @@ class TestPersist:
 
     def test_traces_saved_as_jsonl(self, tmp_path: Path) -> None:
         result = EvalResult(
-            score=1.0,
+            score={"score": 1.0},
             details={},
             agent_name="test-agent",
             model_name="test-model",
@@ -164,7 +166,7 @@ class TestPersist:
 
     def test_meta_json_records_input_and_output_tokens(self, tmp_path: Path) -> None:
         result = EvalResult(
-            score=1.0,
+            score={"score": 1.0},
             details={},
             agent_name="test-agent",
             model_name="test-model",
@@ -203,7 +205,7 @@ class TestPersist:
 
     def test_no_traces_dir_when_traces_none(self, tmp_path: Path) -> None:
         result = EvalResult(
-            score=0.5,
+            score={"score": 0.5},
             details={},
             agent_name="test",
             model_name="test",
@@ -220,7 +222,7 @@ class TestPersist:
         csv_src.write_text("PassengerId,Survived\n1,0\n2,1\n")
 
         result = EvalResult(
-            score=0.5,
+            score={"score": 0.5},
             details={},
             agent_name="test-agent",
             model_name="test-model",
@@ -258,7 +260,7 @@ class TestPersist:
         csv2.write_text("second")
 
         result = EvalResult(
-            score=0.5,
+            score={"score": 0.5},
             details={},
             agent_name="test-agent",
             model_name="test-model",
@@ -292,7 +294,7 @@ class TestPersist:
         csv_src.write_text("data")
 
         result = EvalResult(
-            score=0.5,
+            score={"score": 0.5},
             details={},
             agent_name="test",
             model_name="test",
@@ -309,7 +311,7 @@ class TestPersist:
 
     def test_missing_prediction_file_skipped(self, tmp_path: Path) -> None:
         result = EvalResult(
-            score=0.5,
+            score={"score": 0.5},
             details={},
             agent_name="test",
             model_name="test",
@@ -350,7 +352,7 @@ class TestExecutePersistence:
 
             def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
                 return EvalResult(
-                    score=1.0,
+                    score={"score": 1.0},
                     details={},
                     agent_name=kwargs["agent_name"],
                     model_name=kwargs["model_name"],
@@ -364,7 +366,7 @@ class TestExecutePersistence:
         adapter = StubAdapter()
         result = adapter.execute(mock_agent, output_dir=str(tmp_path))
 
-        assert result.score == 1.0
+        assert result.score == {"score": 1.0}
         # Find the created directory
         dirs = list(tmp_path.iterdir())
         assert len(dirs) == 1
@@ -385,7 +387,7 @@ class TestExecutePersistence:
 
             def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
                 return EvalResult(
-                    score=0.0,
+                    score={"score": 0.0},
                     details={},
                     agent_name=kwargs["agent_name"],
                     model_name=kwargs["model_name"],
@@ -399,7 +401,7 @@ class TestExecutePersistence:
         adapter = StubAdapter()
         result = adapter.execute(mock_agent)
 
-        assert result.score == 0.0
+        assert result.score == {"score": 0.0}
         # No files should be written to tmp_path
         assert not any(tmp_path.iterdir())
 
@@ -429,7 +431,7 @@ class TestExecutePersistence:
 
             def evaluate(self, predictions: Any, **kwargs: Any) -> EvalResult:
                 return EvalResult(
-                    score=0.5,
+                    score={"score": 0.5},
                     details={},
                     agent_name=kwargs["agent_name"],
                     model_name=kwargs["model_name"],
@@ -443,7 +445,7 @@ class TestExecutePersistence:
         adapter = InlineAdapter()
         result = adapter.execute(mock_agent, output_dir=str(tmp_path))
 
-        assert result.score == 0.5
+        assert result.score == {"score": 0.5}
         dirs = list(tmp_path.iterdir())
         assert len(dirs) == 1
 
@@ -516,17 +518,21 @@ class TestRunPersister:
         persister.add_prediction({"id": 0, "response": "x"})
         persister.finalize(
             EvalResult(
-                score=0.95,
+                score={"score": 0.95},
                 details={"acc": 0.95},
                 agent_name="test-agent",
                 model_name="test-model",
                 benchmark_name="test-bench",
+                total_tasks=1,
+                others={"total_competitions": 1},
             )
         )
         scores_file = persister.output_dir / "evaluation" / "scores.json"
         assert scores_file.exists()
         scores = json.loads(scores_file.read_text())
-        assert scores["score"] == 0.95
+        assert scores["score"] == {"score": 0.95}
+        assert scores["total_tasks"] == 1
+        assert scores["others"] == {"total_competitions": 1}
         assert scores["details"]["acc"] == 0.95
 
     def test_no_trace_dir_when_no_traces(self, tmp_path: Path) -> None:
@@ -534,7 +540,7 @@ class TestRunPersister:
         persister.add_prediction({"id": 0, "response": "x"})
         persister.finalize(
             EvalResult(
-                score=0.0,
+                score={"score": 0.0},
                 details={},
                 agent_name="test-agent",
                 model_name="test-model",
@@ -547,7 +553,7 @@ class TestRunPersister:
         persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
         persister.finalize(
             EvalResult(
-                score=0.0,
+                score={"score": 0.0},
                 details={},
                 agent_name="test-agent",
                 model_name="test-model",
@@ -579,7 +585,7 @@ class TestRunPersister:
         )
         resumed.finalize(
             EvalResult(
-                score=0.0,
+                score={"score": 0.0},
                 details={},
                 agent_name="test-agent",
                 model_name="test-model",

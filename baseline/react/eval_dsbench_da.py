@@ -5,11 +5,11 @@ from typing import Annotated
 
 import typer
 from rich.console import Console
-from rich.table import Table
 
 from statigent.baseline import ReactBaselineAgent
 from statigent.benchmarks.base import BenchmarkAdapter, RunPersister
 from statigent.benchmarks.dsbench import DSBenchAdapter
+from statigent.benchmarks.reporting import build_evaluation_table, find_latest_run_dir
 from statigent.models import load_registry
 
 _DEFAULT_REGISTRY_PATH = (
@@ -125,18 +125,10 @@ def main(
             kwargs["task_id"] = task_id
 
         result = adapter.execute(agent, **kwargs)
+        run_dir = find_latest_run_dir(output_dir, result)
+        console.print(build_evaluation_table(run_dir, result=result))
 
-        table = Table(title="Evaluation Results")
-        table.add_column("Metric", style="cyan")
-        table.add_column("Value", style="green")
-        table.add_row("Accuracy", f"{result.score:.4f}")
-        table.add_row("Total Questions", str(result.details.get("total", "N/A")))
-        table.add_row("Agent", result.agent_name)
-        table.add_row("Model", result.model_name)
-        table.add_row("Judge", judge_model)
-        console.print(table)
-
-        n = result.details.get("total", "?")
+        n = result.total_tasks
         console.print(f"\n[bold green]Done — evaluated {n} questions[/bold green]")
 
 
@@ -174,18 +166,9 @@ def _resume_run(
     )
 
     persister.finalize(result)
+    console.print(build_evaluation_table(resume_dir, result=result))
 
-    table = Table(title="Evaluation Results")
-    table.add_column("Metric", style="cyan")
-    table.add_column("Value", style="green")
-    table.add_row("Accuracy", f"{result.score:.4f}")
-    table.add_row("Total Questions", str(result.details.get("total", "N/A")))
-    table.add_row("Agent", result.agent_name)
-    table.add_row("Model", result.model_name)
-    table.add_row("Judge", judge_model)
-    console.print(table)
-
-    n = result.details.get("total", "?")
+    n = result.total_tasks
     console.print(f"\n[bold green]Done — evaluated {n} questions[/bold green]")
 
 

@@ -36,7 +36,7 @@ def _is_equal(response: str, label: str) -> bool:
         return False
 
 
-class ExactMatchEvaluator(Evaluator):
+class DABenchExactMatchEvaluator(Evaluator):
     """Closed-form exact-match evaluator for DABench-style benchmarks."""
 
     def evaluate(self, predictions: Any, references: Any) -> ScoreResult:
@@ -71,13 +71,9 @@ class ExactMatchEvaluator(Evaluator):
 
         if not results:
             return ScoreResult(
-                score=0.0,
-                details={
-                    "abq": 0.0,
-                    "psaq": 0.0,
-                    "uasq": 0.0,
-                    "total_questions": 0,
-                },
+                score={"ABQ": 0.0, "PSAQ": 0.0, "UASQ": 0.0},
+                details={},
+                total_tasks=len(responses),
             )
 
         abq = self._accuracy_by_question(results)
@@ -85,14 +81,11 @@ class ExactMatchEvaluator(Evaluator):
         uasq = self._accuracy_by_sub_question(results)
 
         return ScoreResult(
-            score=abq,
+            score={"ABQ": abq, "PSAQ": psaq, "UASQ": uasq},
             details={
-                "abq": abq,
-                "psaq": psaq,
-                "uasq": uasq,
-                "total_questions": len(results),
                 "per_question": results,
             },
+            total_tasks=len(responses),
         )
 
     @staticmethod
@@ -135,8 +128,8 @@ class JudgeVerdict(BaseModel):
     is_correct: bool = Field(description="Whether the predicted answer is correct")
 
 
-class LLMJudgeEvaluator(Evaluator):
-    """LLM-as-judge evaluator using statigent.models with structured output."""
+class DSBenchDAJudgeEvaluator(Evaluator):
+    """LLM-as-judge evaluator for DSBench data-analysis tasks."""
 
     def __init__(self, judge_model_name: str = "deepseek-v4-flash") -> None:
         self.judge_model_name = judge_model_name
@@ -199,13 +192,15 @@ class LLMJudgeEvaluator(Evaluator):
             logger.debug("LLM judge for id={}: verdict={}", qid, is_correct)
 
         accuracy = sum(verdicts) / len(verdicts) if verdicts else 0.0
+        tlacc = round(accuracy, 4)
         return ScoreResult(
-            score=round(accuracy, 4),
+            score={"TLAcc": tlacc, "CLAcc": tlacc},
             details={
                 "accuracy": accuracy,
-                "total": len(verdicts),
                 "per_question": details,
             },
+            total_tasks=len(preds),
+            others={"judged_tasks": len(verdicts)},
         )
 
 

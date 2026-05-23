@@ -139,11 +139,12 @@ class MLEBenchAdapter(BenchmarkAdapter):
 
         if not predictions:
             return EvalResult(
-                score=0.0,
+                score={"score": 0.0},
                 details={},
                 agent_name=agent_name,
                 model_name=model_name,
                 benchmark_name=self.name,
+                total_tasks=0,
             )
 
         results: list[dict[str, Any]] = []
@@ -182,7 +183,11 @@ class MLEBenchAdapter(BenchmarkAdapter):
             else 0.0
         )
         return EvalResult.from_score_result(
-            ScoreResult(score=round(score, 4), details={"per_competition": results}),
+            ScoreResult(
+                score={"score": round(score, 4)},
+                details={"per_competition": results},
+                total_tasks=len(predictions),
+            ),
             agent_name=agent_name,
             model_name=model_name,
             benchmark_name=self.name,
