@@ -17,9 +17,9 @@ from typing import Any
 
 import typer
 from rich.console import Console
-from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.syntax import Syntax
+from rich.text import Text
 
 console = Console()
 app = typer.Typer(
@@ -86,7 +86,7 @@ def _render_content(
     *,
     agent: str,
     name: str,
-) -> Markdown | Syntax:
+) -> Text | Syntax:
     display = _truncate(content, collapse)
     if agent in {"coder", "debugger"} and name in {
         "append_code_cell",
@@ -96,7 +96,7 @@ def _render_content(
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
-        return Markdown(display)
+        return Text(display)
     return Syntax(
         json.dumps(parsed, ensure_ascii=False, indent=2),
         "json",

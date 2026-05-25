@@ -3,6 +3,8 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 from typing import Any
 
+from rich.text import Text
+
 
 def load_panel_title() -> Callable[[dict[str, Any], int], str]:
     script_path = Path(__file__).parents[2] / "tools" / "trace_statigent.py"
@@ -14,6 +16,18 @@ def load_panel_title() -> Callable[[dict[str, Any], int], str]:
     panel_title = module._panel_title
     assert callable(panel_title)
     return panel_title
+
+
+def load_render_content() -> Callable[..., object]:
+    script_path = Path(__file__).parents[2] / "tools" / "trace_statigent.py"
+    spec = spec_from_file_location("trace_statigent", script_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    render_content = module._render_content
+    assert callable(render_content)
+    return render_content
 
 
 def test_panel_title_includes_cell_id_for_code_related_events() -> None:
@@ -44,3 +58,15 @@ def test_panel_title_omits_cell_id_for_unrelated_events() -> None:
     )
 
     assert title == "#1 inspector s1 - plan (assistant)"
+
+
+def test_plain_trace_content_preserves_single_newlines() -> None:
+    rendered = load_render_content()(
+        "line one\nline two",
+        700,
+        agent="inspector",
+        name="plan",
+    )
+
+    assert isinstance(rendered, Text)
+    assert rendered.plain == "line one\nline two"
