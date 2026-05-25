@@ -10,7 +10,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from pydantic import BaseModel, Field
 
 from statigent.errors import StatigentParseError
-from statigent.retry import invoke_structured_with_retries, retry_on_parse_error
+from statigent.retry import invoke_structured_with_usage, retry_on_parse_error
 from statigent.schemas import (
     Complexity,
     DatasetProfile,
@@ -68,6 +68,7 @@ class TaskBriefPlanner:
 
     def __init__(self, model: BaseChatModel) -> None:
         self.model = model
+        self.last_usage_metadata: dict[str, int] = {}
 
     def create_brief(
         self,
@@ -84,7 +85,9 @@ class TaskBriefPlanner:
         structured_model = self.model.with_structured_output(
             _TaskBriefPlan, include_raw=True
         )
-        result = retry_on_parse_error(invoke_structured_with_retries)(
+        result, self.last_usage_metadata = retry_on_parse_error(
+            invoke_structured_with_usage
+        )(
             structured_model, messages
         )
         if not isinstance(result, _TaskBriefPlan):

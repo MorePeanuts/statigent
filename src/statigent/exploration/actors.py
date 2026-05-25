@@ -5,6 +5,7 @@ chat invocation for planning, Reviewer uses structured output, and
 Coder/Debugger make notebook changes only through bound tools.
 """
 
+from dataclasses import dataclass
 from typing import Any, Protocol, TypeVar, cast
 
 from langchain.messages import AIMessage, AnyMessage, HumanMessage, SystemMessage
@@ -24,7 +25,12 @@ from statigent.exploration.tools import (
     make_replace_code_cell_tool,
 )
 from statigent.notebook.base import NotebookKernel
-from statigent.retry import invoke_structured_with_retries, retry_on_parse_error
+from statigent.retry import (
+    extract_usage_metadata,
+    invoke_structured_with_retries,
+    invoke_structured_with_usage,
+    retry_on_parse_error,
+)
 from statigent.schemas import (
     ApprovedCodeInstruction,
     CodeDraft,
@@ -43,6 +49,14 @@ from statigent.schemas import (
 
 T = TypeVar("T")
 T_co = TypeVar("T_co", covariant=True)
+
+
+@dataclass(frozen=True)
+class ToolCallOutcome:
+    """Result of a tool-call model invocation with token usage."""
+
+    result: object
+    usage_metadata: dict[str, int]
 
 
 class _StructuredRunnable(Protocol[T_co]):
@@ -77,6 +91,18 @@ def _invoke_with_retries[T](
     return cast("T", result)
 
 
+def _invoke_with_usage[T](
+    model: _StructuredModel,
+    schema: type[T],
+    messages: list[AnyMessage],
+) -> tuple[T, dict[str, int]]:
+    structured = model.with_structured_output(schema, include_raw=True)
+    result, usage_metadata = retry_on_parse_error(invoke_structured_with_usage)(
+        structured, messages
+    )
+    return cast("T", result), usage_metadata
+
+
 def _message_text(result: object) -> str:
     if isinstance(result, str):
         return result
@@ -97,7 +123,7 @@ def _invoke_tool_call(
     expected_tool_name: str,
     *,
     invoke_additional_tools: bool = False,
-) -> object:
+) -> ToolCallOutcome:
     response = model.bind_tools(tools).invoke(messages)
     if not isinstance(response, AIMessage):
         raise StatigentExplorationError(
@@ -129,8 +155,14 @@ def _invoke_tool_call(
             result = tool_by_name[name].invoke(call["args"])
             if name == expected_tool_name:
                 expected_result = result
-        return expected_result
-    return tool_by_name[expected_tool_name].invoke(expected_calls[0]["args"])
+        return ToolCallOutcome(
+            result=expected_result,
+            usage_metadata=extract_usage_metadata(response),
+        )
+    return ToolCallOutcome(
+        result=tool_by_name[expected_tool_name].invoke(expected_calls[0]["args"]),
+        usage_metadata=extract_usage_metadata(response),
+    )
 
 
 class Inspector:
@@ -138,6 +170,7 @@ class Inspector:
 
     def __init__(self, model: object) -> None:
         self.model = cast("_ChatModel", model)
+        self.last_usage_metadata: dict[str, int] = {}
 
     def next_plan(
         self,
@@ -160,6 +193,7 @@ class Inspector:
                 ),
             ]
         )
+        self.last_usage_metadata = extract_usage_metadata(result)
         return _message_text(result)
 
     def next_action(
@@ -205,7 +239,7 @@ class Inspector:
         # TODO: Output different types based on the task type. If it is only a data
         # analysis task (question-based), output the answer directly. If it is a data
         # modeling task, output a structured data insight report.
-        return _invoke_with_retries(
+        result, self.last_usage_metadata = _invoke_with_usage(
             self.model,
             FinalDraft,
             [
@@ -225,6 +259,7 @@ class Inspector:
                 ),
             ],
         )
+        return result
 
 
 class Reviewer:
@@ -232,6 +267,7 @@ class Reviewer:
 
     def __init__(self, model: object) -> None:
         self.model = cast("_StructuredModel", model)
+        self.last_usage_metadata: dict[str, int] = {}
 
     def review_plan(
         self,
@@ -239,7 +275,7 @@ class Reviewer:
         plan_text: str,
     ) -> ReviewerPlanDecision:
         """Review an Inspector text plan as structured output."""
-        return _invoke_with_retries(
+        result, self.last_usage_metadata = _invoke_with_usage(
             self.model,
             ReviewerPlanDecision,
             [
@@ -252,6 +288,7 @@ class Reviewer:
                 ),
             ],
         )
+        return result
 
     def review_action(
         self,
@@ -288,7 +325,7 @@ class Reviewer:
         # TODO: The final review should be used to determine whether the insector's
         # final output has completed the tasks for this stage. If not, and if the budget
         # limit has not been reached, more exploration steps are needed.
-        return _invoke_with_retries(
+        result, self.last_usage_metadata = _invoke_with_usage(
             self.model,
             FinalReviewDecision,
             [
@@ -301,6 +338,7 @@ class Reviewer:
                 ),
             ],
         )
+        return result
 
 
 class Coder:
@@ -309,6 +347,7 @@ class Coder:
     def __init__(self, model: object) -> None:
         self.model = cast("_StructuredModel", model)
         self._tool_model = cast("_ToolModel", model)
+        self.last_usage_metadata: dict[str, int] = {}
 
     def append_code_cell(
         self,
@@ -318,7 +357,7 @@ class Coder:
     ) -> NotebookCell:
         """Append an approved code cell through the notebook append tool."""
         tool = make_append_code_cell_tool(kernel)
-        result = _invoke_tool_call(
+        outcome = _invoke_tool_call(
             self._tool_model,
             [tool],
             [
@@ -332,6 +371,8 @@ class Coder:
             ],
             "append_code_cell",
         )
+        self.last_usage_metadata = outcome.usage_metadata
+        result = outcome.result
         if not isinstance(result, NotebookCell):
             raise StatigentExplorationError(
                 f"append_code_cell returned {type(result).__name__}, "
@@ -371,6 +412,7 @@ class Debugger:
     def __init__(self, model: object) -> None:
         self.model = cast("_StructuredModel", model)
         self._tool_model = cast("_ToolModel", model)
+        self.last_usage_metadata: dict[str, int] = {}
 
     def debug_cell(
         self,
@@ -383,7 +425,7 @@ class Debugger:
         """Repair a failed notebook cell through a replace tool bound to its id."""
         replace_tool = make_replace_code_cell_tool(kernel, failed_cell.cell_id)
         lesson_tool = make_record_debug_lesson_tool(lessons)
-        _invoke_tool_call(
+        outcome = _invoke_tool_call(
             self._tool_model,
             [replace_tool, lesson_tool],
             [
@@ -401,6 +443,7 @@ class Debugger:
             "replace_code_cell",
             invoke_additional_tools=True,
         )
+        self.last_usage_metadata = outcome.usage_metadata
         return lessons
 
     def debug(self, brief: TaskBrief, code: str, error: str) -> DebugDecision:

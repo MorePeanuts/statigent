@@ -36,6 +36,11 @@ class FakeInspector:
         )
         self.calls: list[str] = []
         self.feedback_seen: list[str] = []
+        self.last_usage_metadata = {
+            "input_tokens": 10,
+            "output_tokens": 4,
+            "total_tokens": 14,
+        }
 
     def next_plan(
         self,
@@ -73,6 +78,11 @@ class FakeReviewer:
         ]
         self.plans_seen: list[str] = []
         self.final_drafts_seen: list[FinalDraft] = []
+        self.last_usage_metadata = {
+            "input_tokens": 8,
+            "output_tokens": 3,
+            "total_tokens": 11,
+        }
 
     def review_plan(
         self,
@@ -98,6 +108,11 @@ class FakeReviewer:
 class FakeCoder:
     def __init__(self) -> None:
         self.instructions: list[ApprovedCodeInstruction] = []
+        self.last_usage_metadata = {
+            "input_tokens": 12,
+            "output_tokens": 6,
+            "total_tokens": 18,
+        }
 
     def append_code_cell(
         self,
@@ -116,6 +131,11 @@ class FakeCoder:
 class FakeDebugger:
     def __init__(self) -> None:
         self.lessons_seen: list[list[DebugLesson]] = []
+        self.last_usage_metadata = {
+            "input_tokens": 9,
+            "output_tokens": 5,
+            "total_tokens": 14,
+        }
 
     def debug_cell(
         self,
@@ -356,6 +376,55 @@ def test_orchestrator_report_includes_langgraph_trace_events(
     assert all(event.agent and event.session == 1 for event in report.trace_events)
 
 
+def test_orchestrator_trace_events_include_node_specific_payloads(
+    tmp_path: Path,
+) -> None:
+    kernel = started_kernel(tmp_path)
+    kernel.queue_result(stdout="mean=15\n")
+    orchestrator = make_orchestrator(kernel)
+
+    report = orchestrator.run(make_brief(), make_profile(tmp_path))
+
+    plan = next(event for event in report.trace_events if event.name == "plan")
+    reviewer = next(
+        event for event in report.trace_events if event.name == "plan_approved"
+    )
+    coder = next(
+        event for event in report.trace_events if event.name == "append_code_cell"
+    )
+    executor = next(
+        event for event in report.trace_events if event.name == "execute_cell"
+    )
+    final_draft = next(
+        event
+        for event in report.trace_events
+        if event.agent == "inspector" and event.name == "final_draft"
+    )
+    final_reviewer = next(
+        event for event in report.trace_events if event.name == "approved"
+    )
+
+    assert plan.content == "ACTION: summarize_numeric\nSTOP: no"
+    assert plan.usage_metadata["input_tokens"] == 10
+    assert '"approved":true' in reviewer.content
+    assert reviewer.usage_metadata["output_tokens"] == 3
+    assert coder.content == "print('mean=15')"
+    assert coder.usage_metadata["total_tokens"] == 18
+    assert coder.metadata == {
+        "cell_id": "cell-1",
+        "code": "print('mean=15')",
+        "purpose": "What is average revenue?",
+        "expected_observation": "Mean revenue",
+    }
+    assert executor.content == "mean=15\n"
+    assert executor.metadata["cell_id"] == "cell-1"
+    assert executor.metadata["code"] == "print('mean=15')"
+    assert executor.metadata["exit_code"] == 0
+    assert executor.usage_metadata == {}
+    assert '"content":"Average revenue is 15."' in final_draft.content
+    assert '"approved":true' in final_reviewer.content
+
+
 def test_coder_appends_without_executing_then_execute_node_runs_cell(
     tmp_path: Path,
 ) -> None:
@@ -391,6 +460,26 @@ def test_failed_execution_enters_debugger_and_retries_same_cell_id(
     ]
     assert report.steps[0].result is not None
     assert report.steps[0].result.ok
+
+
+def test_debug_trace_includes_failed_and_corrected_code(tmp_path: Path) -> None:
+    kernel = started_kernel(tmp_path)
+    kernel.queue_result(stderr="NameError", exit_code=1)
+    kernel.queue_result(stdout="fixed\n", exit_code=0)
+    orchestrator = make_orchestrator(kernel, debugger=FakeDebugger())
+
+    report = orchestrator.run(make_brief(), make_profile(tmp_path))
+
+    debugger = next(
+        event for event in report.trace_events if event.name == "debug_cell"
+    )
+    assert debugger.content == "print('fixed')"
+    assert debugger.metadata["cell_id"] == "cell-1"
+    assert debugger.metadata["failed_code"] == "print('mean=15')"
+    assert debugger.metadata["corrected_code"] == "print('fixed')"
+    assert debugger.metadata["error"] == "NameError"
+    assert debugger.metadata["lessons"][0]["root_cause"] == "Missing variable"
+    assert debugger.usage_metadata["input_tokens"] == 9
 
 
 def test_debug_lessons_are_task_local_and_do_not_persist_across_runs(

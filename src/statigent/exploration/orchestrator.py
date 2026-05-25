@@ -23,6 +23,7 @@ from statigent.schemas import (
     FinalDraft,
     FinalReviewDecision,
     NotebookCell,
+    NotebookCellResult,
     ReviewDecision,
     ReviewerPlanDecision,
     TaskBrief,
@@ -193,18 +194,26 @@ class ExplorationOrchestrator:
     ) -> dict[str, object]:
         if not can_continue_exploration(state):
             if state["steps"]:
+                draft = self.inspector.final_draft(
+                    state["brief"],
+                    state["profile"],
+                    state["steps"],
+                )
                 return {
-                    "final_draft": self.inspector.final_draft(
-                        state["brief"],
-                        state["profile"],
-                        state["steps"],
-                    ),
+                    "final_draft": draft,
                     "trace_events": [
                         *state["trace_events"],
                         self._trace(
                             "inspector",
                             "final_draft",
-                            "Round budget reached after completed exploration.",
+                            draft.model_dump_json(),
+                            usage_metadata=self._actor_usage(self.inspector),
+                            metadata={
+                                "reason": (
+                                    "Round budget reached after completed "
+                                    "exploration."
+                                )
+                            },
                         ),
                     ],
                 }
@@ -221,18 +230,30 @@ class ExplorationOrchestrator:
             "round_count": state["round_count"] + 1,
             "trace_events": [
                 *state["trace_events"],
-                self._trace("inspector", "plan", plan_text),
+                self._trace(
+                    "inspector",
+                    "plan",
+                    plan_text,
+                    usage_metadata=self._actor_usage(self.inspector),
+                ),
             ],
         }
         if self._is_stop_plan(plan_text):
-            updates["final_draft"] = self.inspector.final_draft(
+            draft = self.inspector.final_draft(
                 state["brief"],
                 state["profile"],
                 state["steps"],
             )
+            updates["final_draft"] = draft
             updates["trace_events"] = [
                 *cast("list[TraceEvent]", updates["trace_events"]),
-                self._trace("inspector", "final_draft", "Inspector stopped."),
+                self._trace(
+                    "inspector",
+                    "final_draft",
+                    draft.model_dump_json(),
+                    usage_metadata=self._actor_usage(self.inspector),
+                    metadata={"reason": "Inspector stopped."},
+                ),
             ]
         return updates
 
@@ -254,7 +275,13 @@ class ExplorationOrchestrator:
                 ],
                 "trace_events": [
                     *state["trace_events"],
-                    self._trace("reviewer", "plan_rejected", decision.reason),
+                    self._trace(
+                        "reviewer",
+                        "plan_rejected",
+                        decision.model_dump_json(),
+                        usage_metadata=self._actor_usage(self.reviewer),
+                        metadata={"plan_text": state["pending_plan_text"]},
+                    ),
                 ],
             }
 
@@ -265,6 +292,16 @@ class ExplorationOrchestrator:
                 "warnings": [
                     *state["warnings"],
                     "Reviewer approved a plan without an action kind.",
+                ],
+                "trace_events": [
+                    *state["trace_events"],
+                    self._trace(
+                        "reviewer",
+                        "plan_approved_missing_action",
+                        decision.model_dump_json(),
+                        usage_metadata=self._actor_usage(self.reviewer),
+                        metadata={"plan_text": state["pending_plan_text"]},
+                    ),
                 ],
             }
 
@@ -284,7 +321,16 @@ class ExplorationOrchestrator:
             "review_feedback": "",
             "trace_events": [
                 *state["trace_events"],
-                self._trace("reviewer", "plan_approved", decision.reason),
+                self._trace(
+                    "reviewer",
+                    "plan_approved",
+                    decision.model_dump_json(),
+                    usage_metadata=self._actor_usage(self.reviewer),
+                    metadata={
+                        "plan_text": state["pending_plan_text"],
+                        "approved_instruction": instruction.model_dump(mode="json"),
+                    },
+                ),
             ],
         }
 
@@ -313,7 +359,13 @@ class ExplorationOrchestrator:
             "cell_count": state["cell_count"] + 1,
             "trace_events": [
                 *state["trace_events"],
-                self._trace("coder", "append_code_cell", cell.cell_id),
+                self._trace(
+                    "coder",
+                    "append_code_cell",
+                    cell.code,
+                    usage_metadata=self._actor_usage(self.coder),
+                    metadata=self._cell_trace_metadata(cell),
+                ),
             ],
         }
 
@@ -323,7 +375,12 @@ class ExplorationOrchestrator:
             "last_result": result,
             "trace_events": [
                 *state["trace_events"],
-                self._trace("executor", "execute_cell", result.cell_id),
+                self._trace(
+                    "executor",
+                    "execute_cell",
+                    self._result_trace_content(result),
+                    metadata=result.model_dump(mode="json"),
+                ),
             ],
         }
 
@@ -353,7 +410,23 @@ class ExplorationOrchestrator:
             "last_cell": updated_cell,
             "trace_events": [
                 *state["trace_events"],
-                self._trace("debugger", "debug_cell", failed_cell.cell_id),
+                self._trace(
+                    "debugger",
+                    "debug_cell",
+                    updated_cell.code,
+                    usage_metadata=self._actor_usage(self.debugger),
+                    metadata={
+                        "cell_id": failed_cell.cell_id,
+                        "failed_code": failed_cell.code,
+                        "corrected_code": updated_cell.code,
+                        "purpose": updated_cell.purpose,
+                        "expected_observation": updated_cell.expected_observation,
+                        "error": error,
+                        "lessons": [
+                            lesson.model_dump(mode="json") for lesson in lessons
+                        ],
+                    },
+                ),
             ],
         }
 
@@ -434,7 +507,13 @@ class ExplorationOrchestrator:
                 "final_review": decision,
                 "trace_events": [
                     *state["trace_events"],
-                    self._trace("final_reviewer", "approved", decision.reason),
+                    self._trace(
+                        "final_reviewer",
+                        "approved",
+                        decision.model_dump_json(),
+                        usage_metadata=self._actor_usage(self.reviewer),
+                        metadata={"draft": draft.model_dump(mode="json")},
+                    ),
                 ],
             }
 
@@ -449,7 +528,13 @@ class ExplorationOrchestrator:
             ],
             "trace_events": [
                 *state["trace_events"],
-                self._trace("final_reviewer", "rejected", decision.reason),
+                self._trace(
+                    "final_reviewer",
+                    "rejected",
+                    decision.model_dump_json(),
+                    usage_metadata=self._actor_usage(self.reviewer),
+                    metadata={"draft": draft.model_dump(mode="json")},
+                ),
             ],
         }
         if not can_continue_exploration(state):
@@ -542,5 +627,47 @@ class ExplorationOrchestrator:
         return FinalDraft(content=content)
 
     @staticmethod
-    def _trace(agent: str, name: str, content: str) -> TraceEvent:
-        return TraceEvent(role="assistant", content=content, name=name, agent=agent)
+    @staticmethod
+    def _cell_trace_metadata(cell: NotebookCell) -> dict[str, object]:
+        return {
+            "cell_id": cell.cell_id,
+            "code": cell.code,
+            "purpose": cell.purpose,
+            "expected_observation": cell.expected_observation,
+        }
+
+    @staticmethod
+    def _result_trace_content(result: NotebookCellResult) -> str:
+        if result.ok:
+            return result.stdout
+        return result.error_summary or result.stderr
+
+    @staticmethod
+    def _actor_usage(actor: object) -> dict[str, int]:
+        usage = getattr(actor, "last_usage_metadata", {})
+        if not isinstance(usage, dict):
+            return {}
+        normalized: dict[str, int] = {}
+        for key in ("input_tokens", "output_tokens", "total_tokens"):
+            value = usage.get(key)
+            if isinstance(value, int):
+                normalized[key] = value
+        return normalized
+
+    @staticmethod
+    def _trace(
+        agent: str,
+        name: str,
+        content: str,
+        *,
+        usage_metadata: dict[str, int] | None = None,
+        metadata: dict[str, object] | None = None,
+    ) -> TraceEvent:
+        return TraceEvent(
+            role="assistant",
+            content=content,
+            name=name,
+            agent=agent,
+            usage_metadata=usage_metadata or {},
+            metadata=metadata or {},
+        )

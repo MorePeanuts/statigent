@@ -33,6 +33,11 @@ class FakeProfiler:
 class FakePlanner:
     def __init__(self, brief: TaskBrief) -> None:
         self.brief = brief
+        self.last_usage_metadata = {
+            "input_tokens": 13,
+            "output_tokens": 5,
+            "total_tokens": 18,
+        }
 
     def create_brief(
         self,
@@ -356,6 +361,50 @@ def test_analysis_eval_appends_orchestrator_trace_events(tmp_path: Path) -> None
         event["name"] == "plan" and event["agent"] == "inspector" for event in trace
     )
     assert all("agent" in event and "session" in event for event in trace)
+
+
+def test_analysis_eval_traces_planner_input(tmp_path: Path) -> None:
+    profile = make_profile(tmp_path)
+    brief = make_brief(TaskType.DATA_ANALYSIS)
+    agent = make_agent(profile, brief)
+
+    _response, trace = agent.run_analysis_for_eval(
+        "Find sales anomalies.",
+        files=[tmp_path / "sales.csv"],
+        task_instructions="Use concise wording.",
+    )
+
+    planner_input = next(
+        event
+        for event in trace
+        if event["agent"] == "task_brief_planner"
+        and event["name"] == "planner_input"
+    )
+    assert planner_input["role"] == "user"
+    assert planner_input["content"] == "Find sales anomalies."
+    assert planner_input["metadata"]["task_instructions"] == "Use concise wording."
+    assert planner_input["metadata"]["profile"]["files"][0]["relative_path"] == (
+        "sales.csv"
+    )
+
+
+def test_analysis_eval_traces_task_brief_token_usage(tmp_path: Path) -> None:
+    profile = make_profile(tmp_path)
+    brief = make_brief(TaskType.DATA_ANALYSIS)
+    agent = make_agent(profile, brief)
+
+    _response, trace = agent.run_analysis_for_eval("question", files=[])
+
+    task_brief = next(
+        event
+        for event in trace
+        if event["agent"] == "task_brief_planner" and event["name"] == "task_brief"
+    )
+    assert task_brief["usage_metadata"] == {
+        "input_tokens": 13,
+        "output_tokens": 5,
+        "total_tokens": 18,
+    }
 
 
 def test_modeling_eval_returns_unsupported_submission_path(tmp_path: Path) -> None:

@@ -46,6 +46,19 @@ def raise_on_parse_error(result: Any) -> Any:
     return parsed
 
 
+def extract_usage_metadata(message: object) -> dict[str, int]:
+    """Return normalized LangChain usage metadata from a model message."""
+    usage = getattr(message, "usage_metadata", None)
+    if not isinstance(usage, dict):
+        return {}
+    normalized: dict[str, int] = {}
+    for key in ("input_tokens", "output_tokens", "total_tokens"):
+        value = usage.get(key)
+        if isinstance(value, int):
+            normalized[key] = value
+    return normalized
+
+
 retry_on_parse_error = retry(
     retry=retry_if_exception_type(StatigentParseError),
     stop=stop_after_attempt(_MAX_PARSE_RETRIES),
@@ -64,3 +77,14 @@ def invoke_structured_with_retries(runnable: Any, messages: list[Any]) -> Any:
     """Invoke a structured output runnable with conn retry + parse error detection."""
     raw = retry_on_conn_error(runnable.invoke)(messages)
     return raise_on_parse_error(raw)
+
+
+def invoke_structured_with_usage(
+    runnable: Any,
+    messages: list[Any],
+) -> tuple[Any, dict[str, int]]:
+    """Invoke structured output and return parsed value with token usage."""
+    raw = retry_on_conn_error(runnable.invoke)(messages)
+    parsed = raise_on_parse_error(raw)
+    raw_message = raw.get("raw") if isinstance(raw, dict) else None
+    return parsed, extract_usage_metadata(raw_message)

@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from langchain.messages import AIMessage
 from pydantic import BaseModel
 
 from statigent.errors import StatigentParseError
@@ -21,20 +22,35 @@ _UNSET = object()
 
 
 def _make_raw_result(
-    parsed: object = None, parsing_error: object = None
+    parsed: object = None,
+    parsing_error: object = None,
+    raw: object = None,
 ) -> dict[str, Any]:
-    return {"raw": None, "parsed": parsed, "parsing_error": parsing_error}
+    return {"raw": raw, "parsed": parsed, "parsing_error": parsing_error}
 
 
 class FakeStructuredModel:
     def __init__(
-        self, result: object = None, parsing_error: Exception | None = None
+        self,
+        result: object = None,
+        parsing_error: Exception | None = None,
+        usage_metadata: dict[str, int] | None = None,
     ) -> None:
         self.result = result
         self.parsing_error = parsing_error
+        self.usage_metadata = usage_metadata
 
     def invoke(self, _messages: list[dict[str, str]]) -> dict[str, Any]:
-        return _make_raw_result(parsed=self.result, parsing_error=self.parsing_error)
+        raw = (
+            AIMessage(content="", usage_metadata=self.usage_metadata)
+            if self.usage_metadata is not None
+            else None
+        )
+        return _make_raw_result(
+            parsed=self.result,
+            parsing_error=self.parsing_error,
+            raw=raw,
+        )
 
 
 class FakeModel:
@@ -43,10 +59,12 @@ class FakeModel:
         result: object = _UNSET,
         payload: dict[str, object] | None = None,
         parsing_error: Exception | None = None,
+        usage_metadata: dict[str, int] | None = None,
     ) -> None:
         self.result = result
         self.payload = payload
         self.parsing_error = parsing_error
+        self.usage_metadata = usage_metadata
         self.schema: type[BaseModel] | None = None
 
     def with_structured_output(
@@ -54,7 +72,7 @@ class FakeModel:
     ) -> FakeStructuredModel:
         self.schema = schema
         result = schema(**self.payload) if self.payload is not None else self.result
-        return FakeStructuredModel(result, self.parsing_error)
+        return FakeStructuredModel(result, self.parsing_error, self.usage_metadata)
 
 
 def make_profile(tmp_path: Path) -> DatasetProfile:
@@ -181,3 +199,36 @@ def test_planner_derives_budget_from_complexity(tmp_path: Path) -> None:
     )
 
     assert brief.budgets == budget_for_complexity(Complexity.MODERATE)
+
+
+def test_planner_records_structured_output_usage_metadata(tmp_path: Path) -> None:
+    planner = TaskBriefPlanner(
+        model=FakeModel(
+            payload={
+                "task_type": TaskType.DATA_ANALYSIS,
+                "background": "The user has daily sales data in sales.csv.",
+                "question": "Analyze the revenue trend.",
+                "objective": "Analyze revenue trend",
+                "output_type": OutputType.REPORT,
+                "requirements": [],
+                "complexity": Complexity.MODERATE,
+            },
+            usage_metadata={
+                "input_tokens": 11,
+                "output_tokens": 7,
+                "total_tokens": 18,
+            },
+        )
+    )
+
+    planner.create_brief(
+        prompt="Analyze revenue trend",
+        task_instructions="",
+        profile=make_profile(tmp_path),
+    )
+
+    assert planner.last_usage_metadata == {
+        "input_tokens": 11,
+        "output_tokens": 7,
+        "total_tokens": 18,
+    }

@@ -40,6 +40,8 @@ class _Profiler(Protocol):
 
 
 class _Planner(Protocol):
+    last_usage_metadata: dict[str, int]
+
     def create_brief(
         self,
         *,
@@ -105,25 +107,41 @@ class StatigentDataScienceAgent:
         with TemporaryDirectory(prefix="statigent-") as tmpdir:
             work_dir = Path(tmpdir)
             profile = self._profiler(work_dir).profile_paths(files)
-            brief = self._planner().create_brief(
-                prompt=prompt,
-                task_instructions=task_instructions,
-                profile=profile,
-            )
+            planner = self._planner()
             trace_events = [
                 TraceEvent(
                     role="system",
                     content=profile.compact_summary(),
                     name="input",
                     agent="input_profiler",
+                    metadata={"profile": profile.model_dump(mode="json")},
                 ),
+                TraceEvent(
+                    role="user",
+                    content=prompt,
+                    name="planner_input",
+                    agent="task_brief_planner",
+                    metadata={
+                        "task_instructions": task_instructions,
+                        "files": [str(path) for path in files or []],
+                        "profile": profile.model_dump(mode="json"),
+                    },
+                ),
+            ]
+            brief = planner.create_brief(
+                prompt=prompt,
+                task_instructions=task_instructions,
+                profile=profile,
+            )
+            trace_events.append(
                 TraceEvent(
                     role="assistant",
                     content=brief.model_dump_json(),
                     name="task_brief",
                     agent="task_brief_planner",
+                    usage_metadata=self._usage_metadata(planner),
                 ),
-            ]
+            )
             planner_warnings: list[str] = []
 
             if brief.task_type is not TaskType.DATA_ANALYSIS:
@@ -256,3 +274,15 @@ class StatigentDataScienceAgent:
     @staticmethod
     def _orchestrator_trace_events(report: ExplorationReport) -> list[TraceEvent]:
         return list(report.trace_events)
+
+    @staticmethod
+    def _usage_metadata(source: object) -> dict[str, int]:
+        usage = getattr(source, "last_usage_metadata", {})
+        if not isinstance(usage, dict):
+            return {}
+        normalized: dict[str, int] = {}
+        for key in ("input_tokens", "output_tokens", "total_tokens"):
+            value = usage.get(key)
+            if isinstance(value, int):
+                normalized[key] = value
+        return normalized

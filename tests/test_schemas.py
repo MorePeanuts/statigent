@@ -99,6 +99,26 @@ def test_trace_event_requires_agent_and_session() -> None:
     assert event.model_dump()["session"] == 1
 
 
+def test_trace_event_exposes_usage_metadata_for_token_accounting() -> None:
+    event = TraceEvent(
+        role="assistant",
+        content="planned",
+        name="plan",
+        agent="inspector",
+        usage_metadata={
+            "input_tokens": 12,
+            "output_tokens": 5,
+            "total_tokens": 17,
+        },
+    )
+
+    assert event.model_dump()["usage_metadata"] == {
+        "input_tokens": 12,
+        "output_tokens": 5,
+        "total_tokens": 17,
+    }
+
+
 def test_exploration_report_exposes_trace_events() -> None:
     report = ExplorationReport(
         status="success",

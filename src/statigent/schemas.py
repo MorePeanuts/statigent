@@ -724,6 +724,10 @@ class TraceEvent(BaseModel):
     session: int = Field(
         default=1, ge=1, description="Independent session number for this agent"
     )
+    usage_metadata: dict[str, int] = Field(
+        default_factory=dict,
+        description="Token usage metadata from the model call that produced the event",
+    )
     metadata: dict[str, object] = Field(
         default_factory=dict, description="Additional event metadata"
     )
