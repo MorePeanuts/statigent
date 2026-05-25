@@ -203,6 +203,65 @@ class TestPersist:
         assert meta["output_tokens"] == 10
         assert "total_tokens" not in meta
 
+    def test_meta_json_records_average_steps_from_trace_lines(
+        self, tmp_path: Path
+    ) -> None:
+        result = EvalResult(
+            score={"score": 1.0},
+            details={},
+            agent_name="test-agent",
+            model_name="test-model",
+            benchmark_name="dabench",
+        )
+        traces: dict[str, AgentTrace] = {
+            "0": [
+                {"role": "user", "content": "q"},
+                {"role": "assistant", "content": "a"},
+                {"role": "tool", "content": "out"},
+            ],
+            "1": [
+                {"role": "user", "content": "q2"},
+                {"role": "assistant", "content": "a2"},
+            ],
+        }
+
+        output_dir = BenchmarkAdapter.persist(
+            result, predictions=[], traces=traces, base_dir=tmp_path
+        )
+
+        meta = json.loads((output_dir / "meta.json").read_text())
+        assert meta["average_steps"] == 2.5
+
+    def test_meta_json_counts_nested_trace_files_for_average_steps(
+        self, tmp_path: Path
+    ) -> None:
+        persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
+        nested_trace = persister.output_dir / "traces" / "competition" / "task.jsonl"
+        nested_trace.parent.mkdir(parents=True)
+        nested_trace.write_text(
+            "\n".join(
+                [
+                    json.dumps({"role": "user", "content": "q"}),
+                    json.dumps({"role": "assistant", "content": "a"}),
+                ]
+            )
+            + "\n"
+        )
+        persister.finalize(
+            EvalResult(
+                score={"score": 0.0},
+                details={},
+                agent_name="test-agent",
+                model_name="test-model",
+                benchmark_name="test-bench",
+            )
+        )
+
+        meta = json.loads((persister.output_dir / "meta.json").read_text())
+        assert meta["total_steps"] == 2
+        assert meta["completed_tasks"] == 1
+        assert meta["average_steps"] == 2.0
+
     def test_no_traces_dir_when_traces_none(self, tmp_path: Path) -> None:
         result = EvalResult(
             score={"score": 0.5},
@@ -597,6 +656,37 @@ class TestRunPersister:
         assert updated_meta["input_tokens"] == 5
         assert updated_meta["output_tokens"] == 18
         assert "total_tokens" not in updated_meta
+
+    def test_open_preserves_existing_steps_when_resuming(self, tmp_path: Path) -> None:
+        persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
+        meta_path = persister.output_dir / "meta.json"
+        meta = json.loads(meta_path.read_text())
+        meta["total_steps"] = 5
+        meta["completed_tasks"] = 2
+        meta_path.write_text(json.dumps(meta))
+
+        resumed = RunPersister.open(persister.output_dir)
+        resumed.add_trace(
+            "2",
+            [
+                {"role": "user", "content": "q"},
+                {"role": "assistant", "content": "a"},
+            ],
+        )
+        resumed.finalize(
+            EvalResult(
+                score={"score": 0.0},
+                details={},
+                agent_name="test-agent",
+                model_name="test-model",
+                benchmark_name="test-bench",
+            )
+        )
+
+        updated_meta = json.loads(meta_path.read_text())
+        assert updated_meta["total_steps"] == 7
+        assert updated_meta["completed_tasks"] == 3
+        assert updated_meta["average_steps"] == 7 / 3
 
     def test_crash_recovery(self, tmp_path: Path) -> None:
         """Partial results survive interruption — no finalize() called."""
