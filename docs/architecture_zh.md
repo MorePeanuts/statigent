@@ -69,12 +69,14 @@ OutputBundle + AgentTrace
 `TaskBrief` 是输入层交给后续层的任务书，包含：
 
 - `task_type`：任务类型，当前包括 `data_analysis`、`data_modeling`、`deep_analysis` 和 `unknown`。
-- `objective`：任务目标。
+- `background`：对问题背景和已知上下文的完整介绍。
+- `question`：用户问题本身的完整描述。
+- `objective`：提炼后的任务目标。
 - `output_type`：期望输出形态，包括简单回答、完整报告或文件。
+- `requirements`：用户明确提出的任务要求和约束。
 - `complexity` 与 `budgets`：复杂度和资源预算。
-- `requirements`、`analysis_hints`、`warnings`：任务约束、分析提示和风险提示。
 
-`TaskBriefPlanner` 只负责把用户意图解析为结构化任务书。解析失败、结构化输出类型错误或模型返回不符合 schema 时，会显式抛出解析错误，而不是退回到规则兜底分类。`budgets` 由系统根据 `complexity` 固定推导，模型只能选择复杂度层级，不能自行决定轮次、代码单元、调试次数或超时时间。
+`TaskBriefPlanner` 只负责把用户意图解析为结构化任务书，不负责提出解决方案、分析提示或风险提示。解析失败、结构化输出类型错误或模型返回不符合 schema 时，会显式抛出解析错误，而不是退回到规则兜底分类。`budgets` 由系统根据 `complexity` 固定推导，模型只能选择复杂度层级，不能自行决定轮次、代码单元、调试次数或超时时间。
 
 ## 任务分流
 

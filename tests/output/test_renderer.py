@@ -18,10 +18,11 @@ from statigent.schemas import (
 def make_brief(task_type: TaskType, output_type: OutputType) -> TaskBrief:
     return TaskBrief(
         task_type=task_type,
+        background="The user provided sales.csv.",
+        question="Analyze sales.",
         objective="Analyze sales",
         output_type=output_type,
         requirements=[],
-        data_context="sales.csv",
         complexity=Complexity.SIMPLE,
         budgets=budget_for_complexity(Complexity.SIMPLE),
     )

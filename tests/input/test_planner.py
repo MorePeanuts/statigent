@@ -96,13 +96,12 @@ def test_planner_uses_structured_result_without_model_budgets(
     fake_model = FakeModel(
         payload={
             "task_type": TaskType.DATA_ANALYSIS,
+            "background": "The user has daily sales data in sales.csv.",
+            "question": "Analyze the revenue trend.",
             "objective": "Analyze revenue trend",
             "output_type": OutputType.REPORT,
             "requirements": ["Mention trend"],
-            "data_context": "sales.csv",
             "complexity": Complexity.MODERATE,
-            "analysis_hints": ["Compare revenue by date"],
-            "warnings": [],
         }
     )
     planner = TaskBriefPlanner(model=fake_model)
@@ -115,16 +114,18 @@ def test_planner_uses_structured_result_without_model_budgets(
 
     assert fake_model.schema is not None
     assert "budgets" not in fake_model.schema.model_json_schema()["properties"]
+    assert "data_context" not in fake_model.schema.model_json_schema()["properties"]
+    assert "analysis_hints" not in fake_model.schema.model_json_schema()["properties"]
+    assert "warnings" not in fake_model.schema.model_json_schema()["properties"]
     assert brief == TaskBrief(
         task_type=TaskType.DATA_ANALYSIS,
+        background="The user has daily sales data in sales.csv.",
+        question="Analyze the revenue trend.",
         objective="Analyze revenue trend",
         output_type=OutputType.REPORT,
         requirements=["Mention trend"],
-        data_context="sales.csv",
         complexity=Complexity.MODERATE,
         budgets=budget_for_complexity(Complexity.MODERATE),
-        analysis_hints=["Compare revenue by date"],
-        warnings=[],
     )
 
 
@@ -157,10 +158,11 @@ def test_planner_derives_budget_from_complexity(tmp_path: Path) -> None:
         model=FakeModel(
             payload={
                 "task_type": TaskType.DATA_ANALYSIS,
+                "background": "The user has daily sales data in sales.csv.",
+                "question": "Analyze the revenue trend.",
                 "objective": "Analyze revenue trend",
                 "output_type": OutputType.REPORT,
                 "requirements": [],
-                "data_context": "sales.csv",
                 "complexity": Complexity.MODERATE,
                 "budgets": {
                     "max_rounds": 1,

@@ -99,8 +99,8 @@ class StatigentDataScienceAgent:
         rendering because benchmark callers consume the returned answer and
         trace directly.
         Non-analysis task classifications are treated as planning errors for
-        this entrypoint. They are traced, added to the brief warnings, and
-        coerced to DATA_ANALYSIS before exploration runs.
+        this entrypoint. They are traced, added to output warnings, and coerced
+        to DATA_ANALYSIS before exploration runs.
         """
         with TemporaryDirectory(prefix="statigent-") as tmpdir:
             work_dir = Path(tmpdir)
@@ -124,6 +124,7 @@ class StatigentDataScienceAgent:
                     agent="task_brief_planner",
                 ),
             ]
+            planner_warnings: list[str] = []
 
             if brief.task_type is not TaskType.DATA_ANALYSIS:
                 original_task_type = brief.task_type
@@ -131,10 +132,10 @@ class StatigentDataScienceAgent:
                     f"run_analysis_for_eval received {original_task_type}; "
                     "coerced to data_analysis."
                 )
+                planner_warnings.append(warning)
                 brief = brief.model_copy(
                     update={
                         "task_type": TaskType.DATA_ANALYSIS,
-                        "warnings": [*brief.warnings, warning],
                     }
                 )
                 trace_events.append(
@@ -154,9 +155,9 @@ class StatigentDataScienceAgent:
                 if isinstance(orchestrator, _Closable):
                     orchestrator.close()
             trace_events.extend(self._orchestrator_trace_events(report))
-            if brief.warnings:
+            if planner_warnings:
                 report = report.model_copy(
-                    update={"warnings": [*brief.warnings, *report.warnings]}
+                    update={"warnings": [*planner_warnings, *report.warnings]}
                 )
             bundle = self.renderer.render(brief, report)
             trace_events.append(

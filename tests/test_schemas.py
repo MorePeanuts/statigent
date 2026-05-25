@@ -29,53 +29,61 @@ from statigent.schemas import (
 
 def test_budget_for_complexity_uses_fixed_system_tiers() -> None:
     assert budget_for_complexity(Complexity.SIMPLE) == Budget(
-        max_rounds=3,
-        max_code_cells=6,
-        max_debug_attempts=2,
+        max_rounds=10,
+        max_code_cells=20,
+        max_debug_attempts=5,
         timeout_seconds=180,
     )
     assert budget_for_complexity(Complexity.MODERATE) == Budget(
-        max_rounds=7,
-        max_code_cells=14,
-        max_debug_attempts=3,
-        timeout_seconds=480,
+        max_rounds=20,
+        max_code_cells=40,
+        max_debug_attempts=8,
+        timeout_seconds=600,
     )
     assert budget_for_complexity(Complexity.COMPLEX) == Budget(
-        max_rounds=12,
-        max_code_cells=28,
-        max_debug_attempts=5,
-        timeout_seconds=900,
+        max_rounds=35,
+        max_code_cells=70,
+        max_debug_attempts=12,
+        timeout_seconds=1200,
     )
 
 
 def test_task_brief_field_descriptions_define_what_not_how() -> None:
     schema = TaskBrief.model_json_schema()
     task_type_description = schema["properties"]["task_type"]["description"]
+    background_description = schema["properties"]["background"]["description"]
+    question_description = schema["properties"]["question"]["description"]
     output_type_description = schema["properties"]["output_type"]["description"]
     complexity_description = schema["properties"]["complexity"]["description"]
     budgets_description = schema["properties"]["budgets"]["description"]
 
     assert "category" in task_type_description.casefold()
+    assert "complete background" in background_description.casefold()
+    assert "complete description" in question_description.casefold()
     assert "shape" in output_type_description.casefold()
     assert "effort tier" in complexity_description.casefold()
     assert "system-derived resource caps" in budgets_description.casefold()
     assert "choose when" not in task_type_description.casefold()
     assert "analyze by" not in complexity_description.casefold()
+    assert "data_context" not in schema["properties"]
+    assert "analysis_hints" not in schema["properties"]
+    assert "warnings" not in schema["properties"]
 
 
 def test_task_brief_supports_deep_analysis() -> None:
     brief = TaskBrief(
         task_type=TaskType.DEEP_ANALYSIS,
+        background="The user wants an executive report from sales.csv.",
+        question="Create an executive sales report.",
         objective="Create an executive sales report",
         output_type=OutputType.REPORT,
         requirements=["Use business language"],
-        data_context="sales.csv has daily revenue",
         complexity=Complexity.COMPLEX,
         budgets=budget_for_complexity(Complexity.COMPLEX),
     )
 
     assert brief.task_type is TaskType.DEEP_ANALYSIS
-    assert brief.budgets.max_rounds == 12
+    assert brief.budgets.max_rounds == 35
 
 
 def test_trace_event_requires_agent_and_session() -> None:

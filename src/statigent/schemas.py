@@ -107,23 +107,23 @@ def budget_for_complexity(complexity: Complexity) -> Budget:
     """Return the system-owned resource budget for a complexity tier."""
     if complexity is Complexity.SIMPLE:
         return Budget(
-            max_rounds=3,
-            max_code_cells=6,
-            max_debug_attempts=2,
+            max_rounds=10,
+            max_code_cells=20,
+            max_debug_attempts=5,
             timeout_seconds=180,
         )
     if complexity is Complexity.MODERATE:
         return Budget(
-            max_rounds=7,
-            max_code_cells=14,
-            max_debug_attempts=3,
-            timeout_seconds=480,
+            max_rounds=20,
+            max_code_cells=40,
+            max_debug_attempts=8,
+            timeout_seconds=600,
         )
     return Budget(
-        max_rounds=12,
-        max_code_cells=28,
-        max_debug_attempts=5,
-        timeout_seconds=900,
+        max_rounds=35,
+        max_code_cells=70,
+        max_debug_attempts=12,
+        timeout_seconds=1200,
     )
 
 
@@ -430,8 +430,12 @@ class TaskBrief(BaseModel):
     """
 
     task_type: TaskType = Field(description="Category of task requested by the user")
+    background: str = Field(
+        description="Complete background context from the user request and task data"
+    )
+    question: str = Field(description="Complete description of the user's question")
     objective: str = Field(
-        description="Natural-language description of what the user wants"
+        description="Concise task objective distilled from the request"
     )
     output_type: OutputType = Field(
         description="Shape of deliverable requested by the user"
@@ -439,18 +443,11 @@ class TaskBrief(BaseModel):
     requirements: list[str] = Field(
         default_factory=list, description="Explicit requirements from user instructions"
     )
-    data_context: str = Field(description="Summary of the input dataset for context")
     complexity: Complexity = Field(
         description="Expected effort tier for completing the task"
     )
     budgets: Budget = Field(
         description="System-derived resource caps for the selected effort tier"
-    )
-    analysis_hints: list[str] = Field(
-        default_factory=list, description="Suggested analysis directions"
-    )
-    warnings: list[str] = Field(
-        default_factory=list, description="Caveats from the planning stage"
     )
 
 

@@ -23,8 +23,17 @@ from statigent.schemas import (
 
 class _TaskBriefPlan(BaseModel):
     task_type: TaskType = Field(description="Category of task requested by the user")
+    background: str = Field(
+        description=(
+            "Complete background context from the user's request, preserving all "
+            "material facts and references"
+        )
+    )
+    question: str = Field(
+        description="Complete description of the user's question without summarization"
+    )
     objective: str = Field(
-        description="Natural-language description of what the user wants"
+        description="Concise task objective distilled from the request"
     )
     output_type: OutputType = Field(
         description="Shape of deliverable requested by the user"
@@ -32,29 +41,21 @@ class _TaskBriefPlan(BaseModel):
     requirements: list[str] = Field(
         default_factory=list, description="Explicit requirements from user instructions"
     )
-    data_context: str = Field(description="Summary of the input dataset for context")
     complexity: Complexity = Field(
         description="Expected effort tier for completing the task"
-    )
-    analysis_hints: list[str] = Field(
-        default_factory=list, description="Suggested analysis directions"
-    )
-    warnings: list[str] = Field(
-        default_factory=list, description="Caveats from the planning stage"
     )
 
     def to_task_brief(self) -> TaskBrief:
         """Convert model-selected planning fields into a system-budgeted brief."""
         return TaskBrief(
             task_type=self.task_type,
+            background=self.background,
+            question=self.question,
             objective=self.objective,
             output_type=self.output_type,
             requirements=self.requirements,
-            data_context=self.data_context,
             complexity=self.complexity,
             budgets=budget_for_complexity(self.complexity),
-            analysis_hints=self.analysis_hints,
-            warnings=self.warnings,
         )
 
 
@@ -102,12 +103,15 @@ class TaskBriefPlanner:
         return [
             SystemMessage(
                 content=(
-                    "Create a concise structured data science task brief from "
+                    "Create a structured data science task brief from "
                     "the user's request, extra instructions, and dataset summary. "
-                    "Classify the task type, objective, output type, explicit "
-                    "requirements, data context, useful analysis hints, and "
-                    "complexity tier. Numeric budgets are system-derived from "
-                    "the complexity tier; do not invent or tune budget values. "
+                    "Preserve the original task information: background should "
+                    "fully describe the problem context, question should fully "
+                    "state the user question, objective should be a concise task "
+                    "goal, and requirements should list explicit constraints. "
+                    "Do not propose solution approaches, analysis hints, warnings, "
+                    "or implementation steps. Numeric budgets are system-derived "
+                    "from the complexity tier; do not invent or tune budget values. "
                     "Return only fields in the provided structured output schema."
                 ),
             ),

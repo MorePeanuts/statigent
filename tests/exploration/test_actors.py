@@ -97,10 +97,11 @@ class FakeToolModel:
 def make_brief() -> TaskBrief:
     return TaskBrief(
         task_type=TaskType.DATA_ANALYSIS,
+        background="The user provided sales.csv with revenue data.",
+        question="Find average revenue.",
         objective="Find average revenue",
         output_type=OutputType.ANSWER,
         requirements=[],
-        data_context="sales.csv",
         complexity=Complexity.SIMPLE,
         budgets=budget_for_complexity(Complexity.SIMPLE),
     )

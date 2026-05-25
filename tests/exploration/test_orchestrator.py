@@ -169,10 +169,11 @@ def make_brief(
         budget = budget.model_copy(update={"max_debug_attempts": max_debug_attempts})
     return TaskBrief(
         task_type=TaskType.DATA_ANALYSIS,
+        background="The user provided sales.csv with revenue data.",
+        question="Find average revenue.",
         objective="Find average revenue",
         output_type=OutputType.ANSWER,
         requirements=[],
-        data_context="sales.csv",
         complexity=Complexity.SIMPLE,
         budgets=budget,
     )

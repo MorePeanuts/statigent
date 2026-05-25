@@ -135,10 +135,11 @@ def make_profile(tmp_path: Path) -> DatasetProfile:
 def make_brief(task_type: TaskType) -> TaskBrief:
     return TaskBrief(
         task_type=task_type,
+        background="The user provided sales.csv.",
+        question="Answer the user's question.",
         objective="Answer",
         output_type=OutputType.ANSWER,
         requirements=[],
-        data_context="sales.csv",
         complexity=Complexity.SIMPLE,
         budgets=Budget(
             max_rounds=1,
