@@ -74,12 +74,14 @@ class FakeToolModel:
         self.args = args
         self.extra_tool_calls = extra_tool_calls or []
         self.bound_tool_names: list[str] = []
+        self.messages_seen: list[object] = []
 
     def bind_tools(self, tools: list[object]) -> "FakeToolModel":
         self.bound_tool_names = [getattr(tool, "name", "") for tool in tools]
         return self
 
     def invoke(self, _messages: list[object]) -> AIMessage:
+        self.messages_seen = list(_messages)
         tool_calls = [
             {
                 "name": self.tool_name,
@@ -229,11 +231,21 @@ def test_coder_append_code_cell_uses_append_tool(tmp_path: Path) -> None:
         action_prompt="Inspect schema.",
     )
 
-    cell = coder.append_code_cell(make_brief(), instruction, kernel)
+    cell = coder.append_code_cell(
+        make_brief(),
+        make_profile(tmp_path),
+        instruction,
+        kernel,
+    )
 
     assert cell == kernel.get_code_context().cells[0]
     assert cell.code == "print('ok')"
     assert model.bound_tool_names == ["append_code_cell"]
+    coder_prompt = str(model.messages_seen[-1].content)
+    assert "Available input paths:" in coder_prompt
+    assert "Dataset profile:" in coder_prompt
+    assert "Notebook code context:" in coder_prompt
+    assert "Use the listed input paths exactly" in coder_prompt
 
 
 def test_coder_append_code_cell_rejects_duplicate_tool_calls(
@@ -270,7 +282,12 @@ def test_coder_append_code_cell_rejects_duplicate_tool_calls(
     )
 
     with pytest.raises(StatigentExplorationError, match="exactly one"):
-        coder.append_code_cell(make_brief(), instruction, kernel)
+        coder.append_code_cell(
+            make_brief(),
+            make_profile(tmp_path),
+            instruction,
+            kernel,
+        )
 
     assert kernel.get_code_context().cells == []
 

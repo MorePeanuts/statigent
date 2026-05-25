@@ -70,6 +70,7 @@ class _Coder(Protocol):
     def append_code_cell(
         self,
         brief: TaskBrief,
+        profile: DatasetProfile,
         instruction: ApprovedCodeInstruction,
         kernel: NotebookKernel,
     ) -> NotebookCell: ...
@@ -350,6 +351,7 @@ class ExplorationOrchestrator:
 
         cell = self.coder.append_code_cell(
             state["brief"],
+            state["profile"],
             instruction,
             self.kernel,
         )
@@ -364,7 +366,7 @@ class ExplorationOrchestrator:
                     "append_code_cell",
                     cell.code,
                     usage_metadata=self._actor_usage(self.coder),
-                    metadata=self._cell_trace_metadata(cell),
+                    metadata=self._code_cell_trace_metadata(cell),
                 ),
             ],
         }
@@ -634,6 +636,12 @@ class ExplorationOrchestrator:
             "code": cell.code,
             "purpose": cell.purpose,
             "expected_observation": cell.expected_observation,
+        }
+
+    def _code_cell_trace_metadata(self, cell: NotebookCell) -> dict[str, object]:
+        return {
+            **self._cell_trace_metadata(cell),
+            "input_paths": [str(path) for path in self.kernel.list_inputs()],
         }
 
     @staticmethod

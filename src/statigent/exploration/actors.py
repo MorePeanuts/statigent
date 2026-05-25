@@ -352,11 +352,16 @@ class Coder:
     def append_code_cell(
         self,
         brief: TaskBrief,
+        profile: DatasetProfile,
         instruction: ApprovedCodeInstruction,
         kernel: NotebookKernel,
     ) -> NotebookCell:
         """Append an approved code cell through the notebook append tool."""
         tool = make_append_code_cell_tool(kernel)
+        input_paths = "\n".join(f"- {path}" for path in kernel.list_inputs())
+        if not input_paths:
+            input_paths = "- No input files are available."
+        code_context = kernel.get_code_context().model_dump_json()
         outcome = _invoke_tool_call(
             self._tool_model,
             [tool],
@@ -365,6 +370,11 @@ class Coder:
                 HumanMessage(
                     content=(
                         f"Task brief:\n{brief.model_dump_json()}\n\n"
+                        f"Dataset profile:\n{profile.compact_summary()}\n\n"
+                        f"Available input paths:\n{input_paths}\n\n"
+                        f"Notebook code context:\n{code_context}\n\n"
+                        "Use the listed input paths exactly when reading data. "
+                        "Do not invent filenames, directories, or mount points.\n\n"
                         f"Approved instruction:\n{instruction.model_dump_json()}"
                     ),
                 ),

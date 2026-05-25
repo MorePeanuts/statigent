@@ -117,6 +117,7 @@ class FakeCoder:
     def append_code_cell(
         self,
         _brief: TaskBrief,
+        _profile: DatasetProfile,
         instruction: ApprovedCodeInstruction,
         kernel: FakeNotebookKernel,
     ) -> NotebookCell:
@@ -234,7 +235,12 @@ def make_profile(tmp_path: Path) -> DatasetProfile:
 
 def started_kernel(tmp_path: Path) -> FakeNotebookKernel:
     kernel = FakeNotebookKernel()
-    kernel.start(NotebookContext(input_paths=[], work_dir=tmp_path / "work"))
+    kernel.start(
+        NotebookContext(
+            input_paths=[tmp_path / "sales.csv"],
+            work_dir=tmp_path / "work",
+        )
+    )
     return kernel
 
 
@@ -415,6 +421,7 @@ def test_orchestrator_trace_events_include_node_specific_payloads(
         "code": "print('mean=15')",
         "purpose": "What is average revenue?",
         "expected_observation": "Mean revenue",
+        "input_paths": [str(tmp_path / "sales.csv")],
     }
     assert executor.content == "mean=15\n"
     assert executor.metadata["cell_id"] == "cell-1"
