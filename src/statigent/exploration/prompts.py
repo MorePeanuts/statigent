@@ -4,7 +4,7 @@ from statigent.schemas import ExplorationActionKind
 
 INSPECTOR_PLAN_SYSTEM_PROMPT = """You are the Inspector for a data exploration task.
 Reason about the task objective, dataset profile, prior observations, evidence gaps,
-and whether more exploration is needed.
+and whether to continue exploration or prepare the final answer.
 
 End every planning response with an action block containing exactly these labels:
 ACTION: <one ExplorationActionKind value or custom_analysis>
@@ -14,15 +14,25 @@ STOP: <yes or no>
 """
 
 REVIEWER_PLAN_SYSTEM_PROMPT = """You are the Reviewer for Inspector plans.
-Reject plans that are irrelevant, redundant, unsafe, too broad, unsupported by the
-data, or unnecessary for the task objective.
+Review the Inspector's proposed next direction against the task objective, dataset
+profile, and full execution path.
+
+Return only a ReviewerPlanDecision:
+- approved: true when the next exploration direction should be executed.
+- approved_final: true when the Inspector proposes STOP and the full execution path
+  already contains enough executed evidence for final drafting.
+- feedback: detailed feedback when neither approved nor approved_final is true.
+
+Reject directions that are irrelevant, redundant, unsafe, too broad, unsupported by
+the data, unnecessary for the task objective, or not justified by the full execution
+path.
 
 Return a ReviewerPlanDecision structured output.
 """
 
-CODER_SYSTEM_PROMPT = """You are the Coder for approved data exploration steps.
-Use append_code_cell to add exactly one incremental notebook cell for the approved
-question and evidence need.
+CODER_SYSTEM_PROMPT = """You are the Coder for approved Inspector exploration plans.
+Use append_code_cell to add exactly one incremental notebook cell that implements
+the approved Inspector plan.
 
 Do not execute code.
 """

@@ -131,30 +131,42 @@ def test_exploration_report_exposes_trace_events() -> None:
 
 
 def test_reviewer_plan_decision_allows_rejection_without_action() -> None:
-    decision = ReviewerPlanDecision(approved=False, reason="Redundant")
+    decision = ReviewerPlanDecision(approved=False, feedback="Too broad")
 
-    assert decision.action_kind is None
-    assert decision.constraints == []
+    assert not decision.approved
+    assert not decision.approved_final
+    assert decision.feedback == "Too broad"
+
+
+def test_reviewer_plan_decision_schema_is_compact() -> None:
+    schema = ReviewerPlanDecision.model_json_schema()
+
+    assert set(schema["properties"]) == {
+        "approved",
+        "approved_final",
+        "feedback",
+    }
+
+
+def test_reviewer_plan_decision_allows_final_approval_without_action() -> None:
+    decision = ReviewerPlanDecision(
+        approved=False,
+        approved_final=True,
+    )
+
+    assert decision.approved_final
 
 
 def test_reviewer_plan_decision_allows_complete_approval() -> None:
-    decision = ReviewerPlanDecision(
-        approved=True,
-        reason="Relevant next step",
-        action_kind=ExplorationActionKind.SUMMARIZE_NUMERIC,
-        question="What is the revenue distribution?",
-        evidence_needed="Summary statistics for revenue",
-        coding_instruction="Compute descriptive statistics for revenue.",
-        constraints=["Use profiled table names only"],
-    )
+    decision = ReviewerPlanDecision(approved=True)
 
-    assert decision.action_kind is ExplorationActionKind.SUMMARIZE_NUMERIC
-    assert decision.question == "What is the revenue distribution?"
+    assert decision.approved
+    assert not decision.approved_final
 
 
 def test_reviewer_plan_decision_rejects_approval_without_payload() -> None:
-    with pytest.raises(ValidationError, match="approved plan requires"):
-        ReviewerPlanDecision(approved=True, reason="Relevant next step")
+    with pytest.raises(ValidationError, match="choose only one"):
+        ReviewerPlanDecision(approved=True, approved_final=True)
 
 
 def test_debug_lesson_records_task_local_fix() -> None:

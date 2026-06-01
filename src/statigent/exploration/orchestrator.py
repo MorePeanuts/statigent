@@ -6,7 +6,6 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from statigent.exploration.actors import Coder, Debugger, Inspector, Reviewer
-from statigent.exploration.prompts import DEA_ACTION_PROMPTS
 from statigent.exploration.state import (
     ExplorationRunState,
     can_append_cell,
@@ -15,10 +14,10 @@ from statigent.exploration.state import (
 )
 from statigent.notebook.base import NotebookKernel
 from statigent.schemas import (
-    ApprovedCodeInstruction,
     CodeDraft,
     DatasetProfile,
     ExplorationAction,
+    ExplorationActionKind,
     ExplorationReport,
     ExplorationStep,
     FinalDraft,
@@ -110,15 +109,11 @@ class ExplorationOrchestrator:
         graph.add_node("final_review", self._final_review_node)
 
         graph.add_edge(START, "inspector")
-        graph.add_conditional_edges(
-            "inspector",
-            self._route_after_inspector,
-            {"review_plan": "review_plan", "final_review": "final_review"},
-        )
+        graph.add_edge("inspector", "review_plan")
         graph.add_conditional_edges(
             "review_plan",
             self._route_after_plan_review,
-            {"inspector": "inspector", "code": "code"},
+            {"inspector": "inspector", "code": "code", "final_review": "final_review"},
         )
         graph.add_conditional_edges(
             "code",
@@ -188,23 +183,6 @@ class ExplorationOrchestrator:
                 ),
             ],
         }
-        if self._is_stop_plan(plan_text):
-            draft = self.inspector.final_draft(
-                state["brief"],
-                state["profile"],
-                state["steps"],
-            )
-            updates["final_draft"] = draft
-            updates["trace_events"] = [
-                *cast("list[TraceEvent]", updates["trace_events"]),
-                self._trace(
-                    "inspector",
-                    "final_draft",
-                    draft.model_dump_json(),
-                    usage_metadata=self._actor_usage(self.inspector),
-                    metadata={"reason": "Inspector stopped."},
-                ),
-            ]
         return updates
 
     def _review_plan_node(
@@ -213,15 +191,18 @@ class ExplorationOrchestrator:
     ) -> dict[str, object]:
         decision = self.reviewer.review_plan(
             state["brief"],
+            state["profile"],
+            state["steps"],
             state["pending_plan_text"],
         )
-        if not decision.approved:
+        if not decision.approved and not decision.approved_final:
+            feedback = decision.feedback or "Reviewer rejected the Inspector plan."
             return {
                 "plan_review": decision,
-                "review_feedback": decision.reason,
+                "review_feedback": feedback,
                 "warnings": [
                     *state["warnings"],
-                    f"Reviewer rejected plan: {decision.reason}",
+                    f"Reviewer rejected plan: {feedback}",
                 ],
                 "trace_events": [
                     *state["trace_events"],
@@ -235,19 +216,72 @@ class ExplorationOrchestrator:
                 ],
             }
 
-        if decision.action_kind is None:
+        if decision.approved_final:
+            if not state["steps"]:
+                feedback = (
+                    "Reviewer approved final drafting before any executed "
+                    "exploration evidence was available."
+                )
+                return {
+                    "plan_review": decision,
+                    "review_feedback": feedback,
+                    "warnings": [
+                        *state["warnings"],
+                        "Reviewer approved final drafting without executed evidence.",
+                    ],
+                    "trace_events": [
+                        *state["trace_events"],
+                        self._trace(
+                            "reviewer",
+                            "final_approved_without_evidence",
+                            decision.model_dump_json(),
+                            usage_metadata=self._actor_usage(self.reviewer),
+                            metadata={"plan_text": state["pending_plan_text"]},
+                        ),
+                    ],
+                }
+            draft = self.inspector.final_draft(
+                state["brief"],
+                state["profile"],
+                state["steps"],
+            )
             return {
                 "plan_review": decision,
-                "review_feedback": "Approved plan did not include an action kind.",
+                "review_feedback": "",
+                "final_draft": draft,
+                "trace_events": [
+                    *state["trace_events"],
+                    self._trace(
+                        "reviewer",
+                        "final_approved",
+                        decision.model_dump_json(),
+                        usage_metadata=self._actor_usage(self.reviewer),
+                        metadata={"plan_text": state["pending_plan_text"]},
+                    ),
+                    self._trace(
+                        "inspector",
+                        "final_draft",
+                        draft.model_dump_json(),
+                        usage_metadata=self._actor_usage(self.inspector),
+                        metadata={"reason": "Reviewer approved final drafting."},
+                    ),
+                ],
+            }
+
+        if not decision.approved:
+            feedback = "Reviewer did not approve exploration or final drafting."
+            return {
+                "plan_review": decision,
+                "review_feedback": feedback,
                 "warnings": [
                     *state["warnings"],
-                    "Reviewer approved a plan without an action kind.",
+                    feedback,
                 ],
                 "trace_events": [
                     *state["trace_events"],
                     self._trace(
                         "reviewer",
-                        "plan_approved_missing_action",
+                        "plan_not_approved",
                         decision.model_dump_json(),
                         usage_metadata=self._actor_usage(self.reviewer),
                         metadata={"plan_text": state["pending_plan_text"]},
@@ -255,16 +289,7 @@ class ExplorationOrchestrator:
                 ],
             }
 
-        instruction = ApprovedCodeInstruction(
-            action_kind=decision.action_kind,
-            question=decision.question,
-            evidence_needed=decision.evidence_needed,
-            coding_instruction=decision.coding_instruction,
-            action_prompt=DEA_ACTION_PROMPTS[decision.action_kind],
-            rationale=decision.reason,
-            risk_notes=decision.risk_notes,
-            constraints=decision.constraints,
-        )
+        instruction = state["pending_plan_text"]
         return {
             "plan_review": decision,
             "approved_instruction": instruction,
@@ -278,7 +303,7 @@ class ExplorationOrchestrator:
                     usage_metadata=self._actor_usage(self.reviewer),
                     metadata={
                         "plan_text": state["pending_plan_text"],
-                        "approved_instruction": instruction.model_dump(mode="json"),
+                        "approved_instruction": instruction,
                     },
                 ),
             ],
@@ -394,18 +419,11 @@ class ExplorationOrchestrator:
                 "debug_attempts": 0,
             }
 
-        action = ExplorationAction(
-            kind=instruction.action_kind,
-            title=instruction.question,
-            description=instruction.coding_instruction,
-            rationale=instruction.rationale,
-            expected_evidence=instruction.evidence_needed,
-            risk_notes=instruction.risk_notes,
-        )
+        action = self._action_from_plan_text(instruction)
         plan_review = state.get("plan_review")
         review = ReviewDecision(
             approved=True,
-            reason=plan_review.reason if plan_review is not None else "Approved",
+            reason="Approved by Reviewer" if plan_review is not None else "Approved",
         )
         code = CodeDraft(
             code=cell.code,
@@ -451,7 +469,7 @@ class ExplorationOrchestrator:
             state["profile"],
             state["steps"],
         )
-        decision = self.reviewer.review_final(state["brief"], draft)
+        decision = self.reviewer.review_final(state["brief"], state["steps"], draft)
         if decision.approved:
             return {
                 "final_draft": draft,
@@ -494,12 +512,9 @@ class ExplorationOrchestrator:
             updates["final_draft"] = None
         return updates
 
-    def _route_after_inspector(self, state: ExplorationRunState) -> str:
+    def _route_after_plan_review(self, state: ExplorationRunState) -> str:
         if state["final_draft"] is not None:
             return "final_review"
-        return "review_plan"
-
-    def _route_after_plan_review(self, state: ExplorationRunState) -> str:
         decision = state.get("plan_review")
         if (
             decision is not None
@@ -566,12 +581,25 @@ class ExplorationOrchestrator:
         return None
 
     @staticmethod
-    def _is_stop_plan(plan_text: str) -> bool:
+    def _action_from_plan_text(plan_text: str) -> ExplorationAction:
+        fields: dict[str, str] = {}
         for line in plan_text.splitlines():
             label, separator, value = line.partition(":")
-            if separator and label.strip().casefold() == "stop":
-                return value.strip().casefold() == "yes"
-        return False
+            if separator:
+                fields[label.strip().casefold()] = value.strip()
+        kind_text = fields.get("action", "")
+        try:
+            kind = ExplorationActionKind(kind_text)
+        except ValueError:
+            kind = ExplorationActionKind.ANSWER_SPECIFIC_QUESTION
+        return ExplorationAction(
+            kind=kind,
+            title=fields.get("question") or kind.value,
+            description=plan_text,
+            rationale="Approved Inspector plan",
+            expected_evidence=fields.get("evidence_needed", ""),
+            risk_notes="Reviewer did not provide separate risk notes.",
+        )
 
     @staticmethod
     def _empty_draft(content: str) -> FinalDraft:

@@ -3,7 +3,6 @@
 from typing import NotRequired, TypedDict
 
 from statigent.schemas import (
-    ApprovedCodeInstruction,
     DatasetProfile,
     DebugLesson,
     ExplorationStep,
@@ -25,7 +24,7 @@ class ExplorationRunState(TypedDict):
     steps: list[ExplorationStep]
     pending_plan_text: str
     review_feedback: str
-    approved_instruction: ApprovedCodeInstruction | None
+    approved_instruction: str | None
     last_cell_id: str
     debug_lessons: list[DebugLesson]
     final_draft: FinalDraft | None

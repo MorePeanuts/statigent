@@ -23,12 +23,17 @@ def test_reviewer_prompt_requires_structured_decision_and_rejection_criteria() -
     text = REVIEWER_PLAN_SYSTEM_PROMPT.casefold()
 
     assert "reviewerplandecision" in text
+    assert "approved" in text
+    assert "approved_final" in text
+    assert "feedback" in text
+    assert "full execution path" in text
     assert "irrelevant" in text
     assert "redundant" in text
     assert "unsafe" in text
     assert "too broad" in text
     assert "unsupported" in text
     assert "unnecessary" in text
+    assert "final" in text
 
 
 def test_coder_prompt_requires_single_append_without_execution() -> None:

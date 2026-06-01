@@ -514,45 +514,20 @@ class ArtifactRef(BaseModel):
 class ReviewerPlanDecision(BaseModel):
     """Structured Reviewer decision for an Inspector planning response."""
 
-    approved: bool = Field(description="Whether the plan is approved")
-    reason: str = Field(description="Reviewer rationale for approving or rejecting")
-    action_kind: ExplorationActionKind | None = Field(
-        default=None, description="Approved exploration action kind, if any"
+    approved: bool = Field(
+        default=False,
+        description="Whether the Inspector's next exploration direction is approved",
     )
-    question: str = Field(
-        default="", description="Specific question approved for the Coder"
+    approved_final: bool = Field(
+        default=False,
+        description="Whether the Inspector's final drafting proposal is approved",
     )
-    evidence_needed: str = Field(
-        default="", description="Evidence the approved code cell should produce"
-    )
-    coding_instruction: str = Field(
-        default="", description="Concrete instruction for the Coder"
-    )
-    constraints: list[str] = Field(
-        default_factory=list, description="Execution or analysis constraints"
-    )
-    risk_notes: str = Field(
-        default="", description="Potential pitfalls for custom analysis"
-    )
+    feedback: str = Field(default="", description="Detailed feedback when rejected")
 
     @model_validator(mode="after")
-    def validate_approved_payload(self) -> "ReviewerPlanDecision":
-        if not self.approved:
-            return self
-        missing = []
-        if self.action_kind is None:
-            missing.append("action_kind")
-        for name in ("question", "evidence_needed", "coding_instruction"):
-            if not getattr(self, name).strip():
-                missing.append(name)
-        if self.action_kind is ExplorationActionKind.CUSTOM_ANALYSIS:
-            if not self.reason.strip():
-                missing.append("reason")
-            if not self.risk_notes.strip():
-                missing.append("risk_notes")
-        if missing:
-            missing_text = ", ".join(missing)
-            raise ValueError(f"approved plan requires: {missing_text}")
+    def validate_single_approval_path(self) -> "ReviewerPlanDecision":
+        if self.approved and self.approved_final:
+            raise ValueError("choose only one of approved or approved_final")
         return self
 
 

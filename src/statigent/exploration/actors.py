@@ -32,7 +32,6 @@ from statigent.retry import (
     retry_on_parse_error,
 )
 from statigent.schemas import (
-    ApprovedCodeInstruction,
     CodeDraft,
     DatasetProfile,
     DebugDecision,
@@ -42,7 +41,6 @@ from statigent.schemas import (
     FinalDraft,
     FinalReviewDecision,
     NotebookCell,
-    ReviewDecision,
     ReviewerPlanDecision,
     TaskBrief,
 )
@@ -196,40 +194,6 @@ class Inspector:
         self.last_usage_metadata = extract_usage_metadata(result)
         return _message_text(result)
 
-    def next_action(
-        self,
-        brief: TaskBrief,
-        profile: DatasetProfile,
-        steps: list[ExplorationStep],
-        reviewer_feedback: str,
-    ) -> ExplorationAction:
-        # TODO: context engineering for Inspector
-        return _invoke_with_retries(
-            self.model,
-            # BUG: next_action is completely unsuitable for structured output.
-            # Here should be a carefully designed prompt that guides the model to
-            # complete data exploration instructions.
-            ExplorationAction,
-            [
-                SystemMessage(
-                    content=(
-                        "You are the Inspector. Choose the next useful data "
-                        "exploration action. Prefer predefined DEA actions."
-                    ),
-                ),
-                HumanMessage(
-                    content=(
-                        f"Task brief:\n{brief.model_dump_json()}\n\n"
-                        f"Profile:\n{profile.compact_summary()}\n\n"
-                        f"Completed steps: {len(steps)}\n"
-                        # TODO: include step results (stdout/artifacts) in
-                        # context so Inspector can reason over prior findings.
-                        f"Reviewer feedback:\n{reviewer_feedback}"
-                    ),
-                ),
-            ],
-        )
-
     def final_draft(
         self,
         brief: TaskBrief,
@@ -272,6 +236,8 @@ class Reviewer:
     def review_plan(
         self,
         brief: TaskBrief,
+        profile: DatasetProfile,
+        steps: list[ExplorationStep],
         plan_text: str,
     ) -> ReviewerPlanDecision:
         """Review an Inspector text plan as structured output."""
@@ -283,6 +249,8 @@ class Reviewer:
                 HumanMessage(
                     content=(
                         f"Task brief:\n{brief.model_dump_json()}\n\n"
+                        f"Dataset profile:\n{profile.compact_summary()}\n\n"
+                        f"Full execution path:\n{[s.model_dump() for s in steps]}\n\n"
                         f"Inspector plan:\n{plan_text}"
                     ),
                 ),
@@ -290,36 +258,10 @@ class Reviewer:
         )
         return result
 
-    def review_action(
-        self,
-        brief: TaskBrief,
-        action: ExplorationAction,
-    ) -> ReviewDecision:
-        # TODO: Analyze the inspector's thought process, determine whether it is
-        # correct, and extract the specific action.
-        return _invoke_with_retries(
-            self.model,
-            ReviewDecision,
-            [
-                SystemMessage(
-                    content=(
-                        "You are the Reviewer. Approve only relevant, necessary, "
-                        "safe exploration actions. Apply strict scrutiny to "
-                        "custom_analysis."
-                    ),
-                ),
-                HumanMessage(
-                    content=(
-                        f"Task brief:\n{brief.model_dump_json()}\n\n"
-                        f"Action:\n{action.model_dump_json()}"
-                    ),
-                ),
-            ],
-        )
-
     def review_final(
         self,
         brief: TaskBrief,
+        steps: list[ExplorationStep],
         draft: FinalDraft,
     ) -> FinalReviewDecision:
         # TODO: The final review should be used to determine whether the insector's
@@ -333,6 +275,7 @@ class Reviewer:
                 HumanMessage(
                     content=(
                         f"Task brief:\n{brief.model_dump_json()}\n\n"
+                        f"Full execution path:\n{[s.model_dump() for s in steps]}\n\n"
                         f"Draft:\n{draft.model_dump_json()}"
                     ),
                 ),
@@ -353,7 +296,7 @@ class Coder:
         self,
         brief: TaskBrief,
         profile: DatasetProfile,
-        instruction: ApprovedCodeInstruction,
+        instruction: str,
         kernel: NotebookKernel,
     ) -> NotebookCell:
         """Append an approved code cell through the notebook append tool."""
@@ -375,7 +318,7 @@ class Coder:
                         f"Notebook code context:\n{code_context}\n\n"
                         "Use the listed input paths exactly when reading data. "
                         "Do not invent filenames, directories, or mount points.\n\n"
-                        f"Approved instruction:\n{instruction.model_dump_json()}"
+                        f"Approved Inspector plan:\n{instruction}"
                     ),
                 ),
             ],

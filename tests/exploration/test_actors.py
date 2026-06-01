@@ -9,7 +9,6 @@ from statigent.exploration import Coder, Debugger, Inspector, Reviewer
 from statigent.exploration.tools import make_replace_code_cell_tool
 from statigent.notebook import FakeNotebookKernel, NotebookContext
 from statigent.schemas import (
-    ApprovedCodeInstruction,
     CodeDraft,
     Complexity,
     DatasetProfile,
@@ -22,7 +21,6 @@ from statigent.schemas import (
     InputFileInfo,
     NotebookCell,
     OutputType,
-    ReviewDecision,
     ReviewerPlanDecision,
     TableProfile,
     TaskBrief,
@@ -39,11 +37,19 @@ def _make_raw_result(
 
 
 class FakeStructuredModel[T]:
-    def __init__(self, result: T, include_raw: bool = False) -> None:
+    def __init__(
+        self,
+        result: T,
+        include_raw: bool = False,
+        messages_seen: list[object] | None = None,
+    ) -> None:
         self.result = result
         self.include_raw = include_raw
+        self.messages_seen = messages_seen
 
-    def invoke(self, _messages: list[dict[str, str]]) -> Any:
+    def invoke(self, messages: list[dict[str, str]]) -> Any:
+        if self.messages_seen is not None:
+            self.messages_seen[:] = list(messages)
         if self.include_raw:
             return _make_raw_result(parsed=self.result)
         return self.result
@@ -52,11 +58,16 @@ class FakeStructuredModel[T]:
 class FakeModel:
     def __init__(self, result: object) -> None:
         self.result = result
+        self.messages_seen: list[object] = []
 
     def with_structured_output(
         self, _schema: type[T], *, include_raw: bool = False
     ) -> FakeStructuredModel[Any]:
-        return FakeStructuredModel(cast("T", self.result), include_raw=include_raw)
+        return FakeStructuredModel(
+            cast("T", self.result),
+            include_raw=include_raw,
+            messages_seen=self.messages_seen,
+        )
 
     def invoke(self, _messages: list[object]) -> object:
         return self.result
@@ -140,19 +151,6 @@ def make_profile(tmp_path: Path) -> DatasetProfile:
     )
 
 
-def test_inspector_returns_action(tmp_path: Path) -> None:
-    action = ExplorationAction(
-        kind=ExplorationActionKind.SUMMARIZE_NUMERIC,
-        title="Summarize revenue",
-        description="Compute average revenue",
-    )
-    inspector = Inspector(FakeModel(action))
-
-    result = inspector.next_action(make_brief(), make_profile(tmp_path), [], "")
-
-    assert result == action
-
-
 def test_replace_tool_is_bound_to_failed_cell_and_hides_cell_id(
     tmp_path: Path,
 ) -> None:
@@ -184,19 +182,21 @@ def test_inspector_next_plan_returns_text(tmp_path: Path) -> None:
 
 
 def test_reviewer_review_plan_returns_decision() -> None:
-    decision = ReviewerPlanDecision(
-        approved=True,
-        reason="Relevant",
-        action_kind=ExplorationActionKind.SUMMARIZE_NUMERIC,
-        question="What is average revenue?",
-        evidence_needed="Mean revenue",
-        coding_instruction="Compute the mean revenue.",
-    )
-    reviewer = Reviewer(FakeModel(decision))
+    decision = ReviewerPlanDecision(approved=True)
+    model = FakeModel(decision)
+    reviewer = Reviewer(model)
 
-    result = reviewer.review_plan(make_brief(), "Plan text")
+    result = reviewer.review_plan(
+        make_brief(),
+        make_profile(Path(".")),
+        [],
+        "Plan text",
+    )
 
     assert result == decision
+    prompt = str(model.messages_seen[-1].content)
+    assert "Full execution path:" in prompt
+    assert "Inspector plan:" in prompt
 
 
 def test_reviewer_review_final_returns_final_decision() -> None:
@@ -204,7 +204,7 @@ def test_reviewer_review_final_returns_final_decision() -> None:
     reviewer = Reviewer(FakeModel(decision))
     draft = FinalDraft(content="Average revenue is 15.", evidence=["mean=15"])
 
-    result = reviewer.review_final(make_brief(), draft)
+    result = reviewer.review_final(make_brief(), [], draft)
 
     assert result == decision
 
@@ -221,13 +221,7 @@ def test_coder_append_code_cell_uses_append_tool(tmp_path: Path) -> None:
         },
     )
     coder = Coder(model)
-    instruction = ApprovedCodeInstruction(
-        action_kind=ExplorationActionKind.INSPECT_SCHEMA,
-        question="What columns exist?",
-        evidence_needed="Column list",
-        coding_instruction="Print columns.",
-        action_prompt="Inspect schema.",
-    )
+    instruction = "ACTION: inspect_schema\nQUESTION: What columns exist?"
 
     cell = coder.append_code_cell(
         make_brief(),
@@ -243,6 +237,7 @@ def test_coder_append_code_cell_uses_append_tool(tmp_path: Path) -> None:
     assert "Available input paths:" in coder_prompt
     assert "Dataset profile:" in coder_prompt
     assert "Notebook code context:" in coder_prompt
+    assert "Approved Inspector plan:" in coder_prompt
     assert "Use the listed input paths exactly" in coder_prompt
 
 
@@ -271,13 +266,7 @@ def test_coder_append_code_cell_rejects_duplicate_tool_calls(
         ],
     )
     coder = Coder(model)
-    instruction = ApprovedCodeInstruction(
-        action_kind=ExplorationActionKind.INSPECT_SCHEMA,
-        question="What columns exist?",
-        evidence_needed="Column list",
-        coding_instruction="Print columns.",
-        action_prompt="Inspect schema.",
-    )
+    instruction = "ACTION: inspect_schema\nQUESTION: What columns exist?"
 
     with pytest.raises(StatigentExplorationError, match="exactly one"):
         coder.append_code_cell(
@@ -336,20 +325,6 @@ def test_debugger_debug_cell_uses_replace_and_records_lesson(tmp_path: Path) -> 
             applies_when="A cell references an undefined name",
         )
     ]
-
-
-def test_reviewer_returns_decision() -> None:
-    decision = ReviewDecision(approved=True, reason="Relevant")
-    reviewer = Reviewer(FakeModel(decision))
-    action = ExplorationAction(
-        kind=ExplorationActionKind.INSPECT_SCHEMA,
-        title="Inspect",
-        description="Inspect schema",
-    )
-
-    result = reviewer.review_action(make_brief(), action)
-
-    assert result.approved is True
 
 
 def test_coder_returns_code_draft() -> None:
