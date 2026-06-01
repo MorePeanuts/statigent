@@ -1,9 +1,11 @@
 """LangGraph exploration orchestrator for Inspector-led data analysis."""
 
-from typing import Literal, Protocol, cast
+from typing import Literal, cast
 
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.state import CompiledStateGraph
 
+from statigent.exploration.actors import Coder, Debugger, Inspector, Reviewer
 from statigent.exploration.prompts import DEA_ACTION_PROMPTS
 from statigent.exploration.state import (
     ExplorationRunState,
@@ -16,75 +18,16 @@ from statigent.schemas import (
     ApprovedCodeInstruction,
     CodeDraft,
     DatasetProfile,
-    DebugLesson,
     ExplorationAction,
     ExplorationReport,
     ExplorationStep,
     FinalDraft,
-    FinalReviewDecision,
     NotebookCell,
     NotebookCellResult,
     ReviewDecision,
-    ReviewerPlanDecision,
     TaskBrief,
     TraceEvent,
 )
-
-
-class _CompiledGraph(Protocol):
-    def invoke(self, input: ExplorationRunState) -> object: ...
-
-
-class _Inspector(Protocol):
-    def next_plan(
-        self,
-        brief: TaskBrief,
-        profile: DatasetProfile,
-        steps: list[ExplorationStep],
-        reviewer_feedback: str,
-    ) -> str: ...
-
-    def final_draft(
-        self,
-        brief: TaskBrief,
-        profile: DatasetProfile,
-        steps: list[ExplorationStep],
-    ) -> FinalDraft: ...
-
-
-class _Reviewer(Protocol):
-    def review_plan(
-        self,
-        brief: TaskBrief,
-        plan_text: str,
-    ) -> ReviewerPlanDecision: ...
-
-    def review_final(
-        self,
-        brief: TaskBrief,
-        draft: FinalDraft,
-    ) -> FinalReviewDecision: ...
-
-
-class _Coder(Protocol):
-    def append_code_cell(
-        self,
-        brief: TaskBrief,
-        profile: DatasetProfile,
-        instruction: ApprovedCodeInstruction,
-        kernel: NotebookKernel,
-    ) -> NotebookCell: ...
-
-
-class _Debugger(Protocol):
-    def debug_cell(
-        self,
-        brief: TaskBrief,
-        kernel: NotebookKernel,
-        failed_cell: NotebookCell,
-        error: str,
-        lessons: list[DebugLesson],
-    ) -> list[DebugLesson]: ...
 
 
 class ExplorationOrchestrator:
@@ -93,10 +36,10 @@ class ExplorationOrchestrator:
     def __init__(
         self,
         *,
-        inspector: _Inspector,
-        reviewer: _Reviewer,
-        coder: _Coder,
-        debugger: _Debugger,
+        inspector: Inspector,
+        reviewer: Reviewer,
+        coder: Coder,
+        debugger: Debugger,
         kernel: NotebookKernel,
     ) -> None:
         self.inspector = inspector
@@ -149,7 +92,14 @@ class ExplorationOrchestrator:
         """Release resources owned by the underlying notebook kernel."""
         self.kernel.close()
 
-    def _build_graph(self) -> _CompiledGraph:
+    def _build_graph(
+        self,
+    ) -> CompiledStateGraph[
+        ExplorationRunState,
+        None,
+        ExplorationRunState,
+        ExplorationRunState,
+    ]:
         graph = StateGraph(ExplorationRunState)
         graph.add_node("inspector", self._inspector_node)
         graph.add_node("review_plan", self._review_plan_node)
@@ -211,8 +161,7 @@ class ExplorationOrchestrator:
                             usage_metadata=self._actor_usage(self.inspector),
                             metadata={
                                 "reason": (
-                                    "Round budget reached after completed "
-                                    "exploration."
+                                    "Round budget reached after completed exploration."
                                 )
                             },
                         ),

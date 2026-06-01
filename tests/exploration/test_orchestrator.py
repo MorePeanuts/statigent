@@ -188,16 +188,16 @@ def make_brief(
         budget = budget.model_copy(update={"max_code_cells": max_code_cells})
     if max_debug_attempts is not None:
         budget = budget.model_copy(update={"max_debug_attempts": max_debug_attempts})
-    return TaskBrief(
+    brief = TaskBrief(
         task_type=TaskType.DATA_ANALYSIS,
-        background="The user provided sales.csv with revenue data.",
-        question="Find average revenue.",
+        task_description=(
+            "The user provided sales.csv with revenue data. Find average revenue."
+        ),
         objective="Find average revenue",
         output_type=OutputType.ANSWER,
-        requirements=[],
         complexity=Complexity.SIMPLE,
-        budgets=budget,
     )
+    return brief.with_budget(budget)
 
 
 def make_profile(tmp_path: Path) -> DatasetProfile:

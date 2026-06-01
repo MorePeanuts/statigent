@@ -51,18 +51,21 @@ def test_budget_for_complexity_uses_fixed_system_tiers() -> None:
 def test_task_brief_field_descriptions_define_what_not_how() -> None:
     schema = TaskBrief.model_json_schema()
     task_type_description = schema["properties"]["task_type"]["description"]
-    background_description = schema["properties"]["background"]["description"]
-    question_description = schema["properties"]["question"]["description"]
+    task_description = schema["properties"]["task_description"]["description"]
     output_type_description = schema["properties"]["output_type"]["description"]
     complexity_description = schema["properties"]["complexity"]["description"]
-    budgets_description = schema["properties"]["budgets"]["description"]
 
+    assert set(schema["properties"]) == {
+        "task_type",
+        "task_description",
+        "objective",
+        "output_type",
+        "complexity",
+    }
     assert "category" in task_type_description.casefold()
-    assert "complete background" in background_description.casefold()
-    assert "complete description" in question_description.casefold()
+    assert "complete description" in task_description.casefold()
     assert "shape" in output_type_description.casefold()
     assert "effort tier" in complexity_description.casefold()
-    assert "system-derived resource caps" in budgets_description.casefold()
     assert "choose when" not in task_type_description.casefold()
     assert "analyze by" not in complexity_description.casefold()
     assert "data_context" not in schema["properties"]
@@ -73,13 +76,10 @@ def test_task_brief_field_descriptions_define_what_not_how() -> None:
 def test_task_brief_supports_deep_analysis() -> None:
     brief = TaskBrief(
         task_type=TaskType.DEEP_ANALYSIS,
-        background="The user wants an executive report from sales.csv.",
-        question="Create an executive sales report.",
+        task_description="The user wants an executive report from sales.csv.",
         objective="Create an executive sales report",
         output_type=OutputType.REPORT,
-        requirements=["Use business language"],
         complexity=Complexity.COMPLEX,
-        budgets=budget_for_complexity(Complexity.COMPLEX),
     )
 
     assert brief.task_type is TaskType.DEEP_ANALYSIS

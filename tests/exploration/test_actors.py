@@ -27,7 +27,6 @@ from statigent.schemas import (
     TableProfile,
     TaskBrief,
     TaskType,
-    budget_for_complexity,
 )
 
 T = TypeVar("T")
@@ -99,13 +98,12 @@ class FakeToolModel:
 def make_brief() -> TaskBrief:
     return TaskBrief(
         task_type=TaskType.DATA_ANALYSIS,
-        background="The user provided sales.csv with revenue data.",
-        question="Find average revenue.",
+        task_description=(
+            "The user provided sales.csv with revenue data. Find average revenue."
+        ),
         objective="Find average revenue",
         output_type=OutputType.ANSWER,
-        requirements=[],
         complexity=Complexity.SIMPLE,
-        budgets=budget_for_complexity(Complexity.SIMPLE),
     )
 
 

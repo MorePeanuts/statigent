@@ -11,20 +11,16 @@ from statigent.schemas import (
     ReviewDecision,
     TaskBrief,
     TaskType,
-    budget_for_complexity,
 )
 
 
 def make_brief(task_type: TaskType, output_type: OutputType) -> TaskBrief:
     return TaskBrief(
         task_type=task_type,
-        background="The user provided sales.csv.",
-        question="Analyze sales.",
+        task_description="The user provided sales.csv. Analyze sales.",
         objective="Analyze sales",
         output_type=output_type,
-        requirements=[],
         complexity=Complexity.SIMPLE,
-        budgets=budget_for_complexity(Complexity.SIMPLE),
     )
 
 

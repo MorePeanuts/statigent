@@ -8,9 +8,9 @@ explicit while remaining compatible with LangChain structured outputs.
 
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, PrivateAttr, model_validator
 
 
 class TaskType(StrEnum):
@@ -425,30 +425,36 @@ class TaskBrief(BaseModel):
     """Structured task plan produced by the TaskBriefPlanner.
 
     This is the primary hand-off from the input layer to the exploration
-    orchestrator. It captures what to do, how complex it is, and how many
-    resources to allocate.
+    orchestrator. It keeps the LLM-facing contract compact while deriving
+    resource limits from the selected complexity tier.
     """
 
+    _budget_override: Budget | None = PrivateAttr(default=None)
+
     task_type: TaskType = Field(description="Category of task requested by the user")
-    background: str = Field(
-        description="Complete background context from the user request and task data"
+    task_description: str = Field(
+        description="Complete description of the user's task and relevant context"
     )
-    question: str = Field(description="Complete description of the user's question")
     objective: str = Field(
         description="Concise task objective distilled from the request"
     )
     output_type: OutputType = Field(
         description="Shape of deliverable requested by the user"
     )
-    requirements: list[str] = Field(
-        default_factory=list, description="Explicit requirements from user instructions"
-    )
     complexity: Complexity = Field(
         description="Expected effort tier for completing the task"
     )
-    budgets: Budget = Field(
-        description="System-derived resource caps for the selected effort tier"
-    )
+
+    @property
+    def budgets(self) -> Budget:
+        """Return system-owned resource caps for this brief."""
+        return self._budget_override or budget_for_complexity(self.complexity)
+
+    def with_budget(self, budget: Budget) -> Self:
+        """Return a copy with an explicit internal budget override."""
+        copied = self.model_copy()
+        copied._budget_override = budget
+        return copied
 
 
 # BUG: See the `next_action` method of the Inspector; this method is not suitable

@@ -5,7 +5,6 @@ import pytest
 
 from statigent.agents import StatigentDataScienceAgent
 from statigent.schemas import (
-    Budget,
     Complexity,
     DatasetProfile,
     ExplorationReport,
@@ -16,6 +15,7 @@ from statigent.schemas import (
     TaskBrief,
     TaskType,
     TraceEvent,
+    budget_for_complexity,
 )
 
 if TYPE_CHECKING:
@@ -138,21 +138,17 @@ def make_profile(tmp_path: Path) -> DatasetProfile:
 
 
 def make_brief(task_type: TaskType) -> TaskBrief:
-    return TaskBrief(
+    brief = TaskBrief(
         task_type=task_type,
-        background="The user provided sales.csv.",
-        question="Answer the user's question.",
+        task_description="The user provided sales.csv. Answer the user's question.",
         objective="Answer",
         output_type=OutputType.ANSWER,
-        requirements=[],
         complexity=Complexity.SIMPLE,
-        budgets=Budget(
-            max_rounds=1,
-            max_code_cells=1,
-            max_debug_attempts=0,
-            timeout_seconds=60,
-        ),
     )
+    budget = budget_for_complexity(Complexity.SIMPLE).model_copy(
+        update={"timeout_seconds": 60}
+    )
+    return brief.with_budget(budget)
 
 
 def make_agent(
@@ -377,8 +373,7 @@ def test_analysis_eval_traces_planner_input(tmp_path: Path) -> None:
     planner_input = next(
         event
         for event in trace
-        if event["agent"] == "task_brief_planner"
-        and event["name"] == "planner_input"
+        if event["agent"] == "task_brief_planner" and event["name"] == "planner_input"
     )
     assert planner_input["role"] == "user"
     assert planner_input["content"] == "Find sales anomalies."
