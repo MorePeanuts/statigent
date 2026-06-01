@@ -13,6 +13,7 @@ from statigent.schemas import (
     ExplorationAction,
     ExplorationReport,
     FinalDraft,
+    FinalReviewDecision,
     InputFileInfo,
     OutputBundle,
     OutputStatus,
@@ -183,6 +184,12 @@ def test_reviewer_plan_decision_requires_coder_instruction_when_approved() -> No
         match="approved plans require coder_instruction",
     ):
         ReviewerPlanDecision(approved=True)
+
+
+def test_final_review_decision_schema_is_compact() -> None:
+    schema = FinalReviewDecision.model_json_schema()
+
+    assert set(schema["properties"]) == {"approved", "feedback"}
 
 
 def test_debug_lesson_records_task_local_fix() -> None:

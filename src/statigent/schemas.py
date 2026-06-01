@@ -496,10 +496,7 @@ class FinalReviewDecision(BaseModel):
     """Structured Final Reviewer decision for an Inspector final draft."""
 
     approved: bool = Field(description="Whether the final draft is accepted")
-    reason: str = Field(description="Reason for approval or rejection")
-    additional_exploration_focus: str = Field(
-        default="", description="Targeted focus for more exploration if rejected"
-    )
+    feedback: str = Field(default="", description="Feedback when rejected")
 
 
 class DebugLesson(BaseModel):

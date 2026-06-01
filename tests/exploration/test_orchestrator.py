@@ -1,4 +1,7 @@
+import inspect
 from pathlib import Path
+
+from langgraph.types import Command
 
 from statigent.exploration import ExplorationOrchestrator
 from statigent.exploration.state import ExplorationRunState
@@ -75,7 +78,7 @@ class FakeReviewer:
     ) -> None:
         self.plan_decisions = plan_decisions or [approved_plan()]
         self.final_decisions = final_decisions or [
-            FinalReviewDecision(approved=True, reason="Complete")
+            FinalReviewDecision(approved=True, feedback="Complete")
         ]
         self.plans_seen: list[str] = []
         self.step_counts_seen: list[int] = []
@@ -108,7 +111,7 @@ class FakeReviewer:
         self.final_drafts_seen.append(draft)
         if self.final_decisions:
             return self.final_decisions.pop(0)
-        return FinalReviewDecision(approved=True, reason="Complete")
+        return FinalReviewDecision(approved=True, feedback="Complete")
 
 
 class FakeCoder:
@@ -302,6 +305,13 @@ def make_state(
     }
 
 
+def test_graph_nodes_use_command_goto_for_routing() -> None:
+    source = inspect.getsource(ExplorationOrchestrator._build_graph)
+
+    assert "add_conditional_edges" not in source
+    assert source.count("add_edge") == 1
+
+
 def test_reviewer_rejection_routes_back_to_inspector(tmp_path: Path) -> None:
     kernel = started_kernel(tmp_path)
     kernel.queue_result(stdout="mean=15\n")
@@ -374,8 +384,11 @@ def test_review_plan_node_records_final_request_without_calling_inspector(
         )
     ]
 
-    updates = orchestrator._review_plan_node(state)
+    command = orchestrator._review_plan_node(state)
+    updates = command.update
 
+    assert isinstance(command, Command)
+    assert command.goto == "inspector"
     assert inspector.calls == []
     assert updates["final_draft_requested"] is True
     assert "final_draft" not in updates
@@ -613,10 +626,9 @@ def test_final_review_rejection_routes_back_to_inspector_when_budget_remains(
         final_decisions=[
             FinalReviewDecision(
                 approved=False,
-                reason="Need clearer evidence",
-                additional_exploration_focus="Show the exact calculation.",
+                feedback="Show the exact calculation.",
             ),
-            FinalReviewDecision(approved=True, reason="Complete"),
+            FinalReviewDecision(approved=True, feedback="Complete"),
         ],
     )
     orchestrator = make_orchestrator(
@@ -644,8 +656,7 @@ def test_round_budget_exhaustion_produces_partial_output(tmp_path: Path) -> None
             final_decisions=[
                 FinalReviewDecision(
                     approved=False,
-                    reason="Incomplete",
-                    additional_exploration_focus="Need more evidence.",
+                    feedback="Need more evidence.",
                 )
             ]
         ),
@@ -733,21 +744,27 @@ def test_debug_budget_exhaustion_produces_partial_output(
     )
 
 
-def test_reviewer_approved_direction_routes_to_code(
+def test_reviewer_approved_direction_returns_code_command(
     tmp_path: Path,
 ) -> None:
     kernel = started_kernel(tmp_path)
-    orchestrator = make_orchestrator(kernel)
-    state = make_state(tmp_path)
-    state["plan_review"] = ReviewerPlanDecision(
-        approved=True,
-        coder_instruction="Compute mean revenue.",
+    reviewer = FakeReviewer(
+        plan_decisions=[
+            ReviewerPlanDecision(
+                approved=True,
+                coder_instruction="Compute mean revenue.",
+            )
+        ]
     )
-    state["approved_instruction"] = "Compute mean revenue."
+    orchestrator = make_orchestrator(kernel, reviewer=reviewer)
+    state = make_state(tmp_path)
 
-    route = orchestrator._route_after_plan_review(state)
+    command = orchestrator._review_plan_node(state)
+    updates = command.update
 
-    assert route == "code"
+    assert isinstance(command, Command)
+    assert command.goto == "code"
+    assert updates["approved_instruction"] == "Compute mean revenue."
 
 
 def test_debug_node_returns_new_lesson_list_without_mutating_state(
@@ -767,8 +784,11 @@ def test_debug_node_returns_new_lesson_list_without_mutating_state(
     state["last_result"] = result
     orchestrator = make_orchestrator(kernel, debugger=FakeDebugger())
 
-    updates = orchestrator._debug_node(state)
+    command = orchestrator._debug_node(state)
+    updates = command.update
 
+    assert isinstance(command, Command)
+    assert command.goto == "execute"
     updated_lessons = updates["debug_lessons"]
     assert isinstance(updated_lessons, list)
     assert updated_lessons is not state["debug_lessons"]

@@ -20,6 +20,16 @@ def test_inspector_prompt_requires_action_block() -> None:
     assert "custom_analysis" not in text
 
 
+def test_inspector_prompt_defines_stop_as_final_review_request() -> None:
+    text = INSPECTOR_PLAN_SYSTEM_PROMPT.casefold()
+
+    assert "stop is not a final answer" in text
+    assert "request reviewer approval" in text
+    assert "executed evidence" in text
+    assert "leave coder_instruction empty" in text
+    assert "do not use stop" in text
+
+
 def test_reviewer_prompt_requires_structured_decision_and_rejection_criteria() -> None:
     text = REVIEWER_PLAN_SYSTEM_PROMPT.casefold()
 
@@ -37,6 +47,15 @@ def test_reviewer_prompt_requires_structured_decision_and_rejection_criteria() -
     assert "unsupported" in text
     assert "unnecessary" in text
     assert "final" in text
+
+
+def test_reviewer_prompt_audits_stop_requests_against_evidence() -> None:
+    text = REVIEWER_PLAN_SYSTEM_PROMPT.casefold()
+
+    assert "stop" in text
+    assert "reject stop" in text
+    assert "executed evidence" in text
+    assert "approved_final" in text
 
 
 def test_coder_prompt_requires_single_append_without_execution() -> None:
@@ -63,6 +82,10 @@ def test_final_reviewer_prompt_requires_evidence_and_output_constraints() -> Non
     assert "evidence" in text
     assert "output constraints" in text
     assert "finalreviewdecision" in text
+    assert "approved" in text
+    assert "feedback" in text
+    assert "reason" not in text
+    assert "additional_exploration_focus" not in text
 
 
 def test_inspector_prompt_uses_freeform_action_label() -> None:

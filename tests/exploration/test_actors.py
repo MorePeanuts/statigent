@@ -200,7 +200,7 @@ def test_reviewer_review_plan_returns_decision() -> None:
 
 
 def test_reviewer_review_final_returns_final_decision() -> None:
-    decision = FinalReviewDecision(approved=True, reason="Complete")
+    decision = FinalReviewDecision(approved=True, feedback="Complete")
     reviewer = Reviewer(FakeModel(decision))
     draft = FinalDraft(content="Average revenue is 15.", evidence=["mean=15"])
 
