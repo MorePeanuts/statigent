@@ -11,7 +11,6 @@ from statigent.schemas import (
     DatasetProfile,
     DebugLesson,
     ExplorationAction,
-    ExplorationActionKind,
     ExplorationReport,
     FinalDraft,
     InputFileInfo,
@@ -181,16 +180,8 @@ def test_debug_lesson_records_task_local_fix() -> None:
     assert lesson.fix_strategy == "Use df.columns to confirm names"
 
 
-def test_custom_action_requires_rationale_expected_evidence_and_risk_notes() -> None:
-    with pytest.raises(ValidationError):
-        ExplorationAction(
-            kind=ExplorationActionKind.CUSTOM_ANALYSIS,
-            title="Try unusual segmentation",
-            description="Cluster stores by seasonality",
-        )
-
+def test_exploration_action_records_freeform_plan_without_kind() -> None:
     action = ExplorationAction(
-        kind=ExplorationActionKind.CUSTOM_ANALYSIS,
         title="Try unusual segmentation",
         description="Cluster stores by seasonality",
         rationale="The prompt asks for hidden patterns",
@@ -198,7 +189,8 @@ def test_custom_action_requires_rationale_expected_evidence_and_risk_notes() -> 
         risk_notes="May overfit noisy history",
     )
 
-    assert action.kind is ExplorationActionKind.CUSTOM_ANALYSIS
+    assert action.title == "Try unusual segmentation"
+    assert action.model_extra is None or "kind" not in action.model_extra
 
 
 def test_dataset_profile_records_table_and_non_table_files(tmp_path: Path) -> None:

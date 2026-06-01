@@ -69,27 +69,6 @@ class TableRole(StrEnum):
     SAMPLE_SUBMISSION = "sample_submission"
 
 
-class ExplorationActionKind(StrEnum):
-    """Predefined data exploration actions the Inspector can choose from.
-
-    CUSTOM_ANALYSIS requires rationale, expected_evidence, and risk_notes;
-    all other kinds are safe with just a title and description.
-    """
-
-    INSPECT_SCHEMA = "inspect_schema"
-    PROFILE_MISSINGNESS = "profile_missingness"
-    SUMMARIZE_NUMERIC = "summarize_numeric"
-    SUMMARIZE_CATEGORICAL = "summarize_categorical"
-    ANALYZE_TIME_TREND = "analyze_time_trend"
-    ANALYZE_GROUP_COMPARISON = "analyze_group_comparison"
-    ANALYZE_CORRELATION = "analyze_correlation"
-    DETECT_OUTLIERS = "detect_outliers"
-    VALIDATE_DATA_QUALITY = "validate_data_quality"
-    CREATE_VISUALIZATION = "create_visualization"
-    ANSWER_SPECIFIC_QUESTION = "answer_specific_question"
-    CUSTOM_ANALYSIS = "custom_analysis"
-
-
 class Budget(BaseModel):
     """Resource caps for an exploration run."""
 
@@ -457,22 +436,9 @@ class TaskBrief(BaseModel):
         return copied
 
 
-# BUG: See the `next_action` method of the Inspector; this method is not suitable
-# for structured output.
 class ExplorationAction(BaseModel):
-    """A single exploration step proposed by the Inspector.
+    """A single exploration step approved from an Inspector plan."""
 
-    CUSTOM_ANALYSIS actions must supply rationale, expected_evidence, and
-    risk_notes — enforced by the model validator below.
-    """
-
-    kind: ExplorationActionKind = Field(
-        description="Which predefined action to perform"
-    )
-    # BUG: Each predefined exploration action should correspond to a carefully designed
-    # exploration prompt, similar to skills. The Inspector is responsible for outputting
-    # its analysis process and conclusions, which are then parsed by the reviewer to
-    # extract actions and integrate the prompts.
     title: str = Field(description="Short human-readable label for the action")
     description: str = Field(description="What this action will investigate or compute")
     rationale: str = Field(
@@ -484,20 +450,6 @@ class ExplorationAction(BaseModel):
     risk_notes: str = Field(
         default="", description="Potential pitfalls or side effects"
     )
-
-    @model_validator(mode="after")
-    def validate_custom_action(self) -> "ExplorationAction":
-        if self.kind is not ExplorationActionKind.CUSTOM_ANALYSIS:
-            return self
-        missing = [
-            name
-            for name in ("rationale", "expected_evidence", "risk_notes")
-            if not getattr(self, name).strip()
-        ]
-        if missing:
-            missing_text = ", ".join(missing)
-            raise ValueError(f"custom_analysis requires: {missing_text}")
-        return self
 
 
 class ArtifactRef(BaseModel):
@@ -538,25 +490,6 @@ class FinalReviewDecision(BaseModel):
     reason: str = Field(description="Reason for approval or rejection")
     additional_exploration_focus: str = Field(
         default="", description="Targeted focus for more exploration if rejected"
-    )
-
-
-class ApprovedCodeInstruction(BaseModel):
-    """Coder-facing instruction assembled from an approved Reviewer decision."""
-
-    action_kind: ExplorationActionKind = Field(
-        description="Approved exploration action kind"
-    )
-    question: str = Field(description="Specific question the code should answer")
-    evidence_needed: str = Field(description="Evidence the code should produce")
-    coding_instruction: str = Field(description="Concrete instruction for the Coder")
-    action_prompt: str = Field(description="Reusable DEA action prompt text")
-    rationale: str = Field(default="", description="Why this action was approved")
-    risk_notes: str = Field(
-        default="", description="Potential pitfalls or side effects"
-    )
-    constraints: list[str] = Field(
-        default_factory=list, description="Execution or analysis constraints"
     )
 
 
@@ -752,7 +685,6 @@ class OutputBundle(BaseModel):
 
 
 __all__ = [
-    "ApprovedCodeInstruction",
     "ArtifactRef",
     "Budget",
     "CodeDraft",
@@ -762,7 +694,6 @@ __all__ = [
     "DebugDecision",
     "DebugLesson",
     "ExplorationAction",
-    "ExplorationActionKind",
     "ExplorationObservation",
     "ExplorationReport",
     "ExplorationStep",

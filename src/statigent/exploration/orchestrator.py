@@ -17,7 +17,6 @@ from statigent.schemas import (
     CodeDraft,
     DatasetProfile,
     ExplorationAction,
-    ExplorationActionKind,
     ExplorationReport,
     ExplorationStep,
     FinalDraft,
@@ -587,14 +586,9 @@ class ExplorationOrchestrator:
             label, separator, value = line.partition(":")
             if separator:
                 fields[label.strip().casefold()] = value.strip()
-        kind_text = fields.get("action", "")
-        try:
-            kind = ExplorationActionKind(kind_text)
-        except ValueError:
-            kind = ExplorationActionKind.ANSWER_SPECIFIC_QUESTION
+        action_label = fields.get("action", "Inspector plan")
         return ExplorationAction(
-            kind=kind,
-            title=fields.get("question") or kind.value,
+            title=fields.get("question") or action_label,
             description=plan_text,
             rationale="Approved Inspector plan",
             expected_evidence=fields.get("evidence_needed", ""),
@@ -605,7 +599,6 @@ class ExplorationOrchestrator:
     def _empty_draft(content: str) -> FinalDraft:
         return FinalDraft(content=content)
 
-    @staticmethod
     @staticmethod
     def _cell_trace_metadata(cell: NotebookCell) -> dict[str, object]:
         return {

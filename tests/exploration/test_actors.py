@@ -15,7 +15,6 @@ from statigent.schemas import (
     DebugDecision,
     DebugLesson,
     ExplorationAction,
-    ExplorationActionKind,
     FinalDraft,
     FinalReviewDecision,
     InputFileInfo,
@@ -335,7 +334,6 @@ def test_coder_returns_code_draft() -> None:
     )
     coder = Coder(FakeModel(draft))
     action = ExplorationAction(
-        kind=ExplorationActionKind.INSPECT_SCHEMA,
         title="Inspect",
         description="Inspect schema",
     )

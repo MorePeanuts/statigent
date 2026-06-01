@@ -7,7 +7,6 @@ from statigent.schemas import (
     Complexity,
     DatasetProfile,
     DebugLesson,
-    ExplorationActionKind,
     FinalDraft,
     FinalReviewDecision,
     InputFileInfo,
@@ -359,14 +358,14 @@ def test_reviewer_approval_routes_to_coder_and_execute_by_cell_id(
     assert kernel.snapshot().executed_cells[0].cell_id == "cell-1"
 
 
-def test_custom_analysis_approval_records_required_action_fields(
+def test_freeform_plan_approval_records_action_fields(
     tmp_path: Path,
 ) -> None:
     kernel = started_kernel(tmp_path)
     kernel.queue_result(stdout="segments=3\n")
     inspector = FakeInspector(
         plans=[
-            "ACTION: custom_analysis\n"
+            "ACTION: segment_revenue\n"
             "QUESTION: Are there hidden revenue segments?\n"
             "EVIDENCE_NEEDED: Segment summary\n"
             "STOP: no"
@@ -377,8 +376,8 @@ def test_custom_analysis_approval_records_required_action_fields(
     report = orchestrator.run(make_brief(), make_profile(tmp_path))
 
     action = report.steps[0].action
-    assert action.kind is ExplorationActionKind.CUSTOM_ANALYSIS
     assert action.title == "Are there hidden revenue segments?"
+    assert action.description.startswith("ACTION: segment_revenue")
     assert action.expected_evidence == "Segment summary"
 
 

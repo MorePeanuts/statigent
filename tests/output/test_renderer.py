@@ -2,7 +2,6 @@ from statigent.output import OutputRenderer
 from statigent.schemas import (
     Complexity,
     ExplorationAction,
-    ExplorationActionKind,
     ExplorationReport,
     ExplorationStep,
     FinalDraft,
@@ -79,7 +78,6 @@ def test_renderer_handles_langgraph_exploration_report_shape() -> None:
         steps=[
             ExplorationStep(
                 action=ExplorationAction(
-                    kind=ExplorationActionKind.SUMMARIZE_NUMERIC,
                     title="Average revenue",
                     description="Compute mean revenue",
                 ),
