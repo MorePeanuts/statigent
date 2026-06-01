@@ -474,12 +474,21 @@ class ReviewerPlanDecision(BaseModel):
         default=False,
         description="Whether the Inspector's final drafting proposal is approved",
     )
+    coder_instruction: str = Field(
+        default="",
+        description=(
+            "Inspector-provided instruction copied verbatim for the Coder when "
+            "approved is true"
+        ),
+    )
     feedback: str = Field(default="", description="Detailed feedback when rejected")
 
     @model_validator(mode="after")
     def validate_single_approval_path(self) -> "ReviewerPlanDecision":
         if self.approved and self.approved_final:
             raise ValueError("choose only one of approved or approved_final")
+        if self.approved and not self.coder_instruction.strip():
+            raise ValueError("approved plans require coder_instruction")
         return self
 
 

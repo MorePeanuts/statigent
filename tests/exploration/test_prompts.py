@@ -13,6 +13,7 @@ def test_inspector_prompt_requires_action_block() -> None:
     assert "action:" in text
     assert "question:" in text
     assert "evidence_needed:" in text
+    assert "coder_instruction:" in text
     assert "stop:" in text
     assert "end every planning response" in text
     assert "explorationactionkind" not in text
@@ -25,6 +26,8 @@ def test_reviewer_prompt_requires_structured_decision_and_rejection_criteria() -
     assert "reviewerplandecision" in text
     assert "approved" in text
     assert "approved_final" in text
+    assert "coder_instruction" in text
+    assert "copy" in text
     assert "feedback" in text
     assert "full execution path" in text
     assert "irrelevant" in text

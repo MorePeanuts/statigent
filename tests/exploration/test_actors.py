@@ -9,12 +9,10 @@ from statigent.exploration import Coder, Debugger, Inspector, Reviewer
 from statigent.exploration.tools import make_replace_code_cell_tool
 from statigent.notebook import FakeNotebookKernel, NotebookContext
 from statigent.schemas import (
-    CodeDraft,
     Complexity,
     DatasetProfile,
     DebugDecision,
     DebugLesson,
-    ExplorationAction,
     FinalDraft,
     FinalReviewDecision,
     InputFileInfo,
@@ -181,7 +179,10 @@ def test_inspector_next_plan_returns_text(tmp_path: Path) -> None:
 
 
 def test_reviewer_review_plan_returns_decision() -> None:
-    decision = ReviewerPlanDecision(approved=True)
+    decision = ReviewerPlanDecision(
+        approved=True,
+        coder_instruction="Compute mean revenue from the available data.",
+    )
     model = FakeModel(decision)
     reviewer = Reviewer(model)
 
@@ -223,7 +224,6 @@ def test_coder_append_code_cell_uses_append_tool(tmp_path: Path) -> None:
     instruction = "ACTION: inspect_schema\nQUESTION: What columns exist?"
 
     cell = coder.append_code_cell(
-        make_brief(),
         make_profile(tmp_path),
         instruction,
         kernel,
@@ -236,7 +236,8 @@ def test_coder_append_code_cell_uses_append_tool(tmp_path: Path) -> None:
     assert "Available input paths:" in coder_prompt
     assert "Dataset profile:" in coder_prompt
     assert "Notebook code context:" in coder_prompt
-    assert "Approved Inspector plan:" in coder_prompt
+    assert "Coder instruction:" in coder_prompt
+    assert "Task brief:" not in coder_prompt
     assert "Use the listed input paths exactly" in coder_prompt
 
 
@@ -269,7 +270,6 @@ def test_coder_append_code_cell_rejects_duplicate_tool_calls(
 
     with pytest.raises(StatigentExplorationError, match="exactly one"):
         coder.append_code_cell(
-            make_brief(),
             make_profile(tmp_path),
             instruction,
             kernel,
@@ -324,21 +324,6 @@ def test_debugger_debug_cell_uses_replace_and_records_lesson(tmp_path: Path) -> 
             applies_when="A cell references an undefined name",
         )
     ]
-
-
-def test_coder_returns_code_draft() -> None:
-    draft = CodeDraft(
-        code="print('ok')",
-        purpose="Check data",
-        expected_observation="ok",
-    )
-    coder = Coder(FakeModel(draft))
-    action = ExplorationAction(
-        title="Inspect",
-        description="Inspect schema",
-    )
-
-    assert coder.write_code(make_brief(), action) == draft
 
 
 def test_debugger_returns_debug_decision() -> None:

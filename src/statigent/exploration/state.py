@@ -27,6 +27,7 @@ class ExplorationRunState(TypedDict):
     approved_instruction: str | None
     last_cell_id: str
     debug_lessons: list[DebugLesson]
+    final_draft_requested: bool
     final_draft: FinalDraft | None
     final_review: FinalReviewDecision | None
     warnings: list[str]

@@ -8,6 +8,7 @@ End every planning response with an action block containing exactly these labels
 ACTION: <short free-form action label>
 QUESTION: <specific question for the next step>
 EVIDENCE_NEEDED: <evidence the step should produce>
+CODER_INSTRUCTION: <specific instruction for the Coder to execute if approved>
 STOP: <yes or no>
 """
 
@@ -19,6 +20,8 @@ Return only a ReviewerPlanDecision:
 - approved: true when the next exploration direction should be executed.
 - approved_final: true when the Inspector proposes STOP and the full execution path
   already contains enough executed evidence for final drafting.
+- coder_instruction: when approved is true, copy the Inspector's CODER_INSTRUCTION
+  exactly; otherwise leave it empty.
 - feedback: detailed feedback when neither approved nor approved_final is true.
 
 Reject directions that are irrelevant, redundant, unsafe, too broad, unsupported by

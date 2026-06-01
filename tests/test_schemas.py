@@ -143,6 +143,7 @@ def test_reviewer_plan_decision_schema_is_compact() -> None:
     assert set(schema["properties"]) == {
         "approved",
         "approved_final",
+        "coder_instruction",
         "feedback",
     }
 
@@ -157,15 +158,31 @@ def test_reviewer_plan_decision_allows_final_approval_without_action() -> None:
 
 
 def test_reviewer_plan_decision_allows_complete_approval() -> None:
-    decision = ReviewerPlanDecision(approved=True)
+    decision = ReviewerPlanDecision(
+        approved=True,
+        coder_instruction="Compute mean revenue from sales.csv.",
+    )
 
     assert decision.approved
     assert not decision.approved_final
+    assert decision.coder_instruction == "Compute mean revenue from sales.csv."
 
 
-def test_reviewer_plan_decision_rejects_approval_without_payload() -> None:
+def test_reviewer_plan_decision_rejects_conflicting_approval_paths() -> None:
     with pytest.raises(ValidationError, match="choose only one"):
-        ReviewerPlanDecision(approved=True, approved_final=True)
+        ReviewerPlanDecision(
+            approved=True,
+            approved_final=True,
+            coder_instruction="Compute mean revenue.",
+        )
+
+
+def test_reviewer_plan_decision_requires_coder_instruction_when_approved() -> None:
+    with pytest.raises(
+        ValidationError,
+        match="approved plans require coder_instruction",
+    ):
+        ReviewerPlanDecision(approved=True)
 
 
 def test_debug_lesson_records_task_local_fix() -> None:

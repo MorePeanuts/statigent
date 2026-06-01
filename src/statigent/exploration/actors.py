@@ -32,11 +32,9 @@ from statigent.retry import (
     retry_on_parse_error,
 )
 from statigent.schemas import (
-    CodeDraft,
     DatasetProfile,
     DebugDecision,
     DebugLesson,
-    ExplorationAction,
     ExplorationStep,
     FinalDraft,
     FinalReviewDecision,
@@ -294,7 +292,6 @@ class Coder:
 
     def append_code_cell(
         self,
-        brief: TaskBrief,
         profile: DatasetProfile,
         instruction: str,
         kernel: NotebookKernel,
@@ -312,13 +309,12 @@ class Coder:
                 SystemMessage(content=CODER_SYSTEM_PROMPT),
                 HumanMessage(
                     content=(
-                        f"Task brief:\n{brief.model_dump_json()}\n\n"
                         f"Dataset profile:\n{profile.compact_summary()}\n\n"
                         f"Available input paths:\n{input_paths}\n\n"
                         f"Notebook code context:\n{code_context}\n\n"
                         "Use the listed input paths exactly when reading data. "
                         "Do not invent filenames, directories, or mount points.\n\n"
-                        f"Approved Inspector plan:\n{instruction}"
+                        f"Coder instruction:\n{instruction}"
                     ),
                 ),
             ],
@@ -332,30 +328,6 @@ class Coder:
                 "expected NotebookCell"
             )
         return result
-
-    def write_code(self, brief: TaskBrief, action: ExplorationAction) -> CodeDraft:
-        # BUG: The coder should bind a `append_code_cell` tool to add cells to the code
-        # context, but not execute them for now. Additionally, each cell corresponds
-        # to a question passed from the reviewer.
-        return _invoke_with_retries(
-            self.model,
-            CodeDraft,
-            [
-                SystemMessage(
-                    content=(
-                        "You are the Coder. Write one incremental Python notebook "
-                        "cell for the approved data analysis action."
-                    ),
-                ),
-                HumanMessage(
-                    content=(
-                        f"Task brief:\n{brief.model_dump_json()}\n\n"
-                        f"Action:\n{action.model_dump_json()}"
-                    ),
-                ),
-            ],
-        )
-
 
 # TODO: The debugger should be equipped with a replace_code_cell tool, using a React
 # agent focused on solving code debugging issues.

@@ -57,6 +57,7 @@ class ExplorationOrchestrator:
             "approved_instruction": None,
             "last_cell_id": "",
             "debug_lessons": [],
+            "final_draft_requested": False,
             "final_draft": None,
             "final_review": None,
             "warnings": [],
@@ -108,7 +109,11 @@ class ExplorationOrchestrator:
         graph.add_node("final_review", self._final_review_node)
 
         graph.add_edge(START, "inspector")
-        graph.add_edge("inspector", "review_plan")
+        graph.add_conditional_edges(
+            "inspector",
+            self._route_after_inspector,
+            {"review_plan": "review_plan", "final_review": "final_review"},
+        )
         graph.add_conditional_edges(
             "review_plan",
             self._route_after_plan_review,
@@ -137,30 +142,18 @@ class ExplorationOrchestrator:
         self,
         state: ExplorationRunState,
     ) -> dict[str, object]:
+        if state["final_draft_requested"]:
+            return self._final_draft_update(
+                state,
+                "Reviewer approved final drafting.",
+            )
+
         if not can_continue_exploration(state):
             if state["steps"]:
-                draft = self.inspector.final_draft(
-                    state["brief"],
-                    state["profile"],
-                    state["steps"],
+                return self._final_draft_update(
+                    state,
+                    "Round budget reached after completed exploration.",
                 )
-                return {
-                    "final_draft": draft,
-                    "trace_events": [
-                        *state["trace_events"],
-                        self._trace(
-                            "inspector",
-                            "final_draft",
-                            draft.model_dump_json(),
-                            usage_metadata=self._actor_usage(self.inspector),
-                            metadata={
-                                "reason": (
-                                    "Round budget reached after completed exploration."
-                                )
-                            },
-                        ),
-                    ],
-                }
             return self._budget_draft_update(state, "Round budget exhausted.")
 
         plan_text = self.inspector.next_plan(
@@ -199,6 +192,7 @@ class ExplorationOrchestrator:
             return {
                 "plan_review": decision,
                 "review_feedback": feedback,
+                "final_draft_requested": False,
                 "warnings": [
                     *state["warnings"],
                     f"Reviewer rejected plan: {feedback}",
@@ -224,6 +218,7 @@ class ExplorationOrchestrator:
                 return {
                     "plan_review": decision,
                     "review_feedback": feedback,
+                    "final_draft_requested": False,
                     "warnings": [
                         *state["warnings"],
                         "Reviewer approved final drafting without executed evidence.",
@@ -239,15 +234,10 @@ class ExplorationOrchestrator:
                         ),
                     ],
                 }
-            draft = self.inspector.final_draft(
-                state["brief"],
-                state["profile"],
-                state["steps"],
-            )
             return {
                 "plan_review": decision,
                 "review_feedback": "",
-                "final_draft": draft,
+                "final_draft_requested": True,
                 "trace_events": [
                     *state["trace_events"],
                     self._trace(
@@ -257,13 +247,6 @@ class ExplorationOrchestrator:
                         usage_metadata=self._actor_usage(self.reviewer),
                         metadata={"plan_text": state["pending_plan_text"]},
                     ),
-                    self._trace(
-                        "inspector",
-                        "final_draft",
-                        draft.model_dump_json(),
-                        usage_metadata=self._actor_usage(self.inspector),
-                        metadata={"reason": "Reviewer approved final drafting."},
-                    ),
                 ],
             }
 
@@ -272,6 +255,7 @@ class ExplorationOrchestrator:
             return {
                 "plan_review": decision,
                 "review_feedback": feedback,
+                "final_draft_requested": False,
                 "warnings": [
                     *state["warnings"],
                     feedback,
@@ -288,11 +272,12 @@ class ExplorationOrchestrator:
                 ],
             }
 
-        instruction = state["pending_plan_text"]
+        instruction = decision.coder_instruction
         return {
             "plan_review": decision,
             "approved_instruction": instruction,
             "review_feedback": "",
+            "final_draft_requested": False,
             "trace_events": [
                 *state["trace_events"],
                 self._trace(
@@ -323,7 +308,6 @@ class ExplorationOrchestrator:
             return self._budget_draft_update(state, "Code cell budget exhausted.")
 
         cell = self.coder.append_code_cell(
-            state["brief"],
             state["profile"],
             instruction,
             self.kernel,
@@ -418,7 +402,7 @@ class ExplorationOrchestrator:
                 "debug_attempts": 0,
             }
 
-        action = self._action_from_plan_text(instruction)
+        action = self._action_from_plan_text(state["pending_plan_text"])
         plan_review = state.get("plan_review")
         review = ReviewDecision(
             approved=True,
@@ -453,6 +437,7 @@ class ExplorationOrchestrator:
             "last_result": None,
             "debug_attempts": 0,
             "status": status,
+            "final_draft_requested": False,
             "trace_events": [
                 *state["trace_events"],
                 self._trace("orchestrator", "observe", action.title),
@@ -509,11 +494,19 @@ class ExplorationOrchestrator:
             updates["status"] = "partial"
         else:
             updates["final_draft"] = None
+            updates["final_draft_requested"] = False
         return updates
+
+    def _route_after_inspector(self, state: ExplorationRunState) -> str:
+        if state["final_draft"] is not None:
+            return "final_review"
+        return "review_plan"
 
     def _route_after_plan_review(self, state: ExplorationRunState) -> str:
         if state["final_draft"] is not None:
             return "final_review"
+        if state["final_draft_requested"]:
+            return "inspector"
         decision = state.get("plan_review")
         if (
             decision is not None
@@ -551,6 +544,31 @@ class ExplorationOrchestrator:
             "final_draft": self._partial_draft(state),
             "warnings": [*state["warnings"], warning],
             "status": "partial",
+        }
+
+    def _final_draft_update(
+        self,
+        state: ExplorationRunState,
+        reason: str,
+    ) -> dict[str, object]:
+        draft = self.inspector.final_draft(
+            state["brief"],
+            state["profile"],
+            state["steps"],
+        )
+        return {
+            "final_draft": draft,
+            "final_draft_requested": False,
+            "trace_events": [
+                *state["trace_events"],
+                self._trace(
+                    "inspector",
+                    "final_draft",
+                    draft.model_dump_json(),
+                    usage_metadata=self._actor_usage(self.inspector),
+                    metadata={"reason": reason},
+                ),
+            ],
         }
 
     def _partial_draft(self, state: ExplorationRunState) -> FinalDraft:

@@ -7,11 +7,14 @@ from statigent.schemas import (
     Complexity,
     DatasetProfile,
     DebugLesson,
+    ExplorationAction,
+    ExplorationStep,
     FinalDraft,
     FinalReviewDecision,
     InputFileInfo,
     NotebookCell,
     OutputType,
+    ReviewDecision,
     ReviewerPlanDecision,
     TableProfile,
     TaskBrief,
@@ -119,7 +122,6 @@ class FakeCoder:
 
     def append_code_cell(
         self,
-        _brief: TaskBrief,
         _profile: DatasetProfile,
         instruction: str,
         kernel: FakeNotebookKernel,
@@ -168,7 +170,10 @@ class FakeDebugger:
 
 
 def approved_plan() -> ReviewerPlanDecision:
-    return ReviewerPlanDecision(approved=True)
+    return ReviewerPlanDecision(
+        approved=True,
+        coder_instruction="Compute mean revenue from the available sales data.",
+    )
 
 
 def stop_plan() -> ReviewerPlanDecision:
@@ -282,6 +287,7 @@ def make_state(
         "approved_instruction": None,
         "last_cell_id": cell.cell_id if cell is not None else "",
         "debug_lessons": debug_lessons or [],
+        "final_draft_requested": False,
         "final_draft": None,
         "final_review": None,
         "warnings": [],
@@ -337,9 +343,42 @@ def test_inspector_stop_text_is_reviewed_before_finalizing(tmp_path: Path) -> No
     report = orchestrator.run(make_brief(), make_profile(tmp_path))
 
     assert len(coder.instructions) == 1
-    assert coder.instructions[0] == "ACTION: summarize_numeric\nSTOP: yes"
+    assert (
+        coder.instructions[0]
+        == "Compute mean revenue from the available sales data."
+    )
     assert len(report.steps) == 1
     assert reviewer.plans_seen[0] == "ACTION: summarize_numeric\nSTOP: yes"
+
+
+def test_review_plan_node_records_final_request_without_calling_inspector(
+    tmp_path: Path,
+) -> None:
+    kernel = started_kernel(tmp_path)
+    inspector = FakeInspector()
+    reviewer = FakeReviewer(plan_decisions=[stop_plan()])
+    orchestrator = make_orchestrator(
+        kernel,
+        inspector=inspector,
+        reviewer=reviewer,
+    )
+    state = make_state(tmp_path)
+    state["pending_plan_text"] = "STOP: yes"
+    state["steps"] = [
+        ExplorationStep(
+            action=ExplorationAction(
+                title="Compute average revenue",
+                description="Compute mean revenue",
+            ),
+            review=ReviewDecision(approved=True, reason="Relevant"),
+        )
+    ]
+
+    updates = orchestrator._review_plan_node(state)
+
+    assert inspector.calls == []
+    assert updates["final_draft_requested"] is True
+    assert "final_draft" not in updates
 
 
 def test_reviewer_approval_routes_to_coder_and_execute_by_cell_id(
@@ -352,7 +391,10 @@ def test_reviewer_approval_routes_to_coder_and_execute_by_cell_id(
 
     report = orchestrator.run(make_brief(), make_profile(tmp_path))
 
-    assert coder.instructions[0] == "ACTION: summarize_numeric\nSTOP: no"
+    assert (
+        coder.instructions[0]
+        == "Compute mean revenue from the available sales data."
+    )
     assert report.steps[0].result is not None
     assert report.steps[0].result.cell_id == "cell-1"
     assert kernel.snapshot().executed_cells[0].cell_id == "cell-1"
@@ -697,8 +739,11 @@ def test_reviewer_approved_direction_routes_to_code(
     kernel = started_kernel(tmp_path)
     orchestrator = make_orchestrator(kernel)
     state = make_state(tmp_path)
-    state["plan_review"] = ReviewerPlanDecision(approved=True)
-    state["approved_instruction"] = "ACTION: summarize_numeric"
+    state["plan_review"] = ReviewerPlanDecision(
+        approved=True,
+        coder_instruction="Compute mean revenue.",
+    )
+    state["approved_instruction"] = "Compute mean revenue."
 
     route = orchestrator._route_after_plan_review(state)
 
