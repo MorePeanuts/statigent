@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from langchain.messages import AIMessage
+from langchain.messages import AIMessage, AnyMessage
 from pydantic import BaseModel
 
 from statigent.errors import StatigentParseError
@@ -35,12 +35,16 @@ class FakeStructuredModel:
         result: object = None,
         parsing_error: Exception | None = None,
         usage_metadata: dict[str, int] | None = None,
+        messages_seen: list[list[AnyMessage]] | None = None,
     ) -> None:
         self.result = result
         self.parsing_error = parsing_error
         self.usage_metadata = usage_metadata
+        self.messages_seen = messages_seen
 
-    def invoke(self, _messages: list[dict[str, str]]) -> dict[str, Any]:
+    def invoke(self, messages: list[AnyMessage]) -> dict[str, Any]:
+        if self.messages_seen is not None:
+            self.messages_seen.append(messages)
         raw = (
             AIMessage(content="", usage_metadata=self.usage_metadata)
             if self.usage_metadata is not None
@@ -66,13 +70,19 @@ class FakeModel:
         self.parsing_error = parsing_error
         self.usage_metadata = usage_metadata
         self.schema: type[BaseModel] | None = None
+        self.messages_seen: list[list[AnyMessage]] = []
 
     def with_structured_output(
         self, schema: type[BaseModel], *, include_raw: bool = False
     ) -> FakeStructuredModel:
         self.schema = schema
         result = schema(**self.payload) if self.payload is not None else self.result
-        return FakeStructuredModel(result, self.parsing_error, self.usage_metadata)
+        return FakeStructuredModel(
+            result,
+            self.parsing_error,
+            self.usage_metadata,
+            self.messages_seen,
+        )
 
 
 def make_profile(tmp_path: Path) -> DatasetProfile:
@@ -151,6 +161,74 @@ def test_planner_uses_structured_result_without_model_budgets(
         output_type=OutputType.REPORT,
         complexity=Complexity.MODERATE,
     )
+    assert fake_model.messages_seen
+    assert "Generate task_description" in str(fake_model.messages_seen[0][0].content)
+
+
+def test_benchmark_brief_preserves_input_without_model_description(
+    tmp_path: Path,
+) -> None:
+    fake_model = FakeModel(
+        payload={
+            "task_type": TaskType.DATA_ANALYSIS,
+            "objective": "Analyze revenue trend",
+            "output_type": OutputType.REPORT,
+            "complexity": Complexity.MODERATE,
+        }
+    )
+    planner = TaskBriefPlanner(model=fake_model)
+
+    brief = planner.create_benchmark_brief(
+        prompt="Analyze revenue trend.",
+        task_instructions="Return a short answer.",
+        profile=make_profile(tmp_path),
+    )
+
+    assert fake_model.schema is not None
+    assert set(fake_model.schema.model_json_schema()["properties"]) == {
+        "task_type",
+        "objective",
+        "output_type",
+        "complexity",
+    }
+    assert brief == TaskBrief(
+        task_type=TaskType.DATA_ANALYSIS,
+        task_description="Analyze revenue trend.\n\nReturn a short answer.",
+        objective="Analyze revenue trend",
+        output_type=OutputType.REPORT,
+        complexity=Complexity.MODERATE,
+    )
+    assert fake_model.messages_seen
+    assert "Do not include task_description" in str(
+        fake_model.messages_seen[0][0].content
+    )
+
+
+def test_create_brief_can_disable_model_generated_description(
+    tmp_path: Path,
+) -> None:
+    fake_model = FakeModel(
+        payload={
+            "task_type": TaskType.DATA_ANALYSIS,
+            "objective": "Answer the benchmark question",
+            "output_type": OutputType.ANSWER,
+            "complexity": Complexity.SIMPLE,
+        }
+    )
+    planner = TaskBriefPlanner(model=fake_model)
+
+    brief = planner.create_brief(
+        prompt="What is the answer?",
+        task_instructions="Use the provided CSV.",
+        profile=make_profile(tmp_path),
+        generate_task_description=False,
+    )
+
+    assert fake_model.schema is not None
+    assert "task_description" not in fake_model.schema.model_json_schema()[
+        "properties"
+    ]
+    assert brief.task_description == "What is the answer?\n\nUse the provided CSV."
 
 
 def test_planner_raises_parse_error_for_structured_output_error(

@@ -33,6 +33,10 @@ class FakeProfiler:
 class FakePlanner:
     def __init__(self, brief: TaskBrief) -> None:
         self.brief = brief
+        self.create_brief_calls = 0
+        self.create_benchmark_brief_calls = 0
+        self.last_prompt = ""
+        self.last_task_instructions = ""
         self.last_usage_metadata = {
             "input_tokens": 13,
             "output_tokens": 5,
@@ -46,7 +50,30 @@ class FakePlanner:
         task_instructions: str,
         profile: DatasetProfile,
     ) -> TaskBrief:
+        self.create_brief_calls += 1
+        self.last_prompt = prompt
+        self.last_task_instructions = task_instructions
         return self.brief
+
+    def create_benchmark_brief(
+        self,
+        *,
+        prompt: str,
+        task_instructions: str,
+        profile: DatasetProfile,
+    ) -> TaskBrief:
+        self.create_benchmark_brief_calls += 1
+        self.last_prompt = prompt
+        self.last_task_instructions = task_instructions
+        return self.brief.model_copy(
+            update={
+                "task_description": (
+                    prompt
+                    if not task_instructions
+                    else f"{prompt}\n\n{task_instructions}"
+                )
+            }
+        )
 
 
 class FakeOrchestrator:
@@ -167,6 +194,40 @@ def make_agent(
         profiler=FakeProfiler(profile),
         planner=FakePlanner(brief),
         orchestrator_factory=factory,
+    )
+
+
+def test_analysis_eval_uses_benchmark_brief_planning(tmp_path: Path) -> None:
+    profile = make_profile(tmp_path)
+    brief = make_brief(TaskType.DATA_ANALYSIS)
+    planner = FakePlanner(brief)
+    seen_briefs: list[TaskBrief] = []
+
+    def factory(
+        run_brief: TaskBrief,
+        _profile: DatasetProfile,
+        _work_dir: Path,
+    ) -> FakeOrchestrator:
+        seen_briefs.append(run_brief)
+        return FakeOrchestrator()
+
+    agent = StatigentDataScienceAgent(
+        model_name="fake",
+        profiler=FakeProfiler(profile),
+        planner=planner,
+        orchestrator_factory=factory,
+    )
+
+    agent.run_analysis_for_eval(
+        "Find sales anomalies.",
+        files=[],
+        task_instructions="Use concise wording.",
+    )
+
+    assert planner.create_brief_calls == 0
+    assert planner.create_benchmark_brief_calls == 1
+    assert seen_briefs[0].task_description == (
+        "Find sales anomalies.\n\nUse concise wording."
     )
 
 

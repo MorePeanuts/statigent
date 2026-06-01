@@ -50,6 +50,14 @@ class _Planner(Protocol):
         profile: DatasetProfile,
     ) -> TaskBrief: ...
 
+    def create_benchmark_brief(
+        self,
+        *,
+        prompt: str,
+        task_instructions: str,
+        profile: DatasetProfile,
+    ) -> TaskBrief: ...
+
 
 class _Orchestrator(Protocol):
     def run(self, brief: TaskBrief, profile: DatasetProfile) -> ExplorationReport: ...
@@ -128,7 +136,7 @@ class StatigentDataScienceAgent:
                     },
                 ),
             ]
-            brief = planner.create_brief(
+            brief = planner.create_benchmark_brief(
                 prompt=prompt,
                 task_instructions=task_instructions,
                 profile=profile,
