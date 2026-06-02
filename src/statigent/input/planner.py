@@ -27,6 +27,14 @@ class _TaskBriefDecision(BaseModel):
     objective: str = Field(
         description="Concise task objective distilled from the request"
     )
+    restrictions: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Task-specific hard restrictions copied or distilled from the user "
+            "request, requirements, and requested output format. Include only "
+            "constraints for this task, not general agent policies."
+        ),
+    )
     output_type: OutputType = Field(
         description="Shape of deliverable requested by the user"
     )
@@ -40,6 +48,7 @@ class _TaskBriefDecision(BaseModel):
             task_type=self.task_type,
             task_description=task_description,
             objective=self.objective,
+            restrictions=self.restrictions,
             output_type=self.output_type,
             complexity=self.complexity,
         )
@@ -151,7 +160,10 @@ class TaskBriefPlanner:
                     "Generate task_description by preserving the original task "
                     "information, including material context, questions, "
                     "constraints, and requested details. The objective should be "
-                    "a concise task goal. "
+                    "a concise task goal. Extract task-specific restrictions "
+                    "from the request, requirements, and output format. "
+                    "Restrictions must only contain constraints for this task, "
+                    "not general agent policies. "
                     "Do not propose solution approaches, analysis hints, warnings, "
                     "or implementation steps. Numeric budgets are system-derived "
                     "from the complexity tier; do not invent or tune budget values. "
@@ -173,7 +185,15 @@ class TaskBriefPlanner:
                     "Create a structured data science task brief for a benchmark "
                     "request. Classify the task, objective, output type, and "
                     "complexity from the user request, extra instructions, and "
-                    "dataset summary. Do not include task_description in the "
+                    "dataset summary. In benchmarks, machine learning tasks that "
+                    "specify a fixed random seed, fixed split, fixed model, or "
+                    "fixed metric to obtain a deterministic answer should be "
+                    "classified as data_analysis unless they require generating "
+                    "a competition submission or optimizing model quality. Extract "
+                    "task-specific restrictions from the request, requirements, "
+                    "and output format. Restrictions must only contain constraints "
+                    "for this task, not general agent policies. Do not include "
+                    "task_description in the "
                     "structured output; the system will copy the benchmark input "
                     "into that field exactly. Do not propose solution approaches, "
                     "analysis hints, warnings, or implementation steps. Numeric "

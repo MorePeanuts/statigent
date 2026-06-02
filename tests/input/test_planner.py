@@ -145,6 +145,7 @@ def test_planner_uses_structured_result_without_model_budgets(
         "task_type",
         "task_description",
         "objective",
+        "restrictions",
         "output_type",
         "complexity",
     }
@@ -158,6 +159,7 @@ def test_planner_uses_structured_result_without_model_budgets(
             "The user has daily sales data in sales.csv. Analyze the revenue trend."
         ),
         objective="Analyze revenue trend",
+        restrictions=[],
         output_type=OutputType.REPORT,
         complexity=Complexity.MODERATE,
     )
@@ -188,6 +190,7 @@ def test_benchmark_brief_preserves_input_without_model_description(
     assert set(fake_model.schema.model_json_schema()["properties"]) == {
         "task_type",
         "objective",
+        "restrictions",
         "output_type",
         "complexity",
     }
@@ -195,6 +198,7 @@ def test_benchmark_brief_preserves_input_without_model_description(
         task_type=TaskType.DATA_ANALYSIS,
         task_description="Analyze revenue trend.\n\nReturn a short answer.",
         objective="Analyze revenue trend",
+        restrictions=[],
         output_type=OutputType.REPORT,
         complexity=Complexity.MODERATE,
     )
@@ -202,6 +206,40 @@ def test_benchmark_brief_preserves_input_without_model_description(
     assert "Do not include task_description" in str(
         fake_model.messages_seen[0][0].content
     )
+    system_prompt = str(fake_model.messages_seen[0][0].content)
+    assert "fixed random seed" in system_prompt
+    assert "data_analysis" in system_prompt
+    assert "task-specific restrictions" in system_prompt
+    assert "general agent policies" in system_prompt
+
+
+def test_planner_structured_schema_includes_task_specific_restrictions(
+    tmp_path: Path,
+) -> None:
+    fake_model = FakeModel(
+        payload={
+            "task_type": TaskType.DATA_ANALYSIS,
+            "objective": "Compute the requested MSE",
+            "restrictions": [
+                "Use train_test_split with test_size=0.3 and random_state=42.",
+                "Report only @Mean_Squared_Error[...] rounded to two decimals.",
+            ],
+            "output_type": OutputType.ANSWER,
+            "complexity": Complexity.SIMPLE,
+        }
+    )
+    planner = TaskBriefPlanner(model=fake_model)
+
+    brief = planner.create_benchmark_brief(
+        prompt="Train a simple linear regression with random_state=42.",
+        task_instructions="Output @Mean_Squared_Error[MSE].",
+        profile=make_profile(tmp_path),
+    )
+
+    assert brief.restrictions == [
+        "Use train_test_split with test_size=0.3 and random_state=42.",
+        "Report only @Mean_Squared_Error[...] rounded to two decimals.",
+    ]
 
 
 def test_create_brief_can_disable_model_generated_description(

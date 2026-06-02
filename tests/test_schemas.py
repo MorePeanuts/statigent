@@ -52,6 +52,7 @@ def test_task_brief_field_descriptions_define_what_not_how() -> None:
     schema = TaskBrief.model_json_schema()
     task_type_description = schema["properties"]["task_type"]["description"]
     task_description = schema["properties"]["task_description"]["description"]
+    restrictions_description = schema["properties"]["restrictions"]["description"]
     output_type_description = schema["properties"]["output_type"]["description"]
     complexity_description = schema["properties"]["complexity"]["description"]
 
@@ -59,11 +60,13 @@ def test_task_brief_field_descriptions_define_what_not_how() -> None:
         "task_type",
         "task_description",
         "objective",
+        "restrictions",
         "output_type",
         "complexity",
     }
     assert "category" in task_type_description.casefold()
     assert "complete description" in task_description.casefold()
+    assert "task-specific" in restrictions_description.casefold()
     assert "shape" in output_type_description.casefold()
     assert "effort tier" in complexity_description.casefold()
     assert "choose when" not in task_type_description.casefold()
@@ -71,6 +74,25 @@ def test_task_brief_field_descriptions_define_what_not_how() -> None:
     assert "data_context" not in schema["properties"]
     assert "analysis_hints" not in schema["properties"]
     assert "warnings" not in schema["properties"]
+
+
+def test_task_brief_records_task_specific_restrictions() -> None:
+    brief = TaskBrief(
+        task_type=TaskType.DATA_ANALYSIS,
+        task_description="Compute a fixed-seed model metric.",
+        objective="Compute the requested MSE",
+        restrictions=[
+            "Use train_test_split with test_size=0.3 and random_state=42.",
+            "Return @Mean_Squared_Error[...] rounded to two decimals.",
+        ],
+        output_type=OutputType.ANSWER,
+        complexity=Complexity.SIMPLE,
+    )
+
+    assert brief.restrictions == [
+        "Use train_test_split with test_size=0.3 and random_state=42.",
+        "Return @Mean_Squared_Error[...] rounded to two decimals.",
+    ]
 
 
 def test_task_brief_supports_deep_analysis() -> None:

@@ -417,6 +417,13 @@ class TaskBrief(BaseModel):
     objective: str = Field(
         description="Concise task objective distilled from the request"
     )
+    restrictions: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Task-specific hard restrictions extracted from the user's request, "
+            "requirements, and requested output format"
+        ),
+    )
     output_type: OutputType = Field(
         description="Shape of deliverable requested by the user"
     )

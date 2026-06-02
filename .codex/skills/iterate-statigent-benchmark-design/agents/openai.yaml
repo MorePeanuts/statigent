@@ -1,0 +1,4 @@
+interface:
+  display_name: "Iterate Statigent Benchmark Design"
+  short_description: "Turn benchmark traces into design improvements"
+  default_prompt: "Use $iterate-statigent-benchmark-design to analyze a Statigent benchmark scores.json and propose validated agent design improvements."

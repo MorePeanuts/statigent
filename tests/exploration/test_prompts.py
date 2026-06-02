@@ -43,6 +43,20 @@ def test_inspector_prompt_sets_role_duty_and_small_coder_steps() -> None:
     assert "do not ask the coder to write a large analysis script" in text
 
 
+def test_inspector_prompt_enforces_profile_and_task_restrictions() -> None:
+    text = _normalized(INSPECTOR_PLAN_SYSTEM_PROMPT)
+
+    assert "task brief restrictions" in text
+    assert "dataset profile" in text
+    assert "do not add unspecified preprocessing" in text
+    assert "filtering" in text
+    assert "encoding" in text
+    assert "normalization" in text
+    assert "profile" in text
+    assert "missing_rates" in text
+    assert "dtypes" in text
+
+
 def test_inspector_prompt_treats_stop_as_no_instruction_branch() -> None:
     text = _normalized(INSPECTOR_PLAN_SYSTEM_PROMPT)
 
@@ -77,6 +91,18 @@ def test_reviewer_prompt_audits_stop_requests_against_evidence() -> None:
     assert "do not approve final drafting" in text
     assert "executed evidence" in text
     assert "feedback" in text
+
+
+def test_reviewer_prompt_rejects_restriction_and_profile_conflicts() -> None:
+    text = _normalized(REVIEWER_PLAN_SYSTEM_PROMPT)
+
+    assert "task brief restrictions" in text
+    assert "reject" in text
+    assert "profile" in text
+    assert "missing_rates" in text
+    assert "dtypes" in text
+    assert "sample_rows" in text
+    assert "conflict" in text
 
 
 def test_reviewer_prompt_keeps_review_scope_on_evidence_not_final_prose() -> None:
@@ -144,6 +170,9 @@ def test_final_reviewer_prompt_sets_role_duty_and_behavior_guidelines() -> None:
     assert "behavior guidelines" in text
     assert "unsupported" in text
     assert "uncertainty" in text
+    assert "task brief restrictions" in text
+    assert "requested output format" in text
+    assert "marker" in text
 
 
 def test_final_reviewer_prompt_keeps_structured_output_instruction_concise() -> None:
