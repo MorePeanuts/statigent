@@ -104,9 +104,7 @@ class ExplorationOrchestrator:
         graph.add_node("inspector", self._inspector_node)
         graph.add_node("review_plan", self._review_plan_node)
         graph.add_node("code", self._code_node)
-        graph.add_node("execute", self._execute_node)
         graph.add_node("debug", self._debug_node)
-        graph.add_node("observe", self._observe_node)
         graph.add_node("final_review", self._final_review_node)
 
         graph.add_edge(START, "inspector")
@@ -314,48 +312,40 @@ class ExplorationOrchestrator:
                 "final_review",
             )
 
-        cell = self.coder.append_code_cell(
+        outcome = self.coder.append_and_execute(
             state["profile"],
             instruction,
-            self.kernel,
         )
-        return self._command(
-            {
-                "last_cell": cell,
-                "last_cell_id": cell.cell_id,
-                "cell_count": state["cell_count"] + 1,
-                "trace_events": [
-                    *state["trace_events"],
-                    self._trace(
-                        "coder",
-                        "append_code_cell",
-                        cell.code,
-                        usage_metadata=self._actor_usage(self.coder),
-                        metadata=self._code_cell_trace_metadata(cell),
-                    ),
-                ],
-            },
-            "execute",
-        )
-
-    def _execute_node(self, state: ExplorationRunState) -> Command[str]:
-        result = self.kernel.execute_cell(state["last_cell_id"])
-        goto = "debug" if not result.ok and can_debug(state) else "observe"
-        return self._command(
-            {
-                "last_result": result,
-                "trace_events": [
-                    *state["trace_events"],
-                    self._trace(
-                        "executor",
-                        "execute_cell",
-                        self._result_trace_content(result),
-                        metadata=result.model_dump(mode="json"),
-                    ),
-                ],
-            },
-            goto,
-        )
+        cell = outcome.cell
+        result = outcome.result
+        trace_events = [
+            *state["trace_events"],
+            self._trace(
+                "coder",
+                "append_code_cell",
+                cell.code,
+                usage_metadata=self._actor_usage(self.coder),
+                metadata=self._code_cell_trace_metadata(cell),
+            ),
+            self._trace(
+                "coder",
+                "observation",
+                outcome.observation,
+                metadata=result.model_dump(mode="json"),
+            ),
+        ]
+        updates: dict[str, object] = {
+            "last_cell": cell,
+            "last_cell_id": cell.cell_id,
+            "last_result": result,
+            "cell_count": state["cell_count"] + 1,
+            "trace_events": trace_events,
+        }
+        if not result.ok and can_debug(state):
+            return self._command(updates, "debug")
+        step_update = self._record_step_update(state, cell, result, trace_events)
+        step_update["cell_count"] = state["cell_count"] + 1
+        return self._command(step_update, "inspector")
 
     def _debug_node(self, state: ExplorationRunState) -> Command[str]:
         failed_cell = state.get("last_cell")
@@ -368,63 +358,83 @@ class ExplorationOrchestrator:
                         "Debugger skipped because failed cell context was missing.",
                     ],
                 },
-                "execute",
+                "inspector",
             )
         error = result.error_summary or result.stderr
         lesson_snapshot = list(state["debug_lessons"])
-        lessons = self.debugger.debug_cell(
+        outcome = self.debugger.debug_cell(
             state["brief"],
             self.kernel,
             failed_cell,
             error,
             lesson_snapshot,
         )
-        updated_cell = self._find_cell(failed_cell.cell_id) or failed_cell
+        updated_cell = outcome.cell
+        updated_result = outcome.result
+        debug_attempts = state["debug_attempts"] + 1
+        trace_events = [
+            *state["trace_events"],
+            self._trace(
+                "debugger",
+                "debug_cell",
+                updated_cell.code,
+                usage_metadata=self._actor_usage(self.debugger),
+                metadata={
+                    "cell_id": failed_cell.cell_id,
+                    "failed_code": failed_cell.code,
+                    "corrected_code": updated_cell.code,
+                    "purpose": updated_cell.purpose,
+                    "expected_observation": updated_cell.expected_observation,
+                    "error": error,
+                    "lessons": [
+                        lesson.model_dump(mode="json") for lesson in outcome.lessons
+                    ],
+                },
+            ),
+            self._trace(
+                "coder",
+                "observation",
+                self.coder.observation_for_result(
+                    state["approved_instruction"] or "",
+                    updated_cell,
+                    updated_result,
+                ),
+                metadata=updated_result.model_dump(mode="json"),
+            ),
+        ]
+        updates: dict[str, object] = {
+            "debug_attempts": debug_attempts,
+            "debug_lessons": list(outcome.lessons),
+            "last_cell": updated_cell,
+            "last_result": updated_result,
+            "trace_events": trace_events,
+        }
+        debug_state = state.copy()
+        debug_state["debug_attempts"] = debug_attempts
+        if not updated_result.ok and can_debug(debug_state):
+            return self._command(updates, "debug")
         return self._command(
-            {
-                "debug_attempts": state["debug_attempts"] + 1,
-                "debug_lessons": list(lessons),
-                "last_cell": updated_cell,
-                "trace_events": [
-                    *state["trace_events"],
-                    self._trace(
-                        "debugger",
-                        "debug_cell",
-                        updated_cell.code,
-                        usage_metadata=self._actor_usage(self.debugger),
-                        metadata={
-                            "cell_id": failed_cell.cell_id,
-                            "failed_code": failed_cell.code,
-                            "corrected_code": updated_cell.code,
-                            "purpose": updated_cell.purpose,
-                            "expected_observation": updated_cell.expected_observation,
-                            "error": error,
-                            "lessons": [
-                                lesson.model_dump(mode="json") for lesson in lessons
-                            ],
-                        },
-                    ),
-                ],
-            },
-            "execute",
+            self._record_step_update(
+                state,
+                updated_cell,
+                updated_result,
+                trace_events,
+                debug_attempts=debug_attempts,
+                debug_lessons=list(outcome.lessons),
+            ),
+            "inspector",
         )
 
-    def _observe_node(self, state: ExplorationRunState) -> Command[str]:
-        instruction = state["approved_instruction"]
-        cell = state.get("last_cell")
-        result = state.get("last_result")
-        if instruction is None or cell is None or result is None:
-            return self._command(
-                {
-                    "warnings": [
-                        *state["warnings"],
-                        "Exploration step could not be recorded due to missing state.",
-                    ],
-                    "debug_attempts": 0,
-                },
-                "inspector",
-            )
-
+    def _record_step_update(
+        self,
+        state: ExplorationRunState,
+        cell: NotebookCell,
+        result: NotebookCellResult,
+        trace_events: list[TraceEvent],
+        *,
+        debug_attempts: int | None = None,
+        debug_lessons: list[object] | None = None,
+    ) -> dict[str, object]:
         action = self._action_from_plan_text(state["pending_plan_text"])
         plan_review = state.get("plan_review")
         review = ReviewDecision(
@@ -441,34 +451,32 @@ class ExplorationOrchestrator:
         if not result.ok:
             error = result.error_summary or result.stderr
             warnings.append(f"Exploration cell failed: {error}")
-            if not can_debug(state):
-                warnings.append("Debug budget exhausted.")
-                status = "partial"
+            warnings.append("Debug budget exhausted.")
+            status = "partial"
         step = ExplorationStep(
             action=action,
             review=review,
             code=code,
             result=result,
-            debug_attempts=state["debug_attempts"],
+            debug_attempts=(
+                state["debug_attempts"] if debug_attempts is None else debug_attempts
+            ),
         )
-        return self._command(
-            {
-                "steps": [*state["steps"], step],
-                "warnings": warnings,
-                "approved_instruction": None,
-                "last_cell": None,
-                "last_cell_id": "",
-                "last_result": None,
-                "debug_attempts": 0,
-                "status": status,
-                "final_draft_requested": False,
-                "trace_events": [
-                    *state["trace_events"],
-                    self._trace("orchestrator", "observe", action.title),
-                ],
-            },
-            "inspector",
-        )
+        updates: dict[str, object] = {
+            "steps": [*state["steps"], step],
+            "warnings": warnings,
+            "approved_instruction": None,
+            "last_cell": None,
+            "last_cell_id": "",
+            "last_result": None,
+            "debug_attempts": 0,
+            "status": status,
+            "final_draft_requested": False,
+            "trace_events": trace_events,
+        }
+        if debug_lessons is not None:
+            updates["debug_lessons"] = debug_lessons
+        return updates
 
     def _final_review_node(
         self,

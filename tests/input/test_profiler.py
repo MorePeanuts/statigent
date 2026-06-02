@@ -47,7 +47,9 @@ def test_single_table_summary_shows_only_head_rows(tmp_path: Path) -> None:
     assert "sales.csv" in summary
     assert "First 5 rows" in summary
     assert "revenue" in summary
-    assert "70" not in summary
+    assert "id=5, revenue=50" in summary
+    assert "id=6, revenue=60" not in summary
+    assert "id=7, revenue=70" not in summary
 
 
 def test_profile_csv_with_blank_first_header_treats_first_column_as_index(

@@ -7,6 +7,10 @@ from statigent.exploration.prompts import (
 )
 
 
+def _normalized(text: str) -> str:
+    return " ".join(text.casefold().split())
+
+
 def test_inspector_prompt_requires_action_block() -> None:
     text = INSPECTOR_PLAN_SYSTEM_PROMPT.casefold()
 
@@ -21,69 +25,122 @@ def test_inspector_prompt_requires_action_block() -> None:
 
 
 def test_inspector_prompt_defines_stop_as_final_review_request() -> None:
-    text = INSPECTOR_PLAN_SYSTEM_PROMPT.casefold()
+    text = _normalized(INSPECTOR_PLAN_SYSTEM_PROMPT)
 
     assert "stop is not a final answer" in text
-    assert "request reviewer approval" in text
-    assert "executed evidence" in text
+    assert "information is sufficient" in text
+    assert "reviewer" in text
     assert "leave coder_instruction empty" in text
-    assert "do not use stop" in text
 
 
-def test_reviewer_prompt_requires_structured_decision_and_rejection_criteria() -> None:
-    text = REVIEWER_PLAN_SYSTEM_PROMPT.casefold()
+def test_inspector_prompt_sets_role_duty_and_small_coder_steps() -> None:
+    text = _normalized(INSPECTOR_PLAN_SYSTEM_PROMPT)
 
-    assert "reviewerplandecision" in text
-    assert "approved" in text
-    assert "approved_final" in text
+    assert "you are the inspector" in text
+    assert "determine the next data exploration direction" in text
+    assert "tell the coder what data support is needed" in text
+    assert "small" in text
+    assert "do not ask the coder to write a large analysis script" in text
+
+
+def test_inspector_prompt_treats_stop_as_no_instruction_branch() -> None:
+    text = _normalized(INSPECTOR_PLAN_SYSTEM_PROMPT)
+
+    assert "if the current information is enough" in text
+    assert "stop: yes" in text
+    assert "do not issue coder instructions" in text
+    assert "stop: no" in text
     assert "coder_instruction" in text
-    assert "copy" in text
-    assert "feedback" in text
+
+
+def test_reviewer_prompt_sets_role_duty_and_behavior_guidelines() -> None:
+    text = _normalized(REVIEWER_PLAN_SYSTEM_PROMPT)
+
+    assert "you are the reviewer" in text
+    assert "audit the inspector's proposed next exploration direction" in text
+    assert "task objective" in text
+    assert "dataset profile" in text
     assert "full execution path" in text
+    assert "behavior guidelines" in text
     assert "irrelevant" in text
     assert "redundant" in text
     assert "unsafe" in text
     assert "too broad" in text
     assert "unsupported" in text
     assert "unnecessary" in text
-    assert "final" in text
 
 
 def test_reviewer_prompt_audits_stop_requests_against_evidence() -> None:
-    text = REVIEWER_PLAN_SYSTEM_PROMPT.casefold()
+    text = _normalized(REVIEWER_PLAN_SYSTEM_PROMPT)
 
     assert "stop" in text
-    assert "reject stop" in text
+    assert "do not approve final drafting" in text
     assert "executed evidence" in text
-    assert "approved_final" in text
-
-
-def test_coder_prompt_requires_single_append_without_execution() -> None:
-    text = CODER_SYSTEM_PROMPT.casefold()
-
-    assert "append_code_cell" in text
-    assert "exactly one" in text
-    assert "incremental notebook cell" in text
-    assert "do not execute" in text
-
-
-def test_debugger_prompt_uses_prebound_replace_tool_and_records_lessons() -> None:
-    text = DEBUGGER_SYSTEM_PROMPT.casefold()
-
-    assert "replace_code_cell" in text
-    assert "already bound" in text
-    assert "failed cell id" in text
-    assert "record_debug_lesson" in text
-
-
-def test_final_reviewer_prompt_requires_evidence_and_output_constraints() -> None:
-    text = FINAL_REVIEWER_SYSTEM_PROMPT.casefold()
-
-    assert "evidence" in text
-    assert "output constraints" in text
-    assert "finalreviewdecision" in text
-    assert "approved" in text
     assert "feedback" in text
+
+
+def test_reviewer_prompt_keeps_structured_output_instruction_concise() -> None:
+    text = _normalized(REVIEWER_PLAN_SYSTEM_PROMPT)
+
+    assert "return a reviewerplandecision structured output" in text
+    assert "- approved:" not in text
+    assert "- approved_final:" not in text
+    assert "- coder_instruction:" not in text
+    assert "- feedback:" not in text
+
+
+def test_coder_prompt_covers_execution_result_observation_reply() -> None:
+    text = _normalized(CODER_SYSTEM_PROMPT)
+
+    assert "you are the coder" in text
+    assert "approved inspector exploration instructions" in text
+    assert "append_code_cell" in text
+    assert "execution result" in text
+    assert "reply to the inspector" in text
+    assert "observation" in text
+    assert "small" in text
+    assert "focused" in text
+    assert "behavior guidelines" in text
+    assert "large analysis script" in text
+    assert "final answer prose" in text
+    assert "do not execute" not in text
+
+
+def test_debugger_prompt_sets_role_duty_and_behavior_guidelines() -> None:
+    text = _normalized(DEBUGGER_SYSTEM_PROMPT)
+
+    assert "you are the debugger" in text
+    assert "repair failed exploration cells" in text
+    assert "replace_code_cell" in text
+    assert "record_debug_lesson" in text
+    assert "behavior guidelines" in text
+    assert "minimal" in text
+    assert "preserve" in text
+    assert "do not rewrite the whole analysis" in text
+    assert "already bound" not in text
+    assert "failed cell id" not in text
+
+
+def test_final_reviewer_prompt_sets_role_duty_and_behavior_guidelines() -> None:
+    text = _normalized(FINAL_REVIEWER_SYSTEM_PROMPT)
+
+    assert "you are the final reviewer" in text
+    assert "audit the inspector's final draft" in text
+    assert "task objective" in text
+    assert "full execution path" in text
+    assert "output constraints" in text
+    assert "evidence" in text
+    assert "behavior guidelines" in text
+    assert "unsupported" in text
+    assert "uncertainty" in text
+
+
+def test_final_reviewer_prompt_keeps_structured_output_instruction_concise() -> None:
+    text = _normalized(FINAL_REVIEWER_SYSTEM_PROMPT)
+
+    assert "finalreviewdecision" in text
+    assert "- approved:" not in text
+    assert "- feedback:" not in text
     assert "reason" not in text
     assert "additional_exploration_focus" not in text
 

@@ -4,6 +4,7 @@ from pathlib import Path
 from langgraph.types import Command
 
 from statigent.exploration import ExplorationOrchestrator
+from statigent.exploration.actors import CoderExecutionOutcome, DebugExecutionOutcome
 from statigent.exploration.state import ExplorationRunState
 from statigent.notebook import FakeNotebookKernel, NotebookContext
 from statigent.schemas import (
@@ -115,7 +116,8 @@ class FakeReviewer:
 
 
 class FakeCoder:
-    def __init__(self) -> None:
+    def __init__(self, kernel: FakeNotebookKernel | None = None) -> None:
+        self.kernel = kernel
         self.instructions: list[str] = []
         self.last_usage_metadata = {
             "input_tokens": 12,
@@ -123,18 +125,33 @@ class FakeCoder:
             "total_tokens": 18,
         }
 
-    def append_code_cell(
+    def append_and_execute(
         self,
         _profile: DatasetProfile,
         instruction: str,
-        kernel: FakeNotebookKernel,
-    ) -> NotebookCell:
+    ) -> CoderExecutionOutcome:
         self.instructions.append(instruction)
-        return kernel.append_code_cell(
+        if self.kernel is None:
+            raise AssertionError("FakeCoder.kernel must be set before use")
+        cell = self.kernel.append_code_cell(
             code="print('mean=15')",
             purpose="Approved Inspector plan",
             expected_observation="Evidence requested by Inspector",
         )
+        result = self.kernel.execute_cell(cell.cell_id)
+        return CoderExecutionOutcome(
+            cell=cell,
+            result=result,
+            observation=f"Observation:\n{result.stdout or result.stderr}",
+        )
+
+    @staticmethod
+    def observation_for_result(
+        _instruction: str,
+        _cell: NotebookCell,
+        result: object,
+    ) -> str:
+        return f"Observation:\n{getattr(result, 'stdout', '')}"
 
 
 class FakeDebugger:
@@ -153,7 +170,7 @@ class FakeDebugger:
         failed_cell: NotebookCell,
         error: str,
         lessons: list[DebugLesson],
-    ) -> list[DebugLesson]:
+    ) -> DebugExecutionOutcome:
         self.lessons_seen.append(list(lessons))
         lessons.append(
             DebugLesson(
@@ -163,13 +180,14 @@ class FakeDebugger:
                 applies_when="NameError appears",
             )
         )
-        kernel.replace_code_cell(
+        cell = kernel.replace_code_cell(
             failed_cell.cell_id,
             "print('fixed')",
             "Fix failed cell",
             "fixed",
         )
-        return lessons
+        result = kernel.execute_cell(cell.cell_id)
+        return DebugExecutionOutcome(cell=cell, result=result, lessons=list(lessons))
 
 
 def approved_plan() -> ReviewerPlanDecision:
@@ -263,10 +281,12 @@ def make_orchestrator(
     coder: FakeCoder | None = None,
     debugger: FakeDebugger | None = None,
 ) -> ExplorationOrchestrator:
+    run_coder = coder or FakeCoder(kernel)
+    run_coder.kernel = kernel
     return ExplorationOrchestrator(
         inspector=inspector or FakeInspector(),
         reviewer=reviewer or FakeReviewer(),
-        coder=coder or FakeCoder(),
+        coder=run_coder,
         debugger=debugger or FakeDebugger(),
         kernel=kernel,
     )
@@ -310,6 +330,8 @@ def test_graph_nodes_use_command_goto_for_routing() -> None:
 
     assert "add_conditional_edges" not in source
     assert source.count("add_edge") == 1
+    assert '"execute"' not in source
+    assert '"observe"' not in source
 
 
 def test_reviewer_rejection_routes_back_to_inspector(tmp_path: Path) -> None:
@@ -449,8 +471,7 @@ def test_orchestrator_report_includes_langgraph_trace_events(
         "plan",
         "plan_approved",
         "append_code_cell",
-        "execute_cell",
-        "observe",
+        "observation",
         "plan",
         "final_approved",
         "final_draft",
@@ -475,8 +496,8 @@ def test_orchestrator_trace_events_include_node_specific_payloads(
     coder = next(
         event for event in report.trace_events if event.name == "append_code_cell"
     )
-    executor = next(
-        event for event in report.trace_events if event.name == "execute_cell"
+    observation = next(
+        event for event in report.trace_events if event.name == "observation"
     )
     final_draft = next(
         event
@@ -500,16 +521,16 @@ def test_orchestrator_trace_events_include_node_specific_payloads(
         "expected_observation": "Evidence requested by Inspector",
         "input_paths": [str(tmp_path / "sales.csv")],
     }
-    assert executor.content == "mean=15\n"
-    assert executor.metadata["cell_id"] == "cell-1"
-    assert executor.metadata["code"] == "print('mean=15')"
-    assert executor.metadata["exit_code"] == 0
-    assert executor.usage_metadata == {}
+    assert "Observation:" in observation.content
+    assert observation.metadata["cell_id"] == "cell-1"
+    assert observation.metadata["code"] == "print('mean=15')"
+    assert observation.metadata["exit_code"] == 0
+    assert observation.usage_metadata == {}
     assert '"content":"Average revenue is 15."' in final_draft.content
     assert '"approved":true' in final_reviewer.content
 
 
-def test_coder_appends_without_executing_then_execute_node_runs_cell(
+def test_coder_appends_and_code_node_executes_cell(
     tmp_path: Path,
 ) -> None:
     kernel = started_kernel(tmp_path)
@@ -788,7 +809,7 @@ def test_debug_node_returns_new_lesson_list_without_mutating_state(
     updates = command.update
 
     assert isinstance(command, Command)
-    assert command.goto == "execute"
+    assert command.goto == "inspector"
     updated_lessons = updates["debug_lessons"]
     assert isinstance(updated_lessons, list)
     assert updated_lessons is not state["debug_lessons"]

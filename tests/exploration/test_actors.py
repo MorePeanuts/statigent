@@ -76,19 +76,28 @@ class FakeToolModel:
         tool_name: str,
         args: dict[str, object],
         extra_tool_calls: list[dict[str, object]] | None = None,
+        observation: str = "Observation generated from execution.",
     ) -> None:
         self.tool_name = tool_name
         self.args = args
         self.extra_tool_calls = extra_tool_calls or []
+        self.observation = observation
         self.bound_tool_names: list[str] = []
+        self.bind_call_count = 0
         self.messages_seen: list[object] = []
+        self.invocations_seen: list[list[object]] = []
+        self.tool_result_seen = ""
 
     def bind_tools(self, tools: list[object]) -> "FakeToolModel":
+        self.bind_call_count += 1
         self.bound_tool_names = [getattr(tool, "name", "") for tool in tools]
         return self
 
     def invoke(self, _messages: list[object]) -> AIMessage:
         self.messages_seen = list(_messages)
+        self.invocations_seen.append(list(_messages))
+        if len(self.invocations_seen) > 1:
+            return AIMessage(content=self.observation)
         tool_calls = [
             {
                 "name": self.tool_name,
@@ -101,6 +110,45 @@ class FakeToolModel:
             content="",
             tool_calls=tool_calls,
         )
+
+
+class FakeAgent:
+    def __init__(self, model: FakeToolModel, tools: list[object]) -> None:
+        self.model = model
+        self.tools = tools
+
+    def invoke(self, inputs: dict[str, object]) -> dict[str, list[AIMessage]]:
+        messages = inputs.get("messages", [])
+        if isinstance(messages, list):
+            self.model.messages_seen = messages
+            self.model.invocations_seen.append(list(messages))
+        tool = self._tool_by_name(self.model.tool_name)
+        if tool is not None:
+            result = tool.invoke(self.model.args)
+            self.model.tool_result_seen = str(result)
+        for call in self.model.extra_tool_calls:
+            extra_tool = self._tool_by_name(str(call["name"]))
+            if extra_tool is not None:
+                extra_tool.invoke(call["args"])
+        return {"messages": [AIMessage(content=self.model.observation)]}
+
+    def _tool_by_name(self, name: str) -> object | None:
+        for tool in self.tools:
+            if getattr(tool, "name", "") == name:
+                return tool
+        return None
+
+
+def fake_agent_factory(
+    model: object,
+    tools: list[object],
+    _system_prompt: str,
+) -> FakeAgent:
+    if not isinstance(model, FakeToolModel):
+        raise TypeError("fake_agent_factory requires FakeToolModel")
+    model.bind_call_count += 1
+    model.bound_tool_names = [getattr(tool, "name", "") for tool in tools]
+    return FakeAgent(model, tools)
 
 
 def make_brief() -> TaskBrief:
@@ -220,18 +268,21 @@ def test_coder_append_code_cell_uses_append_tool(tmp_path: Path) -> None:
             "expected_observation": "ok",
         },
     )
-    coder = Coder(model)
+    coder = Coder(model, kernel, agent_factory=fake_agent_factory)
     instruction = "ACTION: inspect_schema\nQUESTION: What columns exist?"
+    assert model.bound_tool_names == ["append_code_cell"]
+    assert model.bind_call_count == 1
 
     cell = coder.append_code_cell(
         make_profile(tmp_path),
         instruction,
-        kernel,
     )
 
     assert cell == kernel.get_code_context().cells[0]
     assert cell.code == "print('ok')"
     assert model.bound_tool_names == ["append_code_cell"]
+    assert model.bind_call_count == 1
+    assert len(model.invocations_seen) == 1
     coder_prompt = str(model.messages_seen[-1].content)
     assert "Available input paths:" in coder_prompt
     assert "Dataset profile:" in coder_prompt
@@ -241,38 +292,72 @@ def test_coder_append_code_cell_uses_append_tool(tmp_path: Path) -> None:
     assert "Use the listed input paths exactly" in coder_prompt
 
 
-def test_coder_append_code_cell_rejects_duplicate_tool_calls(
-    tmp_path: Path,
-) -> None:
+def test_coder_second_turn_uses_tool_and_execution_context(tmp_path: Path) -> None:
+    kernel = FakeNotebookKernel()
+    kernel.start(NotebookContext(input_paths=[], work_dir=tmp_path / "work"))
+    kernel.queue_result(stdout="mean=15\n")
+    model = FakeToolModel(
+        "append_code_cell",
+        {
+            "code": "print('mean=15')",
+            "purpose": "Compute mean",
+            "expected_observation": "mean",
+        },
+        observation="The requested mean is 15.",
+    )
+    coder = Coder(model, kernel, agent_factory=fake_agent_factory)
+
+    outcome = coder.append_and_execute(
+        make_profile(tmp_path),
+        "Compute mean revenue.",
+    )
+
+    assert outcome.observation == "The requested mean is 15."
+    assert len(model.invocations_seen) == 1
+    assert "Execution result:" in model.tool_result_seen
+    assert "mean=15" in model.tool_result_seen
+
+
+def test_coder_binds_append_tool_once_at_initialization(tmp_path: Path) -> None:
     kernel = FakeNotebookKernel()
     kernel.start(NotebookContext(input_paths=[], work_dir=tmp_path / "work"))
     model = FakeToolModel(
         "append_code_cell",
         {
+            "code": "print('ok')",
+            "purpose": "Check data",
+            "expected_observation": "ok",
+        },
+    )
+
+    coder = Coder(model, kernel, agent_factory=fake_agent_factory)
+    coder.append_code_cell(make_profile(tmp_path), "First approved instruction.")
+    coder.append_code_cell(make_profile(tmp_path), "Second approved instruction.")
+
+    assert model.bound_tool_names == ["append_code_cell"]
+    assert model.bind_call_count == 1
+
+
+def test_coder_append_code_cell_requires_agent_to_call_append_tool(
+    tmp_path: Path,
+) -> None:
+    kernel = FakeNotebookKernel()
+    kernel.start(NotebookContext(input_paths=[], work_dir=tmp_path / "work"))
+    model = FakeToolModel(
+        "unknown_tool",
+        {
             "code": "print('first')",
             "purpose": "First",
             "expected_observation": "first",
         },
-        extra_tool_calls=[
-            {
-                "name": "append_code_cell",
-                "args": {
-                    "code": "print('second')",
-                    "purpose": "Second",
-                    "expected_observation": "second",
-                },
-                "id": "call-2",
-            }
-        ],
     )
-    coder = Coder(model)
+    coder = Coder(model, kernel, agent_factory=fake_agent_factory)
     instruction = "ACTION: inspect_schema\nQUESTION: What columns exist?"
 
-    with pytest.raises(StatigentExplorationError, match="exactly one"):
+    with pytest.raises(StatigentExplorationError, match="did not call"):
         coder.append_code_cell(
             make_profile(tmp_path),
             instruction,
-            kernel,
         )
 
     assert kernel.get_code_context().cells == []
@@ -303,7 +388,7 @@ def test_debugger_debug_cell_uses_replace_and_records_lesson(tmp_path: Path) -> 
             }
         ],
     )
-    debugger = Debugger(model)
+    debugger = Debugger(model, agent_factory=fake_agent_factory)
 
     result = debugger.debug_cell(
         make_brief(),
@@ -313,7 +398,10 @@ def test_debugger_debug_cell_uses_replace_and_records_lesson(tmp_path: Path) -> 
         lessons=lessons,
     )
 
-    assert result == lessons
+    assert result.lessons == lessons
+    assert result.cell.cell_id == cell.cell_id
+    assert result.result.cell_id == cell.cell_id
+    assert result.result.ok
     assert kernel.get_code_context().cells[0].code == "print('fixed')"
     assert model.bound_tool_names == ["replace_code_cell", "record_debug_lesson"]
     assert lessons == [

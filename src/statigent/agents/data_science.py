@@ -274,7 +274,7 @@ class StatigentDataScienceAgent:
         return ExplorationOrchestrator(
             inspector=Inspector(model),
             reviewer=Reviewer(model),
-            coder=Coder(model),
+            coder=Coder(model, kernel),
             debugger=Debugger(model),
             kernel=kernel,
         )
