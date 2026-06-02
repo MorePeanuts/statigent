@@ -26,6 +26,10 @@ class StatigentBenchmarkError(StatigentError):
     """Error raised by the benchmark adapter layer."""
 
 
+class StatigentBaselineError(StatigentError):
+    """Error raised by baseline agent implementations."""
+
+
 class StatigentSandboxError(StatigentError):
     """Error raised by the Docker sandbox."""
 
