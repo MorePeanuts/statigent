@@ -175,10 +175,6 @@ class ExplorationOrchestrator:
                     "plan_review": decision,
                     "review_feedback": feedback,
                     "final_draft_requested": False,
-                    "warnings": [
-                        *state["warnings"],
-                        f"Reviewer rejected plan: {feedback}",
-                    ],
                     "trace_events": [
                         *state["trace_events"],
                         self._trace(

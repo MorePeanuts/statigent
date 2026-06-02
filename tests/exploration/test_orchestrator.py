@@ -359,6 +359,33 @@ def test_reviewer_rejection_routes_back_to_inspector(tmp_path: Path) -> None:
     assert len(report.steps) == 1
 
 
+def test_reviewer_plan_rejections_do_not_pollute_report_warnings(
+    tmp_path: Path,
+) -> None:
+    kernel = started_kernel(tmp_path)
+    kernel.queue_result(stdout="mean=15\n")
+    inspector = FakeInspector(plans=["bad plan", "ACTION: summarize\nSTOP: no"])
+    reviewer = FakeReviewer(
+        plan_decisions=[
+            ReviewerPlanDecision(approved=False, feedback="Too broad"),
+            approved_plan(),
+            stop_plan(),
+        ]
+    )
+    orchestrator = make_orchestrator(
+        kernel,
+        inspector=inspector,
+        reviewer=reviewer,
+    )
+
+    report = orchestrator.run(make_brief(), make_profile(tmp_path))
+
+    assert report.status == "success"
+    assert report.warnings == []
+    assert inspector.feedback_seen[1] == "Too broad"
+    assert any(event.name == "plan_rejected" for event in report.trace_events)
+
+
 def test_inspector_stop_text_is_reviewed_before_finalizing(tmp_path: Path) -> None:
     kernel = started_kernel(tmp_path)
     kernel.queue_result(stdout="mean=15\n")

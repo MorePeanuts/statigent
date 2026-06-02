@@ -425,8 +425,12 @@ def test_debugger_returns_debug_decision() -> None:
 
 def test_inspector_returns_final_draft(tmp_path: Path) -> None:
     draft = FinalDraft(content="Average revenue is 15.", evidence=["mean=15"])
-    inspector = Inspector(FakeModel(draft))
+    model = FakeModel(draft)
+    inspector = Inspector(model)
 
     result = inspector.final_draft(make_brief(), make_profile(tmp_path), [])
 
     assert result.content == "Average revenue is 15."
+    system_prompt = str(model.messages_seen[0].content)
+    assert "preserve the exact requested output format" in system_prompt.casefold()
+    assert "@answer_name[value]" in system_prompt

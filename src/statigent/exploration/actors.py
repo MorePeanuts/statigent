@@ -17,6 +17,7 @@ from statigent.errors import StatigentExplorationError
 from statigent.exploration.prompts import (
     CODER_SYSTEM_PROMPT,
     DEBUGGER_SYSTEM_PROMPT,
+    FINAL_DRAFT_SYSTEM_PROMPT,
     FINAL_REVIEWER_SYSTEM_PROMPT,
     INSPECTOR_PLAN_SYSTEM_PROMPT,
     REVIEWER_PLAN_SYSTEM_PROMPT,
@@ -284,11 +285,7 @@ class Inspector:
             self.model,
             FinalDraft,
             [
-                SystemMessage(
-                    content=(
-                        "You are the Inspector. Draft the final answer or report."
-                    ),
-                ),
+                SystemMessage(content=FINAL_DRAFT_SYSTEM_PROMPT),
                 HumanMessage(
                     content=(
                         f"Task brief:\n{brief.model_dump_json()}\n\n"

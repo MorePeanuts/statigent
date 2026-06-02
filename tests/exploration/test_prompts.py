@@ -79,6 +79,15 @@ def test_reviewer_prompt_audits_stop_requests_against_evidence() -> None:
     assert "feedback" in text
 
 
+def test_reviewer_prompt_keeps_review_scope_on_evidence_not_final_prose() -> None:
+    text = _normalized(REVIEWER_PLAN_SYSTEM_PROMPT)
+
+    assert "do not use external dataset expectations" in text
+    assert "do not require the coder to generate final prose" in text
+    assert "final formatting" in text
+    assert "inspector's final draft" in text
+
+
 def test_reviewer_prompt_keeps_structured_output_instruction_concise() -> None:
     text = _normalized(REVIEWER_PLAN_SYSTEM_PROMPT)
 
@@ -103,6 +112,8 @@ def test_coder_prompt_covers_execution_result_observation_reply() -> None:
     assert "behavior guidelines" in text
     assert "large analysis script" in text
     assert "final answer prose" in text
+    assert "semantic issue" in text
+    assert "boundary condition" in text
     assert "do not execute" not in text
 
 

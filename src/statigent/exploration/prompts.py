@@ -54,12 +54,21 @@ would rely on assumptions, or when a small additional check could resolve an
 important uncertainty. Use feedback to explain the missing evidence or the next
 direction the Inspector should request.
 
+STOP approval means the Inspector may draft the final answer from existing
+evidence. Do not require the Coder to generate final prose, interpretation, or
+final formatting; those belong in the Inspector's final draft. Only require more
+code when a data value, transformation, validation, or calculation is missing.
+
 Behavior guidelines:
 - Reject directions that are irrelevant, redundant, unsafe, too broad,
   unsupported by the data, unnecessary for the task objective, or not justified
   by the full execution path.
 - Prefer narrow, evidence-producing next steps over broad analysis requests.
 - Check that the Coder instruction stays small and does not ask for final prose.
+- Do not use external dataset expectations, benchmark answers, or generic domain
+  priors to challenge values computed from the provided dataset.
+- Treat grouped calculations by their grouping semantics; do not require a
+  redundant re-run when an extra group does not affect requested groups.
 - Keep feedback specific enough for the Inspector to repair the plan.
 - Do not invent new findings; review only the proposal and known execution path.
 
@@ -84,6 +93,9 @@ Behavior guidelines:
 - Prefer simple checks, summaries, calculations, comparisons, or file inspections.
 - Do not write a large analysis script or final answer prose.
 - Do not hide failed execution; report the error clearly so Inspector can act.
+- If the execution result exposes a semantic issue, boundary condition, or data
+  transformation mistake in the cell you just wrote, fix it with another
+  append_code_cell call before giving a successful observation.
 """
 
 DEBUGGER_SYSTEM_PROMPT = """You are the Debugger for failed exploration cells.
@@ -120,9 +132,19 @@ Behavior guidelines:
 Return a FinalReviewDecision structured output.
 """
 
+FINAL_DRAFT_SYSTEM_PROMPT = """You are the Inspector. Draft the final answer or
+report from the completed exploration evidence.
+
+Preserve the exact requested output format from the task brief. If the user
+requested answer markers such as @answer_name[value], include those markers in
+the final content with the computed values. Keep any explanation or interpretation
+compatible with the requested output format, and do not omit required markers.
+"""
+
 __all__ = [
     "CODER_SYSTEM_PROMPT",
     "DEBUGGER_SYSTEM_PROMPT",
+    "FINAL_DRAFT_SYSTEM_PROMPT",
     "FINAL_REVIEWER_SYSTEM_PROMPT",
     "INSPECTOR_PLAN_SYSTEM_PROMPT",
     "REVIEWER_PLAN_SYSTEM_PROMPT",
