@@ -280,6 +280,7 @@ def make_orchestrator(
     reviewer: FakeReviewer | None = None,
     coder: FakeCoder | None = None,
     debugger: FakeDebugger | None = None,
+    enable_reviewer: bool = True,
 ) -> ExplorationOrchestrator:
     run_coder = coder or FakeCoder(kernel)
     run_coder.kernel = kernel
@@ -289,6 +290,7 @@ def make_orchestrator(
         coder=run_coder,
         debugger=debugger or FakeDebugger(),
         kernel=kernel,
+        enable_reviewer=enable_reviewer,
     )
 
 
@@ -408,6 +410,73 @@ def test_inspector_stop_text_is_reviewed_before_finalizing(tmp_path: Path) -> No
     )
     assert len(report.steps) == 1
     assert reviewer.plans_seen[0] == "ACTION: summarize_numeric\nSTOP: yes"
+
+
+def test_reviewer_disabled_routes_inspector_instruction_to_coder(
+    tmp_path: Path,
+) -> None:
+    kernel = started_kernel(tmp_path)
+    kernel.queue_result(stdout="mean=15\n")
+    inspector = FakeInspector(
+        plans=[
+            "ACTION: summarize_numeric\n"
+            "STOP: no\n"
+            "CODER_INSTRUCTION: Compute mean revenue directly."
+        ]
+    )
+    reviewer = FakeReviewer(plan_decisions=[approved_plan(), stop_plan()])
+    coder = FakeCoder()
+    orchestrator = make_orchestrator(
+        kernel,
+        inspector=inspector,
+        reviewer=reviewer,
+        coder=coder,
+        enable_reviewer=False,
+    )
+
+    report = orchestrator.run(make_brief(), make_profile(tmp_path))
+
+    assert coder.instructions == ["Compute mean revenue directly."]
+    assert reviewer.plans_seen == []
+    assert reviewer.final_drafts_seen == []
+    assert report.status == "success"
+    assert [event.name for event in report.trace_events] == [
+        "plan",
+        "reviewer_skipped",
+        "append_code_cell",
+        "observation",
+        "plan",
+        "reviewer_skipped",
+        "final_draft",
+        "final_review_skipped",
+    ]
+
+
+def test_reviewer_disabled_stop_finalizes_without_final_review(
+    tmp_path: Path,
+) -> None:
+    kernel = started_kernel(tmp_path)
+    inspector = FakeInspector(plans=["STOP: yes"])
+    reviewer = FakeReviewer()
+    orchestrator = make_orchestrator(
+        kernel,
+        inspector=inspector,
+        reviewer=reviewer,
+        enable_reviewer=False,
+    )
+
+    report = orchestrator.run(make_brief(max_rounds=1), make_profile(tmp_path))
+
+    assert report.status == "success"
+    assert inspector.calls == ["next_plan", "final_draft"]
+    assert reviewer.plans_seen == []
+    assert reviewer.final_drafts_seen == []
+    assert [event.name for event in report.trace_events] == [
+        "plan",
+        "reviewer_skipped",
+        "final_draft",
+        "final_review_skipped",
+    ]
 
 
 def test_review_plan_node_records_final_request_without_calling_inspector(

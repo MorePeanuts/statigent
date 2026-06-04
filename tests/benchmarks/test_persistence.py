@@ -421,6 +421,7 @@ class TestExecutePersistence:
         mock_agent = MagicMock()
         mock_agent.name = "test-agent"
         mock_agent.model_name = "test-model"
+        mock_agent.enable_reviewer = False
 
         adapter = StubAdapter()
         result = adapter.execute(mock_agent, output_dir=str(tmp_path))
@@ -430,7 +431,8 @@ class TestExecutePersistence:
         dirs = list(tmp_path.iterdir())
         assert len(dirs) == 1
         assert dirs[0].name.startswith("stub-test-agent-test-model-")
-        assert (dirs[0] / "meta.json").exists()
+        meta = json.loads((dirs[0] / "meta.json").read_text())
+        assert meta["enable_reviewer"] is False
         assert (dirs[0] / "evaluation" / "scores.json").exists()
         assert (dirs[0] / "traces" / "0.jsonl").exists()
 

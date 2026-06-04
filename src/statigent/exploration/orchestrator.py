@@ -40,12 +40,14 @@ class ExplorationOrchestrator:
         coder: Coder,
         debugger: Debugger,
         kernel: NotebookKernel,
+        enable_reviewer: bool = False,
     ) -> None:
         self.inspector = inspector
         self.reviewer = reviewer
         self.coder = coder
         self.debugger = debugger
         self.kernel = kernel
+        self.enable_reviewer = enable_reviewer
         self._graph = self._build_graph()
 
     def run(self, brief: TaskBrief, profile: DatasetProfile) -> ExplorationReport:
@@ -156,6 +158,11 @@ class ExplorationOrchestrator:
                 ),
             ],
         }
+        if not self.enable_reviewer:
+            return self._command(
+                self._reviewer_skipped_plan_update(state, plan_text, updates),
+                self._reviewer_skipped_plan_goto(plan_text),
+            )
         return self._command(updates, "review_plan")
 
     def _review_plan_node(
@@ -435,7 +442,13 @@ class ExplorationOrchestrator:
         plan_review = state.get("plan_review")
         review = ReviewDecision(
             approved=True,
-            reason="Approved by Reviewer" if plan_review is not None else "Approved",
+            reason=(
+                "Approved by Reviewer"
+                if plan_review is not None
+                else "Reviewer disabled"
+                if not self.enable_reviewer
+                else "Approved"
+            ),
         )
         code = CodeDraft(
             code=cell.code,
@@ -483,6 +496,22 @@ class ExplorationOrchestrator:
             state["profile"],
             state["steps"],
         )
+        if not self.enable_reviewer:
+            return self._command(
+                {
+                    "final_draft": draft,
+                    "trace_events": [
+                        *state["trace_events"],
+                        self._trace(
+                            "final_reviewer",
+                            "final_review_skipped",
+                            "Final reviewer disabled.",
+                            metadata={"draft": draft.model_dump(mode="json")},
+                        ),
+                    ],
+                },
+                END,
+            )
         decision = self.reviewer.review_final(state["brief"], state["steps"], draft)
         if decision.approved:
             return self._command(
@@ -544,6 +573,75 @@ class ExplorationOrchestrator:
             "status": "partial",
         }
 
+    def _reviewer_skipped_plan_update(
+        self,
+        state: ExplorationRunState,
+        plan_text: str,
+        base_updates: dict[str, object],
+    ) -> dict[str, object]:
+        if self._plan_requests_stop(plan_text):
+            return {
+                **base_updates,
+                "review_feedback": "",
+                "final_draft_requested": True,
+                "trace_events": [
+                    *cast("list[TraceEvent]", base_updates["trace_events"]),
+                    self._trace(
+                        "reviewer",
+                        "reviewer_skipped",
+                        "Reviewer disabled; Inspector requested final drafting.",
+                        metadata={"plan_text": plan_text, "approved_final": True},
+                    ),
+                ],
+            }
+
+        instruction = self._coder_instruction_from_plan_text(plan_text)
+        if not instruction:
+            warning = (
+                "Reviewer disabled and Inspector did not provide CODER_INSTRUCTION."
+            )
+            return {
+                **base_updates,
+                "review_feedback": warning,
+                "warnings": [*state["warnings"], warning],
+                "final_draft_requested": False,
+                "trace_events": [
+                    *cast("list[TraceEvent]", base_updates["trace_events"]),
+                    self._trace(
+                        "reviewer",
+                        "reviewer_skipped",
+                        warning,
+                        metadata={"plan_text": plan_text},
+                    ),
+                ],
+            }
+
+        return {
+            **base_updates,
+            "approved_instruction": instruction,
+            "review_feedback": "",
+            "final_draft_requested": False,
+            "trace_events": [
+                *cast("list[TraceEvent]", base_updates["trace_events"]),
+                self._trace(
+                    "reviewer",
+                    "reviewer_skipped",
+                    "Reviewer disabled; Inspector instruction approved directly.",
+                    metadata={
+                        "plan_text": plan_text,
+                        "approved_instruction": instruction,
+                    },
+                ),
+            ],
+        }
+
+    def _reviewer_skipped_plan_goto(self, plan_text: str) -> str:
+        if self._plan_requests_stop(plan_text):
+            return "inspector"
+        if self._coder_instruction_from_plan_text(plan_text):
+            return "code"
+        return "inspector"
+
     @staticmethod
     def _command(update: dict[str, object], goto: str) -> Command[str]:
         return Command(update=update, goto=goto)
@@ -588,6 +686,8 @@ class ExplorationOrchestrator:
     ) -> Literal["success", "partial"]:
         if state.get("status") == "partial":
             return "partial"
+        if not self.enable_reviewer and state["final_draft"] is not None:
+            return "success"
         review = state["final_review"]
         if review is None or not review.approved:
             return "partial"
@@ -614,6 +714,22 @@ class ExplorationOrchestrator:
             expected_evidence=fields.get("evidence_needed", ""),
             risk_notes="Reviewer did not provide separate risk notes.",
         )
+
+    @classmethod
+    def _plan_requests_stop(cls, plan_text: str) -> bool:
+        return cls._plan_field(plan_text, "stop").casefold() == "yes"
+
+    @classmethod
+    def _coder_instruction_from_plan_text(cls, plan_text: str) -> str:
+        return cls._plan_field(plan_text, "coder_instruction")
+
+    @staticmethod
+    def _plan_field(plan_text: str, key: str) -> str:
+        for line in plan_text.splitlines():
+            label, separator, value = line.partition(":")
+            if separator and label.strip().casefold() == key:
+                return value.strip()
+        return ""
 
     @staticmethod
     def _empty_draft(content: str) -> FinalDraft:

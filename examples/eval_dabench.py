@@ -57,6 +57,10 @@ def main(
             file_okay=True,
         ),
     ] = None,
+    enable_reviewer: Annotated[
+        bool,
+        typer.Option(help="Enable Reviewer and final Reviewer."),
+    ] = False,
 ) -> None:
     """Run DABench data analysis evaluation with the Statigent agent."""
     console = Console()
@@ -66,6 +70,7 @@ def main(
 
         meta = json.loads((resume_dir / "meta.json").read_text())
         model = meta.get("model_name", model)
+        enable_reviewer = meta.get("enable_reviewer", enable_reviewer)
         console.print(f"[dim]Resuming — using model '{model}' from meta.json[/dim]")
 
     path = _resolve_registry_path(registry_path, console)
@@ -82,11 +87,15 @@ def main(
     console.print(f"  Task ID: {task_id or 'all'}")
     console.print(f"  Resume dir: {resume_dir or 'N/A'}")
     console.print(f"  Skip: {skip or 'none'}")
+    console.print(f"  Reviewer: {'enabled' if enable_reviewer else 'disabled'}")
     console.print(f"  Output: {output_dir}")
     console.print(f"  Registry: {path or 'bundled defaults'}")
 
     adapter = DABenchAdapter()
-    agent = StatigentDataScienceAgent(model_name=model)
+    agent = StatigentDataScienceAgent(
+        model_name=model,
+        enable_reviewer=enable_reviewer,
+    )
 
     console.print("\n[blue]Preparing DABench data...[/blue]")
     adapter.prepare()

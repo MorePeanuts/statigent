@@ -76,6 +76,7 @@ class RunPersister:
         agent_name: str,
         model_name: str,
         benchmark_name: str,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
         dir_name = f"{benchmark_name}-{agent_name}-{model_name}-{timestamp}"
@@ -88,6 +89,8 @@ class RunPersister:
             "benchmark_name": benchmark_name,
             "timestamp": timestamp,
         }
+        if metadata:
+            meta.update(metadata)
         (self.output_dir / "meta.json").write_text(json.dumps(meta, indent=2))
 
         self._pred_dir = self.output_dir / "predictions"
@@ -337,6 +340,7 @@ class BenchmarkAdapter(ABC):
                 agent_name=agent.name,
                 model_name=agent.model_name,
                 benchmark_name=self.name,
+                metadata=self._agent_run_metadata(agent),
             )
             kwargs["persister"] = persister
 
@@ -361,6 +365,14 @@ class BenchmarkAdapter(ABC):
             persister.finalize(result)
 
         return result
+
+    @staticmethod
+    def _agent_run_metadata(agent: "DataScienceAgent") -> dict[str, Any]:
+        metadata: dict[str, Any] = {}
+        enable_reviewer = getattr(agent, "enable_reviewer", None)
+        if isinstance(enable_reviewer, bool):
+            metadata["enable_reviewer"] = enable_reviewer
+        return metadata
 
     @staticmethod
     def load_predictions(output_dir: Path) -> list[dict[str, Any]]:
