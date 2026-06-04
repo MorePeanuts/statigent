@@ -579,7 +579,30 @@ class ExplorationOrchestrator:
         plan_text: str,
         base_updates: dict[str, object],
     ) -> dict[str, object]:
-        if self._plan_requests_stop(plan_text):
+        instruction = self._coder_instruction_from_plan_text(plan_text)
+        if self._plan_requests_done(plan_text) and instruction:
+            warning = "DONE ignored because CODER_INSTRUCTION is not empty."
+            return {
+                **base_updates,
+                "approved_instruction": instruction,
+                "review_feedback": "",
+                "warnings": [*state["warnings"], warning],
+                "final_draft_requested": False,
+                "trace_events": [
+                    *cast("list[TraceEvent]", base_updates["trace_events"]),
+                    self._trace(
+                        "reviewer",
+                        "reviewer_skipped",
+                        warning,
+                        metadata={
+                            "plan_text": plan_text,
+                            "approved_instruction": instruction,
+                        },
+                    ),
+                ],
+            }
+
+        if self._plan_requests_done(plan_text):
             return {
                 **base_updates,
                 "review_feedback": "",
@@ -595,7 +618,6 @@ class ExplorationOrchestrator:
                 ],
             }
 
-        instruction = self._coder_instruction_from_plan_text(plan_text)
         if not instruction:
             warning = (
                 "Reviewer disabled and Inspector did not provide CODER_INSTRUCTION."
@@ -636,9 +658,10 @@ class ExplorationOrchestrator:
         }
 
     def _reviewer_skipped_plan_goto(self, plan_text: str) -> str:
-        if self._plan_requests_stop(plan_text):
+        instruction = self._coder_instruction_from_plan_text(plan_text)
+        if self._plan_requests_done(plan_text) and not instruction:
             return "inspector"
-        if self._coder_instruction_from_plan_text(plan_text):
+        if instruction:
             return "code"
         return "inspector"
 
@@ -716,8 +739,8 @@ class ExplorationOrchestrator:
         )
 
     @classmethod
-    def _plan_requests_stop(cls, plan_text: str) -> bool:
-        return cls._plan_field(plan_text, "stop").casefold() == "yes"
+    def _plan_requests_done(cls, plan_text: str) -> bool:
+        return any(line.strip().casefold() == "done" for line in plan_text.splitlines())
 
     @classmethod
     def _coder_instruction_from_plan_text(cls, plan_text: str) -> str:

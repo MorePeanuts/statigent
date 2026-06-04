@@ -18,19 +18,21 @@ def test_inspector_prompt_requires_action_block() -> None:
     assert "question:" in text
     assert "evidence_needed:" in text
     assert "coder_instruction:" in text
-    assert "stop:" in text
+    assert "done" in text
     assert "end every planning response" in text
     assert "explorationactionkind" not in text
     assert "custom_analysis" not in text
 
 
-def test_inspector_prompt_defines_stop_as_final_review_request() -> None:
+def test_inspector_prompt_defines_done_as_final_answer_marker() -> None:
     text = _normalized(INSPECTOR_PLAN_SYSTEM_PROMPT)
 
-    assert "stop is not a final answer" in text
-    assert "information is sufficient" in text
-    assert "reviewer" in text
+    assert "done" in text
+    assert "final answer" in text
     assert "leave coder_instruction empty" in text
+    assert "do not include done" in text
+    assert "done is not a final answer" not in text
+    assert "does not execute code" not in text
 
 
 def test_inspector_prompt_sets_role_duty_and_small_coder_steps() -> None:
@@ -57,13 +59,13 @@ def test_inspector_prompt_enforces_profile_and_task_restrictions() -> None:
     assert "dtypes" in text
 
 
-def test_inspector_prompt_treats_stop_as_no_instruction_branch() -> None:
+def test_inspector_prompt_treats_done_as_no_instruction_branch() -> None:
     text = _normalized(INSPECTOR_PLAN_SYSTEM_PROMPT)
 
-    assert "if the current information is enough" in text
-    assert "stop: yes" in text
+    assert "if the current observations already contain the final answer" in text
+    assert "append a final line containing only done" in text
     assert "do not issue coder instructions" in text
-    assert "stop: no" in text
+    assert "do not include done" in text
     assert "coder_instruction" in text
 
 
@@ -84,10 +86,12 @@ def test_reviewer_prompt_sets_role_duty_and_behavior_guidelines() -> None:
     assert "unnecessary" in text
 
 
-def test_reviewer_prompt_audits_stop_requests_against_evidence() -> None:
+def test_reviewer_prompt_audits_done_requests_against_evidence() -> None:
     text = _normalized(REVIEWER_PLAN_SYSTEM_PROMPT)
 
-    assert "stop" in text
+    assert "done" in text
+    assert "approved_final" in text
+    assert "approved" in text
     assert "do not approve final drafting" in text
     assert "executed evidence" in text
     assert "feedback" in text

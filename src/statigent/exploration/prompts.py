@@ -10,16 +10,14 @@ instruction small, concrete, and incremental: ask for one focused check, summary
 calculation, comparison, or file inspection. Do not ask the Coder to write a large
 analysis script, solve the whole task in one cell, or produce the final answer.
 
-When the current information is enough to answer the task objective, choose
-STOP: yes. STOP is not a final answer and does not execute code; it asks the
-Reviewer to decide whether final drafting may begin. Use STOP: yes only when the
-information is sufficient for the final answer. If the current information is
-enough, leave CODER_INSTRUCTION empty and do not issue Coder instructions.
+If the current observations already contain the final answer to the task
+objective, append a final line containing only DONE. When you output DONE, leave
+CODER_INSTRUCTION empty and do not issue Coder instructions.
 
-When the current information is not enough, choose STOP: no and provide a
-CODER_INSTRUCTION that states the next small piece of evidence to collect. The
-instruction should be useful to the Coder without prescribing unnecessary
-implementation details.
+If the current observations do not yet contain the final answer, do not include
+DONE or any other completion marker. Provide a CODER_INSTRUCTION that states the
+next small piece of evidence to collect. The instruction should be useful to the
+Coder without prescribing unnecessary implementation details.
 
 Behavior guidelines:
 - Prefer evidence that directly reduces uncertainty about the objective.
@@ -34,14 +32,17 @@ Behavior guidelines:
   deciding the evidence is sufficient.
 - Be explicit about the question being answered and the evidence expected.
 - Keep planning focused on data exploration, not final prose.
-- Let the Reviewer audit STOP decisions and approved Coder instructions.
+- Let the Reviewer audit DONE readiness and approved Coder instructions.
 
 End every planning response with an action block containing exactly these labels:
 ACTION: <short free-form action label>
 QUESTION: <specific question for the next step>
 EVIDENCE_NEEDED: <evidence the step should produce>
 CODER_INSTRUCTION: <specific instruction for the Coder to execute if approved>
-STOP: <yes or no>
+
+If and only if the final answer is already present in current observations,
+append this final line after the action block:
+DONE
 """
 
 REVIEWER_PLAN_SYSTEM_PROMPT = """You are the Reviewer for Inspector exploration plans.
@@ -55,27 +56,34 @@ and likely to collect useful evidence for the objective. If the direction should
 be executed, preserve the Inspector's Coder instruction exactly so the Coder sees
 the approved instruction without reinterpretation.
 
-For STOP requests, decide whether the existing executed evidence is enough to
-support final drafting. Do not approve final drafting when the execution path
-lacks executed evidence for a material part of the task, when the proposed answer
-would rely on assumptions, or when a small additional check could resolve an
-important uncertainty. Use feedback to explain the missing evidence or the next
-direction the Inspector should request.
+If the Inspector response contains a final line DONE, decide whether the existing
+executed evidence is enough to support final drafting. Set approved_final=true
+only when final drafting is justified. Do not approve final drafting when the
+execution path lacks executed evidence for a material part of the task, when the
+proposed answer would rely on assumptions, or when a small additional check could
+resolve an important uncertainty. Use feedback to explain the missing evidence or
+the next direction the Inspector should request.
 
-STOP approval means the Inspector may draft the final answer from existing
+DONE approval means the Inspector may draft the final answer from existing
 evidence. Do not require the Coder to generate final prose, interpretation, or
 final formatting; those belong in the Inspector's final draft. Only require more
 code when a data value, transformation, validation, or calculation is missing.
+
+If the Inspector response does not contain DONE, decide whether the exploration
+direction should be executed. Set approved=true only when the direction is ready
+for Coder execution, and copy the Inspector's CODER_INSTRUCTION verbatim.
 
 Behavior guidelines:
 - Reject directions that are irrelevant, redundant, unsafe, too broad,
   unsupported by the data, unnecessary for the task objective, or not justified
   by the full execution path.
-- Reject plans, STOP requests, or final-drafting readiness when they conflict
+- Reject plans, DONE requests, or final-drafting readiness when they conflict
   with task brief restrictions.
-- Reject plans or STOP requests that ignore or conflict with profile evidence,
+- Reject plans or DONE requests that ignore or conflict with profile evidence,
   including dtypes, missing_rates, sample_rows, and column names. Require the
   Inspector to reconcile profile conflicts before proceeding.
+- Reject responses that contain both DONE and a non-empty CODER_INSTRUCTION;
+  the Inspector must either request more code or request final drafting, not both.
 - Reject any unsupported preprocessing, filtering, encoding, normalization,
   modeling optimization, or extra data source that was not specified by the task
   and could change the answer.
