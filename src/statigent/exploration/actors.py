@@ -68,6 +68,15 @@ class CoderExecutionOutcome:
 
 
 @dataclass(frozen=True)
+class CoderContextEntry:
+    """Executed Coder cell bound to its instruction and observation."""
+
+    instruction: str
+    cell: NotebookCell
+    observation: str
+
+
+@dataclass(frozen=True)
 class DebugExecutionOutcome:
     """Debugger replacement outcome with the validation execution result."""
 
@@ -370,6 +379,7 @@ class Coder:
     ) -> None:
         self.kernel = kernel
         self._last_outcome: CoderExecutionOutcome | None = None
+        self._context_entries: list[CoderContextEntry] = []
         self._agent = agent_factory(
             model,
             [self._make_append_and_execute_tool()],
@@ -408,7 +418,7 @@ class Coder:
         input_paths = "\n".join(f"- {path}" for path in self.kernel.list_inputs())
         if not input_paths:
             input_paths = "- No input files are available."
-        code_context = self.kernel.get_code_context().model_dump_json()
+        code_context = self._render_code_context()
         self._last_outcome = None
         agent_result = self._agent.invoke(
             {
@@ -432,11 +442,19 @@ class Coder:
             raise StatigentExplorationError(
                 "Coder agent did not call append_code_cell."
             )
-        return CoderExecutionOutcome(
+        outcome = CoderExecutionOutcome(
             cell=self._last_outcome.cell,
             result=self._last_outcome.result,
             observation=_agent_response_text(agent_result),
         )
+        self._context_entries.append(
+            CoderContextEntry(
+                instruction=instruction,
+                cell=outcome.cell,
+                observation=outcome.observation,
+            )
+        )
+        return outcome
 
     def append_code_cell(
         self,
@@ -465,6 +483,56 @@ class Coder:
     @staticmethod
     def _result_output(result: NotebookCellResult) -> str:
         return result.stdout if result.ok else result.error_summary or result.stderr
+
+    def _render_code_context(self) -> str:
+        if not self._context_entries:
+            return (
+                "# No prior Coder cells have been appended in this notebook.\n"
+                "# Your next code must be an incremental first cell."
+            )
+        return "\n\n".join(
+            self._render_context_entry(entry) for entry in self._context_entries
+        )
+
+    @classmethod
+    def _render_context_entry(cls, entry: CoderContextEntry) -> str:
+        result = entry.cell.latest_result
+        top_comments = [
+            f"# Previous executed cell: {entry.cell.cell_id}",
+            "# Instruction:",
+            *cls._comment_lines(entry.instruction),
+            "# Purpose:",
+            *cls._comment_lines(entry.cell.purpose),
+            "# Expected observation:",
+            *cls._comment_lines(entry.cell.expected_observation),
+        ]
+        bottom_comments = [
+            "# Observation:",
+            *cls._comment_lines(entry.observation),
+        ]
+        if result is not None:
+            bottom_comments.extend(
+                [
+                    f"# Execution ok: {result.ok}",
+                    f"# exit_code: {result.exit_code}",
+                    "# stdout:",
+                    *cls._comment_lines(result.stdout or "<empty>"),
+                ]
+            )
+            if result.stderr:
+                bottom_comments.extend(
+                    ["# stderr:", *cls._comment_lines(result.stderr)]
+                )
+            if result.error_summary:
+                bottom_comments.extend(
+                    ["# error_summary:", *cls._comment_lines(result.error_summary)]
+                )
+        return "\n".join([*top_comments, entry.cell.code, *bottom_comments])
+
+    @staticmethod
+    def _comment_lines(text: str) -> list[str]:
+        lines = text.splitlines() or [""]
+        return [f"# {line}" if line else "#" for line in lines]
 
     @classmethod
     def _execution_result_text(cls, result: NotebookCellResult) -> str:

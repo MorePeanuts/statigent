@@ -318,6 +318,46 @@ def test_coder_second_turn_uses_tool_and_execution_context(tmp_path: Path) -> No
     assert "mean=15" in model.tool_result_seen
 
 
+def test_coder_context_binds_instruction_cell_and_observation(
+    tmp_path: Path,
+) -> None:
+    kernel = FakeNotebookKernel()
+    kernel.start(NotebookContext(input_paths=[], work_dir=tmp_path / "work"))
+    kernel.queue_result(stdout="loaded columns: revenue\n")
+    kernel.queue_result(stdout="mean=15\n")
+    model = FakeToolModel(
+        "append_code_cell",
+        {
+            "code": "df = 'loaded'",
+            "purpose": "Load data",
+            "expected_observation": "loaded",
+        },
+        observation="Loaded the sales table.",
+    )
+    coder = Coder(model, kernel, agent_factory=fake_agent_factory)
+
+    coder.append_and_execute(make_profile(tmp_path), "Load the sales data.")
+
+    model.args = {
+        "code": "print('mean=15')",
+        "purpose": "Compute mean",
+        "expected_observation": "mean",
+    }
+    model.observation = "The requested mean is 15."
+    coder.append_and_execute(make_profile(tmp_path), "Compute mean revenue.")
+
+    second_prompt = str(model.invocations_seen[-1][0].content)
+    assert "# Instruction:" in second_prompt
+    assert "# Load the sales data." in second_prompt
+    assert "df = 'loaded'" in second_prompt
+    assert "# Observation:" in second_prompt
+    assert "# Loaded the sales table." in second_prompt
+    assert "# stdout:" in second_prompt
+    assert "# loaded columns: revenue" in second_prompt
+    assert "Notebook code context:" in second_prompt
+    assert '"cells"' not in second_prompt
+
+
 def test_coder_binds_append_tool_once_at_initialization(tmp_path: Path) -> None:
     kernel = FakeNotebookKernel()
     kernel.start(NotebookContext(input_paths=[], work_dir=tmp_path / "work"))
