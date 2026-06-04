@@ -6,6 +6,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 
+from statigent.errors import StatigentExplorationError
 from statigent.exploration.actors import Coder, Debugger, Inspector, Reviewer
 from statigent.exploration.state import (
     ExplorationRunState,
@@ -315,10 +316,32 @@ class ExplorationOrchestrator:
                 "final_review",
             )
 
-        outcome = self.coder.append_and_execute(
-            state["profile"],
-            instruction,
-        )
+        try:
+            outcome = self.coder.append_and_execute(
+                state["profile"],
+                instruction,
+            )
+        except StatigentExplorationError as err:
+            warning = f"Coder failed to execute approved instruction: {err}"
+            return self._command(
+                {
+                    "warnings": [*state["warnings"], warning],
+                    "approved_instruction": None,
+                    "final_draft": self._partial_draft(state),
+                    "status": "partial",
+                    "trace_events": [
+                        *state["trace_events"],
+                        self._trace(
+                            "coder",
+                            "protocol_error",
+                            str(err),
+                            usage_metadata=self._actor_usage(self.coder),
+                            metadata={"approved_instruction": instruction},
+                        ),
+                    ],
+                },
+                "final_review",
+            )
         cell = outcome.cell
         result = outcome.result
         trace_events = [

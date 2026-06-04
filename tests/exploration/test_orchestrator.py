@@ -3,6 +3,7 @@ from pathlib import Path
 
 from langgraph.types import Command
 
+from statigent.errors import StatigentExplorationError
 from statigent.exploration import ExplorationOrchestrator
 from statigent.exploration.actors import CoderExecutionOutcome, DebugExecutionOutcome
 from statigent.exploration.state import ExplorationRunState
@@ -156,6 +157,16 @@ class FakeCoder:
         result: object,
     ) -> str:
         return f"Observation:\n{getattr(result, 'stdout', '')}"
+
+
+class FailingCoder(FakeCoder):
+    def append_and_execute(
+        self,
+        _profile: DatasetProfile,
+        instruction: str,
+    ) -> CoderExecutionOutcome:
+        self.instructions.append(instruction)
+        raise StatigentExplorationError("Coder agent did not call append_code_cell.")
 
 
 class FakeDebugger:
@@ -675,6 +686,28 @@ def test_coder_appends_and_code_node_executes_cell(
     assert len(kernel.snapshot().executed_cells) == 1
     assert report.steps[0].result is not None
     assert report.steps[0].result.stdout == "mean=15\n"
+
+
+def test_coder_protocol_failure_returns_partial_report(tmp_path: Path) -> None:
+    kernel = started_kernel(tmp_path)
+    coder = FailingCoder()
+    orchestrator = make_orchestrator(kernel, coder=coder)
+
+    report = orchestrator.run(make_brief(), make_profile(tmp_path))
+
+    assert report.status == "partial"
+    assert coder.instructions == [
+        "Compute mean revenue from the available sales data."
+    ]
+    assert report.steps == []
+    assert any(
+        "coder failed to execute approved instruction" in warning.casefold()
+        for warning in report.warnings
+    )
+    assert any(
+        event.agent == "coder" and event.name == "protocol_error"
+        for event in report.trace_events
+    )
 
 
 def test_failed_execution_enters_debugger_and_retries_same_cell_id(
