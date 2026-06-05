@@ -30,6 +30,25 @@ def load_render_content() -> Callable[..., object]:
     return render_content
 
 
+def load_agent_styles() -> dict[str, str]:
+    script_path = Path(__file__).parents[2] / "tools" / "trace_statigent.py"
+    spec = spec_from_file_location("trace_statigent", script_path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    styles = module._AGENT_STYLES
+    assert isinstance(styles, dict)
+    return styles
+
+
+def test_trace_styles_do_not_include_removed_reviewer_agents() -> None:
+    styles = load_agent_styles()
+
+    assert "reviewer" not in styles
+    assert "final_reviewer" not in styles
+
+
 def test_panel_title_includes_cell_id_for_code_related_events() -> None:
     title = load_panel_title()(
         {

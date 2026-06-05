@@ -227,9 +227,7 @@ class RunPersister:
         meta["total_steps"] = self._total_steps
         meta["completed_tasks"] = self._completed_tasks
         meta["average_steps"] = (
-            self._total_steps / self._completed_tasks
-            if self._completed_tasks
-            else 0.0
+            self._total_steps / self._completed_tasks if self._completed_tasks else 0.0
         )
         meta_path.write_text(json.dumps(meta, indent=2))
 
@@ -340,7 +338,6 @@ class BenchmarkAdapter(ABC):
                 agent_name=agent.name,
                 model_name=agent.model_name,
                 benchmark_name=self.name,
-                metadata=self._agent_run_metadata(agent),
             )
             kwargs["persister"] = persister
 
@@ -365,14 +362,6 @@ class BenchmarkAdapter(ABC):
             persister.finalize(result)
 
         return result
-
-    @staticmethod
-    def _agent_run_metadata(agent: "DataScienceAgent") -> dict[str, Any]:
-        metadata: dict[str, Any] = {}
-        enable_reviewer = getattr(agent, "enable_reviewer", None)
-        if isinstance(enable_reviewer, bool):
-            metadata["enable_reviewer"] = enable_reviewer
-        return metadata
 
     @staticmethod
     def load_predictions(output_dir: Path) -> list[dict[str, Any]]:

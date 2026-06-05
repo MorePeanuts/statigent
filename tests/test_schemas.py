@@ -1,8 +1,5 @@
 from pathlib import Path
 
-import pytest
-from pydantic import ValidationError
-
 from statigent.schemas import (
     ArtifactRef,
     Budget,
@@ -13,12 +10,10 @@ from statigent.schemas import (
     ExplorationAction,
     ExplorationReport,
     FinalDraft,
-    FinalReviewDecision,
     InputFileInfo,
     OutputBundle,
     OutputStatus,
     OutputType,
-    ReviewerPlanDecision,
     TableProfile,
     TaskBrief,
     TaskType,
@@ -150,68 +145,6 @@ def test_exploration_report_exposes_trace_events() -> None:
     )
 
     assert report.trace_events == []
-
-
-def test_reviewer_plan_decision_allows_rejection_without_action() -> None:
-    decision = ReviewerPlanDecision(approved=False, feedback="Too broad")
-
-    assert not decision.approved
-    assert not decision.approved_final
-    assert decision.feedback == "Too broad"
-
-
-def test_reviewer_plan_decision_schema_is_compact() -> None:
-    schema = ReviewerPlanDecision.model_json_schema()
-
-    assert set(schema["properties"]) == {
-        "approved",
-        "approved_final",
-        "coder_instruction",
-        "feedback",
-    }
-
-
-def test_reviewer_plan_decision_allows_final_approval_without_action() -> None:
-    decision = ReviewerPlanDecision(
-        approved=False,
-        approved_final=True,
-    )
-
-    assert decision.approved_final
-
-
-def test_reviewer_plan_decision_allows_complete_approval() -> None:
-    decision = ReviewerPlanDecision(
-        approved=True,
-        coder_instruction="Compute mean revenue from sales.csv.",
-    )
-
-    assert decision.approved
-    assert not decision.approved_final
-    assert decision.coder_instruction == "Compute mean revenue from sales.csv."
-
-
-def test_reviewer_plan_decision_rejects_conflicting_approval_paths() -> None:
-    with pytest.raises(ValidationError, match="choose only one"):
-        ReviewerPlanDecision(
-            approved=True,
-            approved_final=True,
-            coder_instruction="Compute mean revenue.",
-        )
-
-
-def test_reviewer_plan_decision_requires_coder_instruction_when_approved() -> None:
-    with pytest.raises(
-        ValidationError,
-        match="approved plans require coder_instruction",
-    ):
-        ReviewerPlanDecision(approved=True)
-
-
-def test_final_review_decision_schema_is_compact() -> None:
-    schema = FinalReviewDecision.model_json_schema()
-
-    assert set(schema["properties"]) == {"approved", "feedback"}
 
 
 def test_debug_lesson_records_task_local_fix() -> None:

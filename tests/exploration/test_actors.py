@@ -5,7 +5,7 @@ import pytest
 from langchain.messages import AIMessage
 
 from statigent.errors import StatigentExplorationError
-from statigent.exploration import Coder, Debugger, Inspector, Reviewer
+from statigent.exploration import Coder, Debugger, Inspector
 from statigent.exploration.tools import make_replace_code_cell_tool
 from statigent.notebook import FakeNotebookKernel, NotebookContext
 from statigent.schemas import (
@@ -14,11 +14,9 @@ from statigent.schemas import (
     DebugDecision,
     DebugLesson,
     FinalDraft,
-    FinalReviewDecision,
     InputFileInfo,
     NotebookCell,
     OutputType,
-    ReviewerPlanDecision,
     TableProfile,
     TaskBrief,
     TaskType,
@@ -66,7 +64,8 @@ class FakeModel:
             messages_seen=self.messages_seen,
         )
 
-    def invoke(self, _messages: list[object]) -> object:
+    def invoke(self, messages: list[object]) -> object:
+        self.messages_seen = list(messages)
         return self.result
 
 
@@ -221,40 +220,12 @@ def test_replace_tool_is_bound_to_failed_cell_and_hides_cell_id(
 def test_inspector_next_plan_returns_text(tmp_path: Path) -> None:
     inspector = Inspector(FakeModel("Plan the next focused check."))
 
-    result = inspector.next_plan(make_brief(), make_profile(tmp_path), [], "")
+    result = inspector.next_plan(make_brief(), make_profile(tmp_path), [])
 
     assert result == "Plan the next focused check."
-
-
-def test_reviewer_review_plan_returns_decision() -> None:
-    decision = ReviewerPlanDecision(
-        approved=True,
-        coder_instruction="Compute mean revenue from the available data.",
-    )
-    model = FakeModel(decision)
-    reviewer = Reviewer(model)
-
-    result = reviewer.review_plan(
-        make_brief(),
-        make_profile(Path(".")),
-        [],
-        "Plan text",
-    )
-
-    assert result == decision
-    prompt = str(model.messages_seen[-1].content)
-    assert "Full execution path:" in prompt
-    assert "Inspector plan:" in prompt
-
-
-def test_reviewer_review_final_returns_final_decision() -> None:
-    decision = FinalReviewDecision(approved=True, feedback="Complete")
-    reviewer = Reviewer(FakeModel(decision))
-    draft = FinalDraft(content="Average revenue is 15.", evidence=["mean=15"])
-
-    result = reviewer.review_final(make_brief(), [], draft)
-
-    assert result == decision
+    prompt = str(inspector.model.messages_seen[-1].content)
+    assert "Completed steps:" in prompt
+    assert "Reviewer feedback:" not in prompt
 
 
 def test_coder_append_code_cell_uses_append_tool(tmp_path: Path) -> None:

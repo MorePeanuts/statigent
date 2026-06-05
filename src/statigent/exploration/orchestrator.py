@@ -7,7 +7,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 
 from statigent.errors import StatigentExplorationError
-from statigent.exploration.actors import Coder, Debugger, Inspector, Reviewer
+from statigent.exploration.actors import Coder, Debugger, Inspector
 from statigent.exploration.state import (
     ExplorationRunState,
     can_append_cell,
@@ -37,18 +37,14 @@ class ExplorationOrchestrator:
         self,
         *,
         inspector: Inspector,
-        reviewer: Reviewer,
         coder: Coder,
         debugger: Debugger,
         kernel: NotebookKernel,
-        enable_reviewer: bool = False,
     ) -> None:
         self.inspector = inspector
-        self.reviewer = reviewer
         self.coder = coder
         self.debugger = debugger
         self.kernel = kernel
-        self.enable_reviewer = enable_reviewer
         self._graph = self._build_graph()
 
     def run(self, brief: TaskBrief, profile: DatasetProfile) -> ExplorationReport:
@@ -57,19 +53,16 @@ class ExplorationOrchestrator:
             "profile": profile,
             "steps": [],
             "pending_plan_text": "",
-            "review_feedback": "",
             "approved_instruction": None,
             "last_cell_id": "",
             "debug_lessons": [],
             "final_draft_requested": False,
             "final_draft": None,
-            "final_review": None,
             "warnings": [],
             "trace_events": [],
             "round_count": 0,
             "cell_count": 0,
             "debug_attempts": 0,
-            "plan_review": None,
             "last_cell": None,
             "last_result": None,
             "status": "",
@@ -105,10 +98,8 @@ class ExplorationOrchestrator:
     ]:
         graph = StateGraph(ExplorationRunState)
         graph.add_node("inspector", self._inspector_node)
-        graph.add_node("review_plan", self._review_plan_node)
         graph.add_node("code", self._code_node)
         graph.add_node("debug", self._debug_node)
-        graph.add_node("final_review", self._final_review_node)
 
         graph.add_edge(START, "inspector")
         return graph.compile()
@@ -121,9 +112,9 @@ class ExplorationOrchestrator:
             return self._command(
                 self._final_draft_update(
                     state,
-                    "Reviewer approved final drafting.",
+                    "Inspector found sufficient evidence for final drafting.",
                 ),
-                "final_review",
+                END,
             )
 
         if not can_continue_exploration(state):
@@ -133,18 +124,17 @@ class ExplorationOrchestrator:
                         state,
                         "Round budget reached after completed exploration.",
                     ),
-                    "final_review",
+                    END,
                 )
             return self._command(
                 self._budget_draft_update(state, "Round budget exhausted."),
-                "final_review",
+                END,
             )
 
         plan_text = self.inspector.next_plan(
             state["brief"],
             state["profile"],
             state["steps"],
-            state["review_feedback"],
         )
         updates: dict[str, object] = {
             "pending_plan_text": plan_text,
@@ -159,141 +149,9 @@ class ExplorationOrchestrator:
                 ),
             ],
         }
-        if not self.enable_reviewer:
-            return self._command(
-                self._reviewer_skipped_plan_update(state, plan_text, updates),
-                self._reviewer_skipped_plan_goto(plan_text),
-            )
-        return self._command(updates, "review_plan")
-
-    def _review_plan_node(
-        self,
-        state: ExplorationRunState,
-    ) -> Command[str]:
-        decision = self.reviewer.review_plan(
-            state["brief"],
-            state["profile"],
-            state["steps"],
-            state["pending_plan_text"],
-        )
-        if not decision.approved and not decision.approved_final:
-            feedback = decision.feedback or "Reviewer rejected the Inspector plan."
-            return self._command(
-                {
-                    "plan_review": decision,
-                    "review_feedback": feedback,
-                    "final_draft_requested": False,
-                    "trace_events": [
-                        *state["trace_events"],
-                        self._trace(
-                            "reviewer",
-                            "plan_rejected",
-                            decision.model_dump_json(),
-                            usage_metadata=self._actor_usage(self.reviewer),
-                            metadata={"plan_text": state["pending_plan_text"]},
-                        ),
-                    ],
-                },
-                "inspector",
-            )
-
-        if decision.approved_final:
-            if not state["steps"]:
-                feedback = (
-                    "Reviewer approved final drafting before any executed "
-                    "exploration evidence was available."
-                )
-                return self._command(
-                    {
-                        "plan_review": decision,
-                        "review_feedback": feedback,
-                        "final_draft_requested": False,
-                        "warnings": [
-                            *state["warnings"],
-                            (
-                                "Reviewer approved final drafting without "
-                                "executed evidence."
-                            ),
-                        ],
-                        "trace_events": [
-                            *state["trace_events"],
-                            self._trace(
-                                "reviewer",
-                                "final_approved_without_evidence",
-                                decision.model_dump_json(),
-                                usage_metadata=self._actor_usage(self.reviewer),
-                                metadata={"plan_text": state["pending_plan_text"]},
-                            ),
-                        ],
-                    },
-                    "inspector",
-                )
-            return self._command(
-                {
-                    "plan_review": decision,
-                    "review_feedback": "",
-                    "final_draft_requested": True,
-                    "trace_events": [
-                        *state["trace_events"],
-                        self._trace(
-                            "reviewer",
-                            "final_approved",
-                            decision.model_dump_json(),
-                            usage_metadata=self._actor_usage(self.reviewer),
-                            metadata={"plan_text": state["pending_plan_text"]},
-                        ),
-                    ],
-                },
-                "inspector",
-            )
-
-        if not decision.approved:
-            feedback = "Reviewer did not approve exploration or final drafting."
-            return self._command(
-                {
-                    "plan_review": decision,
-                    "review_feedback": feedback,
-                    "final_draft_requested": False,
-                    "warnings": [
-                        *state["warnings"],
-                        feedback,
-                    ],
-                    "trace_events": [
-                        *state["trace_events"],
-                        self._trace(
-                            "reviewer",
-                            "plan_not_approved",
-                            decision.model_dump_json(),
-                            usage_metadata=self._actor_usage(self.reviewer),
-                            metadata={"plan_text": state["pending_plan_text"]},
-                        ),
-                    ],
-                },
-                "inspector",
-            )
-
-        instruction = decision.coder_instruction
         return self._command(
-            {
-                "plan_review": decision,
-                "approved_instruction": instruction,
-                "review_feedback": "",
-                "final_draft_requested": False,
-                "trace_events": [
-                    *state["trace_events"],
-                    self._trace(
-                        "reviewer",
-                        "plan_approved",
-                        decision.model_dump_json(),
-                        usage_metadata=self._actor_usage(self.reviewer),
-                        metadata={
-                            "plan_text": state["pending_plan_text"],
-                            "approved_instruction": instruction,
-                        },
-                    ),
-                ],
-            },
-            "code",
+            self._inspector_plan_update(state, plan_text, updates),
+            self._inspector_plan_goto(plan_text),
         )
 
     def _code_node(self, state: ExplorationRunState) -> Command[str]:
@@ -308,12 +166,12 @@ class ExplorationOrchestrator:
                     "final_draft": self._partial_draft(state),
                     "status": "partial",
                 },
-                "final_review",
+                END,
             )
         if not can_append_cell(state):
             return self._command(
                 self._budget_draft_update(state, "Code cell budget exhausted."),
-                "final_review",
+                END,
             )
 
         try:
@@ -340,7 +198,7 @@ class ExplorationOrchestrator:
                         ),
                     ],
                 },
-                "final_review",
+                END,
             )
         cell = outcome.cell
         result = outcome.result
@@ -462,16 +320,9 @@ class ExplorationOrchestrator:
         debug_lessons: list[object] | None = None,
     ) -> dict[str, object]:
         action = self._action_from_plan_text(state["pending_plan_text"])
-        plan_review = state.get("plan_review")
         review = ReviewDecision(
             approved=True,
-            reason=(
-                "Approved by Reviewer"
-                if plan_review is not None
-                else "Reviewer disabled"
-                if not self.enable_reviewer
-                else "Approved"
-            ),
+            reason="Directed by Inspector",
         )
         code = CodeDraft(
             code=cell.code,
@@ -510,80 +361,6 @@ class ExplorationOrchestrator:
             updates["debug_lessons"] = debug_lessons
         return updates
 
-    def _final_review_node(
-        self,
-        state: ExplorationRunState,
-    ) -> Command[str]:
-        draft = state["final_draft"] or self.inspector.final_draft(
-            state["brief"],
-            state["profile"],
-            state["steps"],
-        )
-        if not self.enable_reviewer:
-            return self._command(
-                {
-                    "final_draft": draft,
-                    "trace_events": [
-                        *state["trace_events"],
-                        self._trace(
-                            "final_reviewer",
-                            "final_review_skipped",
-                            "Final reviewer disabled.",
-                            metadata={"draft": draft.model_dump(mode="json")},
-                        ),
-                    ],
-                },
-                END,
-            )
-        decision = self.reviewer.review_final(state["brief"], state["steps"], draft)
-        if decision.approved:
-            return self._command(
-                {
-                    "final_draft": draft,
-                    "final_review": decision,
-                    "trace_events": [
-                        *state["trace_events"],
-                        self._trace(
-                            "final_reviewer",
-                            "approved",
-                            decision.model_dump_json(),
-                            usage_metadata=self._actor_usage(self.reviewer),
-                            metadata={"draft": draft.model_dump(mode="json")},
-                        ),
-                    ],
-                },
-                END,
-            )
-
-        feedback = decision.feedback or "Final review rejected the draft."
-        updates: dict[str, object] = {
-            "final_draft": draft,
-            "final_review": decision,
-            "review_feedback": feedback,
-            "warnings": [
-                *state["warnings"],
-                f"Final review did not approve the draft: {feedback}",
-            ],
-            "trace_events": [
-                *state["trace_events"],
-                self._trace(
-                    "final_reviewer",
-                    "rejected",
-                    decision.model_dump_json(),
-                    usage_metadata=self._actor_usage(self.reviewer),
-                    metadata={"draft": draft.model_dump(mode="json")},
-                ),
-            ],
-        }
-        if not can_continue_exploration(state):
-            updates["status"] = "partial"
-            goto = END
-        else:
-            updates["final_draft"] = None
-            updates["final_draft_requested"] = False
-            goto = "inspector"
-        return self._command(updates, goto)
-
     def _budget_draft_update(
         self,
         state: ExplorationRunState,
@@ -596,7 +373,7 @@ class ExplorationOrchestrator:
             "status": "partial",
         }
 
-    def _reviewer_skipped_plan_update(
+    def _inspector_plan_update(
         self,
         state: ExplorationRunState,
         plan_text: str,
@@ -608,79 +385,31 @@ class ExplorationOrchestrator:
             return {
                 **base_updates,
                 "approved_instruction": instruction,
-                "review_feedback": "",
                 "warnings": [*state["warnings"], warning],
                 "final_draft_requested": False,
-                "trace_events": [
-                    *cast("list[TraceEvent]", base_updates["trace_events"]),
-                    self._trace(
-                        "reviewer",
-                        "reviewer_skipped",
-                        warning,
-                        metadata={
-                            "plan_text": plan_text,
-                            "approved_instruction": instruction,
-                        },
-                    ),
-                ],
             }
 
         if self._plan_requests_done(plan_text):
             return {
                 **base_updates,
-                "review_feedback": "",
                 "final_draft_requested": True,
-                "trace_events": [
-                    *cast("list[TraceEvent]", base_updates["trace_events"]),
-                    self._trace(
-                        "reviewer",
-                        "reviewer_skipped",
-                        "Reviewer disabled; Inspector requested final drafting.",
-                        metadata={"plan_text": plan_text, "approved_final": True},
-                    ),
-                ],
             }
 
         if not instruction:
-            warning = (
-                "Reviewer disabled and Inspector did not provide CODER_INSTRUCTION."
-            )
+            warning = "Inspector did not provide CODER_INSTRUCTION."
             return {
                 **base_updates,
-                "review_feedback": warning,
                 "warnings": [*state["warnings"], warning],
                 "final_draft_requested": False,
-                "trace_events": [
-                    *cast("list[TraceEvent]", base_updates["trace_events"]),
-                    self._trace(
-                        "reviewer",
-                        "reviewer_skipped",
-                        warning,
-                        metadata={"plan_text": plan_text},
-                    ),
-                ],
             }
 
         return {
             **base_updates,
             "approved_instruction": instruction,
-            "review_feedback": "",
             "final_draft_requested": False,
-            "trace_events": [
-                *cast("list[TraceEvent]", base_updates["trace_events"]),
-                self._trace(
-                    "reviewer",
-                    "reviewer_skipped",
-                    "Reviewer disabled; Inspector instruction approved directly.",
-                    metadata={
-                        "plan_text": plan_text,
-                        "approved_instruction": instruction,
-                    },
-                ),
-            ],
         }
 
-    def _reviewer_skipped_plan_goto(self, plan_text: str) -> str:
+    def _inspector_plan_goto(self, plan_text: str) -> str:
         instruction = self._coder_instruction_from_plan_text(plan_text)
         if self._plan_requests_done(plan_text) and not instruction:
             return "inspector"
@@ -732,12 +461,7 @@ class ExplorationOrchestrator:
     ) -> Literal["success", "partial"]:
         if state.get("status") == "partial":
             return "partial"
-        if not self.enable_reviewer and state["final_draft"] is not None:
-            return "success"
-        review = state["final_review"]
-        if review is None or not review.approved:
-            return "partial"
-        return "success"
+        return "success" if state["final_draft"] is not None else "partial"
 
     def _find_cell(self, cell_id: str) -> NotebookCell | None:
         for cell in self.kernel.get_code_context().cells:
@@ -756,9 +480,9 @@ class ExplorationOrchestrator:
         return ExplorationAction(
             title=fields.get("question") or action_label,
             description=plan_text,
-            rationale="Approved Inspector plan",
+            rationale="Inspector-directed exploration",
             expected_evidence=fields.get("evidence_needed", ""),
-            risk_notes="Reviewer did not provide separate risk notes.",
+            risk_notes="",
         )
 
     @classmethod

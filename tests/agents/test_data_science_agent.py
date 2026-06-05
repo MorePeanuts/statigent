@@ -476,29 +476,7 @@ def test_analysis_eval_traces_task_brief_token_usage(tmp_path: Path) -> None:
     }
 
 
-def test_orchestrator_creation_receives_reviewer_switch(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    profile = make_profile(tmp_path)
-    brief = make_brief(TaskType.DATA_ANALYSIS)
-    kernel = FakeDockerNotebookKernel()
-    monkeypatch.setattr(data_science_module, "get_model", lambda _name: object())
-    monkeypatch.setattr(data_science_module, "DockerNotebookKernel", lambda: kernel)
-    agent = StatigentDataScienceAgent(
-        model_name="fake",
-        profiler=FakeProfiler(profile),
-        planner=FakePlanner(brief),
-        enable_reviewer=False,
-    )
-
-    orchestrator = agent._orchestrator(brief, profile, tmp_path / "work")
-
-    assert orchestrator.enable_reviewer is False
-    orchestrator.close()
-
-
-def test_orchestrator_creation_disables_reviewer_by_default(
+def test_orchestrator_creation_has_no_reviewer_switch(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -515,7 +493,7 @@ def test_orchestrator_creation_disables_reviewer_by_default(
 
     orchestrator = agent._orchestrator(brief, profile, tmp_path / "work")
 
-    assert orchestrator.enable_reviewer is False
+    assert not hasattr(orchestrator, "enable_reviewer")
     orchestrator.close()
 
 
