@@ -15,23 +15,17 @@ def load_example(module_name: str) -> object:
     return module
 
 
-def test_dabench_eval_exposes_enable_reviewer_option() -> None:
+def test_dabench_eval_does_not_expose_reviewer_option() -> None:
     eval_dabench = load_example("eval_dabench")
     signature = inspect.signature(eval_dabench.main)
 
-    assert "enable_reviewer" in signature.parameters
-    assert signature.parameters["enable_reviewer"].default is False
-    assert "enable_reviewer=enable_reviewer" in inspect.getsource(
-        eval_dabench.main
-    )
+    assert "enable_reviewer" not in signature.parameters
+    assert "enable_reviewer" not in inspect.getsource(eval_dabench.main)
 
 
-def test_dsbench_da_eval_exposes_enable_reviewer_option() -> None:
+def test_dsbench_da_eval_does_not_expose_reviewer_option() -> None:
     eval_dsbench_da = load_example("eval_dsbench_da")
     signature = inspect.signature(eval_dsbench_da.main)
 
-    assert "enable_reviewer" in signature.parameters
-    assert signature.parameters["enable_reviewer"].default is False
-    assert "enable_reviewer=enable_reviewer" in inspect.getsource(
-        eval_dsbench_da.main
-    )
+    assert "enable_reviewer" not in signature.parameters
+    assert "enable_reviewer" not in inspect.getsource(eval_dsbench_da.main)

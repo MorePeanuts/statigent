@@ -1,8 +1,8 @@
-"""LLM-backed exploration actors for the Inspector-Reviewer-Coder-Debugger loop.
+"""LLM-backed exploration actors for the Inspector-Coder-Debugger loop.
 
 The actors keep LangChain dependencies at the boundary: Inspector uses plain
-chat invocation for planning, Reviewer uses structured output, and
-Coder/Debugger make notebook changes only through bound tools.
+chat invocation for planning, and Coder/Debugger make notebook changes only
+through bound tools.
 """
 
 from collections.abc import Callable
@@ -18,9 +18,7 @@ from statigent.exploration.prompts import (
     CODER_SYSTEM_PROMPT,
     DEBUGGER_SYSTEM_PROMPT,
     FINAL_DRAFT_SYSTEM_PROMPT,
-    FINAL_REVIEWER_SYSTEM_PROMPT,
     INSPECTOR_PLAN_SYSTEM_PROMPT,
-    REVIEWER_PLAN_SYSTEM_PROMPT,
 )
 from statigent.exploration.tools import make_record_debug_lesson_tool
 from statigent.notebook.base import NotebookKernel
@@ -36,10 +34,8 @@ from statigent.schemas import (
     DebugLesson,
     ExplorationStep,
     FinalDraft,
-    FinalReviewDecision,
     NotebookCell,
     NotebookCellResult,
-    ReviewerPlanDecision,
     TaskBrief,
 )
 
@@ -262,7 +258,6 @@ class Inspector:
         brief: TaskBrief,
         profile: DatasetProfile,
         steps: list[ExplorationStep],
-        reviewer_feedback: str,
     ) -> str:
         """Return an unstructured text plan for the next exploration step."""
         result = self.model.invoke(
@@ -272,8 +267,7 @@ class Inspector:
                     content=(
                         f"Task brief:\n{brief.model_dump_json()}\n\n"
                         f"Profile:\n{profile.compact_summary()}\n\n"
-                        f"Completed steps:\n{[s.model_dump() for s in steps]}\n\n"
-                        f"Reviewer feedback:\n{reviewer_feedback}"
+                        f"Completed steps:\n{[s.model_dump() for s in steps]}"
                     ),
                 ),
             ]
@@ -302,64 +296,6 @@ class Inspector:
                         # TODO: trim large step outputs before sending to LLM;
                         # full model_dump() may exceed context window limits.
                         f"Exploration steps:\n{[s.model_dump() for s in steps]}"
-                    ),
-                ),
-            ],
-        )
-        return result
-
-
-class Reviewer:
-    """Reviews proposed actions for relevance and safety, and evaluates final drafts."""
-
-    def __init__(self, model: object) -> None:
-        self.model = cast("_StructuredModel", model)
-        self.last_usage_metadata: dict[str, int] = {}
-
-    def review_plan(
-        self,
-        brief: TaskBrief,
-        profile: DatasetProfile,
-        steps: list[ExplorationStep],
-        plan_text: str,
-    ) -> ReviewerPlanDecision:
-        """Review an Inspector text plan as structured output."""
-        result, self.last_usage_metadata = _invoke_with_usage(
-            self.model,
-            ReviewerPlanDecision,
-            [
-                SystemMessage(content=REVIEWER_PLAN_SYSTEM_PROMPT),
-                HumanMessage(
-                    content=(
-                        f"Task brief:\n{brief.model_dump_json()}\n\n"
-                        f"Dataset profile:\n{profile.compact_summary()}\n\n"
-                        f"Full execution path:\n{[s.model_dump() for s in steps]}\n\n"
-                        f"Inspector plan:\n{plan_text}"
-                    ),
-                ),
-            ],
-        )
-        return result
-
-    def review_final(
-        self,
-        brief: TaskBrief,
-        steps: list[ExplorationStep],
-        draft: FinalDraft,
-    ) -> FinalReviewDecision:
-        # TODO: The final review should be used to determine whether the insector's
-        # final output has completed the tasks for this stage. If not, and if the budget
-        # limit has not been reached, more exploration steps are needed.
-        result, self.last_usage_metadata = _invoke_with_usage(
-            self.model,
-            FinalReviewDecision,
-            [
-                SystemMessage(content=FINAL_REVIEWER_SYSTEM_PROMPT),
-                HumanMessage(
-                    content=(
-                        f"Task brief:\n{brief.model_dump_json()}\n\n"
-                        f"Full execution path:\n{[s.model_dump() for s in steps]}\n\n"
-                        f"Draft:\n{draft.model_dump_json()}"
                     ),
                 ),
             ],
@@ -545,6 +481,7 @@ class Coder:
             f"stderr:\n{result.stderr}\n"
             f"error_summary:\n{result.error_summary}"
         )
+
 
 # TODO: The debugger should be equipped with a replace_code_cell tool, using a React
 # agent focused on solving code debugging issues.

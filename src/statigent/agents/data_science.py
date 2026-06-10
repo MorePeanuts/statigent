@@ -20,7 +20,6 @@ from statigent.exploration import (
     Debugger,
     ExplorationOrchestrator,
     Inspector,
-    Reviewer,
 )
 from statigent.input import InputProfiler, TaskBriefPlanner
 from statigent.models import get_model
@@ -88,14 +87,12 @@ class StatigentDataScienceAgent:
         planner: _Planner | None = None,
         orchestrator_factory: OrchestratorFactory | None = None,
         renderer: OutputRenderer | None = None,
-        enable_reviewer: bool = False,
     ) -> None:
         self.model_name = model_name
         self.profiler = profiler
         self.planner = planner
         self.orchestrator_factory = orchestrator_factory
         self.renderer = renderer or OutputRenderer()
-        self.enable_reviewer = enable_reviewer
 
     def run_analysis_for_eval(
         self,
@@ -275,11 +272,9 @@ class StatigentDataScienceAgent:
         )
         return ExplorationOrchestrator(
             inspector=Inspector(model),
-            reviewer=Reviewer(model),
             coder=Coder(model, kernel),
             debugger=Debugger(model),
             kernel=kernel,
-            enable_reviewer=self.enable_reviewer,
         )
 
     @staticmethod

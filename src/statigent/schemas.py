@@ -10,7 +10,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Literal, Self
 
-from pydantic import BaseModel, Field, PrivateAttr, model_validator
+from pydantic import BaseModel, Field, PrivateAttr
 
 
 class TaskType(StrEnum):
@@ -470,42 +470,6 @@ class ArtifactRef(BaseModel):
     )
 
 
-class ReviewerPlanDecision(BaseModel):
-    """Structured Reviewer decision for an Inspector planning response."""
-
-    approved: bool = Field(
-        default=False,
-        description="Whether the Inspector's next exploration direction is approved",
-    )
-    approved_final: bool = Field(
-        default=False,
-        description="Whether the Inspector's final drafting proposal is approved",
-    )
-    coder_instruction: str = Field(
-        default="",
-        description=(
-            "Inspector-provided instruction copied verbatim for the Coder when "
-            "approved is true"
-        ),
-    )
-    feedback: str = Field(default="", description="Detailed feedback when rejected")
-
-    @model_validator(mode="after")
-    def validate_single_approval_path(self) -> "ReviewerPlanDecision":
-        if self.approved and self.approved_final:
-            raise ValueError("choose only one of approved or approved_final")
-        if self.approved and not self.coder_instruction.strip():
-            raise ValueError("approved plans require coder_instruction")
-        return self
-
-
-class FinalReviewDecision(BaseModel):
-    """Structured Final Reviewer decision for an Inspector final draft."""
-
-    approved: bool = Field(description="Whether the final draft is accepted")
-    feedback: str = Field(default="", description="Feedback when rejected")
-
-
 class DebugLesson(BaseModel):
     """Task-local debugging lesson that can guide later repair attempts."""
 
@@ -586,9 +550,9 @@ class NotebookState(BaseModel):
 
 
 class ReviewDecision(BaseModel):
-    """Decision from the Reviewer actor — approve, reject, or revise an action."""
+    """Execution decision recorded for an Inspector-directed action."""
 
-    approved: bool = Field(description="Whether the action or draft is accepted")
+    approved: bool = Field(description="Whether the action is accepted for execution")
     reason: str = Field(description="Justification for the decision")
     revised_action: ExplorationAction | None = Field(
         default=None, description="Suggested alternative when rejecting an action"
@@ -626,10 +590,10 @@ class FinalDraft(BaseModel):
 
 
 class ExplorationStep(BaseModel):
-    """One complete step: action -> review -> code -> execute -> (debug)."""
+    """One complete step: action -> decision -> code -> execute -> (debug)."""
 
     action: ExplorationAction = Field(description="The proposed exploration action")
-    review: ReviewDecision = Field(description="Reviewer's decision on the action")
+    review: ReviewDecision = Field(description="Execution decision for the action")
     code: CodeDraft | None = Field(
         default=None, description="Code written for this step"
     )
@@ -711,7 +675,6 @@ __all__ = [
     "ExplorationReport",
     "ExplorationStep",
     "FinalDraft",
-    "FinalReviewDecision",
     "ImageCollectionProfile",
     "InputFileInfo",
     "NotebookCell",
@@ -722,7 +685,6 @@ __all__ = [
     "OutputStatus",
     "OutputType",
     "ReviewDecision",
-    "ReviewerPlanDecision",
     "SpreadsheetSheetProfile",
     "SpreadsheetWorkbookProfile",
     "TableProfile",

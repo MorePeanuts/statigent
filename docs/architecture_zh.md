@@ -10,7 +10,7 @@ Statigent 是一个面向数据科学任务的智能体系统。当前版本的�
 - `models/`：模型抽象层，基于 LangChain 的基础模型接口、工具绑定和结构化输出能力管理大模型配置。
 - `input/`：输入层，负责接收用户提示词与数据文件，生成数据画像和结构化任务书。
 - `notebook/`：Notebook Kernel 抽象层，提供面向数据分析的增量式代码执行接口。
-- `exploration/`：数据探索层，以 Inspector、Reviewer、Coder、Debugger 组成多智能体探索流程。
+- `exploration/`：数据探索层，以 Inspector、Coder、Debugger 组成多智能体探索流程。
 - `output/`：输出层，把探索报告渲染为 benchmark 协议可消费的答案、报告或文件引用。
 - `agents/`：顶层智能体编排层，把输入、探索和输出层连接为可评测的 `DataScienceAgent`。
 - `baseline/` 与 `sandbox/`：早期 ReAct baseline 与通用 Docker 代码执行沙箱，仍用于 baseline 评测与兼容场景。
@@ -41,10 +41,10 @@ StatigentDataScienceAgent 按 task_type 分流
 ExplorationOrchestrator
         |
         v
-Inspector -> Reviewer -> Coder -> NotebookKernel
-        |                         |
-        |                         v
-        |                    Debugger
+Inspector -> Coder -> NotebookKernel
+        |                 |
+        |                 v
+        |            Debugger
         v
 ExplorationReport
         |
@@ -115,19 +115,15 @@ Notebook Kernel 抽象位于 `src/statigent/notebook/`。该层的目标是为�
 
 数据探索层位于 `src/statigent/exploration/`，当前采用 LangGraph 状态图实现四角色多智能体流程：
 
-- `Inspector`：读取任务书、数据画像、已完成步骤和 reviewer 反馈，先输出文本计划。文本计划可以包含停止信号，也可以描述下一步探索意图。
-- `Reviewer`：把 Inspector 的文本计划审查为结构化 `ReviewerPlanDecision`，只有通过审查的计划才会被转为 `ApprovedCodeInstruction`。
+- `Inspector`：读取任务书、数据画像和已完成步骤，输出下一步文本计划。文本计划可以包含 `DONE` 停止信号，也可以给出下一步探索所需的 `CODER_INSTRUCTION`。
 - `Coder`：只通过绑定的 `append_code_cell` 工具写入 notebook cell，不直接执行代码。
 - `Debugger`：当 cell 执行失败时，通过绑定的 `replace_code_cell` 工具修复同一个 cell，并可通过 `record_debug_lesson` 工具记录 task-local debug lesson，供同一任务后续修复参考。
 
-探索动作由 `ExplorationActionKind` 预定义，覆盖 schema 检查、缺失值分析、数值摘要、类别摘要、时间趋势、分组对比、相关性、异常值、数据质量校验、可视化、具体问题回答等标准 DEA 动作。同时保留 `custom_analysis`，允许 Inspector 发起自由探索。自由探索动作必须提供 `rationale`、`expected_evidence` 和 `risk_notes`，避免无约束扩散。
-
-`ExplorationOrchestrator` 负责把四个角色和 Notebook Kernel 串起来。它的 LangGraph 节点包括 Inspector planning、plan review、code append、cell execution、debug、observe 和 final review。路由由预算、review 结果、执行状态和最终审查结果共同决定。
+`ExplorationOrchestrator` 负责把三个角色和 Notebook Kernel 串起来。它的 LangGraph 节点包括 Inspector planning、code append/execute 和 debug。路由由预算、Inspector 的 `DONE` 标志、是否存在 `CODER_INSTRUCTION`、执行状态和调试预算共同决定。
 
 当前探索层已经具备：
 
 - Inspector 文本规划和显式停止。
-- Reviewer 结构化前置审查和终审。
 - Coder 基于工具的 notebook cell 追加。
 - Debugger 基于工具的同 cell 替换、重试和 task-local lessons。
 - `ExplorationReport` 汇总洞察、证据、artifact 和执行日志。
@@ -163,7 +159,7 @@ Notebook Kernel 抽象位于 `src/statigent/notebook/`。该层的目标是为�
 - 深度分析层：`deep_analysis` 已作为任务类型进入 schema，可在未来扩展为商业数据分析报告生成流程。
 - 多轮探索：进一步强化 Inspector 的迭代决策，让简单任务快速收敛，让复杂任务在预算内持续发现证据。
 - Artifact 生命周期：目前分析工作目录会保留在磁盘上，保证 trace 和输出中的文件路径可检查。未来可以增加显式 artifact 存储、清理策略和 benchmark 归档策略。
-- 输出审查：当前探索层已有 Reviewer 终审；未来可以把终审结果更完整地暴露到输出层和 benchmark trace。
+- 输出校验：当前由 Inspector 在任务限制和执行证据基础上直接起草最终答案；未来如果需要恢复独立审查，应先通过消融实验证明其收益。
 
 ## 设计原则
 

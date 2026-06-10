@@ -1,9 +1,7 @@
 from statigent.exploration.prompts import (
     CODER_SYSTEM_PROMPT,
     DEBUGGER_SYSTEM_PROMPT,
-    FINAL_REVIEWER_SYSTEM_PROMPT,
     INSPECTOR_PLAN_SYSTEM_PROMPT,
-    REVIEWER_PLAN_SYSTEM_PROMPT,
 )
 
 
@@ -33,6 +31,7 @@ def test_inspector_prompt_defines_done_as_final_answer_marker() -> None:
     assert "do not include done" in text
     assert "done is not a final answer" not in text
     assert "does not execute code" not in text
+    assert "reviewer" not in text
 
 
 def test_inspector_prompt_sets_role_duty_and_small_coder_steps() -> None:
@@ -69,65 +68,6 @@ def test_inspector_prompt_treats_done_as_no_instruction_branch() -> None:
     assert "coder_instruction" in text
 
 
-def test_reviewer_prompt_sets_role_duty_and_behavior_guidelines() -> None:
-    text = _normalized(REVIEWER_PLAN_SYSTEM_PROMPT)
-
-    assert "you are the reviewer" in text
-    assert "audit the inspector's proposed next exploration direction" in text
-    assert "task objective" in text
-    assert "dataset profile" in text
-    assert "full execution path" in text
-    assert "behavior guidelines" in text
-    assert "irrelevant" in text
-    assert "redundant" in text
-    assert "unsafe" in text
-    assert "too broad" in text
-    assert "unsupported" in text
-    assert "unnecessary" in text
-
-
-def test_reviewer_prompt_audits_done_requests_against_evidence() -> None:
-    text = _normalized(REVIEWER_PLAN_SYSTEM_PROMPT)
-
-    assert "done" in text
-    assert "approved_final" in text
-    assert "approved" in text
-    assert "do not approve final drafting" in text
-    assert "executed evidence" in text
-    assert "feedback" in text
-
-
-def test_reviewer_prompt_rejects_restriction_and_profile_conflicts() -> None:
-    text = _normalized(REVIEWER_PLAN_SYSTEM_PROMPT)
-
-    assert "task brief restrictions" in text
-    assert "reject" in text
-    assert "profile" in text
-    assert "missing_rates" in text
-    assert "dtypes" in text
-    assert "sample_rows" in text
-    assert "conflict" in text
-
-
-def test_reviewer_prompt_keeps_review_scope_on_evidence_not_final_prose() -> None:
-    text = _normalized(REVIEWER_PLAN_SYSTEM_PROMPT)
-
-    assert "do not use external dataset expectations" in text
-    assert "do not require the coder to generate final prose" in text
-    assert "final formatting" in text
-    assert "inspector's final draft" in text
-
-
-def test_reviewer_prompt_keeps_structured_output_instruction_concise() -> None:
-    text = _normalized(REVIEWER_PLAN_SYSTEM_PROMPT)
-
-    assert "return a reviewerplandecision structured output" in text
-    assert "- approved:" not in text
-    assert "- approved_final:" not in text
-    assert "- coder_instruction:" not in text
-    assert "- feedback:" not in text
-
-
 def test_coder_prompt_covers_execution_result_observation_reply() -> None:
     text = _normalized(CODER_SYSTEM_PROMPT)
 
@@ -160,33 +100,6 @@ def test_debugger_prompt_sets_role_duty_and_behavior_guidelines() -> None:
     assert "do not rewrite the whole analysis" in text
     assert "already bound" not in text
     assert "failed cell id" not in text
-
-
-def test_final_reviewer_prompt_sets_role_duty_and_behavior_guidelines() -> None:
-    text = _normalized(FINAL_REVIEWER_SYSTEM_PROMPT)
-
-    assert "you are the final reviewer" in text
-    assert "audit the inspector's final draft" in text
-    assert "task objective" in text
-    assert "full execution path" in text
-    assert "output constraints" in text
-    assert "evidence" in text
-    assert "behavior guidelines" in text
-    assert "unsupported" in text
-    assert "uncertainty" in text
-    assert "task brief restrictions" in text
-    assert "requested output format" in text
-    assert "marker" in text
-
-
-def test_final_reviewer_prompt_keeps_structured_output_instruction_concise() -> None:
-    text = _normalized(FINAL_REVIEWER_SYSTEM_PROMPT)
-
-    assert "finalreviewdecision" in text
-    assert "- approved:" not in text
-    assert "- feedback:" not in text
-    assert "reason" not in text
-    assert "additional_exploration_focus" not in text
 
 
 def test_inspector_prompt_uses_freeform_action_label() -> None:

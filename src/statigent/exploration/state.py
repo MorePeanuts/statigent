@@ -7,10 +7,8 @@ from statigent.schemas import (
     DebugLesson,
     ExplorationStep,
     FinalDraft,
-    FinalReviewDecision,
     NotebookCell,
     NotebookCellResult,
-    ReviewerPlanDecision,
     TaskBrief,
     TraceEvent,
 )
@@ -23,19 +21,16 @@ class ExplorationRunState(TypedDict):
     profile: DatasetProfile
     steps: list[ExplorationStep]
     pending_plan_text: str
-    review_feedback: str
     approved_instruction: str | None
     last_cell_id: str
     debug_lessons: list[DebugLesson]
     final_draft_requested: bool
     final_draft: FinalDraft | None
-    final_review: FinalReviewDecision | None
     warnings: list[str]
     trace_events: list[TraceEvent]
     round_count: int
     cell_count: int
     debug_attempts: int
-    plan_review: NotRequired[ReviewerPlanDecision | None]
     last_cell: NotRequired[NotebookCell | None]
     last_result: NotRequired[NotebookCellResult | None]
     status: NotRequired[str]

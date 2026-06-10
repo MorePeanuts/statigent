@@ -33,7 +33,6 @@ _AGENT_STYLES = {
     "task_brief_planner": "cyan",
     "data_science_agent": "bright_blue",
     "inspector": "green",
-    "reviewer": "yellow",
     "coder": "magenta",
     "debugger": "red",
     "executor": "bright_magenta",

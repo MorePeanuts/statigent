@@ -12,15 +12,10 @@ from statigent.schemas import (
     Complexity,
     DatasetProfile,
     DebugLesson,
-    ExplorationAction,
-    ExplorationStep,
     FinalDraft,
-    FinalReviewDecision,
     InputFileInfo,
     NotebookCell,
     OutputType,
-    ReviewDecision,
-    ReviewerPlanDecision,
     TableProfile,
     TaskBrief,
     TaskType,
@@ -36,8 +31,7 @@ class FakeInspector:
         draft: FinalDraft | None = None,
     ) -> None:
         self.plans = plans or [
-            "ACTION: summarize_numeric\n"
-            "CODER_INSTRUCTION: Compute mean revenue.",
+            "ACTION: summarize_numeric\nCODER_INSTRUCTION: Compute mean revenue.",
             "DONE",
         ]
         self.draft = draft or FinalDraft(
@@ -45,7 +39,6 @@ class FakeInspector:
             evidence=["mean=15"],
         )
         self.calls: list[str] = []
-        self.feedback_seen: list[str] = []
         self.last_usage_metadata = {
             "input_tokens": 10,
             "output_tokens": 4,
@@ -57,10 +50,8 @@ class FakeInspector:
         _brief: TaskBrief,
         _profile: DatasetProfile,
         _steps: object,
-        reviewer_feedback: str,
     ) -> str:
         self.calls.append("next_plan")
-        self.feedback_seen.append(reviewer_feedback)
         if self.plans:
             return self.plans.pop(0)
         return "DONE"
@@ -73,51 +64,6 @@ class FakeInspector:
     ) -> FinalDraft:
         self.calls.append("final_draft")
         return self.draft
-
-
-class FakeReviewer:
-    def __init__(
-        self,
-        *,
-        plan_decisions: list[ReviewerPlanDecision] | None = None,
-        final_decisions: list[FinalReviewDecision] | None = None,
-    ) -> None:
-        self.plan_decisions = plan_decisions or [approved_plan()]
-        self.final_decisions = final_decisions or [
-            FinalReviewDecision(approved=True, feedback="Complete")
-        ]
-        self.plans_seen: list[str] = []
-        self.step_counts_seen: list[int] = []
-        self.final_drafts_seen: list[FinalDraft] = []
-        self.last_usage_metadata = {
-            "input_tokens": 8,
-            "output_tokens": 3,
-            "total_tokens": 11,
-        }
-
-    def review_plan(
-        self,
-        _brief: TaskBrief,
-        _profile: DatasetProfile,
-        steps: list[object],
-        plan_text: str,
-    ) -> ReviewerPlanDecision:
-        self.plans_seen.append(plan_text)
-        self.step_counts_seen.append(len(steps))
-        if self.plan_decisions:
-            return self.plan_decisions.pop(0)
-        return stop_plan()
-
-    def review_final(
-        self,
-        _brief: TaskBrief,
-        _steps: list[object],
-        draft: FinalDraft,
-    ) -> FinalReviewDecision:
-        self.final_drafts_seen.append(draft)
-        if self.final_decisions:
-            return self.final_decisions.pop(0)
-        return FinalReviewDecision(approved=True, feedback="Complete")
 
 
 class FakeCoder:
@@ -140,7 +86,7 @@ class FakeCoder:
             raise AssertionError("FakeCoder.kernel must be set before use")
         cell = self.kernel.append_code_cell(
             code="print('mean=15')",
-            purpose="Approved Inspector plan",
+            purpose="Inspector-directed exploration",
             expected_observation="Evidence requested by Inspector",
         )
         result = self.kernel.execute_cell(cell.cell_id)
@@ -203,20 +149,6 @@ class FakeDebugger:
         )
         result = kernel.execute_cell(cell.cell_id)
         return DebugExecutionOutcome(cell=cell, result=result, lessons=list(lessons))
-
-
-def approved_plan() -> ReviewerPlanDecision:
-    return ReviewerPlanDecision(
-        approved=True,
-        coder_instruction="Compute mean revenue from the available sales data.",
-    )
-
-
-def stop_plan() -> ReviewerPlanDecision:
-    return ReviewerPlanDecision(
-        approved=False,
-        approved_final=True,
-    )
 
 
 def make_brief(
@@ -292,20 +224,16 @@ def make_orchestrator(
     kernel: FakeNotebookKernel,
     *,
     inspector: FakeInspector | None = None,
-    reviewer: FakeReviewer | None = None,
     coder: FakeCoder | None = None,
     debugger: FakeDebugger | None = None,
-    enable_reviewer: bool = True,
 ) -> ExplorationOrchestrator:
     run_coder = coder or FakeCoder(kernel)
     run_coder.kernel = kernel
     return ExplorationOrchestrator(
         inspector=inspector or FakeInspector(),
-        reviewer=reviewer or FakeReviewer(),
         coder=run_coder,
         debugger=debugger or FakeDebugger(),
         kernel=kernel,
-        enable_reviewer=enable_reviewer,
     )
 
 
@@ -323,19 +251,16 @@ def make_state(
         "profile": make_profile(tmp_path),
         "steps": [],
         "pending_plan_text": "",
-        "review_feedback": "",
         "approved_instruction": None,
         "last_cell_id": cell.cell_id if cell is not None else "",
         "debug_lessons": debug_lessons or [],
         "final_draft_requested": False,
         "final_draft": None,
-        "final_review": None,
         "warnings": [],
         "trace_events": [],
         "round_count": 0,
         "cell_count": 0,
         "debug_attempts": 0,
-        "plan_review": None,
         "last_cell": cell,
         "last_result": None,
         "status": "",
@@ -347,157 +272,55 @@ def test_graph_nodes_use_command_goto_for_routing() -> None:
 
     assert "add_conditional_edges" not in source
     assert source.count("add_edge") == 1
-    assert '"execute"' not in source
-    assert '"observe"' not in source
+    assert '"review_plan"' not in source
+    assert '"final_review"' not in source
 
 
-def test_reviewer_rejection_routes_back_to_inspector(tmp_path: Path) -> None:
-    kernel = started_kernel(tmp_path)
-    kernel.queue_result(stdout="mean=15\n")
-    inspector = FakeInspector(plans=["bad plan", "Ready to finalize."])
-    reviewer = FakeReviewer(
-        plan_decisions=[
-            ReviewerPlanDecision(approved=False, feedback="Too broad"),
-            approved_plan(),
-            stop_plan(),
-        ]
-    )
-    orchestrator = make_orchestrator(
-        kernel,
-        inspector=inspector,
-        reviewer=reviewer,
-    )
-
-    report = orchestrator.run(make_brief(), make_profile(tmp_path))
-
-    assert report.status == "success"
-    assert inspector.calls == ["next_plan", "next_plan", "next_plan", "final_draft"]
-    assert inspector.feedback_seen[1] == "Too broad"
-    assert len(report.steps) == 1
-
-
-def test_reviewer_plan_rejections_do_not_pollute_report_warnings(
-    tmp_path: Path,
-) -> None:
-    kernel = started_kernel(tmp_path)
-    kernel.queue_result(stdout="mean=15\n")
-    inspector = FakeInspector(
-        plans=["bad plan", "ACTION: summarize\nCODER_INSTRUCTION: Summarize."]
-    )
-    reviewer = FakeReviewer(
-        plan_decisions=[
-            ReviewerPlanDecision(approved=False, feedback="Too broad"),
-            approved_plan(),
-            stop_plan(),
-        ]
-    )
-    orchestrator = make_orchestrator(
-        kernel,
-        inspector=inspector,
-        reviewer=reviewer,
-    )
-
-    report = orchestrator.run(make_brief(), make_profile(tmp_path))
-
-    assert report.status == "success"
-    assert report.warnings == []
-    assert inspector.feedback_seen[1] == "Too broad"
-    assert any(event.name == "plan_rejected" for event in report.trace_events)
-
-
-def test_inspector_stop_text_is_reviewed_before_finalizing(tmp_path: Path) -> None:
-    kernel = started_kernel(tmp_path)
-    kernel.queue_result(stdout="mean=15\n")
-    inspector = FakeInspector(plans=["ACTION: summarize_numeric\nDONE"])
-    reviewer = FakeReviewer(plan_decisions=[approved_plan(), stop_plan()])
-    coder = FakeCoder()
-    orchestrator = make_orchestrator(
-        kernel,
-        inspector=inspector,
-        reviewer=reviewer,
-        coder=coder,
-    )
-
-    report = orchestrator.run(make_brief(), make_profile(tmp_path))
-
-    assert len(coder.instructions) == 1
-    assert (
-        coder.instructions[0]
-        == "Compute mean revenue from the available sales data."
-    )
-    assert len(report.steps) == 1
-    assert reviewer.plans_seen[0] == "ACTION: summarize_numeric\nDONE"
-
-
-def test_reviewer_disabled_routes_inspector_instruction_to_coder(
-    tmp_path: Path,
-) -> None:
+def test_inspector_instruction_routes_directly_to_coder(tmp_path: Path) -> None:
     kernel = started_kernel(tmp_path)
     kernel.queue_result(stdout="mean=15\n")
     inspector = FakeInspector(
         plans=[
             "ACTION: summarize_numeric\n"
+            "QUESTION: What is average revenue?\n"
+            "EVIDENCE_NEEDED: Mean revenue\n"
             "CODER_INSTRUCTION: Compute mean revenue directly."
         ]
     )
-    reviewer = FakeReviewer(plan_decisions=[approved_plan(), stop_plan()])
     coder = FakeCoder()
-    orchestrator = make_orchestrator(
-        kernel,
-        inspector=inspector,
-        reviewer=reviewer,
-        coder=coder,
-        enable_reviewer=False,
-    )
+    orchestrator = make_orchestrator(kernel, inspector=inspector, coder=coder)
 
     report = orchestrator.run(make_brief(), make_profile(tmp_path))
 
     assert coder.instructions == ["Compute mean revenue directly."]
-    assert reviewer.plans_seen == []
-    assert reviewer.final_drafts_seen == []
     assert report.status == "success"
+    assert len(report.steps) == 1
+    assert report.steps[0].review.reason == "Directed by Inspector"
     assert [event.name for event in report.trace_events] == [
         "plan",
-        "reviewer_skipped",
         "append_code_cell",
         "observation",
         "plan",
-        "reviewer_skipped",
         "final_draft",
-        "final_review_skipped",
     ]
 
 
-def test_reviewer_disabled_stop_finalizes_without_final_review(
-    tmp_path: Path,
-) -> None:
+def test_done_finalizes_without_code_or_review(tmp_path: Path) -> None:
     kernel = started_kernel(tmp_path)
     inspector = FakeInspector(plans=["DONE"])
-    reviewer = FakeReviewer()
-    orchestrator = make_orchestrator(
-        kernel,
-        inspector=inspector,
-        reviewer=reviewer,
-        enable_reviewer=False,
-    )
+    coder = FakeCoder()
+    orchestrator = make_orchestrator(kernel, inspector=inspector, coder=coder)
 
     report = orchestrator.run(make_brief(max_rounds=1), make_profile(tmp_path))
 
     assert report.status == "success"
     assert inspector.calls == ["next_plan", "final_draft"]
-    assert reviewer.plans_seen == []
-    assert reviewer.final_drafts_seen == []
-    assert [event.name for event in report.trace_events] == [
-        "plan",
-        "reviewer_skipped",
-        "final_draft",
-        "final_review_skipped",
-    ]
+    assert coder.instructions == []
+    assert [event.agent for event in report.trace_events] == ["inspector", "inspector"]
+    assert [event.name for event in report.trace_events] == ["plan", "final_draft"]
 
 
-def test_reviewer_disabled_executes_instruction_when_done_conflicts(
-    tmp_path: Path,
-) -> None:
+def test_done_with_instruction_executes_instruction_and_warns(tmp_path: Path) -> None:
     kernel = started_kernel(tmp_path)
     kernel.queue_result(stdout="mean=15\n")
     inspector = FakeInspector(
@@ -508,12 +331,7 @@ def test_reviewer_disabled_executes_instruction_when_done_conflicts(
         ]
     )
     coder = FakeCoder()
-    orchestrator = make_orchestrator(
-        kernel,
-        inspector=inspector,
-        coder=coder,
-        enable_reviewer=False,
-    )
+    orchestrator = make_orchestrator(kernel, inspector=inspector, coder=coder)
 
     report = orchestrator.run(make_brief(), make_profile(tmp_path))
 
@@ -521,61 +339,7 @@ def test_reviewer_disabled_executes_instruction_when_done_conflicts(
     assert any("DONE ignored" in warning for warning in report.warnings)
 
 
-def test_review_plan_node_records_final_request_without_calling_inspector(
-    tmp_path: Path,
-) -> None:
-    kernel = started_kernel(tmp_path)
-    inspector = FakeInspector()
-    reviewer = FakeReviewer(plan_decisions=[stop_plan()])
-    orchestrator = make_orchestrator(
-        kernel,
-        inspector=inspector,
-        reviewer=reviewer,
-    )
-    state = make_state(tmp_path)
-    state["pending_plan_text"] = "DONE"
-    state["steps"] = [
-        ExplorationStep(
-            action=ExplorationAction(
-                title="Compute average revenue",
-                description="Compute mean revenue",
-            ),
-            review=ReviewDecision(approved=True, reason="Relevant"),
-        )
-    ]
-
-    command = orchestrator._review_plan_node(state)
-    updates = command.update
-
-    assert isinstance(command, Command)
-    assert command.goto == "inspector"
-    assert inspector.calls == []
-    assert updates["final_draft_requested"] is True
-    assert "final_draft" not in updates
-
-
-def test_reviewer_approval_routes_to_coder_and_execute_by_cell_id(
-    tmp_path: Path,
-) -> None:
-    kernel = started_kernel(tmp_path)
-    kernel.queue_result(stdout="mean=15\n")
-    coder = FakeCoder()
-    orchestrator = make_orchestrator(kernel, coder=coder)
-
-    report = orchestrator.run(make_brief(), make_profile(tmp_path))
-
-    assert (
-        coder.instructions[0]
-        == "Compute mean revenue from the available sales data."
-    )
-    assert report.steps[0].result is not None
-    assert report.steps[0].result.cell_id == "cell-1"
-    assert kernel.snapshot().executed_cells[0].cell_id == "cell-1"
-
-
-def test_freeform_plan_approval_records_action_fields(
-    tmp_path: Path,
-) -> None:
+def test_freeform_plan_records_action_fields(tmp_path: Path) -> None:
     kernel = started_kernel(tmp_path)
     kernel.queue_result(stdout="segments=3\n")
     inspector = FakeInspector(
@@ -593,34 +357,12 @@ def test_freeform_plan_approval_records_action_fields(
     action = report.steps[0].action
     assert action.title == "Are there hidden revenue segments?"
     assert action.description.startswith("ACTION: segment_revenue")
+    assert action.rationale == "Inspector-directed exploration"
     assert action.expected_evidence == "Segment summary"
+    assert action.risk_notes == ""
 
 
-def test_orchestrator_report_includes_langgraph_trace_events(
-    tmp_path: Path,
-) -> None:
-    kernel = started_kernel(tmp_path)
-    kernel.queue_result(stdout="mean=15\n")
-    orchestrator = make_orchestrator(kernel)
-
-    report = orchestrator.run(make_brief(), make_profile(tmp_path))
-
-    assert [event.name for event in report.trace_events] == [
-        "plan",
-        "plan_approved",
-        "append_code_cell",
-        "observation",
-        "plan",
-        "final_approved",
-        "final_draft",
-        "approved",
-    ]
-    assert all(event.agent and event.session == 1 for event in report.trace_events)
-
-
-def test_orchestrator_trace_events_include_node_specific_payloads(
-    tmp_path: Path,
-) -> None:
+def test_trace_events_include_node_specific_payloads(tmp_path: Path) -> None:
     kernel = started_kernel(tmp_path)
     kernel.queue_result(stdout="mean=15\n")
     orchestrator = make_orchestrator(kernel)
@@ -628,9 +370,6 @@ def test_orchestrator_trace_events_include_node_specific_payloads(
     report = orchestrator.run(make_brief(), make_profile(tmp_path))
 
     plan = next(event for event in report.trace_events if event.name == "plan")
-    reviewer = next(
-        event for event in report.trace_events if event.name == "plan_approved"
-    )
     coder = next(
         event for event in report.trace_events if event.name == "append_code_cell"
     )
@@ -642,23 +381,17 @@ def test_orchestrator_trace_events_include_node_specific_payloads(
         for event in report.trace_events
         if event.agent == "inspector" and event.name == "final_draft"
     )
-    final_reviewer = next(
-        event for event in report.trace_events if event.name == "approved"
-    )
 
     assert plan.content == (
-        "ACTION: summarize_numeric\n"
-        "CODER_INSTRUCTION: Compute mean revenue."
+        "ACTION: summarize_numeric\nCODER_INSTRUCTION: Compute mean revenue."
     )
     assert plan.usage_metadata["input_tokens"] == 10
-    assert '"approved":true' in reviewer.content
-    assert reviewer.usage_metadata["output_tokens"] == 3
     assert coder.content == "print('mean=15')"
     assert coder.usage_metadata["total_tokens"] == 18
     assert coder.metadata == {
         "cell_id": "cell-1",
         "code": "print('mean=15')",
-        "purpose": "Approved Inspector plan",
+        "purpose": "Inspector-directed exploration",
         "expected_observation": "Evidence requested by Inspector",
         "input_paths": [str(tmp_path / "sales.csv")],
     }
@@ -668,12 +401,11 @@ def test_orchestrator_trace_events_include_node_specific_payloads(
     assert observation.metadata["exit_code"] == 0
     assert observation.usage_metadata == {}
     assert '"content":"Average revenue is 15."' in final_draft.content
-    assert '"approved":true' in final_reviewer.content
+    assert all(event.agent != "reviewer" for event in report.trace_events)
+    assert all(event.agent != "final_reviewer" for event in report.trace_events)
 
 
-def test_coder_appends_and_code_node_executes_cell(
-    tmp_path: Path,
-) -> None:
+def test_coder_appends_and_code_node_executes_cell(tmp_path: Path) -> None:
     kernel = started_kernel(tmp_path)
     kernel.queue_result(stdout="mean=15\n")
     coder = FakeCoder()
@@ -696,9 +428,7 @@ def test_coder_protocol_failure_returns_partial_report(tmp_path: Path) -> None:
     report = orchestrator.run(make_brief(), make_profile(tmp_path))
 
     assert report.status == "partial"
-    assert coder.instructions == [
-        "Compute mean revenue from the available sales data."
-    ]
+    assert coder.instructions == ["Compute mean revenue."]
     assert report.steps == []
     assert any(
         "coder failed to execute approved instruction" in warning.casefold()
@@ -768,9 +498,6 @@ def test_debug_lessons_are_task_local_and_do_not_persist_across_runs(
                 "DONE",
             ]
         ),
-        reviewer=FakeReviewer(
-            plan_decisions=[approved_plan(), approved_plan(), stop_plan()]
-        ),
         debugger=first_debugger,
     )
 
@@ -790,76 +517,7 @@ def test_debug_lessons_are_task_local_and_do_not_persist_across_runs(
     assert second_debugger.lessons_seen[0] == []
 
 
-def test_final_review_rejection_routes_back_to_inspector_when_budget_remains(
-    tmp_path: Path,
-) -> None:
-    kernel = started_kernel(tmp_path)
-    kernel.queue_result(stdout="mean=15\n")
-    kernel.queue_result(stdout="count=2\n")
-    inspector = FakeInspector(
-        plans=[
-            "ACTION: summarize_numeric\nCODER_INSTRUCTION: Compute mean.",
-            "DONE",
-            "ACTION: summarize_numeric\nCODER_INSTRUCTION: Show exact calculation.",
-            "DONE",
-        ],
-        draft=FinalDraft(content="Average revenue is 15.", evidence=["mean=15"]),
-    )
-    reviewer = FakeReviewer(
-        plan_decisions=[approved_plan(), stop_plan(), approved_plan(), stop_plan()],
-        final_decisions=[
-            FinalReviewDecision(
-                approved=False,
-                feedback="Show the exact calculation.",
-            ),
-            FinalReviewDecision(approved=True, feedback="Complete"),
-        ],
-    )
-    orchestrator = make_orchestrator(
-        kernel,
-        inspector=inspector,
-        reviewer=reviewer,
-    )
-
-    report = orchestrator.run(make_brief(max_rounds=4), make_profile(tmp_path))
-
-    assert report.status == "success"
-    assert inspector.feedback_seen[2] == "Show the exact calculation."
-    assert len(reviewer.final_drafts_seen) == 2
-    assert len(report.steps) == 2
-    assert len(kernel.snapshot().executed_cells) == 2
-
-
-def test_round_budget_exhaustion_produces_partial_output(tmp_path: Path) -> None:
-    kernel = started_kernel(tmp_path)
-    kernel.queue_result(stdout="mean=15\n")
-    orchestrator = make_orchestrator(
-        kernel,
-        inspector=FakeInspector(
-            plans=["ACTION: summarize_numeric\nCODER_INSTRUCTION: Compute mean."]
-        ),
-        reviewer=FakeReviewer(
-            final_decisions=[
-                FinalReviewDecision(
-                    approved=False,
-                    feedback="Need more evidence.",
-                )
-            ]
-        ),
-    )
-
-    report = orchestrator.run(
-        make_brief(max_rounds=1),
-        make_profile(tmp_path),
-    )
-
-    assert report.status == "partial"
-    assert any(
-        "final review did not approve" in warning.lower() for warning in report.warnings
-    )
-
-
-def test_exact_round_budget_with_approved_final_review_returns_success(
+def test_round_budget_exhaustion_after_completed_step_returns_success(
     tmp_path: Path,
 ) -> None:
     kernel = started_kernel(tmp_path)
@@ -878,7 +536,11 @@ def test_exact_round_budget_with_approved_final_review_returns_success(
 
     assert report.status == "success"
     assert len(report.steps) == 1
-    assert len(kernel.snapshot().executed_cells) == 1
+    assert any(
+        "round budget reached" in event.metadata.get("reason", "").casefold()
+        for event in report.trace_events
+        if event.name == "final_draft"
+    )
 
 
 def test_code_cell_budget_exhaustion_produces_partial_output(
@@ -894,7 +556,6 @@ def test_code_cell_budget_exhaustion_produces_partial_output(
                 "ACTION: summarize_numeric\nCODER_INSTRUCTION: Validate mean.",
             ]
         ),
-        reviewer=FakeReviewer(plan_decisions=[approved_plan(), approved_plan()]),
     )
 
     report = orchestrator.run(
@@ -910,9 +571,7 @@ def test_code_cell_budget_exhaustion_produces_partial_output(
     )
 
 
-def test_debug_budget_exhaustion_produces_partial_output(
-    tmp_path: Path,
-) -> None:
+def test_debug_budget_exhaustion_produces_partial_output(tmp_path: Path) -> None:
     kernel = started_kernel(tmp_path)
     kernel.queue_result(stderr="NameError", exit_code=1)
     kernel.queue_result(stderr="NameError again", exit_code=1)
@@ -930,29 +589,6 @@ def test_debug_budget_exhaustion_produces_partial_output(
     assert any(
         "debug budget exhausted" in warning.lower() for warning in report.warnings
     )
-
-
-def test_reviewer_approved_direction_returns_code_command(
-    tmp_path: Path,
-) -> None:
-    kernel = started_kernel(tmp_path)
-    reviewer = FakeReviewer(
-        plan_decisions=[
-            ReviewerPlanDecision(
-                approved=True,
-                coder_instruction="Compute mean revenue.",
-            )
-        ]
-    )
-    orchestrator = make_orchestrator(kernel, reviewer=reviewer)
-    state = make_state(tmp_path)
-
-    command = orchestrator._review_plan_node(state)
-    updates = command.update
-
-    assert isinstance(command, Command)
-    assert command.goto == "code"
-    assert updates["approved_instruction"] == "Compute mean revenue."
 
 
 def test_debug_node_returns_new_lesson_list_without_mutating_state(
@@ -982,15 +618,3 @@ def test_debug_node_returns_new_lesson_list_without_mutating_state(
     assert updated_lessons is not state["debug_lessons"]
     assert state["debug_lessons"] == [original_lesson]
     assert len(updated_lessons) == 2
-
-
-def test_final_review_approval_produces_success_output(tmp_path: Path) -> None:
-    kernel = started_kernel(tmp_path)
-    kernel.queue_result(stdout="mean=15\n")
-    orchestrator = make_orchestrator(kernel)
-
-    report = orchestrator.run(make_brief(), make_profile(tmp_path))
-
-    assert report.status == "success"
-    assert report.final_draft.content == "Average revenue is 15."
-    assert not report.final_draft.warnings
