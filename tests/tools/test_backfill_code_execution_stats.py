@@ -72,6 +72,112 @@ def test_trace_code_stats_counts_failed_matched_observations(tmp_path: Path) -> 
     assert trace_code_stats(trace_path) == (3, 3, 1)
 
 
+def test_trace_code_stats_counts_datawise_python_blocks(tmp_path: Path) -> None:
+    trace_code_stats = _load_script()._trace_code_stats
+    assert isinstance(trace_code_stats, Callable)
+    trace_path = tmp_path / "trace.jsonl"
+    _write_trace(
+        trace_path,
+        [
+            {
+                "role": "assistant",
+                "content": (
+                    "First\n```python\nx = 1\n# note\n\nprint(x)\n```\n"
+                    "Second\n```py\nraise ValueError()\n```"
+                ),
+            },
+            {"role": "tool", "name": "python", "content": "1\n"},
+            {
+                "role": "tool",
+                "name": "python",
+                "content": "Exit code: 1\nTraceback...",
+            },
+        ],
+    )
+
+    assert trace_code_stats(trace_path) == (3, 2, 1)
+
+
+def test_trace_code_stats_counts_data_interpreter_attempts(tmp_path: Path) -> None:
+    trace_code_stats = _load_script()._trace_code_stats
+    assert isinstance(trace_code_stats, Callable)
+    trace_path = tmp_path / "trace.jsonl"
+    _write_trace(
+        trace_path,
+        [
+            {
+                "role": "assistant",
+                "name": "write_code",
+                "content": "```python\nx = 1\n# comment\n```",
+            },
+            {
+                "role": "tool",
+                "name": "execute_code",
+                "content": "ok",
+                "metadata": {"success": True},
+            },
+            {
+                "role": "assistant",
+                "name": "reflect_code",
+                "content": "```python\nraise ValueError()\n```",
+            },
+            {
+                "role": "tool",
+                "name": "execute_code",
+                "content": "Exit code: 1",
+                "metadata": {"success": False},
+            },
+        ],
+    )
+
+    assert trace_code_stats(trace_path) == (2, 2, 1)
+
+
+def test_trace_code_stats_counts_react_python_and_bash_calls(tmp_path: Path) -> None:
+    trace_code_stats = _load_script()._trace_code_stats
+    assert isinstance(trace_code_stats, Callable)
+    trace_path = tmp_path / "trace.jsonl"
+    _write_trace(
+        trace_path,
+        [
+            {
+                "role": "assistant",
+                "tool_calls": [
+                    {
+                        "name": "python",
+                        "args": {"code": "x = 1\n# note\nprint(x)\n"},
+                        "id": "python-1",
+                    },
+                    {
+                        "name": "bash",
+                        "args": {"command": "# inspect\nls -la\n"},
+                        "id": "bash-1",
+                    },
+                    {
+                        "name": "read_file",
+                        "args": {"file_path": "data.csv"},
+                        "id": "read-1",
+                    },
+                ],
+            },
+            {
+                "role": "tool",
+                "name": "python",
+                "content": "1",
+                "tool_call_id": "python-1",
+            },
+            {
+                "role": "tool",
+                "name": "bash",
+                "content": "Exit code: 2\nls: error",
+                "tool_call_id": "bash-1",
+            },
+        ],
+    )
+
+    assert trace_code_stats(trace_path) == (3, 2, 1)
+
+
 def test_backfill_run_updates_meta_from_nested_traces(tmp_path: Path) -> None:
     backfill_run = _load_script()._backfill_run
     assert isinstance(backfill_run, Callable)

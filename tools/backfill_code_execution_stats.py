@@ -7,10 +7,15 @@ Usage:
 
 import argparse
 import json
+import re
+from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
 from rich.console import Console
+
+_PYTHON_BLOCK_RE = re.compile(r"```(?:python|py)\s*\n(.*?)```", re.DOTALL)
+_FAILED_EXIT_RE = re.compile(r"^\s*Exit code:\s*(-?\d+)", re.IGNORECASE)
 
 
 def _count_code_lines(code: str) -> int:
@@ -41,8 +46,22 @@ def _read_events(path: Path) -> list[dict[object, object]]:
     return events
 
 
-def _trace_code_stats(path: Path) -> tuple[int, int, int]:
-    events = _read_events(path)
+def _stats(codes: list[str], failed_indexes: set[int]) -> tuple[int, int, int]:
+    return (
+        sum(_count_code_lines(code) for code in codes),
+        len(codes),
+        len(failed_indexes),
+    )
+
+
+def _failed_exit(content: object) -> bool:
+    if not isinstance(content, str):
+        return False
+    match = _FAILED_EXIT_RE.match(content)
+    return match is not None and int(match.group(1)) != 0
+
+
+def _statigent_stats(events: list[dict[object, object]]) -> tuple[int, int, int]:
     failed_cell_ids: set[str] = set()
     for event in events:
         if event.get("agent") != "coder" or event.get("name") != "observation":
@@ -53,22 +72,116 @@ def _trace_code_stats(path: Path) -> tuple[int, int, int]:
         if isinstance(cell_id, str) and type(exit_code) is int and exit_code != 0:
             failed_cell_ids.add(cell_id)
 
-    total_code_lines = 0
-    total_code_blocks = 0
-    error_code_blocks = 0
+    codes: list[str] = []
+    failed_indexes: set[int] = set()
     for event in events:
         if event.get("agent") != "coder" or event.get("name") != "append_code_cell":
             continue
-        total_code_blocks += 1
         metadata = _event_metadata(event)
         code = metadata.get("code")
-        if isinstance(code, str):
-            total_code_lines += _count_code_lines(code)
+        codes.append(code if isinstance(code, str) else "")
         cell_id = metadata.get("cell_id")
         if isinstance(cell_id, str) and cell_id in failed_cell_ids:
-            error_code_blocks += 1
+            failed_indexes.add(len(codes) - 1)
 
-    return total_code_lines, total_code_blocks, error_code_blocks
+    return _stats(codes, failed_indexes)
+
+
+def _react_stats(events: list[dict[object, object]]) -> tuple[int, int, int]:
+    codes: list[str] = []
+    call_indexes: dict[str, int] = {}
+    for event in events:
+        tool_calls = event.get("tool_calls")
+        if not isinstance(tool_calls, list):
+            continue
+        for value in tool_calls:
+            if (
+                not isinstance(value, dict)
+                or value.get("name") not in {"python", "bash"}
+            ):
+                continue
+            args = value.get("args")
+            if not isinstance(args, dict):
+                continue
+            field = "code" if value.get("name") == "python" else "command"
+            code = args.get(field)
+            if not isinstance(code, str):
+                continue
+            codes.append(code)
+            call_id = value.get("id")
+            if isinstance(call_id, str):
+                call_indexes[call_id] = len(codes) - 1
+
+    failed_indexes: set[int] = set()
+    for event in events:
+        call_id = event.get("tool_call_id")
+        if (
+            isinstance(call_id, str)
+            and call_id in call_indexes
+            and _failed_exit(event.get("content"))
+        ):
+            failed_indexes.add(call_indexes[call_id])
+    return _stats(codes, failed_indexes)
+
+
+def _fenced_code_stats(
+    events: list[dict[object, object]],
+    *,
+    code_event_names: set[str] | None,
+    result_name: str,
+    result_failed: Callable[[dict[object, object]], bool],
+) -> tuple[int, int, int]:
+    codes: list[str] = []
+    results: list[dict[object, object]] = []
+    for event in events:
+        if code_event_names is not None and event.get("name") not in code_event_names:
+            continue
+        if code_event_names is None and event.get("role") != "assistant":
+            continue
+        content = event.get("content")
+        if isinstance(content, str):
+            codes.extend(_PYTHON_BLOCK_RE.findall(content))
+    for event in events:
+        if event.get("name") == result_name:
+            results.append(event)
+
+    failed_indexes = {
+        index
+        for index, result in enumerate(results[: len(codes)])
+        if result_failed(result)
+    }
+    return _stats(codes, failed_indexes)
+
+
+def _data_interpreter_stats(
+    events: list[dict[object, object]],
+) -> tuple[int, int, int]:
+    return _fenced_code_stats(
+        events,
+        code_event_names={"write_code", "reflect_code"},
+        result_name="execute_code",
+        result_failed=lambda event: _event_metadata(event).get("success") is False,
+    )
+
+
+def _datawise_stats(events: list[dict[object, object]]) -> tuple[int, int, int]:
+    return _fenced_code_stats(
+        events,
+        code_event_names=None,
+        result_name="python",
+        result_failed=lambda event: _failed_exit(event.get("content")),
+    )
+
+
+def _trace_code_stats(path: Path) -> tuple[int, int, int]:
+    events = _read_events(path)
+    if any(event.get("name") == "append_code_cell" for event in events):
+        return _statigent_stats(events)
+    if any(isinstance(event.get("tool_calls"), list) for event in events):
+        return _react_stats(events)
+    if any(event.get("name") == "execute_code" for event in events):
+        return _data_interpreter_stats(events)
+    return _datawise_stats(events)
 
 
 def _find_run_dirs(path: Path) -> list[Path]:
