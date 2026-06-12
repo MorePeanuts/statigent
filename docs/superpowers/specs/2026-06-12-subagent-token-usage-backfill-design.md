@@ -2,9 +2,9 @@
 
 ## Goal
 
-Add an offline tool that analyzes Statigent evaluation traces, records compact
-per-subagent token summaries in `meta.json`, and writes detailed per-task token
-sequences and cross-task invocation trends to `subagent_token_usage.json`.
+Add an offline tool that analyzes evaluation traces, records compact per-agent
+token summaries in `meta.json`, and writes detailed per-task token sequences and
+cross-task invocation trends to `subagent_token_usage.json`.
 
 ## Interface
 
@@ -15,13 +15,19 @@ uv run python tools/backfill_subagent_token_usage.py evaluations/example-run
 uv run python tools/backfill_subagent_token_usage.py evaluations
 ```
 
-Only runs with `agent_name="statigent"` and a `traces/` directory are updated.
-Other agent runs are skipped.
+Runs with a supported `agent_name` and a `traces/` directory are updated.
 
 ## Meta Summary
 
-`meta.json` receives a `subagent_token_usage` mapping keyed by trace event
-`agent`. Events without integer `usage_metadata.input_tokens` and
+`meta.json` receives a `subagent_token_usage` mapping. Statigent uses trace
+event `agent` values as keys. Baselines are single-agent architectures and use
+their run-level `agent_name` as the key:
+
+- Datawise assistant events map to `datawise/assistant`;
+- ReAct assistant events map to `react/assistant`;
+- Data Interpreter events map to `data_interpreter/<event name>`.
+
+Events without integer `usage_metadata.input_tokens` and
 `usage_metadata.output_tokens` are ignored.
 
 Each subagent summary contains:
@@ -91,4 +97,5 @@ Tests cover:
 - round trend samples, averages, and maximums;
 - nested task trace paths;
 - malformed lines and invalid usage metadata;
-- skipping non-Statigent runs.
+- Statigent, Datawise, Data Interpreter, and ReAct mappings;
+- skipping unsupported agent runs.
