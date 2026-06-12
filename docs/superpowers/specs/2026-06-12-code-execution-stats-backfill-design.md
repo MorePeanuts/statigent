@@ -20,17 +20,26 @@ prints the number of updated and skipped runs.
 
 ## Statistics
 
-An event is a code block when it has `agent="coder"` and
-`name="append_code_cell"`.
+The tool automatically recognizes the trace schema and extracts code blocks and
+their execution results:
 
-`total_code_lines` is the sum of executable-source lines from each code block's
-`metadata.code`. Blank lines and lines whose first non-whitespace character is
-`#` are excluded. Inline comments remain part of the code line.
+- Statigent: coder `append_code_cell` events matched to coder observations by
+  `metadata.cell_id`; a non-zero integer `metadata.exit_code` is an error.
+- Datawise: Python fenced blocks in assistant messages matched in order to
+  `role="tool", name="python"` results; output beginning with a non-zero
+  `Exit code:` is an error.
+- Data Interpreter: Python fenced blocks in `write_code` and `reflect_code`
+  events matched in order to `execute_code` events; `metadata.success == false`
+  is an error.
+- ReAct: `python` and `bash` tool calls matched to tool results by tool call ID;
+  output beginning with a non-zero `Exit code:` is an error.
 
-An observation is matched to a code block by `metadata.cell_id`. A code block is
-an execution error when its matched coder observation has a non-zero integer
-`metadata.exit_code`. Missing observations, missing exit codes, and non-integer
-exit codes are not counted as execution errors.
+`total_code_lines` is the sum of executable-source lines from all extracted code
+blocks. Blank lines and lines whose first non-whitespace character is `#` are
+excluded. Inline comments remain part of the code line.
+
+Missing execution results and results without a recognized failure signal are
+not counted as execution errors.
 
 `code_execution_error_rate` is:
 
@@ -55,6 +64,8 @@ Unit tests will cover:
 
 - executable line counting that excludes blank and pure-comment lines;
 - successful, failed, and unmatched code blocks;
+- Statigent, Datawise, Data Interpreter, and ReAct trace schemas;
+- ReAct Python and Bash tool calls;
 - zero-code-block runs;
 - nested trace directories and malformed JSONL lines;
 - preservation of unrelated `meta.json` fields.
