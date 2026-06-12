@@ -117,12 +117,63 @@ def test_backfill_run_writes_summary_task_sequences_and_trends(
     ]
 
 
-def test_backfill_run_skips_non_statigent_run(tmp_path: Path) -> None:
+def test_backfill_run_maps_baseline_events_to_single_agent(tmp_path: Path) -> None:
+    backfill_run = _load_script()._backfill_run
+    assert isinstance(backfill_run, Callable)
+    cases = [
+        (
+            "datawise",
+            [
+                {
+                    "role": "assistant",
+                    "usage_metadata": {"input_tokens": 100, "output_tokens": 10},
+                }
+            ],
+            "assistant",
+        ),
+        (
+            "data_interpreter",
+            [
+                {
+                    "role": "assistant",
+                    "name": "write_code",
+                    "usage_metadata": {"input_tokens": 200, "output_tokens": 20},
+                }
+            ],
+            "write_code",
+        ),
+        (
+            "react",
+            [
+                {
+                    "role": "assistant",
+                    "usage_metadata": {"input_tokens": 300, "output_tokens": 30},
+                }
+            ],
+            "assistant",
+        ),
+    ]
+    for agent_name, events, event_name in cases:
+        run_dir = tmp_path / agent_name
+        run_dir.mkdir()
+        (run_dir / "meta.json").write_text(json.dumps({"agent_name": agent_name}))
+        _write_trace(run_dir / "traces" / "1.jsonl", events)
+
+        assert backfill_run(run_dir) is True
+
+        detail = json.loads((run_dir / "subagent_token_usage.json").read_text())
+        expected_input = events[0]["usage_metadata"]["input_tokens"]  # type: ignore[index]
+        assert detail["tasks"]["1"][agent_name][event_name] == [expected_input]
+        meta = json.loads((run_dir / "meta.json").read_text())
+        assert meta["subagent_token_usage"][agent_name]["invocations"] == 1
+
+
+def test_backfill_run_skips_unsupported_agent_run(tmp_path: Path) -> None:
     backfill_run = _load_script()._backfill_run
     assert isinstance(backfill_run, Callable)
     run_dir = tmp_path / "run"
     run_dir.mkdir()
-    (run_dir / "meta.json").write_text(json.dumps({"agent_name": "react"}))
+    (run_dir / "meta.json").write_text(json.dumps({"agent_name": "unknown"}))
     _write_trace(
         run_dir / "traces" / "1.jsonl",
         [_usage_event("assistant", "message", 100, 10)],

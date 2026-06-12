@@ -14,6 +14,7 @@ from rich.console import Console
 
 TaskSequences = dict[str, dict[str, list[int]]]
 AllTaskSequences = dict[str, TaskSequences]
+_SUPPORTED_AGENTS = {"statigent", "datawise", "data_interpreter", "react"}
 
 
 def _read_events(path: Path) -> list[dict[object, object]]:
@@ -31,9 +32,21 @@ def _read_events(path: Path) -> list[dict[object, object]]:
     return events
 
 
-def _event_usage(event: dict[object, object]) -> tuple[str, str, int, int] | None:
-    agent = event.get("agent")
-    name = event.get("name")
+def _event_usage(
+    event: dict[object, object],
+    *,
+    run_agent: str = "statigent",
+) -> tuple[str, str, int, int] | None:
+    if run_agent == "statigent":
+        agent = event.get("agent")
+        name = event.get("name")
+    else:
+        if event.get("role") != "assistant":
+            return None
+        agent = run_agent
+        name = event.get("name") if run_agent == "data_interpreter" else "assistant"
+        if not isinstance(name, str) or not name:
+            name = "assistant"
     usage = event.get("usage_metadata")
     if not isinstance(agent, str) or not isinstance(name, str):
         return None
@@ -46,10 +59,14 @@ def _event_usage(event: dict[object, object]) -> tuple[str, str, int, int] | Non
     return agent, name, input_tokens, output_tokens
 
 
-def _task_sequences(events: list[dict[object, object]]) -> TaskSequences:
+def _task_sequences(
+    events: list[dict[object, object]],
+    *,
+    run_agent: str = "statigent",
+) -> TaskSequences:
     sequences: TaskSequences = {}
     for event in events:
-        usage = _event_usage(event)
+        usage = _event_usage(event, run_agent=run_agent)
         if usage is None:
             continue
         agent, name, input_tokens, _output_tokens = usage
@@ -132,7 +149,10 @@ def _backfill_run(run_dir: Path) -> bool:
         return False
 
     meta_value = cast("object", json.loads(meta_path.read_text()))
-    if not isinstance(meta_value, dict) or meta_value.get("agent_name") != "statigent":
+    if not isinstance(meta_value, dict):
+        return False
+    run_agent = meta_value.get("agent_name")
+    if not isinstance(run_agent, str) or run_agent not in _SUPPORTED_AGENTS:
         return False
 
     all_usages: list[tuple[str, str, int, int]] = []
@@ -142,11 +162,13 @@ def _backfill_run(run_dir: Path) -> bool:
             continue
         events = _read_events(trace_path)
         usages = [
-            usage for event in events if (usage := _event_usage(event)) is not None
+            usage
+            for event in events
+            if (usage := _event_usage(event, run_agent=run_agent)) is not None
         ]
         all_usages.extend(usages)
         task_id = trace_path.relative_to(trace_dir).with_suffix("").as_posix()
-        tasks[task_id] = _task_sequences(events)
+        tasks[task_id] = _task_sequences(events, run_agent=run_agent)
 
     meta_value["subagent_token_usage"] = _summary(all_usages)
     meta_path.write_text(json.dumps(meta_value, indent=2) + "\n")
