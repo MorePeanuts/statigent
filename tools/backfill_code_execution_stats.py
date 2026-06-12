@@ -62,27 +62,33 @@ def _failed_exit(content: object) -> bool:
 
 
 def _statigent_stats(events: list[dict[object, object]]) -> tuple[int, int, int]:
-    failed_cell_ids: set[str] = set()
-    for event in events:
-        if event.get("agent") != "coder" or event.get("name") != "observation":
-            continue
-        metadata = _event_metadata(event)
-        cell_id = metadata.get("cell_id")
-        exit_code = metadata.get("exit_code")
-        if isinstance(cell_id, str) and type(exit_code) is int and exit_code != 0:
-            failed_cell_ids.add(cell_id)
-
     codes: list[str] = []
     failed_indexes: set[int] = set()
+    pending_indexes: dict[str, int] = {}
     for event in events:
-        if event.get("agent") != "coder" or event.get("name") != "append_code_cell":
-            continue
+        name = event.get("name")
         metadata = _event_metadata(event)
-        code = metadata.get("code")
-        codes.append(code if isinstance(code, str) else "")
         cell_id = metadata.get("cell_id")
-        if isinstance(cell_id, str) and cell_id in failed_cell_ids:
-            failed_indexes.add(len(codes) - 1)
+        if name == "append_code_cell" and event.get("agent") == "coder":
+            code = metadata.get("code")
+            codes.append(code if isinstance(code, str) else "")
+            if isinstance(cell_id, str):
+                pending_indexes[cell_id] = len(codes) - 1
+        elif name == "debug_cell" and event.get("agent") == "debugger":
+            code = metadata.get("corrected_code")
+            if not isinstance(code, str):
+                content = event.get("content")
+                code = content if isinstance(content, str) else ""
+            codes.append(code)
+            if isinstance(cell_id, str):
+                pending_indexes[cell_id] = len(codes) - 1
+        elif name == "observation" and event.get("agent") == "coder":
+            if not isinstance(cell_id, str) or cell_id not in pending_indexes:
+                continue
+            code_index = pending_indexes.pop(cell_id)
+            exit_code = metadata.get("exit_code")
+            if type(exit_code) is int and exit_code != 0:
+                failed_indexes.add(code_index)
 
     return _stats(codes, failed_indexes)
 

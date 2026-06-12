@@ -72,6 +72,43 @@ def test_trace_code_stats_counts_failed_matched_observations(tmp_path: Path) -> 
     assert trace_code_stats(trace_path) == (3, 3, 1)
 
 
+def test_trace_code_stats_counts_statigent_debugger_replacements(
+    tmp_path: Path,
+) -> None:
+    trace_code_stats = _load_script()._trace_code_stats
+    assert isinstance(trace_code_stats, Callable)
+    trace_path = tmp_path / "trace.jsonl"
+    _write_trace(
+        trace_path,
+        [
+            _event("append_code_cell", cell_id="cell-1", code="bad()\n"),
+            _event("observation", cell_id="cell-1", exit_code=1),
+            {
+                "agent": "debugger",
+                "name": "debug_cell",
+                "content": "still_bad()\n",
+                "metadata": {
+                    "cell_id": "cell-1",
+                    "corrected_code": "# retry\nstill_bad()\n",
+                },
+            },
+            _event("observation", cell_id="cell-1", exit_code=1),
+            {
+                "agent": "debugger",
+                "name": "debug_cell",
+                "content": "print('ok')\n",
+                "metadata": {
+                    "cell_id": "cell-1",
+                    "corrected_code": "print('ok')\n",
+                },
+            },
+            _event("observation", cell_id="cell-1", exit_code=0),
+        ],
+    )
+
+    assert trace_code_stats(trace_path) == (3, 3, 2)
+
+
 def test_trace_code_stats_counts_datawise_python_blocks(tmp_path: Path) -> None:
     trace_code_stats = _load_script()._trace_code_stats
     assert isinstance(trace_code_stats, Callable)

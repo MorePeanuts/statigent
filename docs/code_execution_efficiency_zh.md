@@ -16,15 +16,12 @@
 
 各智能体的代码载荷来源不同：
 
-- Statigent：`append_code_cell` 中的代码；
+- Statigent：`append_code_cell` 中的代码，以及
+  `debug_cell.metadata.corrected_code` 中实际执行的 Debugger 修正代码；
 - Datawise：assistant 消息中的每个 Python fenced block；
 - Data Interpreter：`write_code` 和 `reflect_code` 中实际执行的 Python
   fenced block；
 - ReAct：每个 `python` 或 `bash` tool call。
-
-当前统计工具尚未将 Statigent 的 `debug_cell.metadata.corrected_code` 计入
-`total_code_lines`。因此，Statigent 当前 `meta.json` 中的数值略低于完整的
-实际执行代码量。引用结果时应注明这一限制。
 
 ### 代码执行错误率
 
@@ -43,18 +40,16 @@
 
 | 智能体 | 评测目录 | 代码总行数 | 代码执行错误率 |
 |---|---|---:|---:|
-| Statigent | `dabench-statigent-ds4-flash-20260604T235511` | 4,163 | 0.82% |
+| Statigent | `dabench-statigent-ds4-flash-20260604T235511` | 4,263 | 0.82% |
 | Data Interpreter | `dabench-data_interpreter-ds4-flash-20260602T182230` | 8,816 | 7.48% |
 | ReAct | `dabench-react-ds4-flash-20260524T233933` | 9,586 | 7.21% |
 | Datawise | `dabench-datawise-ds4-flash-20260602T180736` | 16,796 | 50.47% |
 
 Statigent 使用的执行代码总量约为：
 
-- Data Interpreter 的 47%；
-- ReAct 的 43%；
+- Data Interpreter 的 48%；
+- ReAct 的 44%；
 - Datawise 的 25%。
-
-即使补充当前遗漏的少量 Debugger 修正代码，整体结论也不会改变。
 
 ## 为什么不使用平均代码块长度作为核心指标
 
@@ -65,7 +60,7 @@ Statigent 使用的执行代码总量约为：
 |---|---:|
 | Data Interpreter | 8.04 |
 | Datawise | 9.87 |
-| Statigent（未计 Debugger 修正执行） | 11.44 |
+| Statigent | 11.62 |
 | ReAct | 15.71 |
 
 Statigent 的代码块明显短于 ReAct，但长于 Data Interpreter 和 Datawise。
@@ -147,8 +142,6 @@ Markdown 中猜测待执行内容，减少了代码提取和协议解释的不�
 
 ## 后续事项
 
-- 修正统计工具，将 Statigent 的 `debug_cell.metadata.corrected_code` 纳入
-  `total_code_lines` 和代码执行错误率分母；
 - 在新增评测完成后重新运行
   `tools/backfill_code_execution_stats.py evaluations`；
 - 引用指标时同时记录评测目录、模型、任务数和统计脚本版本，避免不同运行之间
