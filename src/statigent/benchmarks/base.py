@@ -130,16 +130,10 @@ def _sum_trace_output_tokens(trace: AgentTrace) -> int:
     return total
 
 
-def _count_trace_file_steps(path: Path) -> int:
-    with open(path) as f:
-        return sum(1 for line in f if line.strip())
-
-
-def _scan_trace_steps(trace_dir: Path) -> tuple[int, int]:
+def _scan_completed_tasks(trace_dir: Path) -> int:
     if not trace_dir.is_dir():
-        return 0, 0
-    trace_files = sorted(path for path in trace_dir.rglob("*.jsonl") if path.is_file())
-    return sum(_count_trace_file_steps(path) for path in trace_files), len(trace_files)
+        return 0
+    return sum(1 for path in trace_dir.rglob("*.jsonl") if path.is_file())
 
 
 @dataclass
@@ -200,7 +194,6 @@ class RunPersister:
         self._input_tokens = 0
         self._output_tokens = 0
         self._duration_seconds = 0.0
-        self._total_steps = 0
         self._completed_tasks = 0
 
     @classmethod
@@ -221,7 +214,6 @@ class RunPersister:
         persister._input_tokens = 0
         persister._output_tokens = 0
         persister._duration_seconds = 0.0
-        persister._total_steps = 0
         persister._completed_tasks = 0
         if persister._pred_path.exists():
             with open(persister._pred_path) as f:
@@ -234,7 +226,6 @@ class RunPersister:
                 "output_tokens", meta.get("total_tokens", 0)
             )
             persister._duration_seconds = meta.get("duration_seconds", 0.0)
-            persister._total_steps = meta.get("total_steps", 0)
             persister._completed_tasks = meta.get("completed_tasks", 0)
         return persister
 
@@ -297,7 +288,6 @@ class RunPersister:
             if usage:
                 self._input_tokens += usage.get("input_tokens", 0)
                 self._output_tokens += usage.get("output_tokens", 0)
-        self._total_steps += len(trace)
         self._completed_tasks += 1
 
     def replace_predictions(self, predictions: list[dict[str, Any]]) -> None:
@@ -318,18 +308,14 @@ class RunPersister:
         if meta_path.exists():
             meta = json.loads(meta_path.read_text())
         meta.pop("total_tokens", None)
+        meta.pop("total_steps", None)
+        meta.pop("average_steps", None)
         meta["input_tokens"] = self._input_tokens
         meta["output_tokens"] = self._output_tokens
         meta["duration_seconds"] = self._duration_seconds
-        if self._total_steps == 0 and self._completed_tasks == 0:
-            self._total_steps, self._completed_tasks = _scan_trace_steps(
-                self._trace_dir
-            )
-        meta["total_steps"] = self._total_steps
+        if self._completed_tasks == 0:
+            self._completed_tasks = _scan_completed_tasks(self._trace_dir)
         meta["completed_tasks"] = self._completed_tasks
-        meta["average_steps"] = (
-            self._total_steps / self._completed_tasks if self._completed_tasks else 0.0
-        )
         meta_path.write_text(json.dumps(meta, indent=2))
 
         if self._pred_count == 0:

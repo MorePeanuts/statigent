@@ -241,7 +241,7 @@ class TestPersist:
         assert meta["output_tokens"] == 10
         assert "total_tokens" not in meta
 
-    def test_meta_json_records_average_steps_from_trace_lines(
+    def test_meta_json_omits_obsolete_step_metrics(
         self, tmp_path: Path
     ) -> None:
         result = EvalResult(
@@ -268,9 +268,11 @@ class TestPersist:
         )
 
         meta = json.loads((output_dir / "meta.json").read_text())
-        assert meta["average_steps"] == 2.5
+        assert meta["completed_tasks"] == 2
+        assert "total_steps" not in meta
+        assert "average_steps" not in meta
 
-    def test_meta_json_counts_nested_trace_files_for_average_steps(
+    def test_meta_json_counts_nested_trace_files_as_completed_tasks(
         self, tmp_path: Path
     ) -> None:
         persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
@@ -296,9 +298,9 @@ class TestPersist:
         )
 
         meta = json.loads((persister.output_dir / "meta.json").read_text())
-        assert meta["total_steps"] == 2
         assert meta["completed_tasks"] == 1
-        assert meta["average_steps"] == 2.0
+        assert "total_steps" not in meta
+        assert "average_steps" not in meta
 
     def test_no_traces_dir_when_traces_none(self, tmp_path: Path) -> None:
         result = EvalResult(
@@ -696,7 +698,7 @@ class TestRunPersister:
         assert updated_meta["output_tokens"] == 18
         assert "total_tokens" not in updated_meta
 
-    def test_open_preserves_existing_steps_when_resuming(self, tmp_path: Path) -> None:
+    def test_open_removes_obsolete_steps_when_resuming(self, tmp_path: Path) -> None:
         persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
         meta_path = persister.output_dir / "meta.json"
         meta = json.loads(meta_path.read_text())
@@ -723,9 +725,9 @@ class TestRunPersister:
         )
 
         updated_meta = json.loads(meta_path.read_text())
-        assert updated_meta["total_steps"] == 7
         assert updated_meta["completed_tasks"] == 3
-        assert updated_meta["average_steps"] == 7 / 3
+        assert "total_steps" not in updated_meta
+        assert "average_steps" not in updated_meta
 
     def test_crash_recovery(self, tmp_path: Path) -> None:
         """Partial results survive interruption — no finalize() called."""
