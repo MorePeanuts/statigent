@@ -7,12 +7,72 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol, Self
 
+import httpx
 from loguru import logger
+from openai import (
+    APIConnectionError,
+    APIStatusError,
+    AuthenticationError,
+    PermissionDeniedError,
+    RateLimitError,
+)
 
-from statigent.errors import StatigentBenchmarkError
+from statigent.errors import (
+    StatigentBenchmarkError,
+    StatigentModelError,
+    StatigentSandboxError,
+)
 
 AgentTrace = list[dict[str, Any]]
 """Serialized execution trace: each dict is one message with role, content, etc."""
+
+
+def _raise_if_infrastructure_error(exc: Exception) -> None:
+    """Re-raise failures that indicate the whole benchmark cannot make progress."""
+    current: BaseException | None = exc
+    seen: set[int] = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if isinstance(current, APIStatusError) and (
+            current.status_code in {401, 403, 429} or current.status_code >= 500
+        ):
+            raise exc
+        if isinstance(current, httpx.HTTPStatusError) and (
+            current.response.status_code in {401, 403, 429}
+            or current.response.status_code >= 500
+        ):
+            raise exc
+        if isinstance(
+            current,
+            (
+                APIConnectionError,
+                AuthenticationError,
+                PermissionDeniedError,
+                RateLimitError,
+                httpx.TransportError,
+                ConnectionError,
+                TimeoutError,
+                PermissionError,
+                StatigentModelError,
+                StatigentSandboxError,
+            ),
+        ):
+            raise exc
+        current = current.__cause__ or current.__context__
+
+
+def _task_error_trace(exc: Exception) -> AgentTrace:
+    """Build a benchmark-compatible trace for a failed individual task."""
+    return [
+        {
+            "role": "assistant",
+            "content": str(exc),
+            "name": "task_error",
+            "agent": "benchmark",
+            "session": 1,
+            "metadata": {"error_type": type(exc).__name__},
+        }
+    ]
 
 
 def _sum_trace_input_tokens(trace: AgentTrace) -> int:

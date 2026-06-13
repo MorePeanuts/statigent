@@ -12,8 +12,10 @@ from statigent.benchmarks.base import (
     BenchmarkRunResult,
     EvalResult,
     ScoreResult,
+    _raise_if_infrastructure_error,
     _sum_trace_input_tokens,
     _sum_trace_output_tokens,
+    _task_error_trace,
 )
 
 if TYPE_CHECKING:
@@ -105,18 +107,33 @@ class MLEBenchAdapter(BenchmarkAdapter):
                     task_instructions=self._TASK_INSTRUCTIONS,
                     work_dir=work_dir,
                 )
-                pred = {"competition_id": comp_id, "submission_path": str(pred_path)}
-                predictions.append(pred)
-                traces[comp_id] = trace
-                input_tokens += _sum_trace_input_tokens(trace)
-                output_tokens += _sum_trace_output_tokens(trace)
-                if persister is not None:
-                    persister.add_prediction(pred)
-                    persister.add_trace(comp_id, trace)
-            except Exception:
+                pred: dict[str, Any] = {
+                    "competition_id": comp_id,
+                    "submission_path": str(pred_path),
+                }
+            except Exception as exc:
                 shutil.rmtree(work_dir, ignore_errors=True)
-                raise
-            logger.debug("MLE-Bench {}: submission created", comp_id)
+                _raise_if_infrastructure_error(exc)
+                logger.warning(
+                    "MLE-Bench {} failed with {}: {}; continuing",
+                    comp_id,
+                    type(exc).__name__,
+                    exc,
+                )
+                trace = _task_error_trace(exc)
+                pred = {
+                    "competition_id": comp_id,
+                    "submission_path": str(work_dir / "submission.csv"),
+                    "error": str(exc),
+                }
+            predictions.append(pred)
+            traces[comp_id] = trace
+            input_tokens += _sum_trace_input_tokens(trace)
+            output_tokens += _sum_trace_output_tokens(trace)
+            if persister is not None:
+                persister.add_prediction(pred)
+                persister.add_trace(comp_id, trace)
+            logger.debug("MLE-Bench {}: task completed", comp_id)
 
         duration = time.monotonic() - start_time
         if persister is not None:

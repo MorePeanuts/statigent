@@ -17,8 +17,10 @@ from statigent.benchmarks.base import (
     BenchmarkRunResult,
     EvalResult,
     ScoreResult,
+    _raise_if_infrastructure_error,
     _sum_trace_input_tokens,
     _sum_trace_output_tokens,
+    _task_error_trace,
 )
 from statigent.benchmarks.evaluators import DSBenchDAJudgeEvaluator
 from statigent.errors import StatigentBenchmarkError
@@ -259,13 +261,28 @@ class DSBenchAdapter(BenchmarkAdapter):
                 q_path = data_base / f"{qname}.txt"
                 question = q_path.read_text() if q_path.exists() else ""
                 prompt = f"{introduction}\n\n{question}"
-                response, trace = agent.run_analysis_for_eval(
-                    prompt,
-                    files=data_files,
-                    task_instructions=self._DA_TASK_INSTRUCTIONS,
-                )
                 qid = f"{sid}/{qname}"
+                error: str | None = None
+                try:
+                    response, trace = agent.run_analysis_for_eval(
+                        prompt,
+                        files=data_files,
+                        task_instructions=self._DA_TASK_INSTRUCTIONS,
+                    )
+                except Exception as exc:
+                    _raise_if_infrastructure_error(exc)
+                    logger.warning(
+                        "DSBench DA id={} failed with {}: {}; continuing",
+                        qid,
+                        type(exc).__name__,
+                        exc,
+                    )
+                    response = ""
+                    trace = _task_error_trace(exc)
+                    error = str(exc)
                 pred = {"id": qid, "response": response}
+                if error is not None:
+                    pred["error"] = error
                 predictions.append(pred)
                 traces[qid] = trace
                 input_tokens += _sum_trace_input_tokens(trace)
@@ -354,18 +371,33 @@ class DSBenchAdapter(BenchmarkAdapter):
                     task_instructions=self._DM_TASK_INSTRUCTIONS,
                     work_dir=work_dir,
                 )
-                pred = {"name": name, "prediction_path": str(pred_path)}
-                predictions.append(pred)
-                traces[name] = trace
-                input_tokens += _sum_trace_input_tokens(trace)
-                output_tokens += _sum_trace_output_tokens(trace)
-                if persister is not None:
-                    persister.add_prediction(pred)
-                    persister.add_trace(name, trace)
-            except Exception:
+                pred: dict[str, Any] = {
+                    "name": name,
+                    "prediction_path": str(pred_path),
+                }
+            except Exception as exc:
                 shutil.rmtree(work_dir, ignore_errors=True)
-                raise
-            logger.debug("DSBench DM {}: prediction saved", name)
+                _raise_if_infrastructure_error(exc)
+                logger.warning(
+                    "DSBench DM {} failed with {}: {}; continuing",
+                    name,
+                    type(exc).__name__,
+                    exc,
+                )
+                trace = _task_error_trace(exc)
+                pred = {
+                    "name": name,
+                    "prediction_path": str(work_dir / "submission.csv"),
+                    "error": str(exc),
+                }
+            predictions.append(pred)
+            traces[name] = trace
+            input_tokens += _sum_trace_input_tokens(trace)
+            output_tokens += _sum_trace_output_tokens(trace)
+            if persister is not None:
+                persister.add_prediction(pred)
+                persister.add_trace(name, trace)
+            logger.debug("DSBench DM {}: task completed", name)
 
         if task_id and not predictions:
             logger.warning("task_id '{}' did not match any sample name", task_id)

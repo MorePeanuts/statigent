@@ -9,7 +9,7 @@ import pytest
 
 from statigent.benchmarks.base import EvalResult
 from statigent.benchmarks.dsbench import DSBenchAdapter
-from statigent.errors import StatigentBenchmarkError
+from statigent.errors import StatigentBenchmarkError, StatigentParseError
 
 
 def _write_da_test_data(tmp_path: Path, num_samples: int = 1) -> Path:
@@ -145,6 +145,22 @@ class TestDSBenchAdapterDA:
         ):
             adapter.prepare()
 
+    def test_run_records_task_failure_and_continues(self, tmp_path: Path) -> None:
+        base = _write_da_test_data(tmp_path, num_samples=2)
+        adapter = DSBenchAdapter(data_dir=base, task="data_analysis")
+        adapter.prepare()
+        agent = MagicMock()
+        agent.run_analysis_for_eval.side_effect = [
+            StatigentParseError("bad plan"),
+            ("answer", [{"role": "assistant", "content": "ok"}]),
+        ]
+
+        result = adapter.run(agent)
+
+        assert len(result.predictions) == 2
+        assert result.predictions[0]["error"] == "bad plan"
+        assert result.predictions[1]["response"] == "answer"
+
     @patch("statigent.benchmarks.evaluators.get_model")
     def test_evaluate_data_analysis(
         self, mock_get_model: MagicMock, tmp_path: Path
@@ -223,6 +239,32 @@ class TestDSBenchAdapterDM:
     def test_invalid_task_raises(self) -> None:
         with pytest.raises(ValueError, match="task must be"):
             DSBenchAdapter(data_dir=Path("/tmp"), task="invalid")
+
+    def test_run_records_task_failure_and_continues(self, tmp_path: Path) -> None:
+        base = _write_dm_test_data(tmp_path)
+        adapter = DSBenchAdapter(data_dir=base, task="data_modeling")
+        adapter._samples = [
+            {"name": "failed-competition"},
+            {"name": "successful-competition"},
+        ]
+        for name in ("failed-competition", "successful-competition"):
+            task_dir = base / "data_modeling" / "data" / "data_resplit" / name
+            task_dir.mkdir(parents=True)
+            (task_dir / "train.csv").write_text("x,y\n1,2\n")
+            (task_dir / "test.csv").write_text("x\n1\n")
+            (task_dir / "sample_submission.csv").write_text("y\n0\n")
+
+        agent = MagicMock()
+        agent.run_modeling_for_eval.side_effect = [
+            RuntimeError("model failed"),
+            (tmp_path / "submission.csv", [{"role": "assistant", "content": "ok"}]),
+        ]
+
+        result = adapter.run(agent)
+
+        assert len(result.predictions) == 2
+        assert result.predictions[0]["error"] == "model failed"
+        assert result.predictions[1]["name"] == "successful-competition"
 
 
 class TestSafeExtract:

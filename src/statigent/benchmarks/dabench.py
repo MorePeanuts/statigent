@@ -11,8 +11,10 @@ from statigent.benchmarks.base import (
     BenchmarkRunResult,
     DataScienceAgent,
     EvalResult,
+    _raise_if_infrastructure_error,
     _sum_trace_input_tokens,
     _sum_trace_output_tokens,
+    _task_error_trace,
 )
 from statigent.benchmarks.evaluators import (
     DABenchExactMatchEvaluator,
@@ -98,9 +100,24 @@ class DABenchAdapter(BenchmarkAdapter):
                 f"\n## Requirements\n{q['constraints']}\n"
                 f"\n## Output Format\n{q['format']}\n"
             )
-            response, trace = agent.run_analysis_for_eval(prompt, files=[csv_path])
             qid = str(q["id"])
+            error: str | None = None
+            try:
+                response, trace = agent.run_analysis_for_eval(prompt, files=[csv_path])
+            except Exception as exc:
+                _raise_if_infrastructure_error(exc)
+                logger.warning(
+                    "DABench question id={} failed with {}: {}; continuing",
+                    q["id"],
+                    type(exc).__name__,
+                    exc,
+                )
+                response = ""
+                trace = _task_error_trace(exc)
+                error = str(exc)
             pred = {"id": q["id"], "response": response}
+            if error is not None:
+                pred["error"] = error
             predictions.append(pred)
             traces[qid] = trace
             input_tokens += _sum_trace_input_tokens(trace)
