@@ -46,7 +46,14 @@ def test_backfill_run_writes_summary_task_sequences_and_trends(
     run_dir = tmp_path / "run"
     run_dir.mkdir()
     (run_dir / "meta.json").write_text(
-        json.dumps({"agent_name": "statigent", "model_name": "test"})
+        json.dumps(
+            {
+                "agent_name": "statigent",
+                "model_name": "test",
+                "total_steps": 99,
+                "average_steps": 9.9,
+            }
+        )
     )
     _write_trace(
         run_dir / "traces" / "1.jsonl",
@@ -72,21 +79,33 @@ def test_backfill_run_writes_summary_task_sequences_and_trends(
 
     meta = json.loads((run_dir / "meta.json").read_text())
     assert meta["model_name"] == "test"
+    assert "total_steps" not in meta
+    assert "average_steps" not in meta
+    assert meta["subagent_step_usage"] == {
+        "coder": {
+            "total_steps": 1,
+            "active_tasks": 1,
+            "average_steps_per_task": 0.5,
+            "average_steps_per_active_task": 1.0,
+        },
+        "inspector": {
+            "total_steps": 4,
+            "active_tasks": 2,
+            "average_steps_per_task": 2.0,
+            "average_steps_per_active_task": 2.0,
+        },
+    }
     assert meta["subagent_token_usage"] == {
         "coder": {
             "invocations": 1,
             "input_tokens": 200,
             "output_tokens": 20,
-            "average_input_tokens": 200.0,
-            "average_output_tokens": 20.0,
             "max_input_tokens": 200,
         },
         "inspector": {
             "invocations": 4,
             "input_tokens": 950,
             "output_tokens": 95,
-            "average_input_tokens": 237.5,
-            "average_output_tokens": 23.75,
             "max_input_tokens": 400,
         },
     }
@@ -166,6 +185,12 @@ def test_backfill_run_maps_baseline_events_to_single_agent(tmp_path: Path) -> No
         assert detail["tasks"]["1"][agent_name][event_name] == [expected_input]
         meta = json.loads((run_dir / "meta.json").read_text())
         assert meta["subagent_token_usage"][agent_name]["invocations"] == 1
+        assert meta["subagent_step_usage"][agent_name] == {
+            "total_steps": 1,
+            "active_tasks": 1,
+            "average_steps_per_task": 1.0,
+            "average_steps_per_active_task": 1.0,
+        }
 
 
 def test_backfill_run_skips_unsupported_agent_run(tmp_path: Path) -> None:

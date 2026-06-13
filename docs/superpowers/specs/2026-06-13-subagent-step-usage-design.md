@@ -39,7 +39,9 @@ misused. Keep `completed_tasks`, because it is required by the new metric and
 remains unambiguous.
 
 The existing `subagent_token_usage` mapping remains the source for separately
-reported cumulative input and output tokens per subagent.
+reported cumulative input and output tokens per subagent. Remove its
+per-invocation average input and output fields so the compact metadata does not
+invite averaging across unlike agent roles.
 
 ## Implementation
 

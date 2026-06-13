@@ -100,9 +100,36 @@ def _summary(
             "invocations": invocations,
             "input_tokens": current["input_tokens"],
             "output_tokens": current["output_tokens"],
-            "average_input_tokens": current["input_tokens"] / invocations,
-            "average_output_tokens": current["output_tokens"] / invocations,
             "max_input_tokens": current["max_input_tokens"],
+        }
+    return summary
+
+
+def _step_summary(
+    tasks: AllTaskSequences,
+) -> dict[str, dict[str, int | float]]:
+    completed_tasks = len(tasks)
+    values: dict[str, dict[str, int]] = {}
+    for task in tasks.values():
+        for agent, events in task.items():
+            total_steps = sum(len(sequence) for sequence in events.values())
+            if total_steps == 0:
+                continue
+            current = values.setdefault(agent, {"total_steps": 0, "active_tasks": 0})
+            current["total_steps"] += total_steps
+            current["active_tasks"] += 1
+
+    summary: dict[str, dict[str, int | float]] = {}
+    for agent, current in sorted(values.items()):
+        total_steps = current["total_steps"]
+        active_tasks = current["active_tasks"]
+        summary[agent] = {
+            "total_steps": total_steps,
+            "active_tasks": active_tasks,
+            "average_steps_per_task": (
+                total_steps / completed_tasks if completed_tasks else 0.0
+            ),
+            "average_steps_per_active_task": total_steps / active_tasks,
         }
     return summary
 
@@ -171,6 +198,9 @@ def _backfill_run(run_dir: Path) -> bool:
         tasks[task_id] = _task_sequences(events, run_agent=run_agent)
 
     meta_value["subagent_token_usage"] = _summary(all_usages)
+    meta_value["subagent_step_usage"] = _step_summary(tasks)
+    meta_value.pop("total_steps", None)
+    meta_value.pop("average_steps", None)
     meta_path.write_text(json.dumps(meta_value, indent=2) + "\n")
     detail = {"tasks": tasks, "trends": _trends(tasks)}
     (run_dir / "subagent_token_usage.json").write_text(
