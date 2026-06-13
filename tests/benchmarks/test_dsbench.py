@@ -161,6 +161,27 @@ class TestDSBenchAdapterDA:
         assert result.predictions[0]["error"] == "bad plan"
         assert result.predictions[1]["response"] == "answer"
 
+    def test_run_accepts_comma_separated_sample_and_question_ids(
+        self, tmp_path: Path
+    ) -> None:
+        base = _write_da_test_data(tmp_path, num_samples=3)
+        adapter = DSBenchAdapter(data_dir=base, task="data_analysis")
+        adapter.prepare()
+        agent = MagicMock()
+        agent.run_analysis_for_eval.return_value = ("answer", [])
+
+        result = adapter.run(
+            agent,
+            task_id="00000001, 00000003/question1",
+            skip=2,
+            limit=1,
+        )
+
+        assert [prediction["id"] for prediction in result.predictions] == [
+            "00000001/question1",
+            "00000003/question1",
+        ]
+
     @patch("statigent.benchmarks.evaluators.get_model")
     def test_evaluate_data_analysis(
         self, mock_get_model: MagicMock, tmp_path: Path
@@ -265,6 +286,38 @@ class TestDSBenchAdapterDM:
         assert len(result.predictions) == 2
         assert result.predictions[0]["error"] == "model failed"
         assert result.predictions[1]["name"] == "successful-competition"
+
+    def test_run_accepts_comma_separated_task_ids(self, tmp_path: Path) -> None:
+        base = _write_dm_test_data(tmp_path)
+        adapter = DSBenchAdapter(data_dir=base, task="data_modeling")
+        adapter._samples = [
+            {"name": "competition-a"},
+            {"name": "competition-b"},
+            {"name": "competition-c"},
+        ]
+        for name in ("competition-a", "competition-b", "competition-c"):
+            task_dir = base / "data_modeling" / "data" / "data_resplit" / name
+            task_dir.mkdir(parents=True)
+            (task_dir / "train.csv").write_text("x,y\n1,2\n")
+            (task_dir / "test.csv").write_text("x\n1\n")
+            (task_dir / "sample_submission.csv").write_text("y\n0\n")
+
+        submission = tmp_path / "submission.csv"
+        submission.write_text("y\n1\n")
+        agent = MagicMock()
+        agent.run_modeling_for_eval.return_value = (submission, [])
+
+        result = adapter.run(
+            agent,
+            task_id="competition-a, competition-c",
+            skip=1,
+            limit=1,
+        )
+
+        assert [prediction["name"] for prediction in result.predictions] == [
+            "competition-a",
+            "competition-c",
+        ]
 
 
 class TestSafeExtract:

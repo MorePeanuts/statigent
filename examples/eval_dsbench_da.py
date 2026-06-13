@@ -7,7 +7,7 @@ import typer
 from rich.console import Console
 
 from statigent.agents import StatigentDataScienceAgent
-from statigent.benchmarks.base import BenchmarkAdapter, RunPersister
+from statigent.benchmarks.base import BenchmarkAdapter, RunPersister, merge_predictions
 from statigent.benchmarks.dsbench import DSBenchAdapter
 from statigent.benchmarks.reporting import build_evaluation_table, find_latest_run_dir
 from statigent.models import load_registry
@@ -34,7 +34,7 @@ def main(
         str | None,
         typer.Option(
             help=(
-                "Run a specific sample or question. "
+                "Run comma-separated samples or questions. "
                 "Sample ID (e.g. 00000001) or question ID "
                 "(e.g. 00000001/question6)."
             ),
@@ -44,12 +44,14 @@ def main(
         Path | None,
         typer.Option(
             help="Resume from a previous run's output directory. "
-            "Skips tasks already completed and appends new results."
+            "Skips completed tasks, or replaces explicitly selected task IDs."
         ),
     ] = None,
     skip: Annotated[
         int,
-        typer.Option(help="Skip the first N tasks. Ignored when --resume-dir is set."),
+        typer.Option(
+            help="Skip the first N tasks. Ignored with --resume-dir or --task-id."
+        ),
     ] = 0,
     model: Annotated[
         str,
@@ -158,7 +160,8 @@ def _resume_run(
     run_result = adapter.run(agent, **run_kwargs)
     console.print(f"  Generated {len(run_result.predictions)} new predictions")
 
-    all_predictions = old_predictions + run_result.predictions
+    all_predictions = merge_predictions(old_predictions, run_result.predictions)
+    persister.replace_predictions(all_predictions)
     console.print(f"\n[blue]Evaluating {len(all_predictions)} predictions...[/blue]")
     result = adapter.evaluate(
         all_predictions,

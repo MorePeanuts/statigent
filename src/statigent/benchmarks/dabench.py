@@ -15,6 +15,7 @@ from statigent.benchmarks.base import (
     _sum_trace_input_tokens,
     _sum_trace_output_tokens,
     _task_error_trace,
+    parse_task_ids,
 )
 from statigent.benchmarks.evaluators import (
     DABenchExactMatchEvaluator,
@@ -72,20 +73,23 @@ class DABenchAdapter(BenchmarkAdapter):
         """Run agent on DABench questions."""
         persister = kwargs.get("persister")
         limit = kwargs.get("limit")
-        task_id = kwargs.get("task_id")
+        task_ids = parse_task_ids(kwargs.get("task_id"))
         skip = kwargs.get("skip", 0)
 
         questions = self._questions
-        if task_id:
-            questions = [q for q in questions if str(q["id"]) == task_id]
+        if task_ids:
+            selected_ids = set(task_ids)
+            questions = [q for q in questions if str(q["id"]) in selected_ids]
         else:
             if skip:
                 questions = questions[skip:]
             if limit:
                 questions = questions[:limit]
 
-        if task_id and not questions:
-            logger.warning("task_id '{}' did not match any question", task_id)
+        if task_ids and not questions:
+            logger.warning(
+                "task_id '{}' did not match any question", ",".join(task_ids)
+            )
 
         start_time = time.monotonic()
         input_tokens = 0

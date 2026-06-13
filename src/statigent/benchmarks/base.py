@@ -27,6 +27,41 @@ AgentTrace = list[dict[str, Any]]
 """Serialized execution trace: each dict is one message with role, content, etc."""
 
 
+def parse_task_ids(task_id: str | None) -> tuple[str, ...]:
+    """Parse comma-separated task IDs while preserving input order."""
+    if task_id is None:
+        return ()
+    return tuple(
+        dict.fromkeys(part.strip() for part in task_id.split(",") if part.strip())
+    )
+
+
+def _prediction_key(prediction: dict[str, Any]) -> tuple[str, str] | None:
+    for key in ("id", "name", "competition_id"):
+        value = prediction.get(key)
+        if value is not None:
+            return key, str(value)
+    return None
+
+
+def merge_predictions(
+    existing: list[dict[str, Any]],
+    new: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Merge predictions by task identifier, preferring newer entries."""
+    merged: list[dict[str, Any]] = []
+    positions: dict[tuple[str, str], int] = {}
+    for prediction in [*existing, *new]:
+        key = _prediction_key(prediction)
+        if key is None or key not in positions:
+            if key is not None:
+                positions[key] = len(merged)
+            merged.append(prediction)
+        else:
+            merged[positions[key]] = prediction
+    return merged
+
+
 def _raise_if_infrastructure_error(exc: Exception) -> None:
     """Re-raise failures that indicate the whole benchmark cannot make progress."""
     current: BaseException | None = exc
@@ -265,6 +300,12 @@ class RunPersister:
         self._total_steps += len(trace)
         self._completed_tasks += 1
 
+    def replace_predictions(self, predictions: list[dict[str, Any]]) -> None:
+        """Rewrite persisted predictions without duplicate task entries."""
+        lines = [json.dumps(prediction) for prediction in predictions]
+        self._pred_path.write_text("\n".join(lines) + ("\n" if lines else ""))
+        self._pred_count = len(predictions)
+
     def finalize(self, result: "EvalResult") -> None:
         """Write scores.json and update meta.json with tokens/duration."""
         self._eval_dir.mkdir(parents=True, exist_ok=True)
@@ -441,7 +482,7 @@ class BenchmarkAdapter(ABC):
                 line = line.strip()
                 if line:
                     predictions.append(json.loads(line))
-        return predictions
+        return merge_predictions([], predictions)
 
     @staticmethod
     def persist(

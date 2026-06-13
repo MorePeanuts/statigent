@@ -85,6 +85,17 @@ class TestDABenchAdapter:
         assert "mean_age" in run_result.predictions[0]["response"]
         assert "0" in run_result.traces
 
+    def test_run_accepts_comma_separated_task_ids(self, tmp_path: Path) -> None:
+        data_dir = _write_test_data(tmp_path)
+        adapter = DABenchAdapter(data_dir=data_dir)
+        adapter.prepare()
+        mock_agent = MagicMock()
+        mock_agent.run_analysis_for_eval.return_value = ("answer", [])
+
+        run_result = adapter.run(mock_agent, task_id="1, 0,1", skip=1, limit=1)
+
+        assert [prediction["id"] for prediction in run_result.predictions] == [0, 1]
+
     def test_run_records_task_failure_and_continues(self, tmp_path: Path) -> None:
         data_dir = _write_test_data(tmp_path)
         adapter = DABenchAdapter(data_dir=data_dir)

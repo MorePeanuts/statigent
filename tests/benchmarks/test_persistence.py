@@ -12,11 +12,49 @@ from statigent.benchmarks.base import (
     DataScienceAgent,
     EvalResult,
     RunPersister,
+    merge_predictions,
+    parse_task_ids,
 )
 from statigent.errors import StatigentBenchmarkError
 
 
 class TestPersist:
+    def test_parse_task_ids_splits_trims_and_deduplicates(self) -> None:
+        assert parse_task_ids(" 1,2, 1, ,3 ") == ("1", "2", "3")
+
+    def test_merge_predictions_replaces_existing_tasks(self) -> None:
+        existing = [
+            {"id": 1, "response": "old one"},
+            {"id": 2, "response": "old two"},
+        ]
+        new = [
+            {"id": 2, "response": "new two"},
+            {"id": 3, "response": "new three"},
+        ]
+
+        assert merge_predictions(existing, new) == [
+            {"id": 1, "response": "old one"},
+            {"id": 2, "response": "new two"},
+            {"id": 3, "response": "new three"},
+        ]
+
+    def test_replace_predictions_rewrites_without_duplicates(
+        self, tmp_path: Path
+    ) -> None:
+        persister = RunPersister(tmp_path, "agent", "model", "bench")
+        persister.add_prediction({"id": 1, "response": "old"})
+        persister.add_prediction({"id": 1, "response": "new"})
+
+        predictions = merge_predictions(
+            BenchmarkAdapter.load_predictions(persister.output_dir), []
+        )
+        persister.replace_predictions(predictions)
+
+        assert BenchmarkAdapter.load_predictions(persister.output_dir) == [
+            {"id": 1, "response": "new"}
+        ]
+        assert persister.prediction_count == 1
+
     def test_creates_directory_structure(self, tmp_path: Path) -> None:
         result = EvalResult(
             score={"score": 0.85},
