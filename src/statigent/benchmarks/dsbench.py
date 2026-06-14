@@ -17,8 +17,11 @@ from statigent.benchmarks.base import (
     BenchmarkRunResult,
     EvalResult,
     ScoreResult,
+    _raise_if_infrastructure_error,
     _sum_trace_input_tokens,
     _sum_trace_output_tokens,
+    _task_error_trace,
+    parse_task_ids,
 )
 from statigent.benchmarks.evaluators import DSBenchDAJudgeEvaluator
 from statigent.errors import StatigentBenchmarkError
@@ -210,19 +213,14 @@ class DSBenchAdapter(BenchmarkAdapter):
         """Run data analysis task."""
         persister = kwargs.get("persister")
         limit = kwargs.get("limit")
-        task_id = kwargs.get("task_id")
+        task_ids = parse_task_ids(kwargs.get("task_id"))
         skip = kwargs.get("skip", 0)
 
-        # task_id: "00000001" → run all questions in that sample;
-        #          "00000001/question6" → run a single question.
-        # When task_id is set, limit and skip are ignored.
-        target_sid: str | None = None
-        target_qname: str | None = None
-        if task_id:
-            parts = str(task_id).split("/", 1)
-            target_sid = parts[0]
-            if len(parts) == 2:
-                target_qname = parts[1]
+        selected_samples = {value for value in task_ids if "/" not in value}
+        selected_questions = {value for value in task_ids if "/" in value}
+        if task_ids:
+            skip = 0
+            limit = None
 
         start_time = time.monotonic()
         input_tokens = 0
@@ -234,7 +232,9 @@ class DSBenchAdapter(BenchmarkAdapter):
             if not sample.get("questions"):
                 continue
             sid = sample["id"]
-            if target_sid and sid != target_sid:
+            if task_ids and sid not in selected_samples and not any(
+                question_id.startswith(f"{sid}/") for question_id in selected_questions
+            ):
                 continue
 
             data_base = self.data_dir / "data_analysis" / "data" / sid
@@ -254,18 +254,37 @@ class DSBenchAdapter(BenchmarkAdapter):
                     continue
                 if limit and question_count - skip >= limit:
                     break
-                if target_qname and qname != target_qname:
-                    continue
                 q_path = data_base / f"{qname}.txt"
                 question = q_path.read_text() if q_path.exists() else ""
                 prompt = f"{introduction}\n\n{question}"
-                response, trace = agent.run_analysis_for_eval(
-                    prompt,
-                    files=data_files,
-                    task_instructions=self._DA_TASK_INSTRUCTIONS,
-                )
                 qid = f"{sid}/{qname}"
+                if (
+                    task_ids
+                    and sid not in selected_samples
+                    and qid not in selected_questions
+                ):
+                    continue
+                error: str | None = None
+                try:
+                    response, trace = agent.run_analysis_for_eval(
+                        prompt,
+                        files=data_files,
+                        task_instructions=self._DA_TASK_INSTRUCTIONS,
+                    )
+                except Exception as exc:
+                    _raise_if_infrastructure_error(exc)
+                    logger.warning(
+                        "DSBench DA id={} failed with {}: {}; continuing",
+                        qid,
+                        type(exc).__name__,
+                        exc,
+                    )
+                    response = ""
+                    trace = _task_error_trace(exc)
+                    error = str(exc)
                 pred = {"id": qid, "response": response}
+                if error is not None:
+                    pred["error"] = error
                 predictions.append(pred)
                 traces[qid] = trace
                 input_tokens += _sum_trace_input_tokens(trace)
@@ -278,8 +297,10 @@ class DSBenchAdapter(BenchmarkAdapter):
             if limit and question_count - skip >= limit:
                 break
 
-        if task_id and not predictions:
-            logger.warning("task_id '{}' did not match any sample/question", task_id)
+        if task_ids and not predictions:
+            logger.warning(
+                "task_id '{}' did not match any sample/question", ",".join(task_ids)
+            )
 
         duration = time.monotonic() - start_time
         if persister is not None:
@@ -308,13 +329,13 @@ class DSBenchAdapter(BenchmarkAdapter):
         """Run data modeling task."""
         persister = kwargs.get("persister")
         limit = kwargs.get("limit")
-        task_id = kwargs.get("task_id")
+        task_ids = parse_task_ids(kwargs.get("task_id"))
         skip = kwargs.get("skip", 0)
 
         samples = self._samples
-        if task_id:
-            # Match by sample name (e.g. "titanic")
-            samples = [s for s in samples if str(s["name"]) == str(task_id)]
+        if task_ids:
+            selected_ids = set(task_ids)
+            samples = [s for s in samples if str(s["name"]) in selected_ids]
         else:
             if skip:
                 samples = samples[skip:]
@@ -354,21 +375,38 @@ class DSBenchAdapter(BenchmarkAdapter):
                     task_instructions=self._DM_TASK_INSTRUCTIONS,
                     work_dir=work_dir,
                 )
-                pred = {"name": name, "prediction_path": str(pred_path)}
-                predictions.append(pred)
-                traces[name] = trace
-                input_tokens += _sum_trace_input_tokens(trace)
-                output_tokens += _sum_trace_output_tokens(trace)
-                if persister is not None:
-                    persister.add_prediction(pred)
-                    persister.add_trace(name, trace)
-            except Exception:
+                pred: dict[str, Any] = {
+                    "name": name,
+                    "prediction_path": str(pred_path),
+                }
+            except Exception as exc:
                 shutil.rmtree(work_dir, ignore_errors=True)
-                raise
-            logger.debug("DSBench DM {}: prediction saved", name)
+                _raise_if_infrastructure_error(exc)
+                logger.warning(
+                    "DSBench DM {} failed with {}: {}; continuing",
+                    name,
+                    type(exc).__name__,
+                    exc,
+                )
+                trace = _task_error_trace(exc)
+                pred = {
+                    "name": name,
+                    "prediction_path": str(work_dir / "submission.csv"),
+                    "error": str(exc),
+                }
+            predictions.append(pred)
+            traces[name] = trace
+            input_tokens += _sum_trace_input_tokens(trace)
+            output_tokens += _sum_trace_output_tokens(trace)
+            if persister is not None:
+                persister.add_prediction(pred)
+                persister.add_trace(name, trace)
+            logger.debug("DSBench DM {}: task completed", name)
 
-        if task_id and not predictions:
-            logger.warning("task_id '{}' did not match any sample name", task_id)
+        if task_ids and not predictions:
+            logger.warning(
+                "task_id '{}' did not match any sample name", ",".join(task_ids)
+            )
 
         duration = time.monotonic() - start_time
         if persister is not None:

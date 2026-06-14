@@ -6,7 +6,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 
-from statigent.errors import StatigentExplorationError
+from statigent.errors import StatigentExplorationError, StatigentParseError
 from statigent.exploration.actors import Coder, Debugger, Inspector
 from statigent.exploration.state import (
     ExplorationRunState,
@@ -426,34 +426,62 @@ class ExplorationOrchestrator:
         state: ExplorationRunState,
         reason: str,
     ) -> dict[str, object]:
-        draft = self.inspector.final_draft(
-            state["brief"],
-            state["profile"],
-            state["steps"],
-        )
-        return {
+        draft, error = self._draft_with_fallback(state)
+        trace_events = [
+            *state["trace_events"],
+            self._trace(
+                "inspector",
+                "final_draft" if error is None else "protocol_error",
+                draft.model_dump_json() if error is None else str(error),
+                usage_metadata=self._actor_usage(self.inspector),
+                metadata={"reason": reason},
+            ),
+        ]
+        update: dict[str, object] = {
             "final_draft": draft,
             "final_draft_requested": False,
-            "trace_events": [
-                *state["trace_events"],
-                self._trace(
-                    "inspector",
-                    "final_draft",
-                    draft.model_dump_json(),
-                    usage_metadata=self._actor_usage(self.inspector),
-                    metadata={"reason": reason},
-                ),
-            ],
+            "trace_events": trace_events,
         }
+        if error is not None:
+            update["status"] = "partial"
+        return update
 
     def _partial_draft(self, state: ExplorationRunState) -> FinalDraft:
         if state["steps"]:
-            return self.inspector.final_draft(
-                state["brief"],
-                state["profile"],
-                state["steps"],
-            )
+            draft, _ = self._draft_with_fallback(state)
+            return draft
         return self._empty_draft("No exploration steps were completed.")
+
+    def _draft_with_fallback(
+        self,
+        state: ExplorationRunState,
+    ) -> tuple[FinalDraft, StatigentParseError | None]:
+        try:
+            return (
+                self.inspector.final_draft(
+                    state["brief"],
+                    state["profile"],
+                    state["steps"],
+                ),
+                None,
+            )
+        except StatigentParseError as err:
+            warning = f"Inspector failed to produce final draft: {err}"
+            evidence = [
+                output
+                for step in state["steps"]
+                if step.result is not None
+                and (output := step.result.stdout.strip())
+            ]
+            content = evidence[-1] if evidence else "No final draft was produced."
+            return (
+                FinalDraft(
+                    content=content,
+                    evidence=evidence,
+                    warnings=[warning],
+                ),
+                err,
+            )
 
     def _report_status(
         self,

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from langgraph.types import Command
 
-from statigent.errors import StatigentExplorationError
+from statigent.errors import StatigentExplorationError, StatigentParseError
 from statigent.exploration import ExplorationOrchestrator
 from statigent.exploration.actors import CoderExecutionOutcome, DebugExecutionOutcome
 from statigent.exploration.state import ExplorationRunState
@@ -64,6 +64,17 @@ class FakeInspector:
     ) -> FinalDraft:
         self.calls.append("final_draft")
         return self.draft
+
+
+class FailingDraftInspector(FakeInspector):
+    def final_draft(
+        self,
+        _brief: TaskBrief,
+        _profile: DatasetProfile,
+        _steps: object,
+    ) -> FinalDraft:
+        self.calls.append("final_draft")
+        raise StatigentParseError("Structured output returned no parsed result")
 
 
 class FakeCoder:
@@ -318,6 +329,26 @@ def test_done_finalizes_without_code_or_review(tmp_path: Path) -> None:
     assert coder.instructions == []
     assert [event.agent for event in report.trace_events] == ["inspector", "inspector"]
     assert [event.name for event in report.trace_events] == ["plan", "final_draft"]
+
+
+def test_final_draft_parse_failure_returns_partial_report(tmp_path: Path) -> None:
+    kernel = started_kernel(tmp_path)
+    kernel.queue_result(stdout="@mean_revenue[15]\n")
+    inspector = FailingDraftInspector()
+    orchestrator = make_orchestrator(kernel, inspector=inspector)
+
+    report = orchestrator.run(make_brief(), make_profile(tmp_path))
+
+    assert report.status == "partial"
+    assert report.final_draft.content == "@mean_revenue[15]"
+    assert any(
+        "inspector failed to produce final draft" in warning.casefold()
+        for warning in report.warnings
+    )
+    assert any(
+        event.agent == "inspector" and event.name == "protocol_error"
+        for event in report.trace_events
+    )
 
 
 def test_done_with_instruction_executes_instruction_and_warns(tmp_path: Path) -> None:

@@ -11,8 +11,11 @@ from statigent.benchmarks.base import (
     BenchmarkRunResult,
     DataScienceAgent,
     EvalResult,
+    _raise_if_infrastructure_error,
     _sum_trace_input_tokens,
     _sum_trace_output_tokens,
+    _task_error_trace,
+    parse_task_ids,
 )
 from statigent.benchmarks.evaluators import (
     DABenchExactMatchEvaluator,
@@ -70,20 +73,23 @@ class DABenchAdapter(BenchmarkAdapter):
         """Run agent on DABench questions."""
         persister = kwargs.get("persister")
         limit = kwargs.get("limit")
-        task_id = kwargs.get("task_id")
+        task_ids = parse_task_ids(kwargs.get("task_id"))
         skip = kwargs.get("skip", 0)
 
         questions = self._questions
-        if task_id:
-            questions = [q for q in questions if str(q["id"]) == task_id]
+        if task_ids:
+            selected_ids = set(task_ids)
+            questions = [q for q in questions if str(q["id"]) in selected_ids]
         else:
             if skip:
                 questions = questions[skip:]
             if limit:
                 questions = questions[:limit]
 
-        if task_id and not questions:
-            logger.warning("task_id '{}' did not match any question", task_id)
+        if task_ids and not questions:
+            logger.warning(
+                "task_id '{}' did not match any question", ",".join(task_ids)
+            )
 
         start_time = time.monotonic()
         input_tokens = 0
@@ -98,9 +104,24 @@ class DABenchAdapter(BenchmarkAdapter):
                 f"\n## Requirements\n{q['constraints']}\n"
                 f"\n## Output Format\n{q['format']}\n"
             )
-            response, trace = agent.run_analysis_for_eval(prompt, files=[csv_path])
             qid = str(q["id"])
+            error: str | None = None
+            try:
+                response, trace = agent.run_analysis_for_eval(prompt, files=[csv_path])
+            except Exception as exc:
+                _raise_if_infrastructure_error(exc)
+                logger.warning(
+                    "DABench question id={} failed with {}: {}; continuing",
+                    q["id"],
+                    type(exc).__name__,
+                    exc,
+                )
+                response = ""
+                trace = _task_error_trace(exc)
+                error = str(exc)
             pred = {"id": q["id"], "response": response}
+            if error is not None:
+                pred["error"] = error
             predictions.append(pred)
             traces[qid] = trace
             input_tokens += _sum_trace_input_tokens(trace)

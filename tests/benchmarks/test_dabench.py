@@ -2,9 +2,13 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import httpx
 import pytest
+from openai import APIConnectionError
 
+from statigent.benchmarks.base import BenchmarkAdapter, RunPersister
 from statigent.benchmarks.dabench import DABenchAdapter
+from statigent.errors import StatigentModelError, StatigentParseError
 
 
 def _write_test_data(tmp_path: Path) -> Path:
@@ -80,6 +84,117 @@ class TestDABenchAdapter:
         assert run_result.predictions[0]["id"] == 0
         assert "mean_age" in run_result.predictions[0]["response"]
         assert "0" in run_result.traces
+
+    def test_run_accepts_comma_separated_task_ids(self, tmp_path: Path) -> None:
+        data_dir = _write_test_data(tmp_path)
+        adapter = DABenchAdapter(data_dir=data_dir)
+        adapter.prepare()
+        mock_agent = MagicMock()
+        mock_agent.run_analysis_for_eval.return_value = ("answer", [])
+
+        run_result = adapter.run(mock_agent, task_id="1, 0,1", skip=1, limit=1)
+
+        assert [prediction["id"] for prediction in run_result.predictions] == [0, 1]
+
+    def test_run_records_task_failure_and_continues(self, tmp_path: Path) -> None:
+        data_dir = _write_test_data(tmp_path)
+        adapter = DABenchAdapter(data_dir=data_dir)
+        adapter.prepare()
+
+        mock_agent = MagicMock()
+        mock_agent.run_analysis_for_eval.side_effect = [
+            StatigentParseError("bad structured output"),
+            ("@row_count[2]", [{"role": "assistant", "content": "ok"}]),
+        ]
+
+        persister = RunPersister(tmp_path, "agent", "model", "dabench")
+        run_result = adapter.run(mock_agent, persister=persister)
+
+        assert len(run_result.predictions) == 2
+        assert run_result.predictions[0] == {
+            "id": 0,
+            "response": "",
+            "error": "bad structured output",
+        }
+        assert run_result.predictions[1]["response"] == "@row_count[2]"
+        assert run_result.traces["0"][0]["name"] == "task_error"
+        assert persister.prediction_count == 2
+        assert len(BenchmarkAdapter.load_predictions(persister.output_dir)) == 2
+
+    def test_run_reraises_api_connection_error(self, tmp_path: Path) -> None:
+        data_dir = _write_test_data(tmp_path)
+        adapter = DABenchAdapter(data_dir=data_dir)
+        adapter.prepare()
+
+        mock_agent = MagicMock()
+        error = APIConnectionError(request=httpx.Request("POST", "https://api.test"))
+        mock_agent.run_analysis_for_eval.side_effect = error
+
+        with pytest.raises(APIConnectionError):
+            adapter.run(mock_agent)
+
+    def test_run_reraises_permission_error(self, tmp_path: Path) -> None:
+        data_dir = _write_test_data(tmp_path)
+        adapter = DABenchAdapter(data_dir=data_dir)
+        adapter.prepare()
+
+        mock_agent = MagicMock()
+        mock_agent.run_analysis_for_eval.side_effect = PermissionError("denied")
+
+        with pytest.raises(PermissionError, match="denied"):
+            adapter.run(mock_agent)
+
+    def test_run_reraises_wrapped_infrastructure_error(self, tmp_path: Path) -> None:
+        data_dir = _write_test_data(tmp_path)
+        adapter = DABenchAdapter(data_dir=data_dir)
+        adapter.prepare()
+
+        connection_error = APIConnectionError(
+            request=httpx.Request("POST", "https://api.test")
+        )
+        wrapped_error = RuntimeError("wrapped API failure")
+        wrapped_error.__cause__ = connection_error
+        mock_agent = MagicMock()
+        mock_agent.run_analysis_for_eval.side_effect = wrapped_error
+
+        with pytest.raises(RuntimeError, match="wrapped API failure"):
+            adapter.run(mock_agent)
+
+    def test_run_records_api_bad_request_and_continues(self, tmp_path: Path) -> None:
+        data_dir = _write_test_data(tmp_path)
+        adapter = DABenchAdapter(data_dir=data_dir)
+        adapter.prepare()
+
+        request = httpx.Request("POST", "https://api.test")
+        bad_request = httpx.HTTPStatusError(
+            "bad request",
+            request=request,
+            response=httpx.Response(400, request=request),
+        )
+        mock_agent = MagicMock()
+        mock_agent.run_analysis_for_eval.side_effect = [
+            bad_request,
+            ("@row_count[2]", [{"role": "assistant", "content": "ok"}]),
+        ]
+
+        result = adapter.run(mock_agent)
+
+        assert len(result.predictions) == 2
+        assert result.predictions[0]["error"] == "bad request"
+        assert result.predictions[1]["response"] == "@row_count[2]"
+
+    def test_run_reraises_model_configuration_error(self, tmp_path: Path) -> None:
+        data_dir = _write_test_data(tmp_path)
+        adapter = DABenchAdapter(data_dir=data_dir)
+        adapter.prepare()
+
+        mock_agent = MagicMock()
+        mock_agent.run_analysis_for_eval.side_effect = StatigentModelError(
+            "unknown model"
+        )
+
+        with pytest.raises(StatigentModelError, match="unknown model"):
+            adapter.run(mock_agent)
 
     def test_evaluate_scores_correct_predictions(self, tmp_path: Path) -> None:
         data_dir = _write_test_data(tmp_path)

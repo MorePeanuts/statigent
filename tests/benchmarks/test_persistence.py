@@ -12,11 +12,49 @@ from statigent.benchmarks.base import (
     DataScienceAgent,
     EvalResult,
     RunPersister,
+    merge_predictions,
+    parse_task_ids,
 )
 from statigent.errors import StatigentBenchmarkError
 
 
 class TestPersist:
+    def test_parse_task_ids_splits_trims_and_deduplicates(self) -> None:
+        assert parse_task_ids(" 1,2, 1, ,3 ") == ("1", "2", "3")
+
+    def test_merge_predictions_replaces_existing_tasks(self) -> None:
+        existing = [
+            {"id": 1, "response": "old one"},
+            {"id": 2, "response": "old two"},
+        ]
+        new = [
+            {"id": 2, "response": "new two"},
+            {"id": 3, "response": "new three"},
+        ]
+
+        assert merge_predictions(existing, new) == [
+            {"id": 1, "response": "old one"},
+            {"id": 2, "response": "new two"},
+            {"id": 3, "response": "new three"},
+        ]
+
+    def test_replace_predictions_rewrites_without_duplicates(
+        self, tmp_path: Path
+    ) -> None:
+        persister = RunPersister(tmp_path, "agent", "model", "bench")
+        persister.add_prediction({"id": 1, "response": "old"})
+        persister.add_prediction({"id": 1, "response": "new"})
+
+        predictions = merge_predictions(
+            BenchmarkAdapter.load_predictions(persister.output_dir), []
+        )
+        persister.replace_predictions(predictions)
+
+        assert BenchmarkAdapter.load_predictions(persister.output_dir) == [
+            {"id": 1, "response": "new"}
+        ]
+        assert persister.prediction_count == 1
+
     def test_creates_directory_structure(self, tmp_path: Path) -> None:
         result = EvalResult(
             score={"score": 0.85},
@@ -203,7 +241,7 @@ class TestPersist:
         assert meta["output_tokens"] == 10
         assert "total_tokens" not in meta
 
-    def test_meta_json_records_average_steps_from_trace_lines(
+    def test_meta_json_omits_obsolete_step_metrics(
         self, tmp_path: Path
     ) -> None:
         result = EvalResult(
@@ -230,9 +268,11 @@ class TestPersist:
         )
 
         meta = json.loads((output_dir / "meta.json").read_text())
-        assert meta["average_steps"] == 2.5
+        assert meta["completed_tasks"] == 2
+        assert "total_steps" not in meta
+        assert "average_steps" not in meta
 
-    def test_meta_json_counts_nested_trace_files_for_average_steps(
+    def test_meta_json_counts_nested_trace_files_as_completed_tasks(
         self, tmp_path: Path
     ) -> None:
         persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
@@ -258,9 +298,9 @@ class TestPersist:
         )
 
         meta = json.loads((persister.output_dir / "meta.json").read_text())
-        assert meta["total_steps"] == 2
         assert meta["completed_tasks"] == 1
-        assert meta["average_steps"] == 2.0
+        assert "total_steps" not in meta
+        assert "average_steps" not in meta
 
     def test_no_traces_dir_when_traces_none(self, tmp_path: Path) -> None:
         result = EvalResult(
@@ -658,7 +698,7 @@ class TestRunPersister:
         assert updated_meta["output_tokens"] == 18
         assert "total_tokens" not in updated_meta
 
-    def test_open_preserves_existing_steps_when_resuming(self, tmp_path: Path) -> None:
+    def test_open_removes_obsolete_steps_when_resuming(self, tmp_path: Path) -> None:
         persister = RunPersister(tmp_path, "test-agent", "test-model", "test-bench")
         meta_path = persister.output_dir / "meta.json"
         meta = json.loads(meta_path.read_text())
@@ -685,9 +725,9 @@ class TestRunPersister:
         )
 
         updated_meta = json.loads(meta_path.read_text())
-        assert updated_meta["total_steps"] == 7
         assert updated_meta["completed_tasks"] == 3
-        assert updated_meta["average_steps"] == 7 / 3
+        assert "total_steps" not in updated_meta
+        assert "average_steps" not in updated_meta
 
     def test_crash_recovery(self, tmp_path: Path) -> None:
         """Partial results survive interruption — no finalize() called."""

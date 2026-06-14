@@ -1,4 +1,4 @@
-"""Backfill step statistics in existing evaluation meta.json files.
+"""Remove obsolete trace-line step statistics from evaluation metadata.
 
 Usage:
     uv run python tools/backfill_average_steps.py evaluations
@@ -10,10 +10,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-
-def _trace_step_count(path: Path) -> int:
-    with open(path) as f:
-        return sum(1 for line in f if line.strip())
+from rich.console import Console
 
 
 def _find_run_dirs(path: Path) -> list[Path]:
@@ -24,26 +21,19 @@ def _find_run_dirs(path: Path) -> list[Path]:
 
 def _backfill_run(run_dir: Path) -> bool:
     meta_path = run_dir / "meta.json"
-    trace_dir = run_dir / "traces"
-    if not meta_path.is_file() or not trace_dir.is_dir():
+    if not meta_path.is_file():
         return False
 
-    trace_files = sorted(path for path in trace_dir.rglob("*.jsonl") if path.is_file())
-    completed_tasks = len(trace_files)
-    total_steps = sum(_trace_step_count(path) for path in trace_files)
-    average_steps = total_steps / completed_tasks if completed_tasks else 0.0
-
     meta: dict[str, Any] = json.loads(meta_path.read_text())
-    meta["total_steps"] = total_steps
-    meta["completed_tasks"] = completed_tasks
-    meta["average_steps"] = average_steps
+    meta.pop("total_steps", None)
+    meta.pop("average_steps", None)
     meta_path.write_text(json.dumps(meta, indent=2) + "\n")
     return True
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Backfill average step statistics for evaluation runs."
+        description="Remove obsolete step statistics from evaluation runs."
     )
     parser.add_argument(
         "path",
@@ -65,7 +55,7 @@ def main() -> None:
         else:
             skipped += 1
 
-    print(f"updated={updated} skipped={skipped}")
+    Console().print(f"updated={updated} skipped={skipped}")
 
 
 if __name__ == "__main__":
