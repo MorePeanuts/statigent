@@ -1,0 +1,359 @@
+{
+  "benchmark": "dabench",
+  "benchmark_label": "DA-Bench",
+  "source_root": "evaluations",
+  "schema_version": 1,
+  "notes": [
+    "Scores are stored as fractions and rendered as percentages by tools/render_experiment_table.py.",
+    "total_steps and average_steps use the Excel-compatible trace-event step count from evaluation traces.",
+    "Rows with missing evaluation scores are marked incomplete and keep comparable table fields null."
+  ],
+  "columns": [
+    "agent",
+    "llm",
+    "metrics.abq",
+    "metrics.psaq",
+    "metrics.uasq",
+    "inference.total_steps",
+    "inference.average_steps",
+    "inference.total_code_lines",
+    "inference.code_error_rate",
+    "inference.input_tokens",
+    "inference.output_tokens",
+    "metadata.date",
+    "metadata.source",
+    "metadata.link"
+  ],
+  "rows": [
+    {
+      "agent": "Data Interpreter",
+      "llm": "DeepSeek-v4-Flash",
+      "status": "complete",
+      "metrics": {
+        "abq": 0.677,
+        "psaq": 0.7255,
+        "uasq": 0.7281
+      },
+      "inference": {
+        "total_steps": 2671,
+        "average_steps": 11.517509727626459,
+        "total_code_lines": 8816,
+        "code_error_rate": 0.07481751824817519,
+        "input_tokens": 1177172,
+        "output_tokens": 193371
+      },
+      "source_run": {
+        "path": "evaluations/dabench-data_interpreter-ds4-flash-20260602T182230",
+        "run_id": "dabench-data_interpreter-ds4-flash-20260602T182230",
+        "trace_files": 257,
+        "trace_events": 2960,
+        "completed_tasks": 232
+      },
+      "metadata": {
+        "date": "2026-06-02",
+        "source": "evaluations",
+        "link": "evaluations/dabench-data_interpreter-ds4-flash-20260602T182230"
+      }
+    },
+    {
+      "agent": "DatawiseAgent",
+      "llm": "DeepSeek-v4-Flash",
+      "status": "complete",
+      "metrics": {
+        "abq": 0.7938,
+        "psaq": 0.8351,
+        "uasq": 0.8531
+      },
+      "inference": {
+        "total_steps": 2856,
+        "average_steps": 11.11284046692607,
+        "total_code_lines": 16796,
+        "code_error_rate": 0.5047003525264395,
+        "input_tokens": 1792375,
+        "output_tokens": 371897
+      },
+      "source_run": {
+        "path": "evaluations/dabench-datawise-ds4-flash-20260602T180736",
+        "run_id": "dabench-datawise-ds4-flash-20260602T180736",
+        "trace_files": 257,
+        "trace_events": 2856,
+        "completed_tasks": 257
+      },
+      "metadata": {
+        "date": "2026-06-02",
+        "source": "evaluations",
+        "link": "evaluations/dabench-datawise-ds4-flash-20260602T180736"
+      }
+    },
+    {
+      "agent": "LangChain (react)",
+      "llm": "DeepSeek-v4-Flash",
+      "status": "complete",
+      "metrics": {
+        "abq": 0.8171,
+        "psaq": 0.8581,
+        "uasq": 0.8531
+      },
+      "inference": {
+        "total_steps": 2322,
+        "average_steps": 9.035019455252918,
+        "total_code_lines": 9586,
+        "code_error_rate": 0.07213114754098361,
+        "input_tokens": 3148847,
+        "output_tokens": 242754
+      },
+      "source_run": {
+        "path": "evaluations/dabench-react-ds4-flash-20260524T233933",
+        "run_id": "dabench-react-ds4-flash-20260524T233933",
+        "trace_files": 257,
+        "trace_events": 2322,
+        "completed_tasks": 257
+      },
+      "metadata": {
+        "date": "2026-05-24",
+        "source": "evaluations",
+        "link": "evaluations/dabench-react-ds4-flash-20260524T233933"
+      }
+    },
+    {
+      "agent": "LangChain (react)",
+      "llm": "DeepSeek-v4-Pro",
+      "status": "complete",
+      "metrics": {
+        "abq": 0.8405,
+        "psaq": 0.8669,
+        "uasq": 0.8794
+      },
+      "inference": {
+        "total_steps": 2012,
+        "average_steps": 7.828793774319066,
+        "total_code_lines": 8271,
+        "code_error_rate": 0.0371900826446281,
+        "input_tokens": 2067169,
+        "output_tokens": 206860
+      },
+      "source_run": {
+        "path": "evaluations/dabench-react-ds4-pro-20260601T144422",
+        "run_id": "dabench-react-ds4-pro-20260601T144422",
+        "trace_files": 257,
+        "trace_events": 2012,
+        "completed_tasks": 257
+      },
+      "metadata": {
+        "date": "2026-06-01",
+        "source": "evaluations",
+        "link": "evaluations/dabench-react-ds4-pro-20260601T144422"
+      }
+    },
+    {
+      "agent": "LangChain (react)",
+      "llm": "Qwen3-8B",
+      "status": "complete",
+      "metrics": {
+        "abq": 0.6965,
+        "psaq": 0.7338,
+        "uasq": 0.7149
+      },
+      "inference": {
+        "total_steps": 2164,
+        "average_steps": 8.42023346303502,
+        "total_code_lines": 7618,
+        "code_error_rate": 0.5341506129597198,
+        "input_tokens": 5428701,
+        "output_tokens": 1417077
+      },
+      "source_run": {
+        "path": "evaluations/dabench-react-qwen3-8b-20260523T000710",
+        "run_id": "dabench-react-qwen3-8b-20260523T000710",
+        "trace_files": 257,
+        "trace_events": 2164,
+        "completed_tasks": 257
+      },
+      "metadata": {
+        "date": "2026-05-23",
+        "source": "evaluations",
+        "link": "evaluations/dabench-react-qwen3-8b-20260523T000710"
+      }
+    },
+    {
+      "agent": "LangChain (react)",
+      "llm": "Qwen3-14B",
+      "status": "incomplete",
+      "metrics": {
+        "abq": null,
+        "psaq": null,
+        "uasq": null
+      },
+      "inference": {
+        "total_steps": null,
+        "average_steps": null,
+        "total_code_lines": null,
+        "code_error_rate": null,
+        "input_tokens": null,
+        "output_tokens": null
+      },
+      "source_run": {
+        "path": "evaluations/dabench-react-qwen3-14b-20260601T144257",
+        "run_id": "dabench-react-qwen3-14b-20260601T144257",
+        "trace_files": 114,
+        "trace_events": 3866,
+        "completed_tasks": null
+      },
+      "metadata": {
+        "date": "2026-06-01",
+        "source": "evaluations",
+        "link": "evaluations/dabench-react-qwen3-14b-20260601T144257"
+      }
+    },
+    {
+      "agent": "LangChain (react)",
+      "llm": "Qwen3-32B",
+      "status": "complete",
+      "metrics": {
+        "abq": 0.7432,
+        "psaq": 0.7753,
+        "uasq": 0.75
+      },
+      "inference": {
+        "total_steps": 1614,
+        "average_steps": 6.280155642023346,
+        "total_code_lines": 3575,
+        "code_error_rate": 0.1639871382636656,
+        "input_tokens": 839380,
+        "output_tokens": 593961
+      },
+      "source_run": {
+        "path": "evaluations/dabench-react-qwen3-32b-20260524T170934",
+        "run_id": "dabench-react-qwen3-32b-20260524T170934",
+        "trace_files": 257,
+        "trace_events": 1614,
+        "completed_tasks": 257
+      },
+      "metadata": {
+        "date": "2026-05-24",
+        "source": "evaluations",
+        "link": "evaluations/dabench-react-qwen3-32b-20260524T170934"
+      }
+    },
+    {
+      "agent": "Statigent",
+      "llm": "DeepSeek-v4-Flash",
+      "status": "complete",
+      "metrics": {
+        "abq": 0.8482,
+        "psaq": 0.8873,
+        "uasq": 0.8904
+      },
+      "inference": {
+        "total_steps": 4316,
+        "average_steps": 16.79377431906615,
+        "total_code_lines": 5331,
+        "code_error_rate": 0.007444168734491315,
+        "input_tokens": 9698602,
+        "output_tokens": 610635
+      },
+      "source_run": {
+        "path": "evaluations/dabench-statigent-ds4-flash-20260602T121558",
+        "run_id": "dabench-statigent-ds4-flash-20260602T121558",
+        "trace_files": 257,
+        "trace_events": 4316,
+        "completed_tasks": 257
+      },
+      "metadata": {
+        "date": "2026-06-02",
+        "source": "evaluations",
+        "link": "evaluations/dabench-statigent-ds4-flash-20260602T121558"
+      }
+    },
+    {
+      "agent": "Statigent",
+      "llm": "DeepSeek-v4-Flash",
+      "status": "complete",
+      "metrics": {
+        "abq": 0.8599,
+        "psaq": 0.8909,
+        "uasq": 0.8969
+      },
+      "inference": {
+        "total_steps": 3942,
+        "average_steps": 15.33852140077821,
+        "total_code_lines": 4273,
+        "code_error_rate": 0.0,
+        "input_tokens": 8499401,
+        "output_tokens": 534874
+      },
+      "source_run": {
+        "path": "evaluations/dabench-statigent-ds4-flash-20260604T131507",
+        "run_id": "dabench-statigent-ds4-flash-20260604T131507",
+        "trace_files": 257,
+        "trace_events": 3942,
+        "completed_tasks": 257
+      },
+      "metadata": {
+        "date": "2026-06-04",
+        "source": "evaluations",
+        "link": "evaluations/dabench-statigent-ds4-flash-20260604T131507"
+      }
+    },
+    {
+      "agent": "Statigent",
+      "llm": "DeepSeek-v4-Flash",
+      "status": "complete",
+      "metrics": {
+        "abq": 0.8716,
+        "psaq": 0.9026,
+        "uasq": 0.8991
+      },
+      "inference": {
+        "total_steps": 3570,
+        "average_steps": 13.891050583657588,
+        "total_code_lines": 4263,
+        "code_error_rate": 0.008174386920980926,
+        "input_tokens": 3697182,
+        "output_tokens": 285995
+      },
+      "source_run": {
+        "path": "evaluations/dabench-statigent-ds4-flash-20260604T235511",
+        "run_id": "dabench-statigent-ds4-flash-20260604T235511",
+        "trace_files": 257,
+        "trace_events": 3570,
+        "completed_tasks": 257
+      },
+      "metadata": {
+        "date": "2026-06-04",
+        "source": "evaluations",
+        "link": "evaluations/dabench-statigent-ds4-flash-20260604T235511"
+      }
+    },
+    {
+      "agent": "Statigent",
+      "llm": "DeepSeek-v4-Pro",
+      "status": "complete",
+      "metrics": {
+        "abq": 0.9027,
+        "psaq": 0.9298,
+        "uasq": 0.9342
+      },
+      "inference": {
+        "total_steps": 2983,
+        "average_steps": 11.607003891050583,
+        "total_code_lines": 5463,
+        "code_error_rate": 0.002149326970381435,
+        "input_tokens": 5047708,
+        "output_tokens": 344332
+      },
+      "source_run": {
+        "path": "evaluations/dabench-statigent-ds4-pro-20260612T233947",
+        "run_id": "dabench-statigent-ds4-pro-20260612T233947",
+        "trace_files": 257,
+        "trace_events": 2983,
+        "completed_tasks": 257
+      },
+      "metadata": {
+        "date": "2026-06-12",
+        "source": "evaluations",
+        "link": "evaluations/dabench-statigent-ds4-pro-20260612T233947"
+      }
+    }
+  ]
+}
