@@ -1,0 +1,23 @@
+# Keep documentation, downloader code and source/checksum manifests in Git.
+# Downloaded benchmark datasets, upstream evaluation assets and local tool caches stay local.
+/dacomp-da/
+/dsbench/
+/infiagent-dabench/
+/tabarena-lite/
+/.tools/
+/.venv/
+/.xet-cache/
+/.logs/
+/metadata/active-jobs.json
+/metadata/background-status.json
+/metadata/download-status.json
+/metadata/*-errors.json
+/metadata/coordinator.pid
+/metadata/dacomp-transfer-progress.json
+/metadata/dacomp-large-transfer-progress.json
+/metadata/dacomp-large-worker.json
+/metadata/dacomp-resumable-progress.json
+/__pycache__/
+*.part
+*.xet-part
+*.tmp

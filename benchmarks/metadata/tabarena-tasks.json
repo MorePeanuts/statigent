@@ -1,0 +1,1481 @@
+[
+  {
+    "task_id": "363612",
+    "dataset_id": "46904",
+    "dataset_name": "airfoil_self_noise",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363612/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363612",
+        "bytes": 855,
+        "sha256": "c26d8e341657a760652396e218f49231e8dbed3ed04ec245d6fc958350598c9b"
+      },
+      {
+        "path": "tabarena-lite/raw/363612/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46904",
+        "bytes": 2075,
+        "sha256": "4860ecb2528d55b04c440ac16f3d5f9c5a2b5912f1fd17bd422fbd2dc756f658"
+      },
+      {
+        "path": "tabarena-lite/raw/363612/data.arff",
+        "url": "https://openml.org/data/v1/download/22125215/airfoil_self_noise.arff",
+        "bytes": 60856,
+        "sha256": "38da59c50f06bb5ece9c368d4bca1a29778255e94132c9bf04a3dfdb21123d94"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363612/splits-r0-f0.csv",
+    "split_sha256": "f8268b5bc32c43e5cdf318af6300cb529b247f6cc10a8fd3190534d4fc5f62a9"
+  },
+  {
+    "task_id": "363613",
+    "dataset_id": "46905",
+    "dataset_name": "Amazon_employee_access",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363613/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363613",
+        "bytes": 995,
+        "sha256": "f91668a8554d4db646563f6bec6011cb05ac37b1f0d745ee378d2d9f07aefa8a"
+      },
+      {
+        "path": "tabarena-lite/raw/363613/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46905",
+        "bytes": 2356,
+        "sha256": "3f50a630b579d8336d3c10aca2b803d963991edcc5d9a1ec5eb35c71eaad4212"
+      },
+      {
+        "path": "tabarena-lite/raw/363613/data.arff",
+        "url": "https://openml.org/data/v1/download/22125216/Amazon_employee_access.arff",
+        "bytes": 2215094,
+        "sha256": "6b6494c6d49b4e1f8bc850756a7fc95c52167658bd2b585d84af30f88edac5ae"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363613/splits-r0-f0.csv",
+    "split_sha256": "7d36e3798e131425a03279aa6bb0032604fbea3e6951aa7ec468e9c64fed56a9"
+  },
+  {
+    "task_id": "363614",
+    "dataset_id": "46906",
+    "dataset_name": "anneal",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363614/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363614",
+        "bytes": 970,
+        "sha256": "da8bdc7e26579956c74755f206bdac60343ae35015844fdaf80885afc6f8a9e0"
+      },
+      {
+        "path": "tabarena-lite/raw/363614/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46906",
+        "bytes": 2162,
+        "sha256": "869a024f4a4730880319c301efb17067734f5dc772a0000a9181fbde65e41804"
+      },
+      {
+        "path": "tabarena-lite/raw/363614/data.arff",
+        "url": "https://openml.org/data/v1/download/22125217/anneal.arff",
+        "bytes": 372064,
+        "sha256": "bc080e5b0de2b18a9e7cda6e1c0841a2ca1822b38ef06257028dcb3cf7cd6a47"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363614/splits-r0-f0.csv",
+    "split_sha256": "d4edf81bbc32e96cedb0a2b4d86285fffaefff53e3871fa620baf10e75dd700d"
+  },
+  {
+    "task_id": "363615",
+    "dataset_id": "46907",
+    "dataset_name": "Another-Dataset-on-used-Fiat-500",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363615/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363615",
+        "bytes": 853,
+        "sha256": "284552dc65f25719eb39b7f9fb66597711751ac40d37acd5477f9ab8b1103a17"
+      },
+      {
+        "path": "tabarena-lite/raw/363615/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46907",
+        "bytes": 2207,
+        "sha256": "79b880e49658adcac52debae13d5214fbeae37de1cab4e6cfe871b11daa9eb9f"
+      },
+      {
+        "path": "tabarena-lite/raw/363615/data.arff",
+        "url": "https://openml.org/data/v1/download/22125218/Another-Dataset-on-used-Fiat-500.arff",
+        "bytes": 99175,
+        "sha256": "0302b2efcdb5cb359c2cdec34c4630264f26857599fbbe19082fe349b863783b"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363615/splits-r0-f0.csv",
+    "split_sha256": "c346d77b668e74377fdb0686087e62de15c7ef35bfb54b34c22ceffbe9fed59b"
+  },
+  {
+    "task_id": "363616",
+    "dataset_id": "46908",
+    "dataset_name": "APSFailure",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363616/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363616",
+        "bytes": 991,
+        "sha256": "590deee9459863c1a2cc515a1baf9ce7146bc4c60178581150bbbe0192c60d0b"
+      },
+      {
+        "path": "tabarena-lite/raw/363616/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46908",
+        "bytes": 2383,
+        "sha256": "d18d6442b145f374672126ad807473b38700655c66b7a4e905d507c597fed4a1"
+      },
+      {
+        "path": "tabarena-lite/raw/363616/data.parquet",
+        "url": "https://data.openml.org/datasets/0004/46908/dataset_46908.pq",
+        "bytes": 35142382,
+        "sha256": "b43f3448ca335258b2b813adea6104daa8cd3e18d5ed62243da43065a4fb4504"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363616/splits-r0-f0.csv",
+    "split_sha256": "78131956d19cc57612da773f02d0f9885131a418603861b7ba53501ecc4a6fe4"
+  },
+  {
+    "task_id": "363618",
+    "dataset_id": "46910",
+    "dataset_name": "bank-marketing",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363618/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363618",
+        "bytes": 991,
+        "sha256": "37737805a715d775f5bef44a3818ca507feafc93b0d44555663f6eb230699c07"
+      },
+      {
+        "path": "tabarena-lite/raw/363618/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46910",
+        "bytes": 2420,
+        "sha256": "c458b4215621a086f8f1a07a7b8929ef9733dba8b3118de455130f538f8bc2d2"
+      },
+      {
+        "path": "tabarena-lite/raw/363618/data.arff",
+        "url": "https://openml.org/data/v1/download/22125221/bank-marketing.arff",
+        "bytes": 3233844,
+        "sha256": "fe21d939814fea2e4dab62b0ec5d3599667ef2ab3b9e46419a3f8833e9aa9cb1"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363618/splits-r0-f0.csv",
+    "split_sha256": "874ceff9248c1c75bcd6847f10a49d9e3265b5b3f0558fed4b4d54667d9b77d5"
+  },
+  {
+    "task_id": "363619",
+    "dataset_id": "46911",
+    "dataset_name": "Bank_Customer_Churn",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363619/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363619",
+        "bytes": 981,
+        "sha256": "eb6bc1083cd1a87e084cc8b34c2cb30249a37b7e5c5bc5d6fe3528998951707d"
+      },
+      {
+        "path": "tabarena-lite/raw/363619/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46911",
+        "bytes": 2183,
+        "sha256": "32e2ce0ca0a71ad63da92b137f0bab54fb84cee944b810e5c425f45bd439ede2"
+      },
+      {
+        "path": "tabarena-lite/raw/363619/data.arff",
+        "url": "https://openml.org/data/v1/download/22125222/Bank_Customer_Churn.arff",
+        "bytes": 482669,
+        "sha256": "88fcfc1f7709a6d914a1c908b4bedfd3fe51ba81ef9bf12207d1fed087d736ed"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363619/splits-r0-f0.csv",
+    "split_sha256": "ddad0090e18c3c264db553bdece5cfefb6a785bb420d1c88ad9155f41da07539"
+  },
+  {
+    "task_id": "363620",
+    "dataset_id": "46912",
+    "dataset_name": "Bioresponse",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363620/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363620",
+        "bytes": 991,
+        "sha256": "dc2e00ba3d3c3ac57ac24a71e1b1a48a99e5489e52837f9dee87949812c93ddb"
+      },
+      {
+        "path": "tabarena-lite/raw/363620/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46912",
+        "bytes": 2256,
+        "sha256": "35f60fa87cd879202b9bf4ca970733001088d567df28ef2f83dc41a46cd893bb"
+      },
+      {
+        "path": "tabarena-lite/raw/363620/data.arff",
+        "url": "https://openml.org/data/v1/download/22125223/Bioresponse.arff",
+        "bytes": 23970797,
+        "sha256": "cae8d700c08b6cf1334e79d0be8e2f3c925347b1921b27aa55242e8fd6cdb77e"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363620/splits-r0-f0.csv",
+    "split_sha256": "2a45502e29009cca5fb8366b786d67dfb26a0766bf1d33ee89364e7954d18eb0"
+  },
+  {
+    "task_id": "363621",
+    "dataset_id": "46913",
+    "dataset_name": "blood-transfusion-service-center",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363621/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363621",
+        "bytes": 1012,
+        "sha256": "c409777eae9e8bad2cdf1dc115421ba605e9a6bd1d5575c2ad104a91bc7dad61"
+      },
+      {
+        "path": "tabarena-lite/raw/363621/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46913",
+        "bytes": 2354,
+        "sha256": "4b922b3596aac64603c20a8c579b2139e3258c5fcec819037c9bda55f4652113"
+      },
+      {
+        "path": "tabarena-lite/raw/363621/data.arff",
+        "url": "https://openml.org/data/v1/download/22125224/blood-transfusion-service-center.arff",
+        "bytes": 12921,
+        "sha256": "80945cb11b502743c86236bb60dce8ca5b6ec53732a2d3be59838eb3d3561488"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363621/splits-r0-f0.csv",
+    "split_sha256": "13257b054a828af5051139cf8c2d22517b53bf7eaaa781ad3df4a537d8c753fe"
+  },
+  {
+    "task_id": "363623",
+    "dataset_id": "46915",
+    "dataset_name": "churn",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363623/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363623",
+        "bytes": 977,
+        "sha256": "1f5cd9f89b77e5b5c4f6ea8e0a37b5d73661db737470633b47b8e0fb60c54a63"
+      },
+      {
+        "path": "tabarena-lite/raw/363623/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46915",
+        "bytes": 2294,
+        "sha256": "8edb52ca04014f28e4f975be488df259ce42b4e3cb8a8edec9bc0c280b37f881"
+      },
+      {
+        "path": "tabarena-lite/raw/363623/data.arff",
+        "url": "https://openml.org/data/v1/download/22125226/churn.arff",
+        "bytes": 475249,
+        "sha256": "87bc2dd76e08b5bffa37fdd97d3d418b41036fec3d4cbf7e31377542b8e85fb6"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363623/splits-r0-f0.csv",
+    "split_sha256": "29a332221f8b46c7ec757219233010a1c3059db2b831fd6b4c67e9c4776bb076"
+  },
+  {
+    "task_id": "363624",
+    "dataset_id": "46916",
+    "dataset_name": "coil2000_insurance_policies",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363624/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363624",
+        "bytes": 1000,
+        "sha256": "db0ae2124d9923aa464d9e560841200db45bdbb1fcdc73f4f1e26f9c958b4f15"
+      },
+      {
+        "path": "tabarena-lite/raw/363624/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46916",
+        "bytes": 2543,
+        "sha256": "277b0c91aa34902c7844918ab05e97c92e6210ea3665d7245f546a4a36d859ae"
+      },
+      {
+        "path": "tabarena-lite/raw/363624/data.arff",
+        "url": "https://openml.org/data/v1/download/22125227/coil2000_insurance_policies.arff",
+        "bytes": 2357766,
+        "sha256": "a541ed40161a5d07b2c3ca6badd6eb5711a37ed52f1720417d5d4d0274288947"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363624/splits-r0-f0.csv",
+    "split_sha256": "cc84efccb36a4754dc3102687e5f6d0d7c0293e8274f5b6d97d26d9baa005b3c"
+  },
+  {
+    "task_id": "363625",
+    "dataset_id": "46917",
+    "dataset_name": "concrete_compressive_strength",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363625/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363625",
+        "bytes": 872,
+        "sha256": "0752e3a393a22456d0fd295367def4f5bda0aef1aa48c43b50739a003e2352e0"
+      },
+      {
+        "path": "tabarena-lite/raw/363625/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46917",
+        "bytes": 2242,
+        "sha256": "36a6f0d97786bd9f7d7006b0e43d15771b8ff82856112d163d3c6b561199ff0a"
+      },
+      {
+        "path": "tabarena-lite/raw/363625/data.arff",
+        "url": "https://openml.org/data/v1/download/22125228/concrete_compressive_strength.arff",
+        "bytes": 59971,
+        "sha256": "f07503a36aa142c53a9cdee05208bf6daf3d620adc2e1f4b10732f82c9bcceea"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363625/splits-r0-f0.csv",
+    "split_sha256": "983b4227495aab296918fd368e672244b06403f660cc50bd7ef2db7edb7f375a"
+  },
+  {
+    "task_id": "363626",
+    "dataset_id": "46918",
+    "dataset_name": "credit-g",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363626/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363626",
+        "bytes": 985,
+        "sha256": "7eaf14d71fd06cc4016c54302d03b69d5c3a35e161d989cc30346d7cfacc2c64"
+      },
+      {
+        "path": "tabarena-lite/raw/363626/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46918",
+        "bytes": 2095,
+        "sha256": "6c9ead02448e1aa0a8d6142fdbfd128a23bd02a8897850f5e534ca3e83d9a974"
+      },
+      {
+        "path": "tabarena-lite/raw/363626/data.arff",
+        "url": "https://openml.org/data/v1/download/22125229/credit-g.arff",
+        "bytes": 242375,
+        "sha256": "6149f09b7aee6fb8573afa4abe24113656c4a18a0f15568a386ff703611e8d84"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363626/splits-r0-f0.csv",
+    "split_sha256": "ac524f55695c94b16560465a21f211360c3580c9407acc191dda8fd21f47ca18"
+  },
+  {
+    "task_id": "363627",
+    "dataset_id": "46919",
+    "dataset_name": "credit_card_clients_default",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363627/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363627",
+        "bytes": 1009,
+        "sha256": "8cb0e0085e8b25f0a0505f0825e57d0c29a98bc0c818838b535d8deb468c5f86"
+      },
+      {
+        "path": "tabarena-lite/raw/363627/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46919",
+        "bytes": 2459,
+        "sha256": "cd16e248707366f06c79b9e0c1ea12f276917ae3713f96bb8598fa054c0cd8d9"
+      },
+      {
+        "path": "tabarena-lite/raw/363627/data.arff",
+        "url": "https://openml.org/data/v1/download/22125230/credit_card_clients_default.arff",
+        "bytes": 2736789,
+        "sha256": "9cabdf980c8067dd2d56d05f99a17fc44b1c3220e3dd7c167c15c9a2c585b493"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363627/splits-r0-f0.csv",
+    "split_sha256": "31e9f4fb5cb3e6ae981d4b78b79667f392c5dfeef8a5a51f8f28279c8127447b"
+  },
+  {
+    "task_id": "363628",
+    "dataset_id": "46920",
+    "dataset_name": "customer_satisfaction_in_airline",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363628/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363628",
+        "bytes": 1001,
+        "sha256": "c763fdb62d453f4e48ee70f13a43e34843e3fe0e1e5be168b6bca0e9ed399f15"
+      },
+      {
+        "path": "tabarena-lite/raw/363628/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46920",
+        "bytes": 2251,
+        "sha256": "9b66b61e47eaf8d4aa2c19fde77eee1b330e7315bbbac78083bab6989838cb56"
+      },
+      {
+        "path": "tabarena-lite/raw/363628/data.arff",
+        "url": "https://openml.org/data/v1/download/22125231/customer_satisfaction_in_airline.arff",
+        "bytes": 12501030,
+        "sha256": "89caa5fa6151c3f715b6783fc759a9222940c91af1899f8be97045e6d9c54707"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363628/splits-r0-f0.csv",
+    "split_sha256": "9a92b3c2397f10e2cf271f28d2ed14283ba32f848c23115d36fe16228574f9f3"
+  },
+  {
+    "task_id": "363629",
+    "dataset_id": "46921",
+    "dataset_name": "diabetes",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363629/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363629",
+        "bytes": 990,
+        "sha256": "ba2300bd55fe0e88197f00e075831571f4e18ce6979aa5608fa95d019046e803"
+      },
+      {
+        "path": "tabarena-lite/raw/363629/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46921",
+        "bytes": 2488,
+        "sha256": "fb44f16d3c6f2223292759e8c2de9eb08b1f4bee03fdf582f6f069032a038e67"
+      },
+      {
+        "path": "tabarena-lite/raw/363629/data.arff",
+        "url": "https://openml.org/data/v1/download/22125232/diabetes.arff",
+        "bytes": 25945,
+        "sha256": "a6e55bf62d63d74807c5f8b6ee73d934469330bb8233ee0aa70b03d0f9ded7d9"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363629/splits-r0-f0.csv",
+    "split_sha256": "02289b9a1f4e333563bdfccea629b932e10461365f3d069e507da118e129561b"
+  },
+  {
+    "task_id": "363630",
+    "dataset_id": "46922",
+    "dataset_name": "Diabetes130US",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363630/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363630",
+        "bytes": 986,
+        "sha256": "a47e87f9e5beb2f9ac1dc75b28b76d8641ab3e04c312536e5fab63a3153e4686"
+      },
+      {
+        "path": "tabarena-lite/raw/363630/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46922",
+        "bytes": 3129,
+        "sha256": "69a1e1f8068e353561ad584f2afed0ad69199c142d4c04c32af694ca02f1e8f7"
+      },
+      {
+        "path": "tabarena-lite/raw/363630/data.arff",
+        "url": "https://openml.org/data/v1/download/22125233/Diabetes130US.arff",
+        "bytes": 15535457,
+        "sha256": "74d17c07b833dc4c19efec35b42985dc18796581575b65f2bf6b3c09e3246420"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363630/splits-r0-f0.csv",
+    "split_sha256": "0b2e2d2809bf8d39c0d7e728090c0b7e382c88986be38aec44290e630756717e"
+  },
+  {
+    "task_id": "363631",
+    "dataset_id": "46923",
+    "dataset_name": "diamonds",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363631/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363631",
+        "bytes": 829,
+        "sha256": "adabd070c57b594148a869298fd44093f73d3a73e9cb285c759bd06471ab80a7"
+      },
+      {
+        "path": "tabarena-lite/raw/363631/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46923",
+        "bytes": 2125,
+        "sha256": "5637a3fa5c2b9dfe0a64420e83147b59fd67484bc85b1b4f0b7a6ea8915d66e2"
+      },
+      {
+        "path": "tabarena-lite/raw/363631/data.arff",
+        "url": "https://openml.org/data/v1/download/22125234/diamonds.arff",
+        "bytes": 2597441,
+        "sha256": "683a38a3d752c7fe7585e190342335e0025489d86707b7ddf948cd95c4d4abea"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363631/splits-r0-f0.csv",
+    "split_sha256": "6f27c3b3b962a8959f9dcfff76db2c54f827bc1d2cf06412024a957d04530bda"
+  },
+  {
+    "task_id": "363632",
+    "dataset_id": "46924",
+    "dataset_name": "E-CommereShippingData",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363632/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363632",
+        "bytes": 989,
+        "sha256": "5ec7d34b2635d9bf0425d932d8f29073da8d8c38c3a537bb1477c242042e4473"
+      },
+      {
+        "path": "tabarena-lite/raw/363632/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46924",
+        "bytes": 2473,
+        "sha256": "e8dfbc1c1b22d1cde5a3ca07f4590d251c1c18445cf002cd8946e5b883b71303"
+      },
+      {
+        "path": "tabarena-lite/raw/363632/data.arff",
+        "url": "https://openml.org/data/v1/download/22125235/E-CommereShippingData.arff",
+        "bytes": 393860,
+        "sha256": "2cfe74fbc7ff64647d1cd1b20f0e527d745a08038f4b7f4b7f96ac73b6f2d48c"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363632/splits-r0-f0.csv",
+    "split_sha256": "da997cdc48b7eb7b5e4c0d486cd47ecbec56fd8e2110efec916e45914dccb1cf"
+  },
+  {
+    "task_id": "363671",
+    "dataset_id": "46927",
+    "dataset_name": "Fitness_Club",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363671/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363671",
+        "bytes": 977,
+        "sha256": "5e72c59f9941da1f5535f8a18a5b28292ece226e8183e81485fcadccdcb12fc8"
+      },
+      {
+        "path": "tabarena-lite/raw/363671/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46927",
+        "bytes": 2504,
+        "sha256": "9d1e7c98ee4aa40332be2b5158722cd02f064c6d12363de1e4b49ff9633c5c90"
+      },
+      {
+        "path": "tabarena-lite/raw/363671/data.arff",
+        "url": "https://openml.org/data/v1/download/22125238/Fitness_Club.arff",
+        "bytes": 43343,
+        "sha256": "890a327d1e00a1c98beed59557914196321f7c02693e9e93f48207d72fe14b40"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363671/splits-r0-f0.csv",
+    "split_sha256": "5dd4b87d3d6e5daf9adffd2aaca793e46a0c297f9f5674143efd3490e7698181"
+  },
+  {
+    "task_id": "363672",
+    "dataset_id": "46928",
+    "dataset_name": "Food_Delivery_Time",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363672/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363672",
+        "bytes": 849,
+        "sha256": "68e863ebd7d59daa94e297fbbc33372fc2bc78e19b412d1a40054b51587fd2e0"
+      },
+      {
+        "path": "tabarena-lite/raw/363672/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46928",
+        "bytes": 2463,
+        "sha256": "32f062019bd24a3020b5807535c8afdb3868431456c0dac3ba8eb42f60732b2b"
+      },
+      {
+        "path": "tabarena-lite/raw/363672/data.arff",
+        "url": "https://openml.org/data/v1/download/22125239/Food_Delivery_Time.arff",
+        "bytes": 3895348,
+        "sha256": "f0e25d6bd98cf3206d38c169bc0f284395f1778c897b6c01dab1a30b9dac2e1f"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363672/splits-r0-f0.csv",
+    "split_sha256": "86a8227105126fcce1b2da5c5cd4f874b5de284b729def0bc3f98e199dd072db"
+  },
+  {
+    "task_id": "363673",
+    "dataset_id": "46929",
+    "dataset_name": "GiveMeSomeCredit",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363673/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363673",
+        "bytes": 1002,
+        "sha256": "7c16168eaf004108cb442c467ccf431bab955fa5ce715ad3352d7dfd48566af9"
+      },
+      {
+        "path": "tabarena-lite/raw/363673/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46929",
+        "bytes": 2102,
+        "sha256": "7b03d2cc5e674264aa28de9dc084174e5355c4e3211adad9e79231453b4eb1fc"
+      },
+      {
+        "path": "tabarena-lite/raw/363673/data.arff",
+        "url": "https://openml.org/data/v1/download/22125240/GiveMeSomeCredit.arff",
+        "bytes": 7226796,
+        "sha256": "92c897782a049feef5de124c1e5b82a61ed9373aa7e78565f03aea3aa3be21da"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363673/splits-r0-f0.csv",
+    "split_sha256": "b65b3ac780575221980485db449a57de807fb78b6c630c48916cbe2edc07d038"
+  },
+  {
+    "task_id": "363674",
+    "dataset_id": "46930",
+    "dataset_name": "hazelnut-spread-contaminant-detection",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363674/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363674",
+        "bytes": 1006,
+        "sha256": "d6a9c01e5bdec1fd35ca31c5f10b69545668129764c7b46c15b9e712cb223e57"
+      },
+      {
+        "path": "tabarena-lite/raw/363674/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46930",
+        "bytes": 3098,
+        "sha256": "2f01d456beb7e08a34257c096411694618107885f2adafcbe7d9296746c86a89"
+      },
+      {
+        "path": "tabarena-lite/raw/363674/data.arff",
+        "url": "https://openml.org/data/v1/download/22125241/hazelnut-spread-contaminant-detection.arff",
+        "bytes": 686161,
+        "sha256": "79b224319a1ca21284aae19a97c42adc1eccabf292c82c3b66f40f5d87028897"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363674/splits-r0-f0.csv",
+    "split_sha256": "e161b3bf6a8a4c109e1917505552e9db40147e28babdae3873ae01b672268d28"
+  },
+  {
+    "task_id": "363675",
+    "dataset_id": "46931",
+    "dataset_name": "healthcare_insurance_expenses",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363675/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363675",
+        "bytes": 852,
+        "sha256": "b277fa970f2df9bf6b3bf886633db9beacc309e2c9d858275761c5af331e6da7"
+      },
+      {
+        "path": "tabarena-lite/raw/363675/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46931",
+        "bytes": 2223,
+        "sha256": "4df95c393178e913e52601aee1dbfae8966bbfdff5fdb96a5192ec00d6d88b37"
+      },
+      {
+        "path": "tabarena-lite/raw/363675/data.arff",
+        "url": "https://openml.org/data/v1/download/22125242/healthcare_insurance_expenses.arff",
+        "bytes": 55691,
+        "sha256": "965d110f8c9a4b22ff49e7faf8d6705898517e6c2f01428654f0c5c7c6781306"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363675/splits-r0-f0.csv",
+    "split_sha256": "e11d12d71ca26d6ab5bbde478cb4863eaee8e050f45f6d0ed48af08425d66e2d"
+  },
+  {
+    "task_id": "363676",
+    "dataset_id": "46932",
+    "dataset_name": "heloc",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363676/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363676",
+        "bytes": 977,
+        "sha256": "5227e113d1bc0795be3b34da3bac93585f62dbe080f3d07cc3a8cac5692f9fa5"
+      },
+      {
+        "path": "tabarena-lite/raw/363676/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46932",
+        "bytes": 2254,
+        "sha256": "f9bbcc8ba6c6b95533f0996a28a5340d17ec372052b5f0132929705dae5d41ab"
+      },
+      {
+        "path": "tabarena-lite/raw/363676/data.arff",
+        "url": "https://openml.org/data/v1/download/22125243/heloc.arff",
+        "bytes": 669721,
+        "sha256": "6041d6e0c6a92515614be3631771e3bf1e575db5b964a67ebd419297bafaea7d"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363676/splits-r0-f0.csv",
+    "split_sha256": "8c9a7e4642b332ca6c955b032992a0f9439bd010639b794a11d5cb6b2b2d8d92"
+  },
+  {
+    "task_id": "363677",
+    "dataset_id": "46933",
+    "dataset_name": "hiva_agnostic",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363677/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363677",
+        "bytes": 986,
+        "sha256": "22bd4ba9bd86410013a5040279353ecea4d96c565d0fef76f1b562711afe1c8f"
+      },
+      {
+        "path": "tabarena-lite/raw/363677/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46933",
+        "bytes": 2295,
+        "sha256": "0731d8aa6571c12bdbb6abe8ca65b53b56431998ef56d2f039a7acd142264d1c"
+      },
+      {
+        "path": "tabarena-lite/raw/363677/data.arff",
+        "url": "https://openml.org/data/v1/download/22125244/hiva_agnostic.arff",
+        "bytes": 12528968,
+        "sha256": "d142f78b4212165f2c23369664b145745903cf8c5cde73c7c5e1b7a6a1d52d5e"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363677/splits-r0-f0.csv",
+    "split_sha256": "11e3f23e13b2d99b99559d071d58241a64bf00b0bb6da25e3309f387fc285c3e"
+  },
+  {
+    "task_id": "363678",
+    "dataset_id": "46934",
+    "dataset_name": "houses",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363678/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363678",
+        "bytes": 840,
+        "sha256": "2dd47b84f0e38b5166e9214f8661b9b5d2368df36354a49db5db8e05af9f4996"
+      },
+      {
+        "path": "tabarena-lite/raw/363678/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46934",
+        "bytes": 2433,
+        "sha256": "d4d44e8d5af4101423bd0303561fd7887c705658cb451c022a39108fe9e2c72d"
+      },
+      {
+        "path": "tabarena-lite/raw/363678/data.arff",
+        "url": "https://openml.org/data/v1/download/22125245/houses.arff",
+        "bytes": 1446365,
+        "sha256": "c71f44ba2522f61a8ba1918c220074be4a771e1c8c8c07d031e98368f4f94c6c"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363678/splits-r0-f0.csv",
+    "split_sha256": "fcea3fff0a146877ea36c5a585e5b57bbac1d2c5e33f837ed5452dafbb240466"
+  },
+  {
+    "task_id": "363679",
+    "dataset_id": "46935",
+    "dataset_name": "HR_Analytics_Job_Change_of_Data_Scientists",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363679/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363679",
+        "bytes": 1018,
+        "sha256": "852133cb245a5fd14a4fc2838adef1f8f71ea0753db824cc5113bd9e0c04b0db"
+      },
+      {
+        "path": "tabarena-lite/raw/363679/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46935",
+        "bytes": 2359,
+        "sha256": "c4216b7619f3687d1be2cf7791e92844fda490f830874804a5878fdc270282fa"
+      },
+      {
+        "path": "tabarena-lite/raw/363679/data.arff",
+        "url": "https://openml.org/data/v1/download/22125246/HR_Analytics_Job_Change_of_Data_Scientists.arff",
+        "bytes": 1952388,
+        "sha256": "3103d37cf2da26fca6ea890a52d18db30c56e1d0f8da76438489218fbb57fd63"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363679/splits-r0-f0.csv",
+    "split_sha256": "64c69cdce9508859b507ccdab26e1b704a7877a0849747773779afcdd29a6d0b"
+  },
+  {
+    "task_id": "363681",
+    "dataset_id": "46937",
+    "dataset_name": "in_vehicle_coupon_recommendation",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363681/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363681",
+        "bytes": 1001,
+        "sha256": "84bcd33f27deea9d7a8eb9a3cd6967d876fce243d58be89ce899ba9ea964c245"
+      },
+      {
+        "path": "tabarena-lite/raw/363681/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46937",
+        "bytes": 2586,
+        "sha256": "d32ccd8234bf688d19cb03499cf8af23138595d8a2429fb161b0b59124bdb6d9"
+      },
+      {
+        "path": "tabarena-lite/raw/363681/data.arff",
+        "url": "https://openml.org/data/v1/download/22125248/in_vehicle_coupon_recommendation.arff",
+        "bytes": 2272860,
+        "sha256": "a1f67b534b8e91e8b300e0b5350094dda0fa2f7c20382538bab201d1f163e261"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363681/splits-r0-f0.csv",
+    "split_sha256": "c6648262cf0446441e7e5283462170cd7a87681b9c9a65763e798564a65300fb"
+  },
+  {
+    "task_id": "363682",
+    "dataset_id": "46938",
+    "dataset_name": "Is-this-a-good-customer",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363682/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363682",
+        "bytes": 997,
+        "sha256": "bc471c1a2633e2560b68e1c77e9552072517b3ae3460217dbeb44e1b5d590144"
+      },
+      {
+        "path": "tabarena-lite/raw/363682/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46938",
+        "bytes": 2165,
+        "sha256": "0c4a2007a49d3c2f966d7e97c480790a69d3708721e51a52680acd7d18c35e57"
+      },
+      {
+        "path": "tabarena-lite/raw/363682/data.arff",
+        "url": "https://openml.org/data/v1/download/22125249/Is-this-a-good-customer.arff",
+        "bytes": 150528,
+        "sha256": "07410aa7b4cd51d48f1b675e43ec8db330156c7e3857ba33afc4c72723401de0"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363682/splits-r0-f0.csv",
+    "split_sha256": "4886dc67f3e4d4784c8e48ac0915417436391b9997a4e52b9cb29cd6e0822690"
+  },
+  {
+    "task_id": "363683",
+    "dataset_id": "46939",
+    "dataset_name": "kddcup09_appetency",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363683/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363683",
+        "bytes": 984,
+        "sha256": "3c320fe1b2c626c3b4deaecb17e563baad37986fe5bdd8f46bcbdde70165ce67"
+      },
+      {
+        "path": "tabarena-lite/raw/363683/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46939",
+        "bytes": 2617,
+        "sha256": "e7b794cc4b46a7d9c8f5cb6b90d7cb5caabfbb4217c45de3852a9ddde739ea26"
+      },
+      {
+        "path": "tabarena-lite/raw/363683/data.arff",
+        "url": "https://openml.org/data/v1/download/22125250/kddcup09_appetency.arff",
+        "bytes": 37428824,
+        "sha256": "91230b3ebf0a8ec22f937382300a63325595a5be7abe9a053a04a7b76f76fa8a"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363683/splits-r0-f0.csv",
+    "split_sha256": "98dbce370e0dd461749e260aa4753a07a9aa3c9f3ce40e2a16d495fb575d9ff9"
+  },
+  {
+    "task_id": "363684",
+    "dataset_id": "46940",
+    "dataset_name": "Marketing_Campaign",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363684/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363684",
+        "bytes": 983,
+        "sha256": "6e7670db6cd8b05ccdd59fa0914f46020bf815f2684e930f6a65f69e6fcf32a3"
+      },
+      {
+        "path": "tabarena-lite/raw/363684/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46940",
+        "bytes": 2160,
+        "sha256": "c3b7f129c3a4805fc0b95fda0691eb421ed8bb81f38aaf29af0965160ba171be"
+      },
+      {
+        "path": "tabarena-lite/raw/363684/data.arff",
+        "url": "https://openml.org/data/v1/download/22125251/Marketing_Campaign.arff",
+        "bytes": 204688,
+        "sha256": "9efadbe4dacefaca7064052d95b0306b0614a6dfe71a951cabbd6fbe576f397d"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363684/splits-r0-f0.csv",
+    "split_sha256": "9d907a4015c2288416c350c58c43afc9b3f1f903291f70e5220a88470f1d687d"
+  },
+  {
+    "task_id": "363685",
+    "dataset_id": "46941",
+    "dataset_name": "maternal_health_risk",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363685/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363685",
+        "bytes": 986,
+        "sha256": "a0f5f0f83bca48f510b6b5113a72ea662ea4ddcd7986fb4a2a19a1a506aadd79"
+      },
+      {
+        "path": "tabarena-lite/raw/363685/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46941",
+        "bytes": 2497,
+        "sha256": "c0d11a1f69566d87bd806e6bcdfdd9d414cd27205535a3fe9236a4f025ea016d"
+      },
+      {
+        "path": "tabarena-lite/raw/363685/data.arff",
+        "url": "https://openml.org/data/v1/download/22125252/maternal_health_risk.arff",
+        "bytes": 35538,
+        "sha256": "d1152b35892f1d5e4f940ad8043059de00c2abe2e2e2865df394d95e793af2a9"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363685/splits-r0-f0.csv",
+    "split_sha256": "fd7e02e24883e26b9046b43fa77633cc788e2d42cc126931f764294af23d606c"
+  },
+  {
+    "task_id": "363686",
+    "dataset_id": "46942",
+    "dataset_name": "miami_housing",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363686/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363686",
+        "bytes": 837,
+        "sha256": "60c99a15226b80dd5375d642f9afcefc38945b0aa15e95e3a1b335042597aa97"
+      },
+      {
+        "path": "tabarena-lite/raw/363686/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46942",
+        "bytes": 2359,
+        "sha256": "5499496bfb1e3633663b244b252a023cb0fe953881a1ef9e186844cd34cd907e"
+      },
+      {
+        "path": "tabarena-lite/raw/363686/data.arff",
+        "url": "https://openml.org/data/v1/download/22125253/miami_housing.arff",
+        "bytes": 1675365,
+        "sha256": "987865f813e493f32bcc21a5891b5f4830d632f409487247c74bb7ca40e34096"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363686/splits-r0-f0.csv",
+    "split_sha256": "404d81fb9b81aca55dd2cd77d38a67906f98882804814a9acb16d301d6d4febf"
+  },
+  {
+    "task_id": "363689",
+    "dataset_id": "46969",
+    "dataset_name": "NATICUSdroid",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363689/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363689",
+        "bytes": 976,
+        "sha256": "2e2bc4583afa00fe6ba7ee17ecc3ae9f680fa311d260d24953a57379248852ab"
+      },
+      {
+        "path": "tabarena-lite/raw/363689/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46969",
+        "bytes": 2468,
+        "sha256": "7c8f782c13d83489aa01888f634e6ccc78c5308587b584755dec670e486fbf3d"
+      },
+      {
+        "path": "tabarena-lite/raw/363689/data.arff",
+        "url": "https://openml.org/data/v1/download/22125386/NATICUSdroid.arff",
+        "bytes": 1319985,
+        "sha256": "b2fd768e817907d8300e89d05522daae2df254152e5ea82df0101b0a3a21c825"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363689/splits-r0-f0.csv",
+    "split_sha256": "6bc9a6243068fc985ffbc2d037f6b30308c13539462f1d2048d773d94b167a1d"
+  },
+  {
+    "task_id": "363691",
+    "dataset_id": "46947",
+    "dataset_name": "online_shoppers_intention",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363691/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363691",
+        "bytes": 989,
+        "sha256": "7381ecb6d055c4923f796fd6ec52eb4f76211149bf763dd782d1844dbac7b8c8"
+      },
+      {
+        "path": "tabarena-lite/raw/363691/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46947",
+        "bytes": 2374,
+        "sha256": "54b4acbe395b85dbaee7db0b3c7be38c3648257c2033fdd380ddd29b3840d9c8"
+      },
+      {
+        "path": "tabarena-lite/raw/363691/data.arff",
+        "url": "https://openml.org/data/v1/download/22125258/online_shoppers_intention.arff",
+        "bytes": 1158800,
+        "sha256": "db34ad0b4506b39b6ff10a18b5d649d6dc09cc41d6551ad7da96757c38534706"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363691/splits-r0-f0.csv",
+    "split_sha256": "f6cff98194bb748ecca9a0ed6f86b1e880706c3fffd3b3ae450bdb6f8f64d1d7"
+  },
+  {
+    "task_id": "363693",
+    "dataset_id": "46949",
+    "dataset_name": "physiochemical_protein",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363693/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363693",
+        "bytes": 850,
+        "sha256": "18a42451d0493498ba73e3e4ee097e708018c5b44fa779d4ec805572af477664"
+      },
+      {
+        "path": "tabarena-lite/raw/363693/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46949",
+        "bytes": 2103,
+        "sha256": "aa82a6f4893974b3e2e0f5fdf4ce997a783a0e95552dd1c74de76d8f23108763"
+      },
+      {
+        "path": "tabarena-lite/raw/363693/data.arff",
+        "url": "https://openml.org/data/v1/download/22125260/physiochemical_protein.arff",
+        "bytes": 3628251,
+        "sha256": "373254f68ef06d9332f8e88256818d055f55e086dfe544fa4b96aba529036b18"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363693/splits-r0-f0.csv",
+    "split_sha256": "bcecee1667eff2c5345bf6c307087bcae534a14a2d74874e861e2db1947c1d24"
+  },
+  {
+    "task_id": "363694",
+    "dataset_id": "46950",
+    "dataset_name": "polish_companies_bankruptcy",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363694/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363694",
+        "bytes": 1000,
+        "sha256": "7486f9365f20f0ab8c24606d2d123b0896d1534af0a787d33616ebc724a7cfd4"
+      },
+      {
+        "path": "tabarena-lite/raw/363694/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46950",
+        "bytes": 2527,
+        "sha256": "69c8399ab8d9eb626263a5ba76f99d0a18562341058646d5ae8997b507066fc1"
+      },
+      {
+        "path": "tabarena-lite/raw/363694/data.arff",
+        "url": "https://openml.org/data/v1/download/22125261/polish_companies_bankruptcy.arff",
+        "bytes": 2923681,
+        "sha256": "113352098b5c0285853cf983c940777e1893a87810111e9915ff744fbc5fcabc"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363694/splits-r0-f0.csv",
+    "split_sha256": "6a4bbdffd0a3fd7326ec0c3dcfdd6836594becf9ff3127a439cde9b52f9e28d0"
+  },
+  {
+    "task_id": "363696",
+    "dataset_id": "46952",
+    "dataset_name": "qsar-biodeg",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363696/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363696",
+        "bytes": 981,
+        "sha256": "fb757a8c7b2c80a033eda745befda5772c8732052e3826effac21fa39f257d1f"
+      },
+      {
+        "path": "tabarena-lite/raw/363696/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46952",
+        "bytes": 2327,
+        "sha256": "c7863cb6de0d2d33bc72248304bc36991ec572fe6ebb4ca4c299140108dc8852"
+      },
+      {
+        "path": "tabarena-lite/raw/363696/data.arff",
+        "url": "https://openml.org/data/v1/download/22125263/qsar-biodeg.arff",
+        "bytes": 161514,
+        "sha256": "558eb643ae68638cc40aa3f0e869a5f665dd4afe18af5651c36afb89074096df"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363696/splits-r0-f0.csv",
+    "split_sha256": "5b64bfe288f5343857909ff7a3648b08062d570924b92052b2eb2357a9e73c0d"
+  },
+  {
+    "task_id": "363697",
+    "dataset_id": "46953",
+    "dataset_name": "QSAR-TID-11",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363697/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363697",
+        "bytes": 839,
+        "sha256": "a6d22949cb8873035ffb12021ea5b7fb067656c20c94d11aa03160b5e6f6e92f"
+      },
+      {
+        "path": "tabarena-lite/raw/363697/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46953",
+        "bytes": 2237,
+        "sha256": "0caf782356600883ada02c9d972086bdc5cca988c3f7865f000109c64022f531"
+      },
+      {
+        "path": "tabarena-lite/raw/363697/data.arff",
+        "url": "https://openml.org/data/v1/download/22125264/QSAR-TID-11.arff",
+        "bytes": 23585433,
+        "sha256": "30388b070bac7cc538ecaf513056a34e3bda5f52ffd30da33c57ddf3694be768"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363697/splits-r0-f0.csv",
+    "split_sha256": "05decc4874765e4caa889159a64e59eb9f05566cf21e83d083da57649a86ecd9"
+  },
+  {
+    "task_id": "363698",
+    "dataset_id": "46954",
+    "dataset_name": "QSAR_fish_toxicity",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363698/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363698",
+        "bytes": 838,
+        "sha256": "a0602739499e635d5abf011973c87e647caa8d2d20452d72a52d7c74c7814a5a"
+      },
+      {
+        "path": "tabarena-lite/raw/363698/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46954",
+        "bytes": 2310,
+        "sha256": "b0ddbe580dc3a93774aad4e3ee14aa32821d048344be9201d7266af249928145"
+      },
+      {
+        "path": "tabarena-lite/raw/363698/data.arff",
+        "url": "https://openml.org/data/v1/download/22125265/QSAR_fish_toxicity.arff",
+        "bytes": 35256,
+        "sha256": "f5d7cb8ac2dd189b979378b59276c4e5068acec74a21d27c075a4414190096a5"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363698/splits-r0-f0.csv",
+    "split_sha256": "cd094ba212a0aee15f377df18a0527719a6792ae7b004980ee481723b7cc9cfd"
+  },
+  {
+    "task_id": "363699",
+    "dataset_id": "46955",
+    "dataset_name": "SDSS17",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363699/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363699",
+        "bytes": 973,
+        "sha256": "7abe9c89b97446bffd47500ec13f5ef2645999bc10f2ffed677276f3be2e55ef"
+      },
+      {
+        "path": "tabarena-lite/raw/363699/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46955",
+        "bytes": 2520,
+        "sha256": "13aea2a04da9c9691c2d0ab0d145cb6e555ddc6f97030f053ab35f5af3cd021a"
+      },
+      {
+        "path": "tabarena-lite/raw/363699/data.arff",
+        "url": "https://openml.org/data/v1/download/22125266/SDSS17.arff",
+        "bytes": 8308797,
+        "sha256": "feb9d9b7ffc9ffbccfab3422b65c23c8386c38b5d1628dc49e3e3755c7dd19ee"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363699/splits-r0-f0.csv",
+    "split_sha256": "44bd448a86843e587fe5a76e20420dad4de44524e0f11d10159f57e5df9f172f"
+  },
+  {
+    "task_id": "363700",
+    "dataset_id": "46956",
+    "dataset_name": "seismic-bumps",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363700/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363700",
+        "bytes": 991,
+        "sha256": "c70a8da2a74e01e9d4e1e80f5f923ac792c9e48f0fb521f4fd795c518a09b8f1"
+      },
+      {
+        "path": "tabarena-lite/raw/363700/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46956",
+        "bytes": 2487,
+        "sha256": "2a7845eb3012d65e19edbe4bfec65d6cab1d4cc2d897d8f460d74deb0fb7c1bd"
+      },
+      {
+        "path": "tabarena-lite/raw/363700/data.arff",
+        "url": "https://openml.org/data/v1/download/22125267/seismic-bumps.arff",
+        "bytes": 173522,
+        "sha256": "457abff74c716dee5e9836f779874369bfb8b61091dae3f7b011beca10d6b25b"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363700/splits-r0-f0.csv",
+    "split_sha256": "3f53afb7510efa0f752648df400a497faced596c11c73218c4cf164ddd8b299a"
+  },
+  {
+    "task_id": "363702",
+    "dataset_id": "46958",
+    "dataset_name": "splice",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363702/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363702",
+        "bytes": 971,
+        "sha256": "36fc41e4788edad8b1a00ab21299f4d0fddb1dfa4e44b0108ce5edb1c178c6c0"
+      },
+      {
+        "path": "tabarena-lite/raw/363702/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46958",
+        "bytes": 2398,
+        "sha256": "106eeb1ca5a91a3cbe237a89d9da1ad0dfcf71056bf44fc39b71d37657624d27"
+      },
+      {
+        "path": "tabarena-lite/raw/363702/data.arff",
+        "url": "https://openml.org/data/v1/download/22125269/splice.arff",
+        "bytes": 394479,
+        "sha256": "8ac6bffc317b38cd34c4b5bfdd658acc76a948c683295ad47f72129164ed7c9c"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363702/splits-r0-f0.csv",
+    "split_sha256": "467efb745988338b268a9cdb17f316307200aad065d0f78383e9e796539bd637"
+  },
+  {
+    "task_id": "363704",
+    "dataset_id": "46960",
+    "dataset_name": "students_dropout_and_academic_success",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363704/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363704",
+        "bytes": 1009,
+        "sha256": "712af4ba7fbba4060e7a10e39628119076f879ae915cdc344a0c5a95e0151c76"
+      },
+      {
+        "path": "tabarena-lite/raw/363704/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46960",
+        "bytes": 2538,
+        "sha256": "24e23b35b9e847d34e51c5ce3577d43452769229df838bda28180fdeec2f8b78"
+      },
+      {
+        "path": "tabarena-lite/raw/363704/data.arff",
+        "url": "https://openml.org/data/v1/download/22125271/students_dropout_and_academic_success.arff",
+        "bytes": 1559448,
+        "sha256": "70bfae55226591c3f2382326db09469eb9a7cfe9d20e9dd4f1711a66dae1a2d6"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363704/splits-r0-f0.csv",
+    "split_sha256": "cf69584a068a93ebefa5775cad9c0b3b85389bc9ad91df588dc92cf09b0ba5f4"
+  },
+  {
+    "task_id": "363705",
+    "dataset_id": "46961",
+    "dataset_name": "superconductivity",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363705/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363705",
+        "bytes": 846,
+        "sha256": "e17c9ff0097eb40ecf4788c4993da593a5b2738d250560c63f185a631ef94463"
+      },
+      {
+        "path": "tabarena-lite/raw/363705/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46961",
+        "bytes": 2245,
+        "sha256": "be6574fc483009d4727e785ce73c89af94863938c51d01c43692f919034ac4e5"
+      },
+      {
+        "path": "tabarena-lite/raw/363705/data.arff",
+        "url": "https://openml.org/data/v1/download/22125272/superconductivity.arff",
+        "bytes": 24148656,
+        "sha256": "828593ed4a4d3c408bd0b791d0074d7dcacf20589d32434cde3fc0635f213f56"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363705/splits-r0-f0.csv",
+    "split_sha256": "70867585f8b6f7331558c6e25ffa0c36d675095748866de7cb6de14d3f2223d1"
+  },
+  {
+    "task_id": "363706",
+    "dataset_id": "46962",
+    "dataset_name": "taiwanese_bankruptcy_prediction",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363706/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363706",
+        "bytes": 996,
+        "sha256": "7675c5efb455cb0936653971e3bbc0ebfa652661910844b49962761a21a51eea"
+      },
+      {
+        "path": "tabarena-lite/raw/363706/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46962",
+        "bytes": 2646,
+        "sha256": "7d36a4ec6bd13cd3ad9c24680b2e19b94bcb44a41289c7cea8f803ab8e44b1b7"
+      },
+      {
+        "path": "tabarena-lite/raw/363706/data.arff",
+        "url": "https://openml.org/data/v1/download/22125273/taiwanese_bankruptcy_prediction.arff",
+        "bytes": 11348172,
+        "sha256": "e8c347eaef969f92b9ef19ab8f62b3ea53803ffa75d0f43c698114a4644e6c71"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363706/splits-r0-f0.csv",
+    "split_sha256": "eee4cd6e62d62779f71373bdbdf361ca4270f928178d47a59d887afa7f52cb50"
+  },
+  {
+    "task_id": "363707",
+    "dataset_id": "46963",
+    "dataset_name": "website_phishing",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363707/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363707",
+        "bytes": 984,
+        "sha256": "c2a5f427a319523813b5218f5c0867b0a845f3f7e5d99450c92bfd77d2e7c874"
+      },
+      {
+        "path": "tabarena-lite/raw/363707/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46963",
+        "bytes": 2340,
+        "sha256": "8f712cb69e33e8e0c35ac69f922783b7efa6db5945901f7afd3f87d61edfb2d8"
+      },
+      {
+        "path": "tabarena-lite/raw/363707/data.arff",
+        "url": "https://openml.org/data/v1/download/22125274/website_phishing.arff",
+        "bytes": 132233,
+        "sha256": "99b5d00d9cbe64b070d956c72c659d0fe2f61f9f247408209e614a6a704bf6bc"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363707/splits-r0-f0.csv",
+    "split_sha256": "dbca3665d0667dfcfdf203050762e7b71a3638e33721e2620320a4f9d3e287b7"
+  },
+  {
+    "task_id": "363708",
+    "dataset_id": "46964",
+    "dataset_name": "wine_quality",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363708/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363708",
+        "bytes": 847,
+        "sha256": "cd91de0fdf10f03c419fb5e0276f3fc629787aa0891df3d58e45a7450648b2df"
+      },
+      {
+        "path": "tabarena-lite/raw/363708/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46964",
+        "bytes": 2484,
+        "sha256": "2cdb682fac00de52a76d2c33fa8f9e91923bd59d1402249e3b0a27bcc63bc367"
+      },
+      {
+        "path": "tabarena-lite/raw/363708/data.arff",
+        "url": "https://openml.org/data/v1/download/22125275/wine_quality.arff",
+        "bytes": 416750,
+        "sha256": "84076cebcb9229a7ef1a9b37693c92ac80cb39d384725b6cbf18123c7932289f"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363708/splits-r0-f0.csv",
+    "split_sha256": "746e4a6f3de382e40e58082f3e4a8e1aad693a459912f0b35ba0b4d3668d37e3"
+  },
+  {
+    "task_id": "363711",
+    "dataset_id": "46980",
+    "dataset_name": "MIC",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363711/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363711",
+        "bytes": 966,
+        "sha256": "9db5a676189a6587822310bd0b7fd721e581a92710533d1a9a7ad6397a2d3554"
+      },
+      {
+        "path": "tabarena-lite/raw/363711/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46980",
+        "bytes": 2593,
+        "sha256": "b553401ce4d80738fc27acfcbe47a31078e9cfb9aadff844e3fe1ff15342fd82"
+      },
+      {
+        "path": "tabarena-lite/raw/363711/data.arff",
+        "url": "https://openml.org/data/v1/download/22125397/MIC.arff",
+        "bytes": 771864,
+        "sha256": "402ab2d964ed2c23da168e1a6d264f76926fc9365191f492b32b7bbe3c7f08fe"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363711/splits-r0-f0.csv",
+    "split_sha256": "9bfbd7c3a3d954e046d2eff760aa0580169a715fc6698247059e5dbca00a98ae"
+  },
+  {
+    "task_id": "363712",
+    "dataset_id": "46979",
+    "dataset_name": "jm1",
+    "repeat": 0,
+    "fold": 0,
+    "files": [
+      {
+        "path": "tabarena-lite/raw/363712/task.json",
+        "url": "https://www.openml.org/api/v1/json/task/363712",
+        "bytes": 967,
+        "sha256": "5106d6cabe02aee76ee7abc286c20efa6f89afa017b50f71fb85e30d004f126b"
+      },
+      {
+        "path": "tabarena-lite/raw/363712/dataset.json",
+        "url": "https://www.openml.org/api/v1/json/data/46979",
+        "bytes": 2367,
+        "sha256": "58669069b652c012bd1c791ae245f337ce6a6f9e89a21687458498cc4198235d"
+      },
+      {
+        "path": "tabarena-lite/raw/363712/data.arff",
+        "url": "https://openml.org/data/v1/download/22125396/jm1.arff",
+        "bytes": 1157472,
+        "sha256": "fdbcb4b9c4b04e3fb716de33b34ce3b9ce72a0358031efa99dd858f11f730873"
+      }
+    ],
+    "split_path": "tabarena-lite/raw/363712/splits-r0-f0.csv",
+    "split_sha256": "9629729ef4549a3bea3a561c27953ec6eb8eda961fe482f9216f84d06118d954"
+  }
+]

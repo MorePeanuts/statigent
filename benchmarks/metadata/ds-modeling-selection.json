@@ -1,0 +1,361 @@
+{
+  "date": "2026-10-10",
+  "scope": "常规结构化表格分类/回归下载候选；尚未按模型分数筛选，也不是冻结的正式实验集",
+  "included": [
+    "titanic",
+    "santander-customer-transaction-prediction",
+    "porto-seguro-safe-driver-prediction",
+    "santander-customer-satisfaction",
+    "santander-value-prediction-challenge",
+    "playground-series-s4e1",
+    "playground-series-s4e2",
+    "bike-sharing-demand",
+    "playground-series-s4e5",
+    "playground-series-s4e4",
+    "microsoft-malware-prediction",
+    "spaceship-titanic",
+    "dont-overfit-ii",
+    "playground-series-s4e3",
+    "tabular-playground-series-sep-2021",
+    "playground-series-s3e24",
+    "tabular-playground-series-aug-2022",
+    "playground-series-s3e14",
+    "instant-gratification",
+    "tabular-playground-series-aug-2021",
+    "tabular-playground-series-jan-2021",
+    "playground-series-s3e23",
+    "playground-series-s3e25",
+    "playground-series-s3e22",
+    "playground-series-s3e17",
+    "tabular-playground-series-mar-2021",
+    "playground-series-s3e20",
+    "tabular-playground-series-feb-2021",
+    "playground-series-s3e16",
+    "tabular-playground-series-nov-2021",
+    "cat-in-the-dat",
+    "tabular-playground-series-feb-2022",
+    "tabular-playground-series-apr-2021",
+    "tabular-playground-series-dec-2021",
+    "playground-series-s3e19",
+    "cat-in-the-dat-ii",
+    "tabular-playground-series-may-2022",
+    "playground-series-s3e12",
+    "playground-series-s3e18",
+    "playground-series-s3e11",
+    "playground-series-s3e13",
+    "playground-series-s3e5",
+    "playground-series-s3e10",
+    "playground-series-s3e2",
+    "playground-series-s3e9",
+    "playground-series-s3e8",
+    "playground-series-s3e6",
+    "playground-series-s3e1",
+    "playground-series-s3e7",
+    "playground-series-s3e3",
+    "playground-series-s3e4",
+    "playground-series-s4e6"
+  ],
+  "excluded": [
+    {
+      "task": "commonlitreadabilityprize",
+      "reason": "文本或复杂嵌套字段是重要输入；不属于本次常规表格分类/回归范围"
+    },
+    {
+      "task": "feedback-prize-english-language-learning",
+      "reason": "文本或复杂嵌套字段是重要输入；不属于本次常规表格分类/回归范围"
+    },
+    {
+      "task": "liverpool-ion-switching",
+      "reason": "时序、信号或未来预测任务；留待独立时间划分协议"
+    },
+    {
+      "task": "ventilator-pressure-prediction",
+      "reason": "时序、信号或未来预测任务；留待独立时间划分协议"
+    },
+    {
+      "task": "tweet-sentiment-extraction",
+      "reason": "文本或复杂嵌套字段是重要输入；不属于本次常规表格分类/回归范围"
+    },
+    {
+      "task": "learning-agency-lab-automated-essay-scoring-2",
+      "reason": "文本或复杂嵌套字段是重要输入；不属于本次常规表格分类/回归范围"
+    },
+    {
+      "task": "us-patent-phrase-to-phrase-matching",
+      "reason": "文本或复杂嵌套字段是重要输入；不属于本次常规表格分类/回归范围"
+    },
+    {
+      "task": "tabular-playground-series-jan-2022",
+      "reason": "时序、信号或未来预测任务；留待独立时间划分协议"
+    },
+    {
+      "task": "google-quest-challenge",
+      "reason": "文本或复杂嵌套字段是重要输入；不属于本次常规表格分类/回归范围"
+    },
+    {
+      "task": "tmdb-box-office-prediction",
+      "reason": "文本或复杂嵌套字段是重要输入；不属于本次常规表格分类/回归范围"
+    },
+    {
+      "task": "tabular-playground-series-sep-2022",
+      "reason": "时序、信号或未来预测任务；留待独立时间划分协议"
+    },
+    {
+      "task": "tabular-playground-series-jul-2021",
+      "reason": "时序、信号或未来预测任务；留待独立时间划分协议"
+    },
+    {
+      "task": "tabular-playground-series-mar-2022",
+      "reason": "时序、信号或未来预测任务；留待独立时间划分协议"
+    },
+    {
+      "task": "nlp-getting-started",
+      "reason": "文本或复杂嵌套字段是重要输入；不属于本次常规表格分类/回归范围"
+    },
+    {
+      "task": "lmsys-chatbot-arena",
+      "reason": "文本或复杂嵌套字段是重要输入；不属于本次常规表格分类/回归范围"
+    },
+    {
+      "task": "covid19-global-forecasting-week-1",
+      "reason": "时序、信号或未来预测任务；留待独立时间划分协议"
+    },
+    {
+      "task": "see-click-predict-fix",
+      "reason": "文本或复杂嵌套字段是重要输入；不属于本次常规表格分类/回归范围"
+    },
+    {
+      "task": "covid19-global-forecasting-week-4",
+      "reason": "时序、信号或未来预测任务；留待独立时间划分协议"
+    },
+    {
+      "task": "demand-forecasting-kernels-only",
+      "reason": "时序、信号或未来预测任务；留待独立时间划分协议"
+    },
+    {
+      "task": "covid19-global-forecasting-week-3",
+      "reason": "时序、信号或未来预测任务；留待独立时间划分协议"
+    },
+    {
+      "task": "covid19-global-forecasting-week-2",
+      "reason": "时序、信号或未来预测任务；留待独立时间划分协议"
+    },
+    {
+      "task": "conways-reverse-game-of-life-2020",
+      "reason": "二维状态逆推结构预测，不属于常规表格分类/回归"
+    }
+  ],
+  "archive_only_tasks": [
+    "tabular-playground-series-oct-2021"
+  ],
+  "published_csv_sizes": {
+    "titanic": {
+      "uncompressed_bytes": 62784,
+      "compressed_bytes": 23668
+    },
+    "santander-customer-transaction-prediction": {
+      "uncompressed_bytes": 302632315,
+      "compressed_bytes": 128594994
+    },
+    "porto-seguro-safe-driver-prediction": {
+      "uncompressed_bytes": 114365370,
+      "compressed_bytes": 30986151
+    },
+    "santander-customer-satisfaction": {
+      "uncompressed_bytes": 75623090,
+      "compressed_bytes": 4535576
+    },
+    "santander-value-prediction-challenge": {
+      "uncompressed_bytes": 65219456,
+      "compressed_bytes": 6808848
+    },
+    "playground-series-s4e1": {
+      "uncompressed_bytes": 12559234,
+      "compressed_bytes": 4360763
+    },
+    "playground-series-s4e2": {
+      "uncompressed_bytes": 2750478,
+      "compressed_bytes": 563464
+    },
+    "bike-sharing-demand": {
+      "uncompressed_bytes": 682018,
+      "compressed_bytes": 157260
+    },
+    "playground-series-s4e5": {
+      "uncompressed_bytes": 60695058,
+      "compressed_bytes": 19772639
+    },
+    "playground-series-s4e4": {
+      "uncompressed_bytes": 4844522,
+      "compressed_bytes": 1574621
+    },
+    "microsoft-malware-prediction": {
+      "uncompressed_bytes": 266731749,
+      "compressed_bytes": 46841807
+    },
+    "spaceship-titanic": {
+      "uncompressed_bytes": 819467,
+      "compressed_bytes": 224830
+    },
+    "dont-overfit-ii": {
+      "uncompressed_bytes": 483571,
+      "compressed_bytes": 166236
+    },
+    "playground-series-s4e3": {
+      "uncompressed_bytes": 3155034,
+      "compressed_bytes": 1083991
+    },
+    "tabular-playground-series-sep-2021": {
+      "uncompressed_bytes": 519118543,
+      "compressed_bytes": 228515327
+    },
+    "playground-series-s3e24": {
+      "uncompressed_bytes": 13258878,
+      "compressed_bytes": 4284797
+    },
+    "tabular-playground-series-aug-2022": {
+      "uncompressed_bytes": 3976634,
+      "compressed_bytes": 1372664
+    },
+    "playground-series-s3e14": {
+      "uncompressed_bytes": 1779332,
+      "compressed_bytes": 410596
+    },
+    "instant-gratification": {
+      "uncompressed_bytes": 639615714,
+      "compressed_bytes": 277510715
+    },
+    "tabular-playground-series-aug-2021": {
+      "uncompressed_bytes": 210884416,
+      "compressed_bytes": 97241067
+    },
+    "tabular-playground-series-jan-2021": {
+      "uncompressed_bytes": 87216816,
+      "compressed_bytes": 40285646
+    },
+    "playground-series-s3e23": {
+      "uncompressed_bytes": 11043197,
+      "compressed_bytes": 3578308
+    },
+    "playground-series-s3e25": {
+      "uncompressed_bytes": 1242654,
+      "compressed_bytes": 340565
+    },
+    "playground-series-s3e22": {
+      "uncompressed_bytes": 227546,
+      "compressed_bytes": 34648
+    },
+    "playground-series-s3e17": {
+      "uncompressed_bytes": 7350034,
+      "compressed_bytes": 2271668
+    },
+    "tabular-playground-series-mar-2021": {
+      "uncompressed_bytes": 77755989,
+      "compressed_bytes": 34260499
+    },
+    "playground-series-s3e20": {
+      "uncompressed_bytes": 91614735,
+      "compressed_bytes": 40344931
+    },
+    "tabular-playground-series-feb-2021": {
+      "uncompressed_bytes": 93234446,
+      "compressed_bytes": 42036595
+    },
+    "playground-series-s3e16": {
+      "uncompressed_bytes": 5294455,
+      "compressed_bytes": 1668186
+    },
+    "tabular-playground-series-nov-2021": {
+      "uncompressed_bytes": 546465571,
+      "compressed_bytes": 233640213
+    },
+    "cat-in-the-dat": {
+      "uncompressed_bytes": 40046576,
+      "compressed_bytes": 13584180
+    },
+    "tabular-playground-series-feb-2022": {
+      "uncompressed_bytes": 483067151,
+      "compressed_bytes": 65918817
+    },
+    "tabular-playground-series-apr-2021": {
+      "uncompressed_bytes": 6067581,
+      "compressed_bytes": 2375081
+    },
+    "tabular-playground-series-dec-2021": {
+      "uncompressed_bytes": 554140867,
+      "compressed_bytes": 111770482
+    },
+    "playground-series-s3e19": {
+      "uncompressed_bytes": 10611422,
+      "compressed_bytes": 1604157
+    },
+    "cat-in-the-dat-ii": {
+      "uncompressed_bytes": 86117470,
+      "compressed_bytes": 26444929
+    },
+    "tabular-playground-series-may-2022": {
+      "uncompressed_bytes": 319969506,
+      "compressed_bytes": 151852802
+    },
+    "playground-series-s3e12": {
+      "uncompressed_bytes": 14634,
+      "compressed_bytes": 5370
+    },
+    "playground-series-s3e18": {
+      "uncompressed_bytes": 4550300,
+      "compressed_bytes": 1503655
+    },
+    "playground-series-s3e11": {
+      "uncompressed_bytes": 29238559,
+      "compressed_bytes": 6193471
+    },
+    "playground-series-s3e13": {
+      "uncompressed_bytes": 194651,
+      "compressed_bytes": 14308
+    },
+    "playground-series-s3e5": {
+      "uncompressed_bytes": 132844,
+      "compressed_bytes": 40766
+    },
+    "playground-series-s3e10": {
+      "uncompressed_bytes": 12239463,
+      "compressed_bytes": 5489925
+    },
+    "playground-series-s3e2": {
+      "uncompressed_bytes": 985870,
+      "compressed_bytes": 196632
+    },
+    "playground-series-s3e9": {
+      "uncompressed_bytes": 282531,
+      "compressed_bytes": 70787
+    },
+    "playground-series-s3e8": {
+      "uncompressed_bytes": 10711711,
+      "compressed_bytes": 3447332
+    },
+    "playground-series-s3e6": {
+      "uncompressed_bytes": 1567370,
+      "compressed_bytes": 666669
+    },
+    "playground-series-s3e1": {
+      "uncompressed_bytes": 3658029,
+      "compressed_bytes": 1496003
+    },
+    "playground-series-s3e7": {
+      "uncompressed_bytes": 2189775,
+      "compressed_bytes": 568113
+    },
+    "playground-series-s3e3": {
+      "uncompressed_bytes": 258930,
+      "compressed_bytes": 56655
+    },
+    "playground-series-s3e4": {
+      "uncompressed_bytes": 118184246,
+      "compressed_bytes": 53136025
+    },
+    "playground-series-s4e6": {
+      "uncompressed_bytes": 9577008,
+      "compressed_bytes": 1884147
+    }
+  }
+}

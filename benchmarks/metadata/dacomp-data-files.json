@@ -1,0 +1,614 @@
+[
+  {
+    "path": "dacomp-da/public/README.md",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/README.md",
+    "bytes": 717,
+    "sha256": "487c75dcf727cf8ecbc4c642c50a98c2bd92d18239ddbe22cd30e47350e0a557"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-001/dacomp-001.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-001/dacomp-001.sqlite",
+    "bytes": 164876288,
+    "sha256": "12de40a594f5b891dd24f401ce1b66a42c33b26837336e038d2cd0eeec561869"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-002/dacomp-002.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-002/dacomp-002.sqlite",
+    "bytes": 9408512,
+    "sha256": "5e05de30cc3ebd1785863777f885390ecc9fa9340022216e827a5e6200b9e5d7"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-003/dacomp-003.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-003/dacomp-003.sqlite",
+    "bytes": 200704,
+    "sha256": "b172d01788d7ab77d2c1a32c31960e1ffdf389ce05cdd63cd89a23b8968bad92"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-004/dacomp-004.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-004/dacomp-004.sqlite",
+    "bytes": 9310208,
+    "sha256": "eb4fe8f9f30537bac543fdc6c44fe3f6480ea531c44e24a9dc73685ebd688d8f"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-005/dacomp-005.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-005/dacomp-005.sqlite",
+    "bytes": 7507968,
+    "sha256": "678ec1e76f582e5342902d0285caeeec280ee72421ac50f2d7cf528dfaa14ba8"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-006/dacomp-006.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-006/dacomp-006.sqlite",
+    "bytes": 7507968,
+    "sha256": "00adcc71eb93b977c635cd5e6683e232a864c27fd68d199aeeed1e764a449d0b"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-007/dacomp-007.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-007/dacomp-007.sqlite",
+    "bytes": 503808,
+    "sha256": "5417de3113ca683dd505d44e38da7b52b6676bf4dc3d69a24808a9fc5aad33a1"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-008/dacomp-008.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-008/dacomp-008.sqlite",
+    "bytes": 110592,
+    "sha256": "94d6a6b50e4d16b86b5b8813628c4ad233233818ffd01a43eb09e9eb9384cb98"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-009/dacomp-009.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-009/dacomp-009.sqlite",
+    "bytes": 995328,
+    "sha256": "50b1b4c6f5d6155809313d620c0a7048783d20848ee7b250dafad8ee3f8eb7bd"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-010/dacomp-010.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-010/dacomp-010.sqlite",
+    "bytes": 397312,
+    "sha256": "f528a1b6e9a21714c123b316400f744eb306d1a723d943d2e3426ac9c2bc5433"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-011/dacomp-011.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-011/dacomp-011.sqlite",
+    "bytes": 200704,
+    "sha256": "b8512c3fdc740782d13b603e865fc2d0e4b96916449b8e4abb7f408bbe69b9e1"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-012/dacomp-012.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-012/dacomp-012.sqlite",
+    "bytes": 7516160,
+    "sha256": "f7620ad6681e8056fa95ee3107bd5e09adca5a888a5e35177f7d205a0e46eccb"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-013/dacomp-013.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-013/dacomp-013.sqlite",
+    "bytes": 233472,
+    "sha256": "17950da313aa779220bb468eb47bc267d5c0a935a737656511aa1e8e755fa268"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-014/dacomp-014.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-014/dacomp-014.sqlite",
+    "bytes": 3022848,
+    "sha256": "9ac137d1cddc63623831a5a7953361c7b34b16422a8919caf6f1b818306c3bb9"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-015/dacomp-015.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-015/dacomp-015.sqlite",
+    "bytes": 12038144,
+    "sha256": "420242c9b314dfe55ea5d70021955dd2c3da9474187ae71e99a9d0487dda3c6c"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-016/dacomp-016.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-016/dacomp-016.sqlite",
+    "bytes": 200704,
+    "sha256": "b172d01788d7ab77d2c1a32c31960e1ffdf389ce05cdd63cd89a23b8968bad92"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-017/dacomp-017.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-017/dacomp-017.sqlite",
+    "bytes": 28389376,
+    "sha256": "2c3235ddef33cce13f714a722d88d705a06f8923adbdf52ddb185520f84e3955"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-018/dacomp-018.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-018/dacomp-018.sqlite",
+    "bytes": 28389376,
+    "sha256": "2c3235ddef33cce13f714a722d88d705a06f8923adbdf52ddb185520f84e3955"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-019/dacomp-019.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-019/dacomp-019.sqlite",
+    "bytes": 499712,
+    "sha256": "92c0b295e6eb9c4ce522dd25ae68fa68a00dd053b8cdacc9c78a863c81c67941"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-020/dacomp-020.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-020/dacomp-020.sqlite",
+    "bytes": 200704,
+    "sha256": "b8512c3fdc740782d13b603e865fc2d0e4b96916449b8e4abb7f408bbe69b9e1"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-021/dacomp-021.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-021/dacomp-021.sqlite",
+    "bytes": 46215168,
+    "sha256": "2821458c96e10c772e0647c4c87477ba754904240d4e4f2d3606d9cf0661dfa9"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-022/dacomp-022.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-022/dacomp-022.sqlite",
+    "bytes": 46215168,
+    "sha256": "2821458c96e10c772e0647c4c87477ba754904240d4e4f2d3606d9cf0661dfa9"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-023/dacomp-023.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-023/dacomp-023.sqlite",
+    "bytes": 4747264,
+    "sha256": "3878efd43667373d520523ab5560dd0e378d74d916df15c0df5d29767e93fd13"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-024/dacomp-024.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-024/dacomp-024.sqlite",
+    "bytes": 5042176,
+    "sha256": "7032e8cfae6d42da5f664be43fadfa0c505b7141a123440bf843afb9696b1c4f"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-025/dacomp-025.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-025/dacomp-025.sqlite",
+    "bytes": 135073792,
+    "sha256": "8ca7df170ddc4b69fb479314714e93f3fae0df7e39775968535023cef35d7728"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-026/dacomp-026.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-026/dacomp-026.sqlite",
+    "bytes": 3694592,
+    "sha256": "18b659e2ba3c165a87d634539fa6031e69e6cb7d1437bc874e9f28cd9182a102"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-027/dacomp-027.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-027/dacomp-027.sqlite",
+    "bytes": 3694592,
+    "sha256": "696af167819d228809fe473aac9ebc8926b4042b337fdbf87515a08e3b31673b"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-028/dacomp-028.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-028/dacomp-028.sqlite",
+    "bytes": 307200,
+    "sha256": "15cb16125fbb5746c3710ec70ac03561902e75a00f2d9ca1d2dc76c6e310cc06"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-029/dacomp-029.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-029/dacomp-029.sqlite",
+    "bytes": 487424,
+    "sha256": "a7a7ba9ed2576de4fd5e398f01cd601e6034ef58d89847820a8b57f13cde9aa8"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-030/dacomp-030.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-030/dacomp-030.sqlite",
+    "bytes": 2064384,
+    "sha256": "2a65569f97b186bab533ddc45be080581cbda5536e49c8d75e698abb38bb4468"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-031/dacomp-031.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-031/dacomp-031.sqlite",
+    "bytes": 503808,
+    "sha256": "5417de3113ca683dd505d44e38da7b52b6676bf4dc3d69a24808a9fc5aad33a1"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-032/dacomp-032.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-032/dacomp-032.sqlite",
+    "bytes": 2449408,
+    "sha256": "7a87160310caaaf1c05a0a3f854f6eb0a69fce8554a061649c0efe5d3d962dce"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-033/dacomp-033.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-033/dacomp-033.sqlite",
+    "bytes": 2449408,
+    "sha256": "7442b853e97cbd3e2365e23ac6534ab1362c603cf404514e01da7237e4649847"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-034/dacomp-034.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-034/dacomp-034.sqlite",
+    "bytes": 349499392,
+    "sha256": "8c8f0ffa260a4f06ee20f7bfb9ce2b34504aba07795e0df07fb0f409feae41f3"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-035/dacomp-035.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-035/dacomp-035.sqlite",
+    "bytes": 1777664,
+    "sha256": "1ccd92b70dc134a9b1ac2957b0e6e860fe6d1a55729b63e9999a6239ec516510"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-036/dacomp-036.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-036/dacomp-036.sqlite",
+    "bytes": 1777664,
+    "sha256": "9caa30de04deaec58bd082d1ca1cefc1156d77d1a6991fedcb6aa0dd29e6520a"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-037/dacomp-037.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-037/dacomp-037.sqlite",
+    "bytes": 2863104,
+    "sha256": "cbab926fbfadb599e5c7d44b2694756433f81e477ccc6b436ac54938119c04a4"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-038/dacomp-038.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-038/dacomp-038.sqlite",
+    "bytes": 270336,
+    "sha256": "ffd13345e09eb57013268becf7cea2b288fe44164337a9b481ce9c15512fc17f"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-039/dacomp-039.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-039/dacomp-039.sqlite",
+    "bytes": 1634304,
+    "sha256": "32d9eabf0073bc0d55493c1ac465c397af423fdeb7fdb84c748765a6e2ce2b68"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-040/dacomp-040.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-040/dacomp-040.sqlite",
+    "bytes": 352256,
+    "sha256": "b72ded78bc06efd9415e5f49754c02db1362dff63b91f39c5e74ee19677b8ef1"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-041/dacomp-041.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-041/dacomp-041.sqlite",
+    "bytes": 3514368,
+    "sha256": "98cff196fdf752c5080abd9532b466360308e82dfa88ee907103751119873172"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-042/dacomp-042.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-042/dacomp-042.sqlite",
+    "bytes": 2531328,
+    "sha256": "326673a697d7f6135c0ed242ab2e0fc8f8a2b386cd72639879c9edca066c4aa2"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-043/dacomp-043.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-043/dacomp-043.sqlite",
+    "bytes": 966656,
+    "sha256": "ec83cb5e6d0137baee7d0c33cfe295968ddff5dfa89f5526574b40494e7d4bdf"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-044/dacomp-044.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-044/dacomp-044.sqlite",
+    "bytes": 1613824,
+    "sha256": "6e8486bd786b0a1bf6834e9f0a7bd46ab58af270c89d019efebc1a51ec6bf841"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-045/dacomp-045.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-045/dacomp-045.sqlite",
+    "bytes": 1089536,
+    "sha256": "a2bfe973e3bb4ca8691c24be2715274ce49a82efa1315869a2654ca355c61f5e"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-046/dacomp-046.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-046/dacomp-046.sqlite",
+    "bytes": 618496,
+    "sha256": "1690a2b3f891716be04e9d03d7d6336c8329a54503de6cc86e814568c6665788"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-047/dacomp-047.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-047/dacomp-047.sqlite",
+    "bytes": 135073792,
+    "sha256": "762d2d23755d4c7dd6aa96f67b2934a204cb4032abc8f57c9c828e4cbc6c1086"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-048/dacomp-048.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-048/dacomp-048.sqlite",
+    "bytes": 317820928,
+    "sha256": "221999d15fad2a6262a0c916a156b14699c86e558c70069855333ee7385e6222"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-049/dacomp-049.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-049/dacomp-049.sqlite",
+    "bytes": 317820928,
+    "sha256": "623f80dceb016cae991739b0785d089570c147af23d2a45f94b54f5b0baf5c9c"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-050/dacomp-050.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-050/dacomp-050.sqlite",
+    "bytes": 20639744,
+    "sha256": "7b2d0aa53a8a9e23e6be02f9908cfb53604584c6b9bb1a4993898ec64537794a"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-051/dacomp-051.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-051/dacomp-051.sqlite",
+    "bytes": 1871872,
+    "sha256": "780efe37cf2243fbcb9feae1a74e993c04c1435cf8b12a5707926d26592ea7a5"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-052/dacomp-052.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-052/dacomp-052.sqlite",
+    "bytes": 24576,
+    "sha256": "96353535da6edf393255cd755615fd8192c3bb318039743b8b18d56c56535016"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-053/dacomp-053.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-053/dacomp-053.sqlite",
+    "bytes": 262144,
+    "sha256": "b0241f56d2f6a079f10d980ea26ab9394d1af56a5cf9d33941e2809374625fb5"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-054/dacomp-054.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-054/dacomp-054.sqlite",
+    "bytes": 221306880,
+    "sha256": "268a21ba8bba78948362306cc32a6b9d46902bb21f4fb0fcfbec9f80cebbafa7"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-055/dacomp-055.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-055/dacomp-055.sqlite",
+    "bytes": 53346304,
+    "sha256": "873ce4e783a6cde5455d6791707c469f398c4baa637481f75c3c583a6d7aef66"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-056/dacomp-056.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-056/dacomp-056.sqlite",
+    "bytes": 2109440,
+    "sha256": "79a6d9bc0c657b8eca9591d357ef6129ba11458b717f0f6dc53ebf2519600600"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-057/dacomp-057.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-057/dacomp-057.sqlite",
+    "bytes": 6668288,
+    "sha256": "dd467d30e076b62e6f1cb0895365d753e15b4031a7273cd00abab32adf815dd7"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-058/dacomp-058.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-058/dacomp-058.sqlite",
+    "bytes": 978944,
+    "sha256": "a793441110b5e6e11828ff55973ad19545b84b5831ca9e370e274b07bcb136f0"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-059/dacomp-059.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-059/dacomp-059.sqlite",
+    "bytes": 5156864,
+    "sha256": "ed6e1f4c6a0190af1e9145215ae5f3d951b64e384f100bcf15260b9dd1342c80"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-060/dacomp-060.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-060/dacomp-060.sqlite",
+    "bytes": 12931072,
+    "sha256": "882dddea2e914116bba02c85cbecd811c143409d3d341dbf27ae79e8150d7eab"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-061/dacomp-061.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-061/dacomp-061.sqlite",
+    "bytes": 3524939776,
+    "sha256": "f7211c83cfb9f6b960527593f24419f8feb3dbfd1eefe32431492d475758f20e"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-062/dacomp-062.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-062/dacomp-062.sqlite",
+    "bytes": 1007616,
+    "sha256": "b589091e3ccafc7b23d53b69ba75a10dc51302c55c6039f8630def4241a67b4a"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-063/dacomp-063.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-063/dacomp-063.sqlite",
+    "bytes": 1855488,
+    "sha256": "38119a99301427afa974a8da771e8b552f27d4b580159e87f3c8e60f32f498f9"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-064/dacomp-064.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-064/dacomp-064.sqlite",
+    "bytes": 14692352,
+    "sha256": "886c158ed6ad92d0b6f957b7a01ee38e7aa662cc596c8363f07aa865afc39364"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-065/dacomp-065.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-065/dacomp-065.sqlite",
+    "bytes": 25169920,
+    "sha256": "37febb375fd6e8d3f49984598ca6d1f425586bb8628ebb06b347ada62d545a60"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-066/dacomp-066.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-066/dacomp-066.sqlite",
+    "bytes": 81920,
+    "sha256": "bec8c8e4bff42537cbccd4820fd8fadbfd16958f8aaa933602ef34d707f7061b"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-067/dacomp-067.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-067/dacomp-067.sqlite",
+    "bytes": 26923008,
+    "sha256": "b1f536d6b63ae5d1c8e558c355e29feb0438ad1e96de263edab0a8bf5bc81297"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-068/dacomp-068.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-068/dacomp-068.sqlite",
+    "bytes": 2510848,
+    "sha256": "9d2c7539863a4227798db3bd56ce2bfac82193c88ff58891358fa29f27c217a4"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-069/dacomp-069.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-069/dacomp-069.sqlite",
+    "bytes": 3796992,
+    "sha256": "602d878c689758bdf78746eb9cf570b308ca9e0d66926a5ab9d6dee279bdf96c"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-070/dacomp-070.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-070/dacomp-070.sqlite",
+    "bytes": 6406144,
+    "sha256": "5d996954e1eb0ebfcb62f7f5cf4fd0e7cc2c75b80b239d4dd882ac39b574880e"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-071/dacomp-071.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-071/dacomp-071.sqlite",
+    "bytes": 6479872,
+    "sha256": "c823b3c155eac47c503cc5fe17967091dc675dcdef9daacfc23f319b0a34ea4d"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-072/dacomp-072.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-072/dacomp-072.sqlite",
+    "bytes": 122880,
+    "sha256": "54e576a8ba1a571971a495d91470c298e1ed070850296e2ef19576892b33462b"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-073/dacomp-073.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-073/dacomp-073.sqlite",
+    "bytes": 618496,
+    "sha256": "32202b78fed3310e2563fc9e97e74b58d500f2c73304077a839baf83f562c41a"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-074/dacomp-074.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-074/dacomp-074.sqlite",
+    "bytes": 307200,
+    "sha256": "4e7ce81a584c6ff4c930d8a9591baa50e4cc2c1c96c26c262624db425fe7927f"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-075/dacomp-075.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-075/dacomp-075.sqlite",
+    "bytes": 65536,
+    "sha256": "6caa239c035503f8e4f190d697dc9b5ee98e1b726db27ed80c66a492255933cf"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-076/dacomp-076.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-076/dacomp-076.sqlite",
+    "bytes": 57344,
+    "sha256": "7738f7760ed25a3b11f229042e9ac227e2884b404b7b149d61dcb5d24ee37a0c"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-077/dacomp-077.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-077/dacomp-077.sqlite",
+    "bytes": 8298496,
+    "sha256": "b2c785ec908cdd2a5d5dafe783cebd4615726b6271b61586607bc1bfe5b5776b"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-078/dacomp-078.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-078/dacomp-078.sqlite",
+    "bytes": 17858560,
+    "sha256": "a92acbe503633d8e953675d8a0e8e7e75f82a2043d03a5d4ceb5ad30159a7bef"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-079/dacomp-079.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-079/dacomp-079.sqlite",
+    "bytes": 10838016,
+    "sha256": "a53cac6fe144fa7816fc53e22a9fac5e81c7ef35f59ad6e1cb6e66a122ce40ca"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-080/dacomp-080.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-080/dacomp-080.sqlite",
+    "bytes": 38604800,
+    "sha256": "82ef973692d27176d46629c4488b85b2dfd1c23867e01dbe6849ee8db5fddb13"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-081/dacomp-081.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-081/dacomp-081.sqlite",
+    "bytes": 35479552,
+    "sha256": "137acccc8fd09ba5731366c554b59eaa3cbe41c24f0fa9a5a81c89810f26b287"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-082/dacomp-082.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-082/dacomp-082.sqlite",
+    "bytes": 4276224,
+    "sha256": "b911e2ff18c21d62d8fb512b92c1884d890c1f2f53498253845de1bb89baa4b5"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-083/dacomp-083.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-083/dacomp-083.sqlite",
+    "bytes": 91701248,
+    "sha256": "18c80d89c26969bce2fa15e55b94ebec6a638ec05c45065d0bcadc3498816c1f"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-084/dacomp-084.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-084/dacomp-084.sqlite",
+    "bytes": 114688,
+    "sha256": "91e365b8d7d12ff41e9d87cfdb9d22ac9f7426d67eed1223a0a055dd70c6d183"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-085/dacomp-085.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-085/dacomp-085.sqlite",
+    "bytes": 92041216,
+    "sha256": "5ab94bf4bed60b897196fff4b69a35687f18a59411cf42e08782f47a65683ae2"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-086/dacomp-086.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-086/dacomp-086.sqlite",
+    "bytes": 33095680,
+    "sha256": "be17237819feca01542ee008569aa963ff449403d6117262a640fd63481113a1"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-087/dacomp-087.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-087/dacomp-087.sqlite",
+    "bytes": 55074816,
+    "sha256": "8f281141bfca8fb2bc3af0ca3b3a16d9496bb40729d255ee7f82c6d95f052722"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-088/dacomp-088.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-088/dacomp-088.sqlite",
+    "bytes": 13774848,
+    "sha256": "aa9eda846edc27e0ef98fe30b3fc9cacc7704c19f801009f61a8eea54e7fbe14"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-089/dacomp-089.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-089/dacomp-089.sqlite",
+    "bytes": 18767872,
+    "sha256": "3f50d1b2e0b987efbc75cff53d736a83d092344afe4627f6dcbfd4f0e2833fac"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-090/dacomp-090.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-090/dacomp-090.sqlite",
+    "bytes": 4247552,
+    "sha256": "93379fe6401ce4515aae62b646d1712f1809e106193c4627d14b2bffdb485418"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-091/dacomp-091.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-091/dacomp-091.sqlite",
+    "bytes": 20451328,
+    "sha256": "76701e4ba63ca7b6ea50a61c72fcfa92829f6a9322c03cc3bd5cc40624b6105b"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-092/dacomp-092.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-092/dacomp-092.sqlite",
+    "bytes": 29724672,
+    "sha256": "53dd8dc810a354d95b680553d8e493fdfd5cdee8ac90b5a206f47a8c915368bb"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-093/dacomp-093.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-093/dacomp-093.sqlite",
+    "bytes": 700416,
+    "sha256": "c981df890fd9afca20eed508dcc0e0c1459f80882a1071a3e0a7eb8a94283d4c"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-094/dacomp-094.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-094/dacomp-094.sqlite",
+    "bytes": 507904,
+    "sha256": "48f0d066b70d516a63b422b4eb04bc233333e82f4548b203bf92864b5364c8fb"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-095/dacomp-095.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-095/dacomp-095.sqlite",
+    "bytes": 602112,
+    "sha256": "77f9616c09f9db5c88b9fbd7158d95a9531a41720f4df2f67c8c9d0ce2a45a1c"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-096/dacomp-096.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-096/dacomp-096.sqlite",
+    "bytes": 28672,
+    "sha256": "47af78c201130aa2c77cd13b6003942319969f98caa528d073b7314e0e2e232f"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-097/dacomp-097.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-097/dacomp-097.sqlite",
+    "bytes": 11137024,
+    "sha256": "8f9dc1d221cffae5e46f30505af82a740520f7a6507aea760fc595382bf6e933"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-098/dacomp-098.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-098/dacomp-098.sqlite",
+    "bytes": 10530816,
+    "sha256": "2ea065b07c1115c349152271b1549559d3c6a092bc9b53e34ee89f77d4cea0a7"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-099/dacomp-099.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-099/dacomp-099.sqlite",
+    "bytes": 8978432,
+    "sha256": "807763df1f23ee1ebdaef8abcfa5f823dd61a03a7bc7cac058db4918ae78594a"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-100/dacomp-100.sqlite",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-100/dacomp-100.sqlite",
+    "bytes": 11960320,
+    "sha256": "a2e6211377d154f8a31f3d28a4eb15076b9a41e0bf64f3e291c1752197c37be8"
+  },
+  {
+    "path": "dacomp-da/public/dacomp-da.jsonl",
+    "url": "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/2cc22149cdfe16cec41851ccae791c2d2c873bb3/dacomp-da.jsonl",
+    "bytes": 72212,
+    "sha256": "b72f83972a8b2e08ed5da0d9fa33826002dcf6dd11e5e47b8f739b823d31043f"
+  }
+]

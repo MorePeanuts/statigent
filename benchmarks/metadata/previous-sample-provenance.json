@@ -1,0 +1,146 @@
+{
+  "dsbench-analysis-00000032.zip": {},
+  "tabarena-bank-churn.zip": {
+    "tabarena-bank-churn/sources.json": {
+      "retrieved_at": "2026-10-01",
+      "sources": [
+        "https://www.openml.org/api/v1/json/task/363619",
+        "https://www.openml.org/api/v1/json/data/46911",
+        "https://openml.org/data/v1/download/22125222/Bank_Customer_Churn.arff",
+        "https://openml.org/api_splits/get/363619/Task_363619_splits.arff",
+        "https://github.com/autogluon/tabarena/blob/main/packages/tabarena/src/tabarena/benchmark/task/metadata/sources/data/TabArena-v0.1_tasks_metadata.csv"
+      ],
+      "note": "Original task/data and complete original split file. The illustrated Lite evaluation selects repeat=0, fold=0 only. No natural-language agent prompt is part of the original benchmark. Metadata num_instances_train/test are averages; actual selected split counts below.",
+      "files": {
+        "task.json": {
+          "bytes": 981,
+          "sha256": "eb6bc1083cd1a87e084cc8b34c2cb30249a37b7e5c5bc5d6fe3528998951707d"
+        },
+        "tabarena_metadata_row.json": {
+          "bytes": 1529,
+          "sha256": "beb994ca0bd3c31595f74d36e5e799c2ee242acafebb01d75a1c02576a3fe227"
+        },
+        "dataset_metadata.json": {
+          "bytes": 2183,
+          "sha256": "32e2ce0ca0a71ad63da92b137f0bab54fb84cee944b810e5c425f45bd439ede2"
+        },
+        "features.json": {
+          "bytes": 1887,
+          "sha256": "74a8293481a86a7768188b70240d1ee13c14b5b9c195e5a79998f87243f0bbee"
+        },
+        "Bank_Customer_Churn.arff": {
+          "bytes": 482669,
+          "sha256": "88fcfc1f7709a6d914a1c908b4bedfd3fe51ba81ef9bf12207d1fed087d736ed"
+        },
+        "official_splits.arff": {
+          "bytes": 4366848,
+          "sha256": "8d3ac56798489457412ba8c475982221aafbe33868b2dc4c2e19266ca7a04e17"
+        }
+      }
+    }
+  },
+  "dsbench-titanic.zip": {
+    "dsbench-titanic/sources.json": {
+      "retrieved_at": "2026-10-01",
+      "sources": [
+        "https://huggingface.co/datasets/liqiang888/DSBench/resolve/main/data_modeling/data.zip",
+        "https://github.com/LiqiangJing/DSBench/tree/main/data_modeling"
+      ],
+      "note": "Extracted original Titanic files only. The original task text and gender_submission.csv retain Kaggle 418-row wording/example; DSBench actual split is 712 train / 179 test. test_answer.csv is for evaluator only. Task text preserved verbatim for academic inspection, subject to upstream non-commercial research terms.",
+      "files": {
+        "task_metadata.json": {
+          "bytes": 118,
+          "sha256": "23256848c36c42c99c866cf40d4962dfb01db3a22143db1c5c8a5466569beed7"
+        },
+        "task.txt": {
+          "bytes": 7956,
+          "sha256": "5702385dab9261d92f6820ea6d7d5f9a139344ce505d60603255f1bc82a296a1"
+        },
+        "evaluation/titanic_eval.py": {
+          "bytes": 849,
+          "sha256": "91fd5582d43aba14bc7bb1f3e87a49ef2023653fa269560b469ab95fe4b074b1"
+        },
+        "UPSTREAM_README.md": {
+          "bytes": 3909,
+          "sha256": "da3cbf56031e92c7adbf361c0f046526b254a47b6d38bb900f85f778ed57ef56"
+        },
+        "data/train.csv": {
+          "bytes": 49384,
+          "sha256": "e2e820204187ce8a64dc490dfd7ef71091846b87e3e193a804593a41d7a011fd"
+        },
+        "data/test.csv": {
+          "bytes": 12331,
+          "sha256": "e0e18cbcf8a19cf30a53f1cc692c58a2b730f23e7a76b4413c23ede1f61bdb19"
+        },
+        "data/gender_submission.csv": {
+          "bytes": 2839,
+          "sha256": "af6609cdf1dad0b699bd3414c13e999b2c2f651972f0938254a835985d584306"
+        },
+        "evaluator_only/test_answer.csv": {
+          "bytes": 1069,
+          "sha256": "003b11ea7f1a9e5b80350884f067ee6dc11b803820dc3548689bf5c803362aad"
+        }
+      }
+    }
+  },
+  "infiagent-id6.zip": {
+    "infiagent-id6/sources.json": {
+      "retrieved_at": "2026-10-01",
+      "sources": [
+        "https://github.com/InfiAgent/InfiAgent/tree/main/examples/DA-Agent/data"
+      ],
+      "note": "Original question and label records extracted by id=6, complete input CSV, no generated answers.",
+      "files": {
+        "question.json": {
+          "bytes": 714,
+          "sha256": "57a11ce524872248ec3e7c9c1b6e3a5349f632c6d32a1ec1a370fc0d7b079e39"
+        },
+        "answer.json": {
+          "bytes": 253,
+          "sha256": "7cb19f4071dfe8144763af8c94557ec60f8d0dbd2f8787fde3302e31f0f74c2d"
+        },
+        "test_ave.csv": {
+          "bytes": 55169,
+          "sha256": "411cf03455d6026823fbd3ab65e2839075a22f9a5c088b85aef0d272d79cca00"
+        },
+        "LICENSE": {
+          "bytes": 11357,
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        }
+      }
+    }
+  },
+  "dacomp-002.zip": {
+    "dacomp-002/sources.json": {
+      "retrieved_at": "2026-10-01",
+      "sources": [
+        "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/main/dacomp-da.jsonl",
+        "https://huggingface.co/datasets/DAComp/dacomp-da/resolve/main/dacomp-002/dacomp-002.sqlite",
+        "https://github.com/ByteDance-Seed/DAComp/tree/main/dacomp-da/evaluation_suite/src/dacomp-002"
+      ],
+      "note": "Original task, complete database and rubric. GSB reference reports/plots remain available at the linked official directory; this archive is a data example, not the full evaluation runtime.",
+      "files": {
+        "task.json": {
+          "bytes": 277,
+          "sha256": "1b96bce503b02a18dd132eb11207e69e31ca3428ec5eff749dc05862187c13c8"
+        },
+        "dacomp-002.sqlite": {
+          "bytes": 9408512,
+          "sha256": "5e05de30cc3ebd1785863777f885390ecc9fa9340022216e827a5e6200b9e5d7"
+        },
+        "rubric.txt": {
+          "bytes": 13007,
+          "sha256": "171aee81abc1e9a7a6f5c0fd321dbc04bb58fdca165834904a1170b89508963e"
+        },
+        "metadata.json": {
+          "bytes": 79,
+          "sha256": "b481f5a6d76ae66a96d1d10015bd5060d70f95dfbc29e7093347bd0ff4f09487"
+        },
+        "LICENSE": {
+          "bytes": 1108,
+          "sha256": "deb1876e357347412703c5ac1ddcb6363ad12e11ae204a15f3e7d62f7555467d"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1666 @@
+[
+  {
+    "path": "dsbench/modeling/private/bike-sharing-demand/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/bike-sharing-demand/test_answer.csv",
+    "bytes": 51199,
+    "sha256": "03eb53326aa7eb4f781735c79f86efef7c6ead5e6b643e062acb42a5587c2d29",
+    "crc32": 3033130754
+  },
+  {
+    "path": "dsbench/modeling/private/cat-in-the-dat-ii/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/cat-in-the-dat-ii/test_answer.csv",
+    "bytes": 1057787,
+    "sha256": "3eada907d0cf6b4758c99e85b16404b251fa5a5d4ba99fd4b6bdf7151f43f224",
+    "crc32": 4280821784
+  },
+  {
+    "path": "dsbench/modeling/private/cat-in-the-dat/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/cat-in-the-dat/test_answer.csv",
+    "bytes": 517892,
+    "sha256": "91fcda9c366b715a52591e70a0c59ea77d1ac92ca23ee168c1b317e51bf16a89",
+    "crc32": 4020396906
+  },
+  {
+    "path": "dsbench/modeling/private/dont-overfit-ii/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/dont-overfit-ii/test_answer.csv",
+    "bytes": 388,
+    "sha256": "9ff9a8fe07f71cd625806c874c586802ea8287cf98ee5cf8923e4f8b8a6bb70f",
+    "crc32": 2088502262
+  },
+  {
+    "path": "dsbench/modeling/private/instant-gratification/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/instant-gratification/test_answer.csv",
+    "bytes": 1835025,
+    "sha256": "9d190b7b8fae2900b71ee4fd2acc942a6865ccc8f853f06128a735db24113ad2",
+    "crc32": 4079386580
+  },
+  {
+    "path": "dsbench/modeling/private/microsoft-malware-prediction/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/microsoft-malware-prediction/test_answer.csv",
+    "bytes": 3328637,
+    "sha256": "47656f156fd10ef62615a7fc8fbb640af05eea2277cf4676f49400fcd9e8453c",
+    "crc32": 2047629040
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e1/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e1/test_answer.csv",
+    "bytes": 86421,
+    "sha256": "fdcb948e90262203855e4fec85e048f2e31c77a0fa6d18ab81de5261f7824895",
+    "crc32": 3611972578
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e10/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e10/test_answer.csv",
+    "bytes": 189289,
+    "sha256": "1f590806d3d88c0f5edcc36b8a5f1ba9e0b5f2f43f50fad04f25cd33dfed00fb",
+    "crc32": 511435828
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e11/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e11/test_answer.csv",
+    "bytes": 941832,
+    "sha256": "49a96a1dbe8725396c77a6841ca38dacf0639d8cb3faa9c3e1c891a0c2051e8c",
+    "crc32": 788568938
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e12/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e12/test_answer.csv",
+    "bytes": 478,
+    "sha256": "e5e4c538f645cf0f492fcaef7ed9fa9499a17a31b163ff3c5fea71bd79965030",
+    "crc32": 3692756615
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e13/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e13/test_answer.csv",
+    "bytes": 2331,
+    "sha256": "d227dbf8d96f7f0e30d22edfe80a1d8d1e509894b846b5c0270574cf343b40c6",
+    "crc32": 44094014
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e14/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e14/test_answer.csv",
+    "bytes": 49388,
+    "sha256": "663daa114795385e16540e7c07e188f3ea522e8101e9ed656182b2951344ff96",
+    "crc32": 2662221218
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e16/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e16/test_answer.csv",
+    "bytes": 123702,
+    "sha256": "a91821b08b49832a81225ba3e32f419f6c426b27f99ea26eba1d1364ff4dd91f",
+    "crc32": 2815687722
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e17/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e17/test_answer.csv",
+    "bytes": 223322,
+    "sha256": "ee3610ea0cc13aa46963d962d8a148c14b9c9ef09c2635459d736d109f7b70a3",
+    "crc32": 4174922964
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e18/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e18/test_answer.csv",
+    "bytes": 27395,
+    "sha256": "123a8e866330b497cb165637926fbbd85afb5577c4ca758d1d3aaab80b9cf78f",
+    "crc32": 2439632829
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e19/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e19/test_answer.csv",
+    "bytes": 264140,
+    "sha256": "832d1d218d627be8ac133acbef1a95da124e94c718f170f32a57f481866c4951",
+    "crc32": 2894003434
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e2/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e2/test_answer.csv",
+    "bytes": 22237,
+    "sha256": "caff40a0413f9cfe9458560b0e84d40fdedec76409eafb12fcf326cf8e85572b",
+    "crc32": 900429907
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e20/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e20/test_answer.csv",
+    "bytes": 546508,
+    "sha256": "8675b63631a7ee9cd759014dfe3e29051c292569eb258244bd0683abbb33ea9c",
+    "crc32": 3426657284
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e22/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e22/test_answer.csv",
+    "bytes": 2705,
+    "sha256": "695d48f67c10951ceb577b0ae5f82da17298a5ae16fb64fdfc3b148fa229c371",
+    "crc32": 3287153910
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e23/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e23/test_answer.csv",
+    "bytes": 237865,
+    "sha256": "e86da24316b128569666379ad096e556e9760975f3abc670e115fbd9bc8d73fd",
+    "crc32": 3132516071
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e24/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e24/test_answer.csv",
+    "bytes": 264667,
+    "sha256": "745785731de160dcbd8f4548e9066533379f5f0094cf43f94a5f9d06bbe1c7f2",
+    "crc32": 2657471764
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e25/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e25/test_answer.csv",
+    "bytes": 18603,
+    "sha256": "b4e51f45861da9bea9c6fa486add8d13a7f0fa1b58202d879e64f5e45895693a",
+    "crc32": 3747596036
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e3/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e3/test_answer.csv",
+    "bytes": 2135,
+    "sha256": "1c7831171c9c9821d9d8ed972ed5541ad0801769947f6328fcccff271cd257ee",
+    "crc32": 1104709362
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e4/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e4/test_answer.csv",
+    "bytes": 372378,
+    "sha256": "6e9b51d2575061a41f2cfd104f56b0d8180a601e37d7dce348b0688dd08ace52",
+    "crc32": 2711959156
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e5/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e5/test_answer.csv",
+    "bytes": 2665,
+    "sha256": "e8196438f47622005b2d14d12c2ec8630fb21870c4ae1a5d060935ae203e502f",
+    "crc32": 1900095259
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e6/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e6/test_answer.csv",
+    "bytes": 69773,
+    "sha256": "0b5cfc1cb882abb037bc04997a4a6e564ea65ff3d5d8e55f51c5587d488a2168",
+    "crc32": 773683650
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e7/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e7/test_answer.csv",
+    "bytes": 65071,
+    "sha256": "83122fef928ffade926aec4c07ca3ca2c33818c82f2c8750f6839d2059a4d18d",
+    "crc32": 3496337290
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e8/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e8/test_answer.csv",
+    "bytes": 435955,
+    "sha256": "dd63c534a4a5aad321711c28f6b85906ba32069a2eed0c867e223792245b3911",
+    "crc32": 263972255
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s3e9/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s3e9/test_answer.csv",
+    "bytes": 11392,
+    "sha256": "c2d89dbec0428ec1f611c17c3c07a35cd7cee26fde9a4caac253ad03a0c3f130",
+    "crc32": 1116979261
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s4e1/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s4e1/test_answer.csv",
+    "bytes": 274993,
+    "sha256": "09f8d17ed6d89be8b3f411c2b0428b0d73f6868cfdb1d67be80d455b3a2e3cd3",
+    "crc32": 87983002
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s4e2/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s4e2/test_answer.csv",
+    "bytes": 93776,
+    "sha256": "25d0e835542cf2d70783a9a042fa5dfb65a8dde1acd9afd25a3ce0022aa9a88b",
+    "crc32": 1660965198
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s4e3/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s4e3/test_answer.csv",
+    "bytes": 74696,
+    "sha256": "b79c8c598a1c4370c1c67d35f1a6faf44f5102e82c81b05952f41f27f9cfb756",
+    "crc32": 2760045148
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s4e4/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s4e4/test_answer.csv",
+    "bytes": 150658,
+    "sha256": "b8038e9b951a6a2b3133b02acdf004c9a05984bae58d00a5cb6ab0c47f90e9dc",
+    "crc32": 980486489
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s4e5/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s4e5/test_answer.csv",
+    "bytes": 2785195,
+    "sha256": "5704d3558413e1f127acf9f533eeb650fa30e01328056dc77412c87dc05d989b",
+    "crc32": 2884429313
+  },
+  {
+    "path": "dsbench/modeling/private/playground-series-s4e6/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/playground-series-s4e6/test_answer.csv",
+    "bytes": 222304,
+    "sha256": "babf2671378e957267d9d61d6038fd3ce82b600baa0df49c821c41f339f52b9d",
+    "crc32": 1361494230
+  },
+  {
+    "path": "dsbench/modeling/private/porto-seguro-safe-driver-prediction/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/porto-seguro-safe-driver-prediction/test_answer.csv",
+    "bytes": 1101543,
+    "sha256": "697eb0cfcbbf670540eb6c472da4b3f6c0d7424653dec05e7baaf2d00643a2d9",
+    "crc32": 1348601834
+  },
+  {
+    "path": "dsbench/modeling/private/santander-customer-satisfaction/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/santander-customer-satisfaction/test_answer.csv",
+    "bytes": 125725,
+    "sha256": "421bce7fe612f2cdad1b8e585566b36b03bbba899a723ac96c1c350333665660",
+    "crc32": 1626492932
+  },
+  {
+    "path": "dsbench/modeling/private/santander-customer-transaction-prediction/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/santander-customer-transaction-prediction/test_answer.csv",
+    "bytes": 577800,
+    "sha256": "e12eb4fe3fb195006a68bab55b260f969d68b956b9f781918e18d7614810b16c",
+    "crc32": 4058291354
+  },
+  {
+    "path": "dsbench/modeling/private/santander-value-prediction-challenge/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/santander-value-prediction-challenge/test_answer.csv",
+    "bytes": 17789,
+    "sha256": "db9f5536907306fe786dbd23453b09b1f87158fe21483a98294f212c8d2add6b",
+    "crc32": 961764954
+  },
+  {
+    "path": "dsbench/modeling/private/spaceship-titanic/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/spaceship-titanic/test_answer.csv",
+    "bytes": 23492,
+    "sha256": "6c2d41d34effdf784ad57062138ec060c9b7f3c63a27d6517ca519948b0ebc48",
+    "crc32": 1427615947
+  },
+  {
+    "path": "dsbench/modeling/private/tabular-playground-series-apr-2021/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/tabular-playground-series-apr-2021/test_answer.csv",
+    "bytes": 157805,
+    "sha256": "bc7210695d703f0e945dc01613b995e6124abd258fd68a45c1d27179b185494c",
+    "crc32": 1551724278
+  },
+  {
+    "path": "dsbench/modeling/private/tabular-playground-series-aug-2021/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/tabular-playground-series-aug-2021/test_answer.csv",
+    "bytes": 441591,
+    "sha256": "9403fb0f2f94696ac1039dcac70ae9af3518cdb7e611c22518d73c4791ae84c8",
+    "crc32": 2610497782
+  },
+  {
+    "path": "dsbench/modeling/private/tabular-playground-series-aug-2022/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/tabular-playground-series-aug-2022/test_answer.csv",
+    "bytes": 40287,
+    "sha256": "b13d7f088b3aee6a8d85bf1e0c61bdb2f992043d15a9df9970f470a8ee7b53c9",
+    "crc32": 1533862849
+  },
+  {
+    "path": "dsbench/modeling/private/tabular-playground-series-dec-2021/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/tabular-playground-series-dec-2021/test_answer.csv",
+    "bytes": 7778379,
+    "sha256": "43eb32d1970ae010e699999c0a3d5f1b7cb0b797dffd5f46e92f092e3cf66d34",
+    "crc32": 901848680
+  },
+  {
+    "path": "dsbench/modeling/private/tabular-playground-series-feb-2021/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/tabular-playground-series-feb-2021/test_answer.csv",
+    "bytes": 1481056,
+    "sha256": "1019cc1e7e3069cef9d56b83cab7524e45596e2efd505cc02a6ecb3d08644ddf",
+    "crc32": 3201385592
+  },
+  {
+    "path": "dsbench/modeling/private/tabular-playground-series-feb-2022/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/tabular-playground-series-feb-2022/test_answer.csv",
+    "bytes": 464203,
+    "sha256": "06d0ce875afa14c0be5199ca2106dbd72a548957a24ff6a654741c88d00b0e27",
+    "crc32": 2497694392
+  },
+  {
+    "path": "dsbench/modeling/private/tabular-playground-series-jan-2021/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/tabular-playground-series-jan-2021/test_answer.csv",
+    "bytes": 1479136,
+    "sha256": "850a1e9148e242f030a9658406876aa7847a2085a661c655ac0bef825dda1d84",
+    "crc32": 4061867383
+  },
+  {
+    "path": "dsbench/modeling/private/tabular-playground-series-mar-2021/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/tabular-playground-series-mar-2021/test_answer.csv",
+    "bytes": 526739,
+    "sha256": "52ff1d54b7a7f24283ba58ec444bc3a2c5365b2a6ca1db367d60c47f44d64683",
+    "crc32": 160306469
+  },
+  {
+    "path": "dsbench/modeling/private/tabular-playground-series-may-2022/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/tabular-playground-series-may-2022/test_answer.csv",
+    "bytes": 1597958,
+    "sha256": "a86acbfa0a5b305cd959ca9eb5ea9029090861d892084a0942b8f572a6d3114c",
+    "crc32": 3716657904
+  },
+  {
+    "path": "dsbench/modeling/private/tabular-playground-series-nov-2021/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/tabular-playground-series-nov-2021/test_answer.csv",
+    "bytes": 1057787,
+    "sha256": "c43fdc33d9ec98bcf9d6898efc8518ea90a42212367daed0ffba1df14f62b65d",
+    "crc32": 1296141095
+  },
+  {
+    "path": "dsbench/modeling/private/tabular-playground-series-sep-2021/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/tabular-playground-series-sep-2021/test_answer.csv",
+    "bytes": 925969,
+    "sha256": "abd252bbbf83eda27c7ad208f965b1fb53bff7e7cfe82f750e09b60c9cfbd493",
+    "crc32": 1953779570
+  },
+  {
+    "path": "dsbench/modeling/private/titanic/test_answer.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/answers/titanic/test_answer.csv",
+    "bytes": 1069,
+    "sha256": "003b11ea7f1a9e5b80350884f067ee6dc11b803820dc3548689bf5c803362aad",
+    "crc32": 267168655
+  },
+  {
+    "path": "dsbench/modeling/public/bike-sharing-demand/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/bike-sharing-demand.txt",
+    "bytes": 3271,
+    "sha256": "1906dd36586c2c08e6adff6f0b5d6682098cf8b033b16f6bea6a42f1d12078cf",
+    "crc32": 3163687327
+  },
+  {
+    "path": "dsbench/modeling/public/bike-sharing-demand/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/bike-sharing-demand/test.csv",
+    "bytes": 109461,
+    "sha256": "fa96a2826274efaecfa3c00d4256d11694256990745e0fcec2a104e85ab57be3",
+    "crc32": 422312494
+  },
+  {
+    "path": "dsbench/modeling/public/bike-sharing-demand/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/bike-sharing-demand/train.csv",
+    "bytes": 521358,
+    "sha256": "48868d6b386a01d56db116663332dd2cec3c20302ce47fc578b487870536bdd1",
+    "crc32": 1765101310
+  },
+  {
+    "path": "dsbench/modeling/public/cat-in-the-dat-ii/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/cat-in-the-dat-ii.txt",
+    "bytes": 2257,
+    "sha256": "2a0053fb082f4ad58eddca50ea1465315cf0181c72eb0ed5c0e47f73777411ca",
+    "crc32": 1931590244
+  },
+  {
+    "path": "dsbench/modeling/public/cat-in-the-dat-ii/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/cat-in-the-dat-ii/test.csv",
+    "bytes": 16818130,
+    "sha256": "f89b3715a27d15fa7b44b6735c1fd8ffcea2cb7715c220f479bdf58fd461a76b",
+    "crc32": 1443526996
+  },
+  {
+    "path": "dsbench/modeling/public/cat-in-the-dat-ii/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/cat-in-the-dat-ii/train.csv",
+    "bytes": 68241553,
+    "sha256": "01db14c600ecd0d3ffb4c618b79fffe365a27cdc88385d8e95e32b152e5a751e",
+    "crc32": 1983649177
+  },
+  {
+    "path": "dsbench/modeling/public/cat-in-the-dat/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/cat-in-the-dat.txt",
+    "bytes": 2136,
+    "sha256": "72a2107ef9c586b434090168e57d18c481ec9e28a811f7aa1709ff792fc29755",
+    "crc32": 2403248712
+  },
+  {
+    "path": "dsbench/modeling/public/cat-in-the-dat/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/cat-in-the-dat/test.csv",
+    "bytes": 7810850,
+    "sha256": "edd78607b12636a069adc43677ae5f4e571cad81e69b51b9801e5bc11c5efc69",
+    "crc32": 961177295
+  },
+  {
+    "path": "dsbench/modeling/public/cat-in-the-dat/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/cat-in-the-dat/train.csv",
+    "bytes": 31717834,
+    "sha256": "5fbfbb2f9d6987881e733573ecaafc8a90d1fd6fa9b22e051a20a62c90630e70",
+    "crc32": 3760659280
+  },
+  {
+    "path": "dsbench/modeling/public/dont-overfit-ii/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/dont-overfit-ii.txt",
+    "bytes": 1919,
+    "sha256": "f62066ead1f68a0750e1ee4300b3440f8e4cd27cecf7f54e6504ca36e9526c3e",
+    "crc32": 1981851109
+  },
+  {
+    "path": "dsbench/modeling/public/dont-overfit-ii/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/dont-overfit-ii/test.csv",
+    "bytes": 97169,
+    "sha256": "e2b045913e7047fb466bb6b023ebce51c06fa85cbd13f4a99555fac319d11927",
+    "crc32": 3121992359
+  },
+  {
+    "path": "dsbench/modeling/public/dont-overfit-ii/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/dont-overfit-ii/train.csv",
+    "bytes": 386014,
+    "sha256": "16f6774ad1ab0da96263abdc085952301685d8677660383e8bac0b1a787e97e6",
+    "crc32": 683750993
+  },
+  {
+    "path": "dsbench/modeling/public/instant-gratification/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/instant-gratification.txt",
+    "bytes": 4344,
+    "sha256": "3298a5e69cad325af3435315028d2525653941e7c1d7ef063fe9ba979b7d7106",
+    "crc32": 3011529726
+  },
+  {
+    "path": "dsbench/modeling/public/instant-gratification/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/instant-gratification/test.csv",
+    "bytes": 127477173,
+    "sha256": "8a661fa21f40119305304c91a1d714fdfebd483bd60676ee60fd58a4e7d4cde2",
+    "crc32": 1570197145
+  },
+  {
+    "path": "dsbench/modeling/public/instant-gratification/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/instant-gratification/train.csv",
+    "bytes": 510303516,
+    "sha256": "ef0cce439867e3e939871c90aac898813484953f9aa1e74b1865caf28f350acf",
+    "crc32": 335794500
+  },
+  {
+    "path": "dsbench/modeling/public/microsoft-malware-prediction/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/microsoft-malware-prediction.txt",
+    "bytes": 11541,
+    "sha256": "808bedaf54c033049acf46eb00303aeca55b072e528201e605533251333151e4",
+    "crc32": 2980195294
+  },
+  {
+    "path": "dsbench/modeling/public/microsoft-malware-prediction/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/microsoft-malware-prediction/test.csv",
+    "bytes": 52528661,
+    "sha256": "c416bafae0cad8a98a94e58c24069985609cc39b974379c471d51c86303402e4",
+    "crc32": 1192955812
+  },
+  {
+    "path": "dsbench/modeling/public/microsoft-malware-prediction/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/microsoft-malware-prediction/train.csv",
+    "bytes": 210874451,
+    "sha256": "9cecae2eb6c7a0e3c3541314701310cedd558f5710fe896c901ac219770bdcf9",
+    "crc32": 2019790168
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e1/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e1.txt",
+    "bytes": 3945,
+    "sha256": "57c3146f66e2924bfec28fad0dc0995620e8e5df32685c969012ab1530ca1578",
+    "crc32": 1764436761
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e1/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e1/test.csv",
+    "bytes": 679537,
+    "sha256": "ed514ccbb340acbe8fbf14cc6903b0f71f30263b99ac177de0b9f94184651817",
+    "crc32": 3737138278
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e1/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e1/train.csv",
+    "bytes": 2892071,
+    "sha256": "29f716473570282ddbbcc918419a6d51b287055fd5e5a08792160dd7051f25b3",
+    "crc32": 3898214616
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e10/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e10.txt",
+    "bytes": 2995,
+    "sha256": "17ff92c7ca6e7ae99155efce6158a21fba107d46cc316498f32c6fe526c290a7",
+    "crc32": 1360829307
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e10/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e10/test.csv",
+    "bytes": 2372586,
+    "sha256": "73b40d0b445c49637d9e103ee69fa01cfbd3e67d17ee40e553aca61a37c624b7",
+    "crc32": 1774154899
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e10/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e10/train.csv",
+    "bytes": 9677588,
+    "sha256": "3e97c5703c16dd2084427d430beb6d6432a10221c9b66ff329e13e8a5a86da86",
+    "crc32": 336686540
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e11/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e11.txt",
+    "bytes": 2444,
+    "sha256": "52478dea7222db17701ee9f4bcf17333bd242166b4e1470b559cc2f7fc631bbd",
+    "crc32": 2510077975
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e11/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e11/test.csv",
+    "bytes": 5291857,
+    "sha256": "649058c368f57bbffa392832aa46b8d608b37a51bd9f046db6b8115902c40505",
+    "crc32": 1361390261
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e11/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e11/train.csv",
+    "bytes": 23004870,
+    "sha256": "0d9f7be9c797169d5dc753e1b55b3d61395f334ac18dc9583c5f5b4c09c1c4c0",
+    "crc32": 1468321429
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e12/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e12.txt",
+    "bytes": 2702,
+    "sha256": "24459ef0d96ac70e251892f9fd5edf159c4010847ea7160107f11e11b87099c2",
+    "crc32": 4057628565
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e12/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e12/test.csv",
+    "bytes": 2715,
+    "sha256": "83b6ddccfc0c88c47be03b16eee23d72a822529807a9610358224ba841987bd1",
+    "crc32": 3514674333
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e12/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e12/train.csv",
+    "bytes": 11441,
+    "sha256": "59254cf3a174ba7697595e3898baf9b445d7a5c0c20b23e6094c4ceca044ca37",
+    "crc32": 2889000764
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e13/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e13.txt",
+    "bytes": 2630,
+    "sha256": "80f0116e63e2068193ec4e8dc74f2b2511f8f922bd9e0d30d07f2ad55af7b53d",
+    "crc32": 2890552056
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e13/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e13/test.csv",
+    "bytes": 37656,
+    "sha256": "29a7eb874b91a92959568842f70e82ecc4fca4565c97c48aecb6cfa472f2c6a6",
+    "crc32": 1128901645
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e13/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e13/train.csv",
+    "bytes": 154664,
+    "sha256": "bf5a99c51d426f057dddc9ac407c5903031077c03dad85e2d845ff9676e7b93a",
+    "crc32": 1966236106
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e14/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e14.txt",
+    "bytes": 1300,
+    "sha256": "e302d4743af898dfe23f8adb798629ff183384405cc532d432d95ad754aec86b",
+    "crc32": 1842134096
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e14/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e14/test.csv",
+    "bytes": 319595,
+    "sha256": "cdf8f47d6f42ef7a12cfb70096fa0de217e972f2826eb18d8059bb1b6e572d2b",
+    "crc32": 728896834
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e14/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e14/train.csv",
+    "bytes": 1410349,
+    "sha256": "cfe16be8392cacb8d0402e281375e57938fae168ab1c700f0acb91daae865ee8",
+    "crc32": 3709332003
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e16/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e16.txt",
+    "bytes": 1234,
+    "sha256": "651309b0640f8995c18ee4aa8a4b4a618ac6f03233c2c598a59fe78e860c0ae8",
+    "crc32": 3166960715
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e16/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e16/test.csv",
+    "bytes": 1004533,
+    "sha256": "f88f884af21448b6c2942e49a3119550358d2b2c3a3155ec2058640b56292191",
+    "crc32": 3112437900
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e16/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e16/train.csv",
+    "bytes": 4166220,
+    "sha256": "1c03034ad784217c5611d2d7df835173a8787602dc7ebad92f2460d9aa221a34",
+    "crc32": 1980858336
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e17/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e17.txt",
+    "bytes": 2533,
+    "sha256": "f0455e208775d6530c7980bad32e7fe213b860af62b98970326c8178b5b39efd",
+    "crc32": 2833495759
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e17/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e17/test.csv",
+    "bytes": 1381847,
+    "sha256": "9299718d2d3816b88ebb4544a35cdfa5584707a0908201eb36fa0ae10a263ec0",
+    "crc32": 3745971019
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e17/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e17/train.csv",
+    "bytes": 5744865,
+    "sha256": "9456af54a6bc9632058cfab04f0a5578613af0314514feeefbf1849cebfc13ee",
+    "crc32": 2438138077
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e18/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e18.txt",
+    "bytes": 2979,
+    "sha256": "fe1f7b88821f1b2ccb73115f3b3ac969ee1a4c67336ed4d594a2314f96c4d1dd",
+    "crc32": 3161146606
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e18/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e18/test.csv",
+    "bytes": 878635,
+    "sha256": "8b85d82a630fa5e46ceaa3eae84abdc97391791e612f3033c206847da495cf4e",
+    "crc32": 1201564329
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e18/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e18/train.csv",
+    "bytes": 3644270,
+    "sha256": "55386e81b1c3d8ed396b2a51106a040757a14ddf0940eb8e3098eae2e2501515",
+    "crc32": 2817052092
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e19/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e19.txt",
+    "bytes": 2653,
+    "sha256": "344258a380e58527cc96c34490b5916cfe99ab4b67d4cacdcfb58025230b19e1",
+    "crc32": 1293048697
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e19/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e19/test.csv",
+    "bytes": 1992684,
+    "sha256": "1e0f0322075dd4e95f95ebde81dec3e9586cbf6b20a85e9977342930e33225d2",
+    "crc32": 2737339936
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e19/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e19/train.csv",
+    "bytes": 8354598,
+    "sha256": "52d5d920a7c853e20c76e3f52521ac25825de84214a325c2e5b6e492c65bd894",
+    "crc32": 3912493802
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e2/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e2.txt",
+    "bytes": 3588,
+    "sha256": "490aa7f589f0425506e4c5d2bf4fdd4ef6fa60efb89e36406d2e1325e29fd668",
+    "crc32": 3042842529
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e2/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e2/test.csv",
+    "bytes": 188091,
+    "sha256": "503d6ace3a12a78613dbf2d0182459d80d4f8b15414f97fd786a16e72d7df4c8",
+    "crc32": 4117840393
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e2/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e2/train.csv",
+    "bytes": 775542,
+    "sha256": "f8609f51aa7150550824a4606d625755bfa003b34b691f664915e909bf334eef",
+    "crc32": 4035239952
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e20/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e20.txt",
+    "bytes": 4506,
+    "sha256": "481824d7bf670e1444a386ec1d39f9475efd039453b6233a2261762a64e48de3",
+    "crc32": 2116966472
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e20/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e20/test.csv",
+    "bytes": 18110515,
+    "sha256": "557304cfee317a488f9b2c6f5bdde56ccc0b1cd51187acb4b41b0aab77dea5a0",
+    "crc32": 3443707455
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e20/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e20/train.csv",
+    "bytes": 72957712,
+    "sha256": "356dfd8c2ee94a52da84cee4d307f7f841b7ff103e21dcb20715b77f490ddb60",
+    "crc32": 4006820591
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e22/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e22.txt",
+    "bytes": 1663,
+    "sha256": "8c703729c978753b3ac056d8328f9eaea09e1cca28548175c2b11cd214bc7c15",
+    "crc32": 2986146082
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e22/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e22/test.csv",
+    "bytes": 43858,
+    "sha256": "98832e4ce1b750433bbf63a9519978f6cdda97efecd0acb2cb52b6a12b0b6a15",
+    "crc32": 2636708155
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e22/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e22/train.csv",
+    "bytes": 180983,
+    "sha256": "6bfcee98b5f1927dd78a399fb409585f07e8f1acfa089e2851ca523c7764366c",
+    "crc32": 2981178615
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e23/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e23.txt",
+    "bytes": 1781,
+    "sha256": "9f043350dc6d4ba395cb6f4ee766fcd2f61592cf14a588b59bf3aead8867e713",
+    "crc32": 2967362397
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e23/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e23/test.csv",
+    "bytes": 2067498,
+    "sha256": "1e87b33b76e1e6e64eda331d8d2816a2dda1e17a5bdffb97d5088a8d86c9d557",
+    "crc32": 908942553
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e23/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e23/train.csv",
+    "bytes": 8737834,
+    "sha256": "304ea5883d47a49af9c48a763cbdcf74adad5ba4ba175b5fd0ca55dbbd3210a1",
+    "crc32": 2880237887
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e24/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e24.txt",
+    "bytes": 1058,
+    "sha256": "adbabbc4d1aa8ca83ee14c90ab00655e7e9b0595adfb1b720c81a50e0a502cd5",
+    "crc32": 3353513140
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e24/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e24/test.csv",
+    "bytes": 2548499,
+    "sha256": "3ec38bd996143b3728bbf9603b36f0e2426925b47984858d26a7546bdf71d56f",
+    "crc32": 475406751
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e24/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e24/train.csv",
+    "bytes": 10445712,
+    "sha256": "375af56cf6bb3cc07303a02df8b29fca62a2a005cc9f4c20948a9c8d53e1d302",
+    "crc32": 3886969984
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e25/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e25.txt",
+    "bytes": 1165,
+    "sha256": "cfe71f0b4a117ca984d2089e50e22987c69292388214a2580a07d21ab391c5bf",
+    "crc32": 2939494144
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e25/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e25/test.csv",
+    "bytes": 238523,
+    "sha256": "97814157d38004d85eb03c5b770d503c8e1f7cdc598426e7fdad99152d581df4",
+    "crc32": 739089247
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e25/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e25/train.csv",
+    "bytes": 985528,
+    "sha256": "32c45d8dc8f244908e9868e00150969c6d36a2c12cf2623c378b7f729cc40a91",
+    "crc32": 1520253855
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e3/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e3.txt",
+    "bytes": 3585,
+    "sha256": "a76530a7685c1266a73bf3111cbb1c2c9dc56001290ceb4ca84faac57c0ea2ea",
+    "crc32": 1768094639
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e3/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e3/test.csv",
+    "bytes": 51167,
+    "sha256": "dc9107995a1ef26c8ab067d7e1768807233824917d906656e705c315898246b3",
+    "crc32": 2317145163
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e3/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e3/train.csv",
+    "bytes": 205628,
+    "sha256": "00826f67519866ca8278bdac5a850b0f17140b8360d85618f98e3099836c3363",
+    "crc32": 2605015104
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e4/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e4.txt",
+    "bytes": 3698,
+    "sha256": "8dadd360dfff22954ff369e6e8c2269315b811d84de7139745ac8c0441d3a199",
+    "crc32": 3483697039
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e4/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e4/test.csv",
+    "bytes": 23492661,
+    "sha256": "21e6428af583c34ae6a7c588a5eeaa09436b308055137c6aedc2c1ebdc982676",
+    "crc32": 595796499
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e4/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e4/train.csv",
+    "bytes": 94319207,
+    "sha256": "b2a9fff883e6c35ef7a4dfcc58141b3a8b76f821b445e8e4fd4d23072b505274",
+    "crc32": 4166970691
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e5/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e5.txt",
+    "bytes": 1951,
+    "sha256": "955625fb59a28dfabe6f048a8585b99ecf8e5401a170d8018a678c9816dd5459",
+    "crc32": 3435868211
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e5/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e5/test.csv",
+    "bytes": 25536,
+    "sha256": "2a677ac93d886fec8f37057809b496bdb87c8884d31fdd21092c2770a051d741",
+    "crc32": 3514321097
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e5/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e5/train.csv",
+    "bytes": 104643,
+    "sha256": "3e43d1ab44d5117c0d4fe7ef9af99e85bd232d21ed784a75b1a0cd00660200a5",
+    "crc32": 40455740
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e6/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e6.txt",
+    "bytes": 3731,
+    "sha256": "b9f0171d8f3eb7f49a032ad6f3665d1209ded3790a25580fb86f2e4ee77821b8",
+    "crc32": 2296745313
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e6/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e6/test.csv",
+    "bytes": 263975,
+    "sha256": "9fe1870bb552d9e86fef8248f49080ab937a48d194c0e348c6cb9ee9d8bce334",
+    "crc32": 1744363595
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e6/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e6/train.csv",
+    "bytes": 1233622,
+    "sha256": "7149d7a69666824320c014275cdbb311fefaa3030b58d4ab68cb13a95582f729",
+    "crc32": 1635127645
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e7/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e7.txt",
+    "bytes": 3645,
+    "sha256": "afb055a214738ac7c4604d0bd00440b780a1f06ee403f487260fdcb32d070ba5",
+    "crc32": 1073481225
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e7/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e7/test.csv",
+    "bytes": 411570,
+    "sha256": "2baea034cd00fe488e6046bc5bc2e2937bb37d069e38b2cc6e56f08a05775325",
+    "crc32": 808917085
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e7/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e7/train.csv",
+    "bytes": 1713134,
+    "sha256": "ad993bb13609e75ea99cb0689e0ddd5f6539e25458dcf96cd128df71602737b0",
+    "crc32": 3857072940
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e8/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e8.txt",
+    "bytes": 3771,
+    "sha256": "75870ca5617e69b649faf035338a4d23bba436f910e3ba84e6eb82356d69ed28",
+    "crc32": 632194244
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e8/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e8/test.csv",
+    "bytes": 1905872,
+    "sha256": "841a2c69789f717dbf947e4a8f30a483177b084becd8802a45a0958b315e6967",
+    "crc32": 92384909
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e8/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e8/train.csv",
+    "bytes": 8369884,
+    "sha256": "6a0dc84b5fa0101e55b1e7925c04aa27511fd8754bdda97a67ef3c351b87901e",
+    "crc32": 2426411825
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e9/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s3e9.txt",
+    "bytes": 3752,
+    "sha256": "4c3ce2202b1dc572f2906cc39ece3785d6737bc7c2e53fbd5e5ce029db41a55a",
+    "crc32": 1421453027
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e9/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e9/test.csv",
+    "bytes": 49302,
+    "sha256": "e4435dced06b0c53f121946d34b257cd3fed77eb85424e487396d69cda024e4c",
+    "crc32": 4214888392
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s3e9/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s3e9/train.csv",
+    "bytes": 221837,
+    "sha256": "557136a6099f32d6fceb28e0a4cc7fb252932338dfca8f17a589cb7b3c213eff",
+    "crc32": 251930891
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e1/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s4e1.txt",
+    "bytes": 1045,
+    "sha256": "16465572dafb4ff893781618dadac8efb5e87cc7112ac5778e245cb86370300a",
+    "crc32": 2741992953
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e1/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s4e1/test.csv",
+    "bytes": 2403247,
+    "sha256": "263331c62fb3b68725f3919c13d2dc6e199e928dbfbee5053fcfea2a9c1de6e6",
+    "crc32": 3220051693
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e1/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s4e1/train.csv",
+    "bytes": 9880994,
+    "sha256": "db1e4c70f857984488ec5c3a5537cf8cfd2b55a9ce25802aece541d86ea6799e",
+    "crc32": 562034205
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e2/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s4e2.txt",
+    "bytes": 1128,
+    "sha256": "930daf202b48481491330a6e9f50ec93ffda30f6c6034c422e005e65a91cc1de",
+    "crc32": 3945173236
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e2/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s4e2/test.csv",
+    "bytes": 474262,
+    "sha256": "f2560967d22761b746a6d4082f78e913e3ba7e5e2e7c82065a27ce31db8dc552",
+    "crc32": 2379125475
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e2/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s4e2/train.csv",
+    "bytes": 2182440,
+    "sha256": "3be487c6da40870a5ccf774c4bc45ac5b4fac53b4a867d2aef570ab0adbe09b6",
+    "crc32": 808675662
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e3/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s4e3.txt",
+    "bytes": 1527,
+    "sha256": "79b2fa0da0ef40f117027e8c2372c7e9ac4faef25aed23f5aca709a2da119bb4",
+    "crc32": 552052739
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e3/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s4e3/test.csv",
+    "bytes": 573297,
+    "sha256": "6a6aa0f6b36167a9183949472bfbe4ddf0b872f9a5ab79fc55f162ed258de986",
+    "crc32": 3959571380
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e3/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s4e3/train.csv",
+    "bytes": 2507041,
+    "sha256": "5f15df7592bb0d97dac9addf516710080d45dcb885eb8dcd9559078fae199b8c",
+    "crc32": 2454679014
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e4/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s4e4.txt",
+    "bytes": 1342,
+    "sha256": "363771b006f217c525b02d6f398a5eb33ec17ae66740bae473570e24c77095e7",
+    "crc32": 3104556638
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e4/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s4e4/test.csv",
+    "bytes": 903808,
+    "sha256": "35a1ec7f4cb254c7585514e789d86750aaec6a8f6a1bff9cc5ae6bc1b091e017",
+    "crc32": 192864124
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e4/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s4e4/train.csv",
+    "bytes": 3790056,
+    "sha256": "02890b0c756b311782c5a2bfa59ed9d55bf1ba5c5f079c35b9253956aaf166ff",
+    "crc32": 3937510941
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e5/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s4e5.txt",
+    "bytes": 1114,
+    "sha256": "8fc236e99233f2dfd09c3d36d57a45f73b854f82257814febae1a26d0d94fe39",
+    "crc32": 3290877636
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e5/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s4e5/test.csv",
+    "bytes": 10608373,
+    "sha256": "52313f5140dd5570c7cb1cf6a4550622b19ae5dbd79e0f4088a94aed82df8581",
+    "crc32": 1761252829
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e5/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s4e5/train.csv",
+    "bytes": 47301490,
+    "sha256": "c9b2dcc039d55087b289210dc8287eb02fa44b1075d73427e9ed87ce5c726ddc",
+    "crc32": 727568240
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e6/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/playground-series-s4e6.txt",
+    "bytes": 1118,
+    "sha256": "771de298f72b394c4ee542f8ea65fcc267f49fa8afff1c8e5e004263f2af4bbb",
+    "crc32": 1181263189
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e6/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s4e6/test.csv",
+    "bytes": 1765659,
+    "sha256": "3171df002b6a39eddcf1153851d4bbc262a23b45d5bfda112c6101a198976884",
+    "crc32": 1047501005
+  },
+  {
+    "path": "dsbench/modeling/public/playground-series-s4e6/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/playground-series-s4e6/train.csv",
+    "bytes": 7589045,
+    "sha256": "5de94a600a8f1c6c4bc700195a8394e24f470a4854bbd03796e6d4ee252a2e58",
+    "crc32": 2965480657
+  },
+  {
+    "path": "dsbench/modeling/public/porto-seguro-safe-driver-prediction/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/porto-seguro-safe-driver-prediction.txt",
+    "bytes": 3014,
+    "sha256": "e058ab62f08e4ab0a59d9f18edc73ffe0eb04cf37665b90021ef9782d5dae923",
+    "crc32": 2538555728
+  },
+  {
+    "path": "dsbench/modeling/public/porto-seguro-safe-driver-prediction/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/porto-seguro-safe-driver-prediction/test.csv",
+    "bytes": 22461538,
+    "sha256": "9dca947bf0a461ab5418b4ab2cee442c40b9b25e46ccf592042481a0f024df0f",
+    "crc32": 1084233687
+  },
+  {
+    "path": "dsbench/modeling/public/porto-seguro-safe-driver-prediction/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/porto-seguro-safe-driver-prediction/train.csv",
+    "bytes": 90802289,
+    "sha256": "05fbdc17db19ea89cb6d46259d2187dcfb868dbb8dad54805f26c28670c83a36",
+    "crc32": 466122562
+  },
+  {
+    "path": "dsbench/modeling/public/santander-customer-satisfaction/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/santander-customer-satisfaction.txt",
+    "bytes": 1471,
+    "sha256": "365919a0c16802e2b7d40b6cd313bb956bd04930c491ee865914cf7cd79555be",
+    "crc32": 1061274525
+  },
+  {
+    "path": "dsbench/modeling/public/santander-customer-satisfaction/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/santander-customer-satisfaction/test.csv",
+    "bytes": 15078804,
+    "sha256": "ba302a9659fecc6da9e35a4213af63ac77f267ef15cb3d6e73bcf7f3150559ee",
+    "crc32": 2298566398
+  },
+  {
+    "path": "dsbench/modeling/public/santander-customer-satisfaction/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/santander-customer-satisfaction/train.csv",
+    "bytes": 60418561,
+    "sha256": "f2739dedb4b40d7b8acf172f67e00ba3c7e5e84084f12e7f7a991560ccffd539",
+    "crc32": 4235994890
+  },
+  {
+    "path": "dsbench/modeling/public/santander-customer-transaction-prediction/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/santander-customer-transaction-prediction.txt",
+    "bytes": 1703,
+    "sha256": "2cd1d6df0c81d7e0bc471548f775271a33515b8c44a82b652abc564ce7af333f",
+    "crc32": 3507911710
+  },
+  {
+    "path": "dsbench/modeling/public/santander-customer-transaction-prediction/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/santander-customer-transaction-prediction/test.csv",
+    "bytes": 60351570,
+    "sha256": "3b9fc7e02a2b6f0cecc7971518fbd309d768ea51e82d636aea3f2f204f67cf02",
+    "crc32": 251475237
+  },
+  {
+    "path": "dsbench/modeling/public/santander-customer-transaction-prediction/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/santander-customer-transaction-prediction/train.csv",
+    "bytes": 241702945,
+    "sha256": "6760d5416bb3e0e3588984ae5d27d94d5e499ac38ba09e4bb10d310d46983bc2",
+    "crc32": 1161917121
+  },
+  {
+    "path": "dsbench/modeling/public/santander-value-prediction-challenge/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/santander-value-prediction-challenge.txt",
+    "bytes": 2176,
+    "sha256": "4b85885727e1fd9e9054d7cc4a066a30246a59cda6d2a6934fe129159241dfa4",
+    "crc32": 1423327326
+  },
+  {
+    "path": "dsbench/modeling/public/santander-value-prediction-challenge/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/santander-value-prediction-challenge/test.csv",
+    "bytes": 13041133,
+    "sha256": "a644c7ec0792bbbcc9fe9cd978618c0f6bc64001eb40419b350cf174ae16a080",
+    "crc32": 3597431931
+  },
+  {
+    "path": "dsbench/modeling/public/santander-value-prediction-challenge/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/santander-value-prediction-challenge/train.csv",
+    "bytes": 52160534,
+    "sha256": "35f2d8e7726f4dc81efa0893d2e854f4f04b4c9af6e7c51438f9eecc1113bc1f",
+    "crc32": 2382176161
+  },
+  {
+    "path": "dsbench/modeling/public/spaceship-titanic/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/spaceship-titanic.txt",
+    "bytes": 4081,
+    "sha256": "c4a9c2978425aa89949cb42f97a2950fdf377bad89ac9a1293f608ec7a241aa1",
+    "crc32": 508645973
+  },
+  {
+    "path": "dsbench/modeling/public/spaceship-titanic/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/spaceship-titanic/test.csv",
+    "bytes": 151334,
+    "sha256": "09d731860b996123cb4e47a3cce798a62e3401f95c133e33aa99b968b2f7cf5d",
+    "crc32": 1618581974
+  },
+  {
+    "path": "dsbench/modeling/public/spaceship-titanic/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/spaceship-titanic/train.csv",
+    "bytes": 644641,
+    "sha256": "572a5b61b267f8371778dac1745fe8557f05ad58f118d58ec8d24e022824f9de",
+    "crc32": 2373282519
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-apr-2021/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/tabular-playground-series-apr-2021.txt",
+    "bytes": 5771,
+    "sha256": "5931c88cb6b7cf0139d3a8bb4ea07cec6ece32bec62d5483c48348f6e8dfb81c",
+    "crc32": 817668597
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-apr-2021/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-apr-2021/test.csv",
+    "bytes": 1150668,
+    "sha256": "93aa5a4458d60e0670f40eaa0472ba351a8a657b0dc24632ff2d8daa95bea020",
+    "crc32": 1367268116
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-apr-2021/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-apr-2021/train.csv",
+    "bytes": 4759108,
+    "sha256": "90452319cd3c676582ff4f2c29273747004534c52f90148feee1a314d5e47900",
+    "crc32": 1398107718
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-aug-2021/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/tabular-playground-series-aug-2021.txt",
+    "bytes": 2718,
+    "sha256": "c332686a8aece90fa81d5121f94df4988194680c7ef5912296bb09535120367b",
+    "crc32": 2735608340
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-aug-2021/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-aug-2021/test.csv",
+    "bytes": 41998616,
+    "sha256": "e8b8835e8f4486d5750732f6282821ef0bc3c013902093c206a66b6ff8a56835",
+    "crc32": 2117101119
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-aug-2021/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-aug-2021/train.csv",
+    "bytes": 168444209,
+    "sha256": "4becb291c2ff195858bbb4d46796b93f91dc7571928b2d41f3cc4938174cad2d",
+    "crc32": 595376669
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-aug-2022/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/tabular-playground-series-aug-2022.txt",
+    "bytes": 2755,
+    "sha256": "7f31c7a7883d8aad42a351cd573d890c94c1830d0877d7233962815d84b97d73",
+    "crc32": 3610602230
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-aug-2022/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-aug-2022/test.csv",
+    "bytes": 779065,
+    "sha256": "a2d4e125f5bd711e480b731aea90d6b4d66d10e9b30c93d41b43045d1d40d7b6",
+    "crc32": 2258966147
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-aug-2022/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-aug-2022/train.csv",
+    "bytes": 3157282,
+    "sha256": "390b8b999d736abe27cc207c843283207aa393ef0eae31d962e58e0159c204f9",
+    "crc32": 851790795
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-dec-2021/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/tabular-playground-series-dec-2021.txt",
+    "bytes": 2576,
+    "sha256": "574959757aa31626a966d37e811bec2085e1499ee77b2c8a05d3fa7eeb2ebaf6",
+    "crc32": 4095281461
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-dec-2021/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-dec-2021/test.csv",
+    "bytes": 107993869,
+    "sha256": "4dbd7cc003183880d94f33de75d52d3a5896efdf6e4cd806cee8085edab4cd7d",
+    "crc32": 4111293474
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-dec-2021/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-dec-2021/train.csv",
+    "bytes": 438368619,
+    "sha256": "c498b1f8015e9d97320e051817b88793ce47181855442b878015d23e6b20cdfc",
+    "crc32": 1807881826
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-feb-2021/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/tabular-playground-series-feb-2021.txt",
+    "bytes": 2834,
+    "sha256": "3d73bf7ef073096dcf662fdec8c1b8e76986115ae8a5e30ad65e671be7b43c3c",
+    "crc32": 3092469281
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-feb-2021/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-feb-2021/test.csv",
+    "bytes": 17491320,
+    "sha256": "64f2b8b2364dc63fc9130fb421418a7d05afa6c353cda2b0333b4cb32a530207",
+    "crc32": 1863797027
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-feb-2021/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-feb-2021/train.csv",
+    "bytes": 74262070,
+    "sha256": "c238c88f431a053d67205461f9922d5f254c6b7c93b97a4b4850eca34e508aee",
+    "crc32": 4224092310
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-feb-2022/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/tabular-playground-series-feb-2022.txt",
+    "bytes": 3546,
+    "sha256": "ddec1a401ad32a9e3b93b6658a91e1a4e8cfe2bde66d326b654d0d8668ad0140",
+    "crc32": 1769824441
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-feb-2022/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-feb-2022/test.csv",
+    "bytes": 96241174,
+    "sha256": "3213569f07a5edcf961e6db16a8d932c41d33179b091521dfecb3d84b9218ca7",
+    "crc32": 3966849484
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-feb-2022/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-feb-2022/train.csv",
+    "bytes": 386361774,
+    "sha256": "f7b494235e866a91a6c66602e6d3422f8d6871657ad34d833972eb91b6827500",
+    "crc32": 3682432477
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-jan-2021/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/tabular-playground-series-jan-2021.txt",
+    "bytes": 2517,
+    "sha256": "5ddac76514a8fa30500a975942da394bf1443d4a735330ef818fdf1eab99e73b",
+    "crc32": 4020745664
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-jan-2021/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-jan-2021/test.csv",
+    "bytes": 16289791,
+    "sha256": "3abf0f0437daa8dfd6f2dbe2412fd435e22faefc44da864bbba55ead077d621c",
+    "crc32": 3427975883
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-jan-2021/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-jan-2021/train.csv",
+    "bytes": 69447889,
+    "sha256": "aed0f72357bcf18911811eeb1feafd8dff95f57287367b51f90a79f998a87a7e",
+    "crc32": 90665570
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-mar-2021/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/tabular-playground-series-mar-2021.txt",
+    "bytes": 2739,
+    "sha256": "e05781b5e8ac0c53a9359c4c1ea9cdb06d277135481aa427a64b99b450723552",
+    "crc32": 2257479230
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-mar-2021/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-mar-2021/test.csv",
+    "bytes": 15350245,
+    "sha256": "b0e13874f298ae7099e3fbd994a5a3b918a9124a3ca2ca43ad7cd604204ccd9a",
+    "crc32": 2072990599
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-mar-2021/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-mar-2021/train.csv",
+    "bytes": 61879005,
+    "sha256": "0a1640ef2c7d97b7bddd02ab419325eb33807cda3f3406c15867c20f62b2b7a8",
+    "crc32": 94198800
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-may-2022/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/tabular-playground-series-may-2022.txt",
+    "bytes": 2624,
+    "sha256": "33b4254dd27995e3c601fbb307de87e97b8bd620623ee9e0c4ae89d05612b624",
+    "crc32": 3133100818
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-may-2022/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-may-2022/test.csv",
+    "bytes": 63385513,
+    "sha256": "3b841d9b0639fccb5e4d932d8f49a84939d4ff02c7786b3b00385e17814c80d5",
+    "crc32": 4259213949
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-may-2022/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-may-2022/train.csv",
+    "bytes": 254986035,
+    "sha256": "57db2a484452afc8738ce8321c415c6e3cd6b77e2fe29b1a42dc201a2cf18825",
+    "crc32": 3715569743
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-nov-2021/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/tabular-playground-series-nov-2021.txt",
+    "bytes": 2689,
+    "sha256": "c7d302339c1ff4ab2b72d7c06fb244fe00faa50383f703a8f7bbfa645f6ae3fa",
+    "crc32": 3655227110
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-nov-2021/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-nov-2021/test.csv",
+    "bytes": 108891094,
+    "sha256": "d2badbc4d737d2d14c45c33f30940e94404565833dc6653838811d6269f8bd46",
+    "crc32": 3852306994
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-nov-2021/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-nov-2021/train.csv",
+    "bytes": 436516690,
+    "sha256": "a55c1752c8c85d4859226cb8be9ce4e701165eb4bd52afc152db6ea9111aceb9",
+    "crc32": 3735452947
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-sep-2021/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/tabular-playground-series-sep-2021.txt",
+    "bytes": 2616,
+    "sha256": "8268dbd4a5fa536c6cac0a8ced1e339eea3e861617b2a1501cd0283d980496c1",
+    "crc32": 4225772429
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-sep-2021/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-sep-2021/test.csv",
+    "bytes": 103472921,
+    "sha256": "a18c29b1058f8342aecb779ecfb541938d4e5d1184ccdb3d5c3492a4a66badde",
+    "crc32": 1111805805
+  },
+  {
+    "path": "dsbench/modeling/public/tabular-playground-series-sep-2021/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/tabular-playground-series-sep-2021/train.csv",
+    "bytes": 414719653,
+    "sha256": "42207a4be1eefca4af44775e0ea94448ec197b2620d09620a897fb4cfd9e27ec",
+    "crc32": 1588365909
+  },
+  {
+    "path": "dsbench/modeling/public/titanic/task.txt",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/task/titanic.txt",
+    "bytes": 7956,
+    "sha256": "5702385dab9261d92f6820ea6d7d5f9a139344ce505d60603255f1bc82a296a1",
+    "crc32": 1271078739
+  },
+  {
+    "path": "dsbench/modeling/public/titanic/test.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/titanic/test.csv",
+    "bytes": 12331,
+    "sha256": "e0e18cbcf8a19cf30a53f1cc692c58a2b730f23e7a76b4413c23ede1f61bdb19",
+    "crc32": 967382088
+  },
+  {
+    "path": "dsbench/modeling/public/titanic/train.csv",
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_modeling/data.zip",
+    "archive_member": "data/data_resplit/titanic/train.csv",
+    "bytes": 49384,
+    "sha256": "e2e820204187ce8a64dc490dfd7ef71091846b87e3e193a804593a41d7a011fd",
+    "crc32": 3545058595
+  }
+]
