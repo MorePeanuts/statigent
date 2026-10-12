@@ -9,7 +9,7 @@ import { Registry } from "../../src/evaluation/plan";
 import { keys, obj } from "../../src/models/validation";
 import { sha256 } from "../../src/records/store";
 export const task: PublicTask = {
-  schema_version: 1,
+  schema_version: 2,
   id: "one",
   version: "v1",
   goal: "Sum the value column",
@@ -25,12 +25,13 @@ export const task: PublicTask = {
 };
 export function submission(unit = "unit-000001"): Submission {
   return {
-    schema_version: 1,
+    schema_version: 2,
     unit_id: unit,
     status: "completed",
     answer_text: "@sum[3]",
     reason: "done",
-    artifacts: [],
+    deliverables: [],
+    trajectory: null,
     native_run: null,
     usage: emptyUsage("not_applicable"),
     cleanup_error: null,
@@ -58,7 +59,7 @@ export function fixtureRegistry(
     }),
     preflight: async () => {},
     score: async (_o, _t, s) => ({
-      schema_version: 1,
+      schema_version: 2,
       unit_id: s.unit_id,
       protocol: "exact-v1",
       status: "scored",
@@ -75,14 +76,16 @@ export function fixtureRegistry(
       ],
       details: {},
       error: null,
+      judge: null,
     }),
   };
   const agent: AgentAdapter = {
     id: "fixture",
     version: "1",
     capabilities: {
-      schema_version: 1,
-      output: "text",
+      schema_version: 2,
+      outputs: ["text"],
+      trajectory: "none",
       model: "none",
       seed: "execution",
       isolation: "docker",

@@ -97,7 +97,7 @@
 
 ### 9. DSBench-Analysis 适配器
 
-- 任务 ID 形如 `00000032/question1`，分组键为案例 ID。`goal` 由案例 `introduction.txt` 和该题 `questionN.txt` 拼接而成；`constraints` 要求给出明确的最终答案（选择题给选项）；`output.kind = text`。
+- 任务 ID 形如 `00000032-question1`（沿用现有 ID 字符集，不引入路径分隔符），分组键为案例 ID。`goal` 由案例 `introduction.txt` 和该题 `questionN.txt` 拼接而成；`constraints` 要求给出明确的最终答案（选择题给选项）；`output.kind = text`。
 - 发布允许清单：案例目录下的 `xlsx/xlsm/xlsb/csv/jpg`，排除 `.ipynb` 和全部 `question*.txt`（本题题面已写入 goal），并记录排除原因。题目从 `public/tasks.jsonl` 读取，答案从 `private/tasks-with-answers.jsonl` 按序对齐，对齐失败时预检报错。
 - 9 个案例共 140 道题没有任何数据文件。v2 的 `PublicTask` 因此允许空输入清单（v1 要求至少一个输入）；Statigent 在没有输入时仍启动会话，`/input` 为空。
 - 评委角色：`equivalence`（text）。没有最终回答的单元直接记 0，不调用评委。

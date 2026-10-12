@@ -1,4 +1,8 @@
-import { selectProfile, validateProfile } from "../models/config";
+import {
+  type ModelProfile,
+  selectProfile,
+  validateProfile,
+} from "../models/config";
 import { integer, keys, obj, str, strings } from "../models/validation";
 import { sha256 } from "../records/store";
 import {
@@ -6,6 +10,7 @@ import {
   type AgentConfig,
   type BenchmarkAdapter,
   type Budget,
+  contractVersion,
   envelope,
   id,
   literal,
@@ -42,8 +47,21 @@ export class Registry {
     return a;
   }
 }
+/** Judge budgets are separate from agent budgets and every field is mandatory. */
+export interface JudgeBudget {
+  timeout_ms: number;
+  model_attempts: number;
+  total_tokens: number;
+}
+export interface ScoringConfig {
+  judges: Record<string, ModelProfile>;
+  unit_budget: JudgeBudget;
+  batch_budget: JudgeBudget;
+  parse_retries: number;
+  options: Record<string, unknown>;
+}
 export interface EvaluationConfig {
-  schema_version: 1;
+  schema_version: 2;
   cache_policy: "disabled";
   purpose: "development" | "formal";
   development_overlap: string;
@@ -58,23 +76,95 @@ export interface EvaluationConfig {
   seed: number;
   task_budget: Budget;
   batch_budget: Budget;
+  scoring: ScoringConfig | null;
+}
+export function validateJudgeBudget(value: unknown): JudgeBudget {
+  const b = validateBudget(value);
+  if (b.model_attempts === null || b.total_tokens === null)
+    throw new Error("Judge budgets require attempts and tokens");
+  return {
+    timeout_ms: b.timeout_ms,
+    model_attempts: b.model_attempts,
+    total_tokens: b.total_tokens,
+  };
+}
+function validateScoring(
+  value: unknown,
+  benchmark: BenchmarkAdapter | undefined,
+  profiles: unknown,
+): ScoringConfig {
+  const x = obj(value);
+  keys(x, [
+    "judges",
+    "unit_budget",
+    "batch_budget",
+    "parse_retries",
+    "options",
+    "cross_agent_summary",
+  ]);
+  // TabArena-style rankings across methods need a different aggregation contract.
+  if (x.cross_agent_summary !== undefined && x.cross_agent_summary !== false)
+    throw new Error("Cross-agent summaries are not implemented");
+  const judges: Record<string, ModelProfile> = {};
+  for (const [role, v] of Object.entries(obj(x.judges)))
+    judges[id(role)] =
+      typeof v === "string" ? selectProfile(profiles, v) : validateProfile(v);
+  const parse = integer(x.parse_retries ?? 2, "parse_retries", 0);
+  if (parse > 10) throw new Error("parse_retries too large");
+  return {
+    judges,
+    unit_budget: validateJudgeBudget(x.unit_budget),
+    batch_budget: validateJudgeBudget(x.batch_budget),
+    parse_retries: parse,
+    options: benchmark?.scoringOptions
+      ? benchmark.scoringOptions(x.options ?? {})
+      : obj(x.options ?? {}),
+  };
+}
+/** Checks role mapping and declared model capabilities before any agent runs. */
+export function checkJudges(
+  benchmark: BenchmarkAdapter,
+  scoring: ScoringConfig | null,
+): void {
+  const roles = benchmark.judgeRoles?.(scoring?.options ?? {}) ?? [];
+  if (!roles.length) {
+    if (scoring && Object.keys(scoring.judges).length)
+      throw new Error("Benchmark protocol declares no judge roles");
+    return;
+  }
+  if (!scoring) throw new Error("Judged protocol requires scoring config");
+  for (const role of roles) {
+    const profile = scoring.judges[role.id];
+    if (!profile) throw new Error(`Missing judge role mapping: ${role.id}`);
+    if (role.needs.includes("vision") && !profile.capabilities.vision)
+      throw new Error(`Judge role ${role.id} requires vision capability`);
+  }
+  for (const role of Object.keys(scoring.judges))
+    if (!roles.some((r) => r.id === role))
+      throw new Error(`Unknown judge role: ${role}`);
 }
 export function validateConfig(
   value: unknown,
   registry: Registry | null,
   profiles: unknown = [],
 ): EvaluationConfig {
-  const x = envelope(value, [
-    "cache_policy",
-    "purpose",
-    "development_overlap",
-    "benchmark",
-    "agents",
-    "repetitions",
-    "seed",
-    "task_budget",
-    "batch_budget",
-  ]);
+  const version = contractVersion(value);
+  const x = envelope(
+    value,
+    [
+      "cache_policy",
+      "purpose",
+      "development_overlap",
+      "benchmark",
+      "agents",
+      "repetitions",
+      "seed",
+      "task_budget",
+      "batch_budget",
+      ...(version === 2 ? ["scoring"] : []),
+    ],
+    [1, 2],
+  );
   const b = obj(x.benchmark);
   keys(b, ["adapter", "version", "options", "task_ids"]);
   const benchmark = registry?.getBenchmark(id(b.adapter));
@@ -143,13 +233,24 @@ export function validateConfig(
     )
       throw new Error("Model budgets required and must be supported");
   }
+  const scoring =
+    x.scoring === undefined || x.scoring === null
+      ? null
+      : validateScoring(x.scoring, benchmark, profiles);
+  if (benchmark) {
+    checkJudges(benchmark, scoring);
+    if (benchmark.requiresTrajectory?.(scoring?.options ?? {}))
+      for (const a of agents)
+        if (registry?.getAgent(a.adapter).capabilities.trajectory !== "unified")
+          throw new Error(`Agent ${a.id} cannot deliver a unified trajectory`);
+  }
   const repetitions = integer(x.repetitions, "repetitions");
   if (!Number.isSafeInteger(integer(x.seed, "seed", 0) + repetitions - 1))
     throw new Error("Seed range overflow");
   if (tasks.length * agents.length * repetitions > 10000)
     throw new Error("Plan too large");
   return {
-    schema_version: 1,
+    schema_version: 2,
     cache_policy: literal(x.cache_policy ?? "disabled", ["disabled"]),
     purpose: literal(x.purpose, ["development", "formal"]),
     development_overlap: str(x.development_overlap, "development_overlap"),
@@ -164,6 +265,7 @@ export function validateConfig(
     seed: integer(x.seed, "seed", 0),
     task_budget: task,
     batch_budget: batch,
+    scoring,
   };
 }
 export interface Unit {
@@ -174,13 +276,15 @@ export interface Unit {
   seed: number;
 }
 export interface Plan {
-  schema_version: 1;
+  schema_version: 2;
   config: EvaluationConfig;
   tasks: PublicTask[];
   units: Unit[];
   source_root: string;
   provenance: Record<string, unknown>;
   adapters: Record<string, string>;
+  /** Task id -> group key for grouped summaries (e.g. DSBench case). */
+  groups: Record<string, string>;
   sha256: string;
 }
 export async function buildPlan(
@@ -202,12 +306,25 @@ export async function buildPlan(
     return t;
   });
   await adapter.preflight(config.benchmark.options, tasks);
+  const groups: Record<string, string> = {};
+  if (adapter.summaries?.length)
+    for (const t of tasks) {
+      const group = catalog.groups?.[t.id];
+      if (!group) throw new Error(`Missing summary group: ${t.id}`);
+      groups[t.id] = id(group);
+    }
   const units: Unit[] = [];
   for (const t of tasks)
     for (const a of config.agents)
       for (let r = 0; r < config.repetitions; r++) {
-        if (registry.getAgent(a.adapter).capabilities.output !== t.output.kind)
-          throw new Error("Unsupported task output");
+        if (
+          !registry
+            .getAgent(a.adapter)
+            .capabilities.outputs.includes(t.output.kind)
+        )
+          throw new Error(
+            `Unsupported task output: ${t.output.kind} for agent ${a.id}`,
+          );
         units.push({
           id: `unit-${String(units.length + 1).padStart(6, "0")}`,
           task_id: t.id,
@@ -222,13 +339,14 @@ export async function buildPlan(
   for (const a of config.agents)
     adapters[`agent:${a.adapter}`] = registry.getAgent(a.adapter).version;
   const body = {
-    schema_version: 1 as const,
+    schema_version: 2 as const,
     config,
     tasks,
     units,
     source_root: catalog.source_root,
     provenance: catalog.provenance,
     adapters,
+    groups,
   };
   return { ...body, sha256: sha256(Buffer.from(JSON.stringify(body))) };
 }

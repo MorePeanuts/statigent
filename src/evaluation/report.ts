@@ -1,22 +1,25 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import type { ModelClient } from "../models/client";
+import type { ModelProfile } from "../models/config";
+import { keys, obj } from "../models/validation";
 import { writeJson } from "../records/store";
 import { aggregate } from "./aggregate";
+import { bounded, id, LIMITS, validateTask } from "./contracts";
 import {
-  bounded,
-  LIMITS,
-  type Score,
-  validateScore,
-  validateTask,
-} from "./contracts";
-import type { Registry } from "./plan";
+  checkJudges,
+  type JudgeBudget,
+  type Registry,
+  validateJudgeBudget,
+} from "./plan";
 import {
   codeSnapshot,
   inspect,
   readSubmission,
   type UnitRecord,
 } from "./records";
+import { judgeSession, scoreUnit } from "./run";
 
 export function csv(rows: Record<string, unknown>[]): string {
   const names = [...new Set(rows.flatMap(Object.keys))];
@@ -40,11 +43,11 @@ export async function createReport(
   directory: string,
   registry: Registry,
   rescored?: UnitRecord[],
+  scoreId: string = randomUUID(),
 ) {
   const view = await inspect(directory),
     records = rescored ?? view.records;
   const benchmark = registry.getBenchmark(view.plan.config.benchmark.adapter);
-  const scoreId = randomUUID();
   const groups = [];
   const rows: Record<string, unknown>[] = [];
   for (const agent of view.plan.config.agents) {
@@ -59,8 +62,7 @@ export async function createReport(
     const sources = new Set<string>();
     let elapsed = 0;
     for (const r of selected) {
-      const submission = await readSubmission(directory, r);
-      const u = submission?.usage;
+      const u = (await readSubmission(directory, r))?.submission.usage;
       if (u) {
         sources.add(u.source);
         for (const key of Object.keys(totals) as (keyof typeof totals)[])
@@ -166,8 +168,11 @@ export async function createReport(
     scores: records.map((r) => ({ unit_id: r.unit.id, score: r.score })),
   };
   bounded(report, LIMITS.record);
-  const destination = join(directory, "scores", scoreId);
-  await mkdir(destination);
+  const destination = join(directory, "scores", id(scoreId));
+  // The judge log may already live here; an existing report is never overwritten.
+  await mkdir(destination, { recursive: true });
+  if (await Bun.file(join(destination, "report.json")).exists())
+    throw new Error("Score report already exists");
   await writeJson(join(destination, "report.json"), report);
   await writeFile(join(destination, "units.csv"), csv(rows), {
     flag: "wx",
@@ -175,9 +180,37 @@ export async function createReport(
   });
   return { score_id: scoreId, directory: destination, report };
 }
-export async function rescore(directory: string, registry: Registry) {
+export interface RescoreOptions {
+  /** Judged protocols send paid requests; they run only with explicit permission and a fresh budget. */
+  allowModelCalls?: boolean;
+  judgeBudget?: { unit_budget: JudgeBudget; batch_budget: JudgeBudget };
+  judgeFactory?: (profile: ModelProfile) => ModelClient;
+}
+export function parseJudgeBudget(value: unknown): {
+  unit_budget: JudgeBudget;
+  batch_budget: JudgeBudget;
+} {
+  const x = obj(value);
+  keys(x, ["unit_budget", "batch_budget"]);
+  return {
+    unit_budget: validateJudgeBudget(x.unit_budget),
+    batch_budget: validateJudgeBudget(x.batch_budget),
+  };
+}
+export async function rescore(
+  directory: string,
+  registry: Registry,
+  options: RescoreOptions = {},
+) {
   const view = await inspect(directory),
     benchmark = registry.getBenchmark(view.plan.config.benchmark.adapter);
+  const roles =
+    benchmark.judgeRoles?.(view.plan.config.scoring?.options ?? {}) ?? [];
+  // Refuse before reading benchmark data or contacting any judge.
+  if (roles.length && (!options.allowModelCalls || !options.judgeBudget))
+    throw new Error(
+      "Judged rescoring sends paid model requests: pass --allow-model-calls and --judge-budget",
+    );
   const catalog = await benchmark.catalog(view.plan.config.benchmark.options);
   if (catalog.provenance.version !== view.plan.config.benchmark.version)
     throw new Error("Rescore data version mismatch");
@@ -192,12 +225,31 @@ export async function rescore(directory: string, registry: Registry) {
     view.plan.config.benchmark.options,
     view.plan.tasks,
   );
+  const scoreId = randomUUID();
+  const plan =
+    roles.length && view.plan.config.scoring && options.judgeBudget
+      ? {
+          ...view.plan,
+          config: {
+            ...view.plan.config,
+            scoring: { ...view.plan.config.scoring, ...options.judgeBudget },
+          },
+        }
+      : view.plan;
+  checkJudges(benchmark, plan.config.scoring);
+  const session = judgeSession(
+    plan,
+    benchmark,
+    join(directory, "scores", scoreId, "judge"),
+    options.judgeFactory,
+  );
+  session?.preflight();
   const records: UnitRecord[] = [];
   for (const record of view.records) {
-    const submission = await readSubmission(directory, record);
+    const stored = await readSubmission(directory, record);
     if (
-      !submission ||
-      submission.cleanup_error ||
+      !stored ||
+      stored.submission.cleanup_error ||
       ["pending", "running", "unconfirmed", "not_run"].includes(
         record.execution_status,
       )
@@ -205,36 +257,16 @@ export async function rescore(directory: string, registry: Registry) {
       records.push(record);
       continue;
     }
-    const task = view.plan.tasks.find((t) => t.id === record.unit.task_id);
-    if (!task) throw new Error("Missing task");
-    let score: Score;
-    const scoringBegan = Date.now();
-    try {
-      score = validateScore(
-        await benchmark.score(
-          view.plan.config.benchmark.options,
-          task,
-          submission,
-        ),
-        record.unit.id,
-      );
-    } catch (error) {
-      score = {
-        schema_version: 1,
-        unit_id: record.unit.id,
-        protocol: benchmark.protocol,
-        status: "failed",
-        metrics: [],
-        details: {},
-        error: error instanceof Error ? error.message : String(error),
-      };
-    }
-    records.push({
-      ...record,
-      score,
-      scoring_status: score.status,
-      scoring_elapsed_ms: Date.now() - scoringBegan,
-    });
+    const next: UnitRecord = { ...record };
+    await scoreUnit(
+      plan,
+      benchmark,
+      next,
+      stored.submission,
+      stored.deliverables_root,
+      session,
+    );
+    records.push(next);
   }
-  return createReport(directory, registry, records);
+  return createReport(directory, registry, records, scoreId);
 }

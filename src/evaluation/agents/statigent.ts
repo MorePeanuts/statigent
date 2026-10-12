@@ -28,8 +28,9 @@ export function statigentAdapter(
     id: "statigent-eda",
     version: "1",
     capabilities: {
-      schema_version: 1,
-      output: "text",
+      schema_version: 2,
+      outputs: ["text"],
+      trajectory: "none",
       model: "configurable",
       seed: "execution",
       isolation: "docker",
@@ -89,12 +90,13 @@ export function statigentAdapter(
         signal,
       });
       const s: Submission = {
-        schema_version: 1,
+        schema_version: 2,
         unit_id: i.unit_id,
         status: result.status,
         reason: result.reason,
         answer_text: result.analysis?.summary ?? "",
-        artifacts: [],
+        deliverables: [],
+        trajectory: null,
         native_run: { id: result.run_id, directory: result.directory },
         usage: emptyUsage("unknown"),
         record_error: result.record_error,

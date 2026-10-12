@@ -70,7 +70,12 @@ export async function main(
       const run = await runEvaluation(plan, registry, options.root, {
         signal: controller.signal,
       });
-      const report = await createReport(run.directory, registry);
+      const report = await createReport(
+        run.directory,
+        registry,
+        undefined,
+        run.score_id,
+      );
       return {
         ...run,
         score_id: report.score_id,

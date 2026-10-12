@@ -126,7 +126,7 @@ export function createInfiAgent(
         const input = inputCache.get(path);
         if (!input) throw new Error("Missing input");
         tasks.push({
-          schema_version: 1,
+          schema_version: 2,
           id: String(integer(q.id, "question id", 0)),
           version: sha256(Buffer.from(JSON.stringify({ question: q, input }))),
           goal: str(q.question, "question"),
@@ -154,7 +154,7 @@ export function createInfiAgent(
       for (const task of tasks)
         if (!map.has(task.id)) throw new Error(`Missing labels: ${task.id}`);
     },
-    async score(value, task, submission, signal) {
+    async score(value, task, submission, { signal }) {
       const answers = (
         await loadLabels(str(options(value).root, "root"), new Set([task.id]))
       ).get(task.id);

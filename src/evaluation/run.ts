@@ -1,15 +1,27 @@
+import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import type { ModelClient } from "../models/client";
+import type { ModelProfile } from "../models/config";
 import {
+  type BenchmarkAdapter,
   type Budget,
   emptyUsage,
+  type PublicTask,
+  type Score,
   type Submission,
   validateScore,
   validateSubmission,
 } from "./contracts";
+import {
+  freezeDeliverables,
+  quarantineDeliverables,
+  validateReport,
+} from "./deliverables";
 import { publishInputs } from "./files";
+import { JudgeBudgetExhausted, JudgeSession } from "./judge";
 import type { Plan, Registry } from "./plan";
-import { EvaluationStore, inspect } from "./records";
+import { EvaluationStore, inspect, type UnitRecord } from "./records";
 
 export function effectiveBudget(
   task: Budget,
@@ -35,11 +47,139 @@ export function effectiveBudget(
     total_tokens: minimum(task.total_tokens, batch.total_tokens, used.tokens),
   };
 }
+/**
+ * Freezes whatever the adapter wrote. Invalid directories are quarantined so the unit is still scored
+ * as a failed delivery instead of crashing the batch.
+ */
+async function finalizeDeliverables(
+  submission: Submission,
+  task: PublicTask,
+  root: string,
+): Promise<void> {
+  try {
+    if (submission.deliverables.length)
+      throw new Error("Adapters must not list deliverables themselves");
+    submission.deliverables = await freezeDeliverables(root);
+    if (
+      submission.trajectory !== null &&
+      !submission.deliverables.some((d) => d.path === submission.trajectory)
+    )
+      throw new Error("Declared trajectory was not delivered");
+  } catch (error) {
+    await quarantineDeliverables(root);
+    submission.deliverables = [];
+    submission.trajectory = null;
+    submission.status = "failed";
+    submission.answer_text = "";
+    submission.reason = `invalid_deliverables:${error instanceof Error ? error.message : String(error)}`;
+    return;
+  }
+  if (task.output.kind === "report" && submission.status === "completed")
+    try {
+      await validateReport(task.output, root, submission.deliverables);
+    } catch (error) {
+      submission.status = "failed";
+      submission.reason = `invalid_report:${error instanceof Error ? error.message : String(error)}`;
+    }
+}
+export function failedScore(
+  unitId: string,
+  benchmark: BenchmarkAdapter,
+  error: unknown,
+  judge: Score["judge"] = null,
+): Score {
+  return {
+    schema_version: 2,
+    unit_id: unitId,
+    protocol: benchmark.protocol,
+    status: "failed",
+    metrics: [],
+    details: {},
+    error: error instanceof Error ? error.message : String(error),
+    judge,
+  };
+}
+/** Scores one frozen unit; judge failures become scoring errors, never wrong answers. */
+export async function scoreUnit(
+  plan: Plan,
+  benchmark: BenchmarkAdapter,
+  record: UnitRecord,
+  submission: Submission,
+  deliverablesRoot: string,
+  session: JudgeSession | null,
+  signal?: AbortSignal,
+): Promise<void> {
+  const task = plan.tasks.find((t) => t.id === record.unit.task_id);
+  if (!task) throw new Error("Missing task");
+  if (session?.exhausted) {
+    record.score = null;
+    record.scoring_status = "not_scored";
+    record.scoring_reason = session.exhausted;
+    return;
+  }
+  const judge = session?.forUnit(record.unit.id, signal) ?? null;
+  const began = Date.now();
+  try {
+    if (submission.cleanup_error)
+      throw new Error("Scoring blocked by incomplete cleanup");
+    const score = validateScore(
+      await benchmark.score(plan.config.benchmark.options, task, submission, {
+        deliverables_root: deliverablesRoot,
+        scoring: plan.config.scoring?.options ?? {},
+        judge,
+        signal,
+      }),
+      record.unit.id,
+    );
+    record.score = { ...score, judge: judge ? judge.summary() : null };
+  } catch (error) {
+    if (
+      error instanceof JudgeBudgetExhausted &&
+      judge &&
+      judge.ledger.attempts === 0
+    ) {
+      // Nothing was sent for this unit: it was never judged rather than judged and failed.
+      record.score = null;
+      record.scoring_status = "not_scored";
+      record.scoring_reason = error.message;
+      record.scoring_elapsed_ms = Date.now() - began;
+      return;
+    }
+    record.score = failedScore(
+      record.unit.id,
+      benchmark,
+      error,
+      judge ? judge.summary() : null,
+    );
+  }
+  record.scoring_status = record.score.status;
+  delete record.scoring_reason;
+  record.scoring_elapsed_ms = Date.now() - began;
+}
+export function judgeSession(
+  plan: Plan,
+  benchmark: BenchmarkAdapter,
+  directory: string,
+  factory?: (profile: ModelProfile) => ModelClient,
+): JudgeSession | null {
+  const roles = benchmark.judgeRoles?.(plan.config.scoring?.options ?? {});
+  if (!roles?.length || !plan.config.scoring) return null;
+  return new JudgeSession(
+    plan.config.scoring,
+    directory,
+    plan.config.agents.flatMap((a) => (a.model ? [a.model.model] : [])),
+    factory,
+  );
+}
 export async function runEvaluation(
   plan: Plan,
   registry: Registry,
   root: string,
-  options: { signal?: AbortSignal; environment?: Record<string, unknown> } = {},
+  options: {
+    signal?: AbortSignal;
+    environment?: Record<string, unknown>;
+    judgeFactory?: (profile: ModelProfile) => ModelClient;
+  } = {},
 ) {
   const benchmark = registry.getBenchmark(plan.config.benchmark.adapter);
   const preflight: Record<string, Record<string, unknown>> = {};
@@ -47,6 +187,8 @@ export async function runEvaluation(
     preflight[config.id] = await registry
       .getAgent(config.adapter)
       .preflight(config);
+  // Judge credentials are checked before any agent runs; the directory is fixed once the batch exists.
+  judgeSession(plan, benchmark, "", options.judgeFactory)?.preflight();
   const store = await EvaluationStore.create(
     root,
     plan,
@@ -54,6 +196,17 @@ export async function runEvaluation(
     options.environment,
   );
   const records = (await inspect(store.directory)).records;
+  // The batch report later reuses this score id, so judge logs and report share one directory.
+  const scoreId = randomUUID();
+  const scoreDirectory = join(store.directory, "scores", scoreId, "judge");
+  const session = judgeSession(
+    plan,
+    benchmark,
+    scoreDirectory,
+    options.judgeFactory,
+  );
+  const trajectory =
+    benchmark.requiresTrajectory?.(plan.config.scoring?.options ?? {}) ?? false;
   const began = Date.now(),
     deadline = began + plan.config.batch_budget.timeout_ms;
   const controller = new AbortController();
@@ -111,9 +264,17 @@ export async function runEvaluation(
         budget.timeout_ms,
       );
       let submission: Submission;
+      const deliverablesRoot = join(
+        store.directory,
+        "units",
+        unit.id,
+        "deliverables",
+      );
+      await mkdir(deliverablesRoot, { mode: 0o700 });
       try {
         const inputRoot = join(store.directory, "units", unit.id, "input");
-        await publishInputs(plan.source_root, task, inputRoot);
+        const method = await publishInputs(plan.source_root, task, inputRoot);
+        await store.event("inputs_published", { unit_id: unit.id, method });
         unitSignal.throwIfAborted();
         const runRoot = join(store.directory, "native", unit.id);
         await mkdir(runRoot);
@@ -125,7 +286,7 @@ export async function runEvaluation(
         submission = validateSubmission(
           await adapter.run(
             {
-              schema_version: 1,
+              schema_version: 2,
               evaluation_id: store.manifest.evaluation_id,
               unit_id: unit.id,
               task,
@@ -134,6 +295,8 @@ export async function runEvaluation(
               seed: unit.seed,
               input_root: inputRoot,
               run_root: runRoot,
+              deliverables_root: deliverablesRoot,
+              trajectory,
             },
             unitSignal,
           ),
@@ -152,7 +315,7 @@ export async function runEvaluation(
           throw new Error("Unverified measurement provenance");
       } catch (error) {
         submission = {
-          schema_version: 1,
+          schema_version: 2,
           unit_id: unit.id,
           status: signal.aborted
             ? options.signal?.aborted
@@ -163,7 +326,8 @@ export async function runEvaluation(
               : "failed",
           answer_text: "",
           reason: error instanceof Error ? error.message : String(error),
-          artifacts: [],
+          deliverables: [],
+          trajectory: null,
           native_run: null,
           usage: emptyUsage(
             cap.model === "none" ? "not_applicable" : "unknown",
@@ -179,6 +343,7 @@ export async function runEvaluation(
         submission.status = options.signal?.aborted ? "cancelled" : "timed_out";
         submission.answer_text = "";
       }
+      await finalizeDeliverables(submission, task, deliverablesRoot);
       record.elapsed_ms = Date.now() - started;
       record.ended_at = new Date().toISOString();
       record.execution_status = submission.status;
@@ -210,32 +375,15 @@ export async function runEvaluation(
         status: submission.status,
         usage: submission.usage,
       });
-      const scoringBegan = Date.now();
-      try {
-        if (submission.cleanup_error)
-          throw new Error("Scoring blocked by incomplete cleanup");
-        record.score = validateScore(
-          await benchmark.score(
-            plan.config.benchmark.options,
-            task,
-            submission,
-            signal,
-          ),
-          unit.id,
-        );
-      } catch (error) {
-        record.score = {
-          schema_version: 1,
-          unit_id: unit.id,
-          protocol: benchmark.protocol,
-          status: "failed",
-          metrics: [],
-          details: {},
-          error: error instanceof Error ? error.message : String(error),
-        };
-      }
-      record.scoring_status = record.score.status;
-      record.scoring_elapsed_ms = Date.now() - scoringBegan;
+      await scoreUnit(
+        plan,
+        benchmark,
+        record,
+        submission,
+        deliverablesRoot,
+        session,
+        signal,
+      );
       await store.unit(record);
     }
     const complete = records.every(
@@ -250,6 +398,7 @@ export async function runEvaluation(
       evaluation_id: store.manifest.evaluation_id,
       directory: store.directory,
       status: store.manifest.status,
+      score_id: scoreId,
     };
   } catch (error) {
     const reason = `record_or_runner_failure:${error instanceof Error ? error.message : String(error)}`;

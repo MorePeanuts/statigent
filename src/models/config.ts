@@ -9,7 +9,7 @@ export interface ModelProfile {
   display_name: string;
   api_key_env: string;
   allow_loopback_http: boolean;
-  capabilities: { tool_calls: true; thinking: boolean };
+  capabilities: { tool_calls: true; thinking: boolean; vision: boolean };
   generation: {
     max_output_tokens: number;
     thinking?: "enabled" | "disabled";
@@ -53,8 +53,12 @@ export function validateProfile(value: unknown): ModelProfile {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(env))
     throw new Error("Invalid api_key_env");
   const cap = obj(x.capabilities);
-  keys(cap, ["tool_calls", "thinking"]);
-  if (cap.tool_calls !== true || typeof cap.thinking !== "boolean")
+  keys(cap, ["tool_calls", "thinking", "vision"]);
+  if (
+    cap.tool_calls !== true ||
+    typeof cap.thinking !== "boolean" ||
+    (cap.vision !== undefined && typeof cap.vision !== "boolean")
+  )
     throw new Error("Unsupported capabilities");
   const gen = obj(x.generation);
   keys(gen, [
@@ -107,7 +111,12 @@ export function validateProfile(value: unknown): ModelProfile {
     display_name: str(x.display_name, "display_name"),
     api_key_env: env,
     allow_loopback_http: x.allow_loopback_http === true,
-    capabilities: { tool_calls: true, thinking: cap.thinking },
+    // Absent vision means text-only, so existing profile files stay valid.
+    capabilities: {
+      tool_calls: true,
+      thinking: cap.thinking,
+      vision: cap.vision === true,
+    },
     generation,
   };
 }
