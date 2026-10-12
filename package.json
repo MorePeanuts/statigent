@@ -10,7 +10,9 @@
     "test": "bun test tests/unit && uv run pytest tests/python",
     "check": "bun run lint && bun run typecheck && bun run test",
     "test:integration": "bun test tests/integration && uv run pytest -m integration tests/python",
-    "runtime": "bun src/cli.ts"
+    "runtime": "bun src/cli.ts",
+    "agent": "bun src/agent/cli.ts",
+    "test:smoke:model": "bun src/agent/smoke.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",

@@ -37,3 +37,23 @@ DeepSeek 示例请求 `deepseek-flash`，展示 DeepSeek-V4.1-Flash；别名不�
 反馈包含单元身份、状态、内核可用性、部分修改提示、有界文本预览、截断标记和产物引用；图表注明未视觉观察。模型没有读取宿主产物或 shell 的工具。实际执行 started=true 才累计代码次数；达到代码次数后仍允许调用模型完成，但拒绝新的执行。模型尝试数、时间与单请求字节为硬限制，累计 token 为结算后的停止阈值。
 
 完成产物为 analysis.json 和确定性生成的 analysis.md，记录 Notebook 路径与导出状态。completed 仅在完成提交、关闭、导出和记录成功后返回；预算耗尽、超时、取消、失败不会再调用模型补写总结。错误修复后的 Notebook 保留错误单元，分析可完成但严格代码重放仍为 unsupported。重放只执行已保存代码，不复现模型决策，也不复制源运行的模型成本。
+
+## 本地使用
+
+先按 README 构建 `statigent-runtime:dev`，在宿主环境设置 `DEEPSEEK_API_KEY`。密钥不写入仓库，不需要传给 Docker。相对输入根按命令工作目录解析。
+
+```sh
+bun run agent run --task configs/tasks/synthetic-eda.json --models configs/models.json --model deepseek-flash
+bun run runtime inspect runs/agent/<run_id>
+bun run runtime export runs/agent/<run_id>
+bun run runtime replay runs/agent/<run_id> runs/replays
+bun run runtime cleanup <run_id>
+# 显式付费验收：只运行一个合成任务，不自动重跑。
+bun run test:smoke:model -- --model deepseek-flash --task configs/tasks/synthetic-eda.json
+```
+
+运行前打印生效预算和生成参数，结束打印 run_id、目录、终态与原因，非 completed 退出码为 1。Ctrl-C 取消等待/活动执行并进入清理。冒烟还验证至少两个成功单元、分组均值、PNG 解码、结论引用、Notebook、实际 token 和无残留容器，将结果写为 smoke-result.json；检查失败同样退出 1。期望均值只保存在宿主验收器，不向模型提供答案或预写代码。
+
+默认 `bun run check` 与 `bun run test:integration` 只用可控模型，后者使用真实 Docker；即使已设置 API key 也不调用付费服务。自定义 profile 的支持范围以协议测试为准，应另行显式冒烟。运行目录不提交 Git。
+
+任务总时限以 `budget.task_timeout_ms` 为准，会覆盖并派生执行会话的 task_timeout_ms；会话启动时限也不能超过剩余任务时间。运行耗时从预检前开始计，清理有执行层独立宽限，墙钟包含清理，不能简单相加可能重叠的阶段字段。`runtime inspect` 附加 model_journal，显示缺失响应/失败终结的请求 ID 和截断尾部，不改写源文件，不据此猜测服务成本。

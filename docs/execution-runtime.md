@@ -75,7 +75,7 @@ bun run runtime demo runs statigent-runtime:dev restart
 
 每次运行在 `runs/<run_id>/` 保存：
 
-- `manifest.json`：非敏感有效配置、输入 SHA-256、镜像与平台、宿主和 Docker 环境、代码 commit/dirty、依赖版本、种子、终态与阶段耗时。模型、提示词、token 和划分标为 not_applicable。
+- `manifest.json`：非敏感有效配置、输入 SHA-256、镜像与平台、宿主和 Docker 环境、代码 commit/dirty、依赖版本、种子、终态与阶段耗时。无模型 runtime/code_replay 的模型、提示词、token 和划分标为 not_applicable。新记录清单版本为 2，版本 1 保留读取与非覆盖式导出；智能体字段及迁移说明见 [agent.md](agent.md)。
 - `events.jsonl`：追加式派发、输出引用、异常、取消、重启及终态；错误后修复不覆盖原尝试，未确认完成的单元保持 unknown。
 - `artifacts/`：宿主生成随机 ID 的独立快照，索引保存来源、类型、大小、SHA-256 和完整度；原文件覆盖后再收集也形成新快照。
 - `notebooks/`：按 kernel epoch 分别导出的 Notebook；清屏和显示更新在导出视图应用，原始事件仍保留。

@@ -46,7 +46,7 @@ export interface RequestLimits {
 export class ModelFailure extends Error {
   constructor(
     public readonly code: string,
-    public readonly accounting: "not_generated" | "unknown",
+    public readonly accounting: "not_generated" | "known" | "unknown",
     public readonly retryable = false,
     public readonly usage: Usage = normalizeUsage(null),
   ) {
@@ -167,7 +167,7 @@ export function parseResponse(
   } catch {
     throw new ModelFailure(
       "invalid_response_protocol",
-      usage.status === "known" ? "not_generated" : "unknown",
+      usage.status === "known" ? "known" : "unknown",
       false,
       usage,
     );
@@ -240,14 +240,6 @@ export class ChatClient implements ModelClient {
           signal: combined,
         },
       );
-      if (!response.ok) {
-        await response.body?.cancel();
-        if (response.status === 429)
-          throw new ModelFailure("rate_limited", "not_generated", true);
-        if ([400, 401, 403, 404, 422].includes(response.status))
-          throw new ModelFailure(`http_${response.status}`, "not_generated");
-        throw new ModelFailure(`http_${response.status}`, "unknown");
-      }
       const reader = response.body?.getReader();
       if (!reader) throw new ModelFailure("empty_response", "unknown");
       const chunks: Uint8Array[] = [];
@@ -267,9 +259,36 @@ export class ChatClient implements ModelClient {
         reader.releaseLock();
       }
       if (combined.aborted) throw new ModelFailure("late_response", "unknown");
+      const decoded = Buffer.concat(chunks).toString("utf8");
+      // A provider can reflect request credentials. Scrub exact values before any recording.
+      const safe = decoded.split(this.#key).join("[REDACTED]");
+      if (!response.ok) {
+        let usage = normalizeUsage(null);
+        try {
+          usage = normalizeUsage(obj(JSON.parse(safe)).usage);
+        } catch {
+          /* Error pages need not be JSON. */
+        }
+        const rejected = [400, 401, 403, 404, 422, 429].includes(
+          response.status,
+        );
+        const accounting =
+          usage.status === "known"
+            ? "known"
+            : rejected
+              ? "not_generated"
+              : "unknown";
+        throw new ModelFailure(
+          response.status === 429 ? "rate_limited" : `http_${response.status}`,
+          accounting,
+          response.status === 429 &&
+            (usage.total_tokens === null || usage.total_tokens === 0),
+          usage,
+        );
+      }
       let raw: unknown;
       try {
-        raw = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        raw = JSON.parse(safe);
       } catch {
         throw new ModelFailure("invalid_response_json", "unknown");
       }

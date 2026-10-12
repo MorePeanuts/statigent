@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type RunOptions, runAgent } from "../../src/agent/run";
@@ -388,5 +388,59 @@ test("switching two model profiles does not change loop; request is durable befo
     } finally {
       await rm(root, { recursive: true, force: true });
     }
+  }
+});
+
+test("record I/O failure after response prevents execution; cleanup failure rejects completion", async () => {
+  const { RunRecorder } = await import("../../src/records/store");
+  let journal = "";
+  await scenario(
+    async () => {
+      await rm(journal);
+      await mkdir(journal);
+      return reply([call("execute_python", { code: "forbidden" })]);
+    },
+    (result, client, runtime) => {
+      expect(result.status).toBe("failed");
+      expect(client.bodies).toHaveLength(1);
+      expect(runtime.state.codes).toHaveLength(0);
+    },
+    {},
+    {
+      createRecorder: async (options) => {
+        const rec = await RunRecorder.create(options);
+        journal = join(rec.directory, "events.jsonl");
+        return rec;
+      },
+    },
+  );
+  const root = await mkdtemp(join(tmpdir(), "statigent-cleanup-fail-"));
+  const runtime = fakeRuntime();
+  const client = new ScriptClient((body, i) =>
+    i === 0
+      ? reply([call("execute_python", { code: "x" })])
+      : reply([finish(String(lastFeedback(body).cell_id))]),
+  );
+  try {
+    const result = await runAgent({
+      task,
+      profile,
+      runRoot: root,
+      client,
+      createSession: async (config, rec) => {
+        const session = await runtime.createSession(config, rec);
+        return { ...session, closeResult: { status: "failed" } };
+      },
+      export: (dir, _, status) => exportNotebooks(dir, async () => {}, status),
+    });
+    expect(result.status).toBe("failed");
+    expect(result.analysis).not.toBeNull();
+    expect(
+      (await readEvents(result.directory)).filter(
+        (e) => e.type === "run_finished",
+      ),
+    ).toHaveLength(1);
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });

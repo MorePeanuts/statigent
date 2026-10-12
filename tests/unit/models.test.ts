@@ -281,3 +281,50 @@ test("no-tool assistant reasoning is retained and tool schemas sent unchanged", 
     },
   );
 });
+
+test("provider-reflected credential is scrubbed and failure usage is retained", async () => {
+  await service(
+    () =>
+      Response.json(
+        response({
+          choices: [
+            {
+              index: 0,
+              finish_reason: "stop",
+              message: {
+                role: "assistant",
+                content: "fake-secret-TEST",
+                reasoning_content: "fake-secret-TEST",
+              },
+            },
+          ],
+        }),
+      ),
+    async (client) => {
+      const value = await client.send(
+        "{}",
+        limits,
+        new AbortController().signal,
+      );
+      expect(JSON.stringify(value)).not.toContain("fake-secret-TEST");
+      expect(value.message.content).toBe("[REDACTED]");
+    },
+  );
+  await service(
+    () =>
+      Response.json(
+        { usage: { prompt_tokens: 10, completion_tokens: 2 } },
+        { status: 500 },
+      ),
+    async (client) => {
+      try {
+        await client.send("{}", limits, new AbortController().signal);
+        throw new Error("Expected failure");
+      } catch (error) {
+        expect(error).toBeInstanceOf(ModelFailure);
+        expect((error as ModelFailure).usage.total_tokens).toBe(12);
+        expect((error as ModelFailure).retryable).toBe(false);
+      }
+    },
+  );
+});

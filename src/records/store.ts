@@ -693,3 +693,27 @@ function parseInputs(value: unknown): InputIdentity[] {
     };
   });
 }
+
+/** Observational recovery only: never rewrite a source journal or infer missing costs. */
+export async function inspectModelJournal(directory: string) {
+  const events = await readEvents(directory);
+  const pending = new Set<string>();
+  let requests = 0;
+  for (const event of events) {
+    if (typeof event.attempt_id !== "string") continue;
+    if (event.type === "model_request") {
+      requests++;
+      pending.add(event.attempt_id);
+    }
+    if (event.type === "model_response" || event.type === "model_failure")
+      pending.delete(event.attempt_id);
+  }
+  const truncated = events.some((e) => e.type === "journal_truncated");
+  return {
+    requests,
+    unresolved_attempts: [...pending],
+    journal_truncated: truncated,
+    accounting:
+      pending.size || truncated ? "incomplete_or_unknown" : "see_manifest",
+  };
+}

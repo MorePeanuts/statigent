@@ -121,3 +121,27 @@ test("model journal separate quotas and notebook terminals; fail closed on persi
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("unfinished model intent and truncated tail stay unknown without rewriting", async () => {
+  const { inspectModelJournal } = await import("../../src/records/store");
+  const root = await mkdtemp(join(tmpdir(), "statigent-unfinished-"));
+  try {
+    const rec = await agentRecorder(root);
+    await rec.modelEvent(
+      "model_request",
+      { attempt_id: "unfinished" },
+      { messages: [] },
+    );
+    const path = join(rec.directory, "events.jsonl");
+    await writeFile(path, '{"type":', { flag: "a" });
+    const before = await readFile(path);
+    expect(await inspectModelJournal(rec.directory)).toMatchObject({
+      unresolved_attempts: ["unfinished"],
+      journal_truncated: true,
+      accounting: "incomplete_or_unknown",
+    });
+    expect(await readFile(path)).toEqual(before);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
