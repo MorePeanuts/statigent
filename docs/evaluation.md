@@ -89,6 +89,21 @@
 
 当前固定数据中第 734 题存在重复参考答案键；按本变更的标签有效性约定，选择该题会明确预检失败。未选中任务的私有答案结构不影响所选任务。原始标签保持原样；若后续正式集合包含该题，需要显式修订评分协议，不能静默改变标签或排除规则。
 
+## DAComp-DA 评分
+
+适配器 `dacomp-da`，options 为 `{"root":"benchmarks/dacomp-da","metadata":"benchmarks/metadata"}`。上游评分代码固定为 ByteDance-Seed/DAComp `027ccaf20f0d3743d9291fd575d9bc785a5fe3db`，数据为 Hugging Face `DAComp/dacomp-da@2cc22149cdfe16cec41851ccae791c2d2c873bb3`（英文版 100 题）。下载器写下的逐文件清单（数据库来自官方 LFS 哈希，评分材料来自 GitHub）中属于 DAComp 的条目，其摘要固定在 `src/evaluation/benchmarks/dacomp-provenance.json`；清单与固定版本不一致时目录直接报错。建计划只核对数据库大小，预检时再对选中任务的数据库和该题全部评分材料计算 SHA-256（全部 100 题约 6.5 秒）。数据库均为回滚日志模式，可在只读挂载下打开。移植代码许可见 `third_party/dacomp/LICENCE`（MIT）。
+
+- **任务与交付**：goal 为 `dacomp-da.jsonl` 的 instruction 原文，只发布 `/input/<id>/<id>.sqlite`，约束中提示以只读 URI 打开数据库。输出为报告类型：英文 `report.md`，图片 PNG/JPEG 最多 20 张、每张 5 MiB，报告 256 KiB。
+- **主口径 `dacomp-da-report-v1`**：评委角色 `rubric`（text）、`gsb_text`（text）、`gsb_vision`（vision）。每题 1 次 rubric 打分，输入为报告全文和该题评分细则；5 次与参考报告的文本比较；报告含图片时再做 5 次视觉比较，候选图片与参考图片按上游顺序附在 prompt 后。英文模板由 `ast` 从上游 `prompts.py` 原样提取（`python/statigent_evaluation/dacomp_prompts.py`）。回复必须能按上游规则解析（rubric 需为含总分的 JSON 对象，比较需为 JSON 对象），否则在 `parse_retries` 内重新请求。
+- **指标**（与上游 `get_score.py` 的列对应）：`total`（0–100）= 0.6 × rubric 得分率 + 10 × 可读性 + 10 × 专业性 + 20 × 可视化；`rubric_ratio`（0–1）；`completeness`、`accuracy`、`conclusiveness`（各维度得分占该维度满分的百分比，0–100）；`readability`、`professionalism`、`visualization`（0–1，比较原始分以 ±3 为阈值映射为 -1/0/1 后取平均，再取 max(0, ·)）。报告没有图片时可视化计 0，不调用视觉评委。
+- **上游兼容口径 `dacomp-da-upstream-trajectory-v1`**：配置 `scoring.options.upstream_compatible: true` 时，额外用智能体交付的 `trajectory.txt`（trajectory-v1）做一次 rubric 打分，与主口径共用 GSB 结果，得到兼容的 `total` 和 `rubric_ratio`。兼容结果写在报告的 `upstream_compatible` 块中，不进入主汇总，也不与主口径平均。只有声明 `trajectory: unified` 的智能体可以启用，外部命令适配器会在预检时被拒绝。
+- **失败与分母**：没有被接受的报告（执行失败、超时、报告不合规）时各项指标计 0，不调用评委；任一比较在重试后仍失败，整题评分失败并标记批次不完整，不用剩余比较的平均代替。
+- **相对上游的偏离**：主口径只看报告（上游 rubric 优先读轨迹）；rubric 的用户问题使用任务说明（上游发布的评分材料缺少 `instruction.txt`，脚本实际传入空字符串）；评委模型可配置（上游示例为 gemini-2.5-flash）；解析重试有上限（上游最多 10 次）；比较缺失时整题失败；无报告计 0（上游会跳过缺少答案文件的题）；候选图片限于报告中通过校验的相对链接（上游静默丢弃无法解析的链接）。这些偏离写入每次计划的 provenance。
+
+`bun run test:evaluation:upstream` 用桩模块替换 `llm_client`、`loguru`、`tenacity` 后导入未修改的上游模块，逐字节比对三种 prompt（含图片顺序与内容）、回复解析、GSB 映射、无图规则和加权总分。
+
+**评委成本估算**：每题主口径最多 11 次评委请求（兼容口径再加 1 次），另有解析重试。DeepSeek 文档说明每张图片最多按 1024 token 计，视觉比较一次附带候选图片加一份参考报告的图片。估算方法：用冒烟批次 `judge_usage` 中实测的每题评委 token（主口径、无兼容）乘以计划题数，再按重复次数和兼容口径（约多 1 次 rubric 请求）放大；文本或视觉请求的单次开销可从 `scores/<score_id>/judge/<unit_id>.jsonl` 的逐次用量中拆分。实测数值见 [分析基准验收记录](analysis-benchmarks-validation.md)，不使用未经核实的价格换算货币成本。
+
 ## DSBench-Analysis 评分
 
 适配器 `dsbench-analysis`，协议 `dsbench-analysis-judge-v1`，options 为 `{"root":"benchmarks/dsbench"}`。上游代码固定为 LiqiangJing/DSBench `ba786096137a5108af11c016ad3f09cdb97beefd`，数据为 Hugging Face `liqiang888/DSBench@1196d6553ec200e1262841efc89cda5954ffe89f` 的 `data_analysis/data.zip`（SHA-256 `3a53d89b…dfb4e0`）。公开索引、含答案索引、`compute_answer.py`、`show_result.py`、`data.json` 和许可证的大小与 SHA-256 固定在 `src/evaluation/benchmarks/dsbench-provenance.json`；案例文件没有逐文件上游清单，数据版本在建目录时由公开索引哈希和全部案例文件的 SHA-256 计算得出。2026-10-12 逐文件比对确认本地 38 个案例与该压缩包一致。移植的 prompt 与判定规则许可见 `third_party/dsbench/LICENSE`（MIT）。
@@ -190,6 +205,15 @@ bun run evaluate run --config configs/evaluations/infiagent-smoke.json
 
 已记录的三题冒烟（见 [验收记录](evaluation-validation.md)）运行时 `deepseek-flash` 的输出上限为 4096；现在 profile 改为 65536，之后的批次与该记录配置不同，不直接比较。由于智能体派发前会预留完整输出上限，100,000 的逐题阈值在新配置下只剩约 3.5 万可用，重新运行这些配置前应按 [EDA 配置说明](agent.md) 评估是否调高阈值。
 
-12 题配置是 `infiagent-development.json`，不会自动运行。正式实验另行冻结配置，披露与开发题及共享 CSV 的重叠。迁移到 Linux 时使用同一锁文件、镜像构建与 CLI，调整基准根、模型环境变量和输出根；保留来源哈希，硬件与平台变化进入运行快照。
+12 题配置是 `infiagent-development.json`，不会自动运行。
+
+DAComp-DA 与 DSBench-Analysis 的开发清单由 `bun src/evaluation/analysis-development.ts dacomp|dsbench` 按公开信息生成，选择器只读取公开索引、文件名和文件大小，不打开评分材料或答案：
+
+| 基准 | 规则 | 开发清单 | 冒烟 |
+| --- | --- | --- | --- |
+| DAComp-DA | 数据库 ≤ 100 MB（92 题），按编号取第 ⌊i·n/6⌋ 个，i = 0..5 | `dacomp-da-development.json`：dacomp-002、017、033、053、070、085 | `dacomp-da-smoke.json`：dacomp-002、017 |
+| DSBench-Analysis | 数据文件全为 xlsx/csv、至少两题的案例，按编号取前 3 个案例、每案例前 2 题 | `dsbench-analysis-development.json`：00000001、00000005、00000008 各 2 题 | `dsbench-analysis-smoke.json`：00000001 的 question6、question7 |
+
+两套配置都使用智能体 `deepseek-flash` 与评委 `deepseek-flash-judge`，智能体预算与评委预算分开声明；逐题 token 阈值（DAComp 800,000，DSBench 400,000）远高于 65,536 的输出预留。选择规则和清单写在对应的 `*-development-selection.json` 中，在真实调用前提交，开发结果不能报告为正式成绩。正式实验另行冻结配置，披露与开发题及共享 CSV 的重叠。迁移到 Linux 时使用同一锁文件、镜像构建与 CLI，调整基准根、模型环境变量和输出根；保留来源哈希，硬件与平台变化进入运行快照。
 
 默认 `bun run check` 不启动 Docker 容器或调用付费模型。`bun run test:evaluation:integration` 显式验证测试镜像；`bun run test:evaluation:upstream` 显式验证本地上游资源。真实实验和软件测试结果分开记录。

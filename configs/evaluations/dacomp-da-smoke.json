@@ -1,0 +1,61 @@
+{
+  "schema_version": 2,
+  "purpose": "development",
+  "development_overlap": "dacomp-da-development-v1; selected tasks are development-exposed; formal experiments must disclose or exclude them",
+  "benchmark": {
+    "adapter": "dacomp-da",
+    "version": "3f0a105540a9c808f89b1e652157d2a6483c68029fa0ceffa35ba49154853b44",
+    "options": {
+      "root": "benchmarks/dacomp-da",
+      "metadata": "benchmarks/metadata"
+    },
+    "task_ids": [
+      "dacomp-002",
+      "dacomp-017"
+    ]
+  },
+  "agents": [
+    {
+      "id": "eda-deepseek-flash",
+      "adapter": "statigent-eda",
+      "options": {
+        "image": "statigent-runtime:dev"
+      },
+      "model_profile": "deepseek-flash",
+      "require_seed": true
+    }
+  ],
+  "repetitions": 1,
+  "seed": 42,
+  "task_budget": {
+    "timeout_ms": 900000,
+    "model_attempts": 20,
+    "total_tokens": 800000
+  },
+  "batch_budget": {
+    "timeout_ms": 1800000,
+    "model_attempts": 40,
+    "total_tokens": 1600000
+  },
+  "scoring": {
+    "judges": {
+      "rubric": "deepseek-flash-judge",
+      "gsb_text": "deepseek-flash-judge",
+      "gsb_vision": "deepseek-flash-judge"
+    },
+    "unit_budget": {
+      "timeout_ms": 900000,
+      "model_attempts": 30,
+      "total_tokens": 400000
+    },
+    "parse_retries": 2,
+    "options": {
+      "upstream_compatible": false
+    },
+    "batch_budget": {
+      "timeout_ms": 1800000,
+      "model_attempts": 60,
+      "total_tokens": 800000
+    }
+  }
+}

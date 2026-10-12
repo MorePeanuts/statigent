@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "version": "dacomp-da-development-v1",
+  "purpose": "development",
+  "data_version": "3f0a105540a9c808f89b1e652157d2a6483c68029fa0ceffa35ba49154853b44",
+  "selection": {
+    "rule": "databases of at most 100,000,000 bytes; ascending task id; positions floor(i * n / 6) for i = 0..5",
+    "eligible": 92,
+    "smoke": "first two selected tasks",
+    "reason": "Keep development runs cheap and avoid multi-GB databases; independent of rubrics, references and scores"
+  },
+  "tasks": [
+    "dacomp-002",
+    "dacomp-017",
+    "dacomp-033",
+    "dacomp-053",
+    "dacomp-070",
+    "dacomp-085"
+  ]
+}

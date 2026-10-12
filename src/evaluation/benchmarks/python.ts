@@ -9,9 +9,15 @@ import { command, commandEnvironment } from "../process";
  */
 export async function scorerRequest(
   request: unknown,
-  options: { signal?: AbortSignal; timeout_ms?: number } = {},
+  options: {
+    signal?: AbortSignal;
+    timeout_ms?: number;
+    /** Request and response byte limits; DAComp prompts and replies exceed the default. */
+    limit?: number;
+  } = {},
 ): Promise<Record<string, unknown>> {
-  bounded(request, LIMITS.request);
+  const limit = options.limit ?? LIMITS.request;
+  bounded(request, limit);
   const result = await command(
     [
       "uv",
@@ -26,7 +32,7 @@ export async function scorerRequest(
       input: JSON.stringify(request),
       signal: options.signal,
       timeout_ms: options.timeout_ms ?? 10000,
-      stdout_limit: LIMITS.request,
+      stdout_limit: limit,
       env: { ...commandEnvironment(), PYTHONPATH: resolve("python") },
     },
   );
