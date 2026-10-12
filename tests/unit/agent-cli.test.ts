@@ -21,6 +21,26 @@ test("CLI profile precedence, explicit smoke selection and strict flags", async 
     expect((await loadConfiguration(args)).profile.model).toBe(
       "deepseek-flash",
     );
+    expect((await loadConfiguration(args)).task.organization).toBe("single");
+    const dualTask = join(root, "dual.json");
+    await Bun.write(
+      dualTask,
+      JSON.stringify({ ...task, organization: "planner-executor" }),
+    );
+    const dual = await loadConfiguration([
+      "--task",
+      dualTask,
+      "--models",
+      models,
+      "--model",
+      "other",
+    ]);
+    expect(dual.task.organization).toBe("planner-executor");
+    expect(dual.task.model_profile).toBe("other");
+    expect(dual.profile.model).toBe("other-model");
+    expect(() => validateTask({ ...task, organization: "parallel" })).toThrow(
+      "organization",
+    );
     expect(
       (await loadConfiguration([...args, "--model", "other"])).profile.model,
     ).toBe("other-model");

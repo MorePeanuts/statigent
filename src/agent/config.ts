@@ -22,7 +22,15 @@ export const DEFAULT_BUDGET = {
   max_trace_bytes: 16 * 1024 * 1024,
 };
 export type AgentBudget = typeof DEFAULT_BUDGET;
+export type Organization = "single" | "planner-executor";
+export function validateOrganization(value: unknown): Organization {
+  if (value === undefined) return "single";
+  if (value !== "single" && value !== "planner-executor")
+    throw new Error("Unsupported organization");
+  return value;
+}
 export interface AgentTask {
+  organization: Organization;
   goal: string;
   constraints: string[];
   model_profile: string;
@@ -40,6 +48,7 @@ export function validateTask(value: unknown): AgentTask {
     "execution",
     "budget",
     "report",
+    "organization",
   ]);
   const b = obj(x.budget ?? {});
   keys(b, Object.keys(DEFAULT_BUDGET));
@@ -71,6 +80,7 @@ export function validateTask(value: unknown): AgentTask {
   config.inputs.forEach(safeRelativePath);
   const { run_id: _runId, staging_root: _staging, ...execution } = config;
   return {
+    organization: validateOrganization(x.organization),
     goal: str(x.goal, "goal"),
     constraints: strings(x.constraints ?? [], "constraints"),
     model_profile: str(x.model_profile, "model_profile"),

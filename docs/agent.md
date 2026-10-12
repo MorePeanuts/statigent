@@ -1,8 +1,10 @@
 # EDA 智能体
 
-当前变更实现单智能体、持久 Docker Python 会话。配置和示例位于 `configs/models.json` 与 `configs/tasks/synthetic-eda.json`。这不是正式 Benchmark 协议或模型能力对比。
+EDA 使用持久 Docker Python 会话。配置和示例位于 `configs/models.json` 与 `configs/tasks/synthetic-eda.json`。这不是正式 Benchmark 协议或模型能力对比。
 
 ## 配置
+
+任务中的 `organization` 可为 `single`（缺省）或 `planner-executor`。后者使用独立的规划者、执行者上下文，两者使用同一个所选模型 profile；CLI `--model` 同时覆盖两者。所有角色与子任务共用 `budget`，模型次数、token、执行次数和时限不因角色切换重置，不为两个角色各复制一份额度。未知组织方式会在调用前被拒绝。
 
 模型文件是具名 profile 数组；CLI `--model` 优先于任务的 `model_profile`，`--models` 选择整个模型配置文件。任务参数覆盖内置默认值；未知字段、空目标、越界输入、非法预算及不支持的参数组合在调用前失败，不自动降级。
 
