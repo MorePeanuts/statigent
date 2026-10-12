@@ -255,12 +255,15 @@ export async function validateNotebook(notebook: Notebook): Promise<void> {
 export async function exportNotebooks(
   directory: string,
   validate: (notebook: Notebook) => Promise<void> = validateNotebook,
+  finalizingStatus?: string,
 ): Promise<Manifest["export"]> {
   const manifest = await readManifest(directory);
   try {
     const view = buildNotebooks(await readEvents(directory), manifest.run_id);
-    if (!manifest.ended_at) view.reasons.push("run_not_finished");
-    if (manifest.status !== "completed") view.reasons.push("run_not_completed");
+    if (!manifest.ended_at && !finalizingStatus)
+      view.reasons.push("run_not_finished");
+    if ((finalizingStatus ?? manifest.status) !== "completed")
+      view.reasons.push("run_not_completed");
     view.eligible = view.reasons.length === 0;
     const paths: string[] = [];
     for (const [epoch, notebook] of view.notebooks) {

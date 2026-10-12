@@ -230,3 +230,54 @@ test("timeouts and pre-send limits do not accept late responses", async () => {
     },
   );
 });
+
+test("no-tool assistant reasoning is retained and tool schemas sent unchanged", async () => {
+  let index = 0;
+  const tools = [
+    {
+      type: "function",
+      function: { name: "execute_python", parameters: { type: "object" } },
+    },
+  ];
+  await service(
+    async (req) => {
+      const body = (await req.json()) as Record<string, unknown>;
+      expect(body.tools).toEqual(tools);
+      expect(body.thinking).toEqual({ type: "enabled" });
+      expect(body.max_tokens).toBe(4096);
+      if (index++ === 0)
+        return Response.json(
+          response({
+            choices: [
+              {
+                index: 0,
+                finish_reason: "stop",
+                message: {
+                  role: "assistant",
+                  content: "consider",
+                  reasoning_content: "first reasoning",
+                },
+              },
+            ],
+          }),
+        );
+      expect(JSON.stringify(body.messages)).toContain("first reasoning");
+      return Response.json(response());
+    },
+    async (client) => {
+      const first = await client.send(
+        client.requestBody([], tools),
+        limits,
+        new AbortController().signal,
+      );
+      await client.send(
+        client.requestBody(
+          [first.message, { role: "user", content: "continue" }],
+          tools,
+        ),
+        limits,
+        new AbortController().signal,
+      );
+    },
+  );
+});

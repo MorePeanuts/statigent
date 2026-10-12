@@ -27,3 +27,13 @@ DeepSeek 示例请求 `deepseek-flash`，展示 DeepSeek-V4.1-Flash；别名不�
 模型轨迹用 `model_request/model_response/model_failure/tool_validation/agent_budget/agent_finish` 事件，内容保存为有界、带哈希的宿主产物，事件只存引用。模型事件不计为 Python 单元终态。单次请求本地 attempt_id、服务 response_id 与工具/执行/单元身份分别保存；请求意图落盘成功后才允许发起 HTTP。未收到终结事件的意图保持未知，不推断免费或成功。模型轨迹累计配额与执行产物配额分开；写入失败后记录器拒绝继续操作。
 
 脱敏状态示例：成功 ledger 为 `{status:"known", input_tokens:12, output_tokens:4, total_tokens:16, attempts:1, unknown_attempts:0, currency_cost:"not_computed"}`；缺失 usage 或中断保留已有已知小计并设置 `status:"unknown", unknown_attempts:1`，不能把小计当成总消耗。无模型运行整个 tokens 字段是 `not_applicable`。
+
+## 循环、反馈与完成
+
+工具 schema 与宿主校验一起维护：`execute_python({code})` 串行执行一个单元；`finish_analysis({summary,findings,methods,limitations})` 提交结构化结论。每条 finding 至少有 statement 和 evidence_refs，可附 JSON value；methods 非空，limitations 可为空。完成必须引用本次已成功执行单元或保存完整产物。虚构、跨任务或未成功单元引用均拒绝，引用存在性不等于语义正确性。
+
+一轮只能有一个动作，多个调用（包括执行与完成混合）全部拒绝，为可辨认 ID 逐一回传拒绝；重复 ID 直接失败。普通 Markdown 不提取代码。普通错误后的修复使用新单元，成功重置连续代码错误计数；动作纠正计数全任务不重置。内核丢失、保存不完整、超时、未知结果不重启不重试。完整历史（包括必需推理协议字段）保留至请求/轨迹大小上限，不自动摘要或删去失败单元。
+
+反馈包含单元身份、状态、内核可用性、部分修改提示、有界文本预览、截断标记和产物引用；图表注明未视觉观察。模型没有读取宿主产物或 shell 的工具。实际执行 started=true 才累计代码次数；达到代码次数后仍允许调用模型完成，但拒绝新的执行。模型尝试数、时间与单请求字节为硬限制，累计 token 为结算后的停止阈值。
+
+完成产物为 analysis.json 和确定性生成的 analysis.md，记录 Notebook 路径与导出状态。completed 仅在完成提交、关闭、导出和记录成功后返回；预算耗尽、超时、取消、失败不会再调用模型补写总结。错误修复后的 Notebook 保留错误单元，分析可完成但严格代码重放仍为 unsupported。重放只执行已保存代码，不复现模型决策，也不复制源运行的模型成本。
