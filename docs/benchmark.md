@@ -14,7 +14,7 @@
 
 **章节划分的文献依据：** [DSBench](https://arxiv.org/abs/2409.07703) 将数据分析与预测建模分别定义、分别评测：前者理解已有数据并回答问题，后者训练模型并预测未见样本。这支持本课题将两类任务设为独立核心章节。其 Analysis 来自 ModelOff，Modeling 来自 Kaggle，二者不是配对数据；两章的递进关系仍通过“建模智能体按需调用探索智能体”的关联实验验证。第一章中，DAComp-DA 评价开放式分析质量，DSBench-Analysis 评价复杂案例解题能力，InfiAgent-DABench 补充标准答案的计算正确性。
 
-下面每个示例都取自官方数据，大表在正文只展示一行预览。数据统一存放于项目根目录的 [benchmarks](../benchmarks/README.md)，原临时样本目录已移除，示例链接改为正式数据路径。数据下载与评测环境接入是两个步骤；当前尚未运行智能体、模型训练或完整评测。评分演算中的假设数字会单独标明。
+下面每个示例都取自官方数据，大表在正文只展示一行预览。数据统一存放于项目根目录的 [benchmarks](../benchmarks/README.md)，原临时样本目录已移除，示例链接改为正式数据路径。数据下载与评测环境接入是两个步骤；InfiAgent 已完成三题开发冒烟，见 [评测验收记录](evaluation-validation.md)，尚未开展正式全量评测或建模实验。评分演算中的假设数字会单独标明。
 
 ## 第一章：探索性数据分析
 
@@ -152,6 +152,8 @@
 **怎样算分：** 先从 `@字段名[数值]` 中提取答案，逐项与标准答案比较。该题四个均值**全部正确才算整题答对**；只答对三个，整题记 0。整体准确率为 `答对的题数 ÷ 评测题数 × 100%`，越高越好；也可单独报告子问题准确率，解释部分完成情况。当前评分器对数值的相等判定允许小于 `10⁻⁶` 的差异，因此应先按题目要求四舍五入。
 
 例如，答案全部写对是 1 道正确题，不是 4 道正确题。正式实验将无输出和失败也计入分母，避免遗漏失败任务虚增准确率。
+
+统一评测层的接入与使用见 [评测说明](evaluation.md)。其主汇总逐题等权报告 ABQ 和 PSAQ，失败计零；预算停止导致的未运行和评分系统错误标记为不完整，完整批次得分为空。上游兼容结果另列非空回答分母及覆盖率。数据下载、软件接入验证和真实实验结果分别记录，不以合成测试成绩代替基准结果。
 
 [本地问题与数据](../benchmarks/infiagent-dabench/public) · [官方问题](https://github.com/InfiAgent/InfiAgent/blob/main/examples/DA-Agent/data/da-dev-questions.jsonl) · [官方答案](https://github.com/InfiAgent/InfiAgent/blob/main/examples/DA-Agent/data/da-dev-labels.jsonl) · [评分代码](https://github.com/InfiAgent/InfiAgent/blob/main/examples/DA-Agent/eval_closed_form.py)
 
