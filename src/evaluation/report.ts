@@ -60,6 +60,16 @@ export async function createReport(
       unknown_attempts: 0,
     };
     const sources = new Set<string>();
+    // Judge usage is reported beside, never merged into, the agent's own usage.
+    const judge = {
+      attempts: 0,
+      input_tokens: 0,
+      output_tokens: 0,
+      total_tokens: 0,
+      unknown_attempts: 0,
+      elapsed_ms: 0,
+      self_preference_risk: false,
+    };
     let elapsed = 0;
     for (const r of selected) {
       const u = (await readSubmission(directory, r))?.submission.usage;
@@ -69,6 +79,19 @@ export async function createReport(
           totals[key] += u[key];
       }
       elapsed += r.elapsed_ms;
+      const j = r.score?.judge ?? null;
+      if (j) {
+        for (const key of [
+          "attempts",
+          "input_tokens",
+          "output_tokens",
+          "total_tokens",
+          "unknown_attempts",
+          "elapsed_ms",
+        ] as const)
+          judge[key] += j[key];
+        judge.self_preference_risk ||= j.self_preference_risk;
+      }
       rows.push({
         evaluation_id: view.manifest.evaluation_id,
         score_id: scoreId,
@@ -81,6 +104,7 @@ export async function createReport(
         repetition: r.unit.repetition,
         execution_status: r.execution_status,
         scoring_status: r.scoring_status,
+        scoring_reason: r.scoring_reason ?? null,
         budget_status: r.budget_status,
         usage_source: u?.source ?? "unknown",
         usage_completeness: u
@@ -95,6 +119,11 @@ export async function createReport(
         attempts: u?.attempts ?? null,
         total_tokens: u?.total_tokens ?? null,
         unknown_attempts: u?.unknown_attempts ?? null,
+        judge_protocol: j ? (r.score?.protocol ?? null) : null,
+        judge_attempts: j?.attempts ?? null,
+        judge_total_tokens: j?.total_tokens ?? null,
+        judge_unknown_attempts: j?.unknown_attempts ?? null,
+        self_preference_risk: j?.self_preference_risk ?? null,
         ...Object.fromEntries(
           (r.score?.metrics ?? []).map((m) => [`metric_${m.name}`, m.value]),
         ),
@@ -120,7 +149,7 @@ export async function createReport(
       dataset_version: view.plan.config.benchmark.version,
       protocol: [...protocols][0] ?? benchmark.protocol,
       agent_config: agent,
-      ...aggregate(selected),
+      ...aggregate(selected, view.plan.groups, benchmark.summaries ?? []),
       usage: {
         ...totals,
         sources: [...sources],
@@ -128,6 +157,19 @@ export async function createReport(
           totals.unknown_attempts || missing ? "unknown" : "complete",
         currency_cost: "not_computed",
       },
+      judge_usage: view.plan.config.scoring
+        ? {
+            ...judge,
+            judges: Object.fromEntries(
+              Object.entries(view.plan.config.scoring.judges).map(([r, p]) => [
+                r,
+                { profile: p.id, model: p.model },
+              ]),
+            ),
+            nondeterministic: true,
+            currency_cost: "not_computed",
+          }
+        : null,
       elapsed_ms: elapsed,
       scoring_elapsed_ms: selected.every(
         (r) => r.scoring_elapsed_ms !== undefined,
@@ -143,6 +185,12 @@ export async function createReport(
           ? ["incomplete cost telemetry"]
           : []),
         ...(!agent.require_seed ? ["seed control not required"] : []),
+        ...(judge.self_preference_risk
+          ? ["judge shares the evaluated agent's model (self-preference risk)"]
+          : []),
+        ...(view.plan.config.scoring
+          ? ["model-judged, non-deterministic scores"]
+          : []),
       ],
       upstream_compatible: compatibility
         ? {

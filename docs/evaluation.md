@@ -109,13 +109,48 @@
 
 取消和整批超时传给当前适配器，后续任务标记 not_run 并保留原因。当前任务因超时终止且用量可靠时可以按基准规则计零；未运行任务不会被偷偷删除，完整得分保持为空。定向 cleanup 只处理本批次的容器和 native 目录对应运行，不自动重新执行。
 
+## 评委评分
+
+部分基准的评分协议依赖 LLM 评委。协议声明评委角色及其所需能力（`text` 或 `vision`），评测配置在 `scoring` 中把每个角色映射到 `configs/models.json` 的具名 profile，并给出评分预算。评委预算与智能体预算互相独立：
+
+```json
+{
+  "scoring": {
+    "judges": {
+      "rubric": "deepseek-flash-judge",
+      "gsb_text": "deepseek-flash-judge",
+      "gsb_vision": "deepseek-flash-judge"
+    },
+    "unit_budget": { "timeout_ms": 900000, "model_attempts": 30, "total_tokens": 400000 },
+    "batch_budget": { "timeout_ms": 3600000, "model_attempts": 120, "total_tokens": 1600000 },
+    "parse_retries": 2,
+    "options": {}
+  }
+}
+```
+
+- **预检**：在任何智能体运行前完成，检查是否存在未映射角色或多余角色、视觉角色映射到的 profile 是否声明了 `vision`、以及评委凭据是否存在；任一项不满足都拒绝整个计划，不会跳过评分项、改用其他模型或记零分。`cross_agent_summary`（跨方法排名汇总）尚未实现，配置为真时同样被拒绝。
+- **调用**：评委请求不带工具，每次请求受时限（单次最长 300 秒且不超过剩余预算）、请求 32 MiB / 响应 2 MiB 上限约束。限流响应按退避重试 2 次且不计入尝试；输出无法按协议解析时最多再请求 `parse_retries` 次，所有尝试都计入用量。
+- **记账**：每次尝试写入 `scores/<score_id>/judge/<unit_id>.jsonl`，包含角色、profile、请求模型、服务返回的模型名和指纹、用量、有界响应文本和解析状态。评分细则、参考报告和参考答案只记录 SHA-256，不写原文；这些材料只存在于评分侧，不进入智能体的输入或后续单元。
+- **失败语义**：评委超时、调用失败、无法解析或单元预算耗尽时，该单元 `scoring_status = failed`，批次标记为不完整，不按答错计零。整次评分预算耗尽或出现无法确认用量的请求后不再发送评委请求，尚未评分的单元记为 `not_scored` 并给出 `scoring_reason`（`judge_budget_exhausted` 或 `unknown_judge_usage`）。基准规则本身规定的零分（例如报告没有图片时可视化项为 0）仍按规则计分，无需评委调用。
+- **报告**：分组汇总中 `usage` 只统计智能体，`judge_usage` 单独统计评委的尝试次数、token、未知请求和耗时，并列出角色到 profile/模型的映射；货币成本为 `not_computed`。CSV 每行另有 `judge_protocol`、`judge_attempts`、`judge_total_tokens`、`judge_unknown_attempts`、`self_preference_risk`。评委评分标为 `nondeterministic`，比较限制中写明“model-judged, non-deterministic scores”。
+- **自评偏差**：评委 profile 的请求模型名与被评测智能体相同时，`self_preference_risk` 为 true，并在比较限制中注明。开发阶段允许这样配置，正式实验需要另行决定评委。
+
+**重新评分**：确定性协议的 `score` 行为不变，不调用模型。对评委协议，重评会产生新的付费请求，必须显式授权并给出新的评委预算，否则在发出任何请求之前退出：
+
+```sh
+bun run evaluate score EVALUATION_ID --allow-model-calls --judge-budget judge-budget.json
+```
+
+`judge-budget.json` 只包含 `unit_budget` 和 `batch_budget`，评委映射沿用原批次冻结的配置。每次重评得到新的 score_id 和独立的评委日志；同一交付两次评委评分的结果可能不同，各自保留，不覆盖也不自动平均。
+
 ## 报告与重新评分
 
 每次报告写入新的 `scores/<score_id>/report.json` 和 `units.csv`。JSON 保存逐题评分细节、来源和分组汇总；CSV 每行对应一个计划单元，保留执行/评分/预算/用量状态。不同模型或智能体配置分别分组，不能把不同指标混成总分。CSV 对引号与换行转义，对可能被表格软件解释为公式的文本加前缀。
 
 例：两题一题正确、一题终止失败，主 ABQ/PSAQ 均为 0.5；第二题未运行时，指标为 null、状态 incomplete；评分器异常时 scoring_status 为 failed，不能把它当作错误答案零分。用量未知时保留已知 token 小计和 unknown_attempts；账单成本为 not_computed，不推算价格。
 
-离线 score 先检查冻结计划、交付和产物哈希及任务数据版本，再生成新的评分身份。旧评分、原始交付、执行费用和原生记录保持不变，整个过程不调用智能体或模型。初始评分和重评结果可直接并列核查。
+离线 score 先检查冻结计划、交付和产物哈希及任务数据版本，再生成新的评分身份。旧评分、原始交付、执行费用和原生记录保持不变，整个过程不调用智能体；确定性协议也不调用模型，评委协议的重评见上一节。初始评分和重评结果可直接并列核查。
 
 ## 命令与开发清单
 
@@ -130,7 +165,7 @@ bun run evaluate score EVALUATION_ID
 bun run evaluate cleanup EVALUATION_ID
 ```
 
-`--root` 可指定评测结果根目录，默认 `runs/evaluations`；`--models` 指定模型配置文件，默认 `configs/models.json`。只有显式 `run` 会执行智能体。plan 会校验本地数据和所选标签，但不需要 API key、不启动容器。inspect 只读，score 不调用模型，cleanup 只清理指定批次资源。
+`--root` 可指定评测结果根目录，默认 `runs/evaluations`；`--models` 指定模型配置文件，默认 `configs/models.json`。只有显式 `run` 会执行智能体。plan 会校验本地数据和所选标签，但不需要 API key、不启动容器。inspect 只读；确定性协议的 score 不调用模型，评委协议的 score 必须带 `--allow-model-calls --judge-budget FILE`；cleanup 只清理指定批次资源。
 
 固定开发清单为 `configs/evaluations/infiagent-development-selection.json`，依据公开难度、概念、题目/约束的依赖需求选择 12 题，各难度 4 题，每份 CSV 最多 2 题。排除需要额外统计检验或训练依赖的公开要求；选择器不读取答案。复现选择命令是 `bun src/evaluation/development.ts`，会重新生成三个开发配置文件，应审查 diff 后提交，不能根据得分换题。
 
