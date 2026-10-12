@@ -29,6 +29,8 @@ bun run agent run --task configs/tasks/synthetic-eda.json --model deepseek-flash
 
 统一评测支持基准与智能体独立适配，首版接入 InfiAgent-DABench、现有 EDA 及离线容器命令协议。使用方式、评分口径和开发集合见 [评测说明](docs/evaluation.md)。
 
+软件检查、真实三题 DeepSeek 冒烟及离线重评结果见 [评测验收记录](docs/evaluation-validation.md)。
+
 ```sh
 bun run evaluate plan --config configs/evaluations/infiagent-smoke.json
 ```
