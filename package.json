@@ -17,7 +17,8 @@
     "test:smoke:judge": "bun src/evaluation/judge-smoke.ts",
     "test:evaluation:upstream": "uv run pytest -m upstream tests/python",
     "evaluate": "bun src/evaluation/cli.ts",
-    "test:evaluation:integration": "bun test tests/integration/evaluation-agents.test.ts"
+    "test:evaluation:integration": "bun test tests/integration/evaluation-agents.test.ts",
+    "modeling": "bun src/modeling/cli.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
