@@ -6,10 +6,10 @@
 
 - 评测契约（`src/evaluation/contracts.ts`）为 v1：`output.kind` 只能是 `text`；`Submission.artifacts` 是 base64 内联，单个 1 MiB、总计 4 MiB；`BenchmarkAdapter.score()` 被设计为确定性、无成本的评分；`aggregate.ts` 只计算逐单元等权平均。InfiAgent 已按 v1 产生过真实批次记录，必须保持可读。
 - `publishInputs` 对每个单元复制输入文件，并在复制前后各校验一次 SHA-256。DAComp 的 100 个 SQLite 中，中位数约 3.7 MB，92 个不超过 100 MB，最大的 `dacomp-061` 约 3.5 GB；文件头显示全部使用回滚日志模式（非 WAL），可以在只读挂载下读取。
-- Statigent 运行时会把工作目录中的文件扫描为带 ID 的产物；`finish_analysis` 只有 summary/findings/methods/limitations 四个字段。智能体 profile 的 `max_output_tokens` 为 4096，不足以把长报告放进工具参数。
+- Statigent 运行时会把工作目录中的文件扫描为带 ID 的产物；`finish_analysis` 只有 summary/findings/methods/limitations 四个字段。现有 `deepseek-flash` profile 的 `max_output_tokens` 为 4096，远低于服务端能力：DeepSeek 文档给出的 `max_tokens` 取值上限为 384K，不设置时默认 thinking 模式 64K、非 thinking 模式 8K，且文档没有说明推理 token 是否单独计算。在 thinking/high 模式下，4096 很可能连推理加工具参数都放不下。
 - `src/models/client.ts` 只支持字符串内容和带工具的请求；profile 校验要求能力字段严格匹配，目前没有视觉能力字段。
 - DAComp 上游评分（`benchmarks/dacomp-da/evaluator/upstream/.../evaluation_suite`）：rubric 输入优先使用轨迹（`core/tasks.py:81`）；GSB 比较只使用报告和图片；图片以 base64 `image_url` 发送；GSB 原始分以 ±3 为阈值映射到 -1/0/1，平均后取 `max(0, ·)`；总分按 0.6/0.1/0.1/0.2 加权；解析失败最多重试 10 次；缺失的 GSB 比较被跳过，剩余比较照常平均。上游模块在导入时依赖 openai、loguru 和 tenacity。
-- DSBench-Analysis 上游（`compute_answer.py`）每题调用一次 `gpt-4o-2024-05-13`（temperature 0），输出转小写后含 `true` 即判对，异常一律判错；本地缺少上游的作答 Notebook。38 个案例中有 `.xlsb`/`.xlsm`、5 张图片，案例 `00000006` 含 `get_results.ipynb`。执行镜像目前没有 Excel 读取库。
+- DSBench-Analysis 上游（`compute_answer.py`）每题调用一次 `gpt-4o-2024-05-13`（temperature 0），输出转小写后含 `true` 即判对，异常一律判错；上游仓库没有提供作答 Notebook。用固定版本的官方 `data.zip`（SHA-256 `3a53d89b…`）逐文件比对后确认，本地 38 个案例与压缩包内容完全一致，以下情况都是基准本身如此，不是下载不全：9 个案例共 140 道题没有数据文件；数据文件包含 `.xlsb`/`.xlsm` 和 5 张图片；压缩包自带 `00000006/get_results.ipynb` 和 `00000012/answer.ipynb`，后者已被下载脚本放到 `private/`。执行镜像目前没有 Excel 读取库。
 
 ## Goals / Non-Goals
 
@@ -77,7 +77,7 @@
 - profile 的 `capabilities` 新增可选字段 `vision`（默认为 false），旧配置文件无需修改。
 - `Message` 的用户消息 `content` 可以是 `string | Part[]`，`Part` 为 `{type:"text"}` 或 `{type:"image", path|bytes}`。客户端在序列化时识别格式（PNG/JPEG/GIF/WebP 的文件头），解析像素尺寸，校验上限后编码为 `data:<mime>;base64,...`。不接受 http(s) URL。
 - 本地上限默认低于 DeepSeek 文档的服务端上限：单张 8 MiB、每次请求 40 张、请求体 32 MiB、单边 8192 px，请求含 15 张及以上图片时单边 4096 px。
-- 新增 `configs/models.json` 中的 `deepseek-flash-judge` profile：请求名 `deepseek-flash`，`vision: true`，thinking disabled，temperature 0，`max_output_tokens` 8192。关闭 thinking 是为了对齐上游 temperature 0 的设置，同时绕开“图片与思考模式能否同时使用”这个文档没有说明的问题。这一点由真实冒烟测试验证。
+- 新增 `configs/models.json` 中的 `deepseek-flash-judge` profile：请求名 `deepseek-flash`，`vision: true`，thinking disabled，temperature 0，`max_output_tokens` 16384（与上游示例评委配置一致；DAComp 的 rubric 逐项评分输出较长）。关闭 thinking 是为了对齐上游 temperature 0 的设置，同时绕开“图片与思考模式能否同时使用”这个文档没有说明的问题。这一点由真实冒烟测试验证。
 
 ### 7. DAComp 适配器
 
@@ -92,7 +92,7 @@
 
 - 报告任务的 `finish_analysis` 工具 schema 增加必填字段 `report_artifact_id`，文本任务的 schema 不变。宿主依次校验：该 ID 是本次运行的产物；内容是 UTF-8 Markdown 且不超过上限；用正则提取图片引用（与上游 `!\[[^\]]*\]\(([^)]+)\)` 一致），每个引用必须是相对路径，并解析到本次运行该路径最新保存的 PNG/JPEG 产物。校验失败计入动作纠正预算。
 - 报告要求通过任务约束和工具描述传达，系统提示词不变。文本任务仍记录 `eda-single-v1`；报告任务记录 `eda-single-v1+report-v1`，这样 InfiAgent 的结果仍然可比。
-- 让模型通过 `execute_python` 在工作目录写 `report.md`，而不是把报告放进工具参数：报告可以分步生成，也绕开了 4096 输出 token 的限制。
+- 让模型通过 `execute_python` 在工作目录写 `report.md`，而不是把报告放进工具参数。这样报告可以分步生成和修改，图片可以直接按工作目录中的文件名引用，报告也成为可追溯的执行产物。这个选择和输出上限无关，输出上限由决策 13 单独处理。
 - 统一轨迹（`trajectory-v1`）：按执行顺序列出每个单元的代码、状态和有界输出预览，最后附上最终报告；整体上限 256 KiB，超出部分从中间截断并标注。由适配器根据原生记录生成；外部命令适配器声明 `trajectory: none`。
 
 ### 9. DSBench-Analysis 适配器
@@ -119,6 +119,13 @@
 - DAComp：只从数据库不超过 100 MB 的任务中选择，按编号排序后等距抽取 6 题作为开发清单；冒烟取其中前 2 题。选择只读取 `dacomp-da.jsonl` 和文件大小。
 - DSBench-Analysis：只从全部数据文件都是 `xlsx`/`csv` 且没有图片的案例中选择，按编号取前 3 个案例，每个案例取前 2 题，共 6 题；冒烟取第一个案例的 2 题。
 - 冒烟使用智能体 `deepseek-flash` 和评委 `deepseek-flash-judge`，智能体预算与评委预算分别固定。只运行一次，结果如实记录。
+
+### 13. 智能体输出上限
+
+- `deepseek-flash` profile 的 `max_output_tokens` 从 4096 改为 65536，与 DeepSeek 在 thinking 模式下不设置时的默认值一致，仍然显式写入请求和记录，不依赖服务端默认值。选择 64K 而不是 384K 的上限：前者已足够容纳推理加单次工具参数，也能让一次失控生成的最大消耗保持在任务预算可以承受的范围内。
+- 核对相关的字节上限：单次响应接收上限 2 MiB 对 64K token 绰绰有余；模型轨迹累计 16 MiB 的上限保持不变，实际运行接近该上限时如实报告。
+- 单次响应可能接近 64K token，任务 token 阈值又是在响应结算后才检查的，所以新的开发与冒烟配置要按这一点设置逐题预算，不再沿用 InfiAgent 冒烟的 100,000。
+- 已完成的 InfiAgent 冒烟与 EDA 冒烟是用 4096 运行的，配置快照里已有记录，不重跑也不改写。之后的批次使用新值，验收记录中注明两者的配置差异，不放在一起比较。
 
 ## Risks / Trade-offs
 

@@ -34,6 +34,6 @@
 
 - 代码：`src/evaluation/`（契约、记录、运行器、汇总、评委评分、两个新基准适配器、Statigent 与外部命令适配器）、`src/models/`、`src/agent/`（finish 动作、提示词、报告渲染）、`python/statigent_evaluation/`（DAComp/DSBench 的 prompt 构造、结果解析与加权移植）。
 - 依赖：执行镜像新增 Excel 读取库，导致镜像 ID 变化；评分侧不引入 openai/loguru 等上游运行依赖，只移植纯函数，并对未修改的上游代码做差分测试。
-- 配置：`configs/models.json` 新增评委 profile；`configs/evaluations/` 新增两套开发与冒烟配置。
+- 配置：`configs/models.json` 新增评委 profile，智能体 `deepseek-flash` 的输出上限从 4096 提高到 65536（此前的冒烟记录保留原配置，不重跑）；`configs/evaluations/` 新增两套开发与冒烟配置。
 - 成本：真实冒烟会产生智能体和评委两类付费调用，预算与授权都要显式给出。默认检查不调用付费 API。
 - 不在范围内：建模基准、TabArena 跨方法汇总、规划/执行分离、脚本后端、除 chat-completions `image_url` 以外的多模态协议、正式实验的评委选择与重复评分次数、联网外部智能体、并行调度。
