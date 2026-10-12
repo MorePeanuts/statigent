@@ -4,11 +4,13 @@ import { arch, cpus, platform, release, totalmem } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import {
   type AgentMetadata,
+  type CollaborationRecord,
   type ModelMetadata,
   type PromptMetadata,
   type TokenLedger,
   validateAgentFields,
 } from "./agent-metadata";
+import { CollaborationJournal } from "./collaboration-journal";
 
 export interface RecordEvent {
   type: string;
@@ -28,6 +30,8 @@ export interface ArtifactReference {
   cell_id?: string;
   request_id?: string;
   kernel_epoch?: number;
+  origin?: { role: "planner"; attempt_id: string; tool_id: string };
+  delivery_path?: string;
 }
 export interface InputIdentity {
   path: string;
@@ -40,7 +44,8 @@ export interface ImageIdentity {
   digests?: string[];
 }
 export interface Manifest {
-  schema_version: 1 | 2;
+  schema_version: 1 | 2 | 3;
+  collaboration?: CollaborationRecord;
   run_kind?: "runtime" | "agent" | "code_replay";
   agent?: "not_applicable" | AgentMetadata;
   run_id: string;
@@ -145,6 +150,7 @@ export interface CreateRecorderOptions {
     prompt: PromptMetadata;
     tokens: TokenLedger;
     metadata: AgentMetadata;
+    collaboration?: CollaborationRecord;
   };
   maxArtifactBytes?: number;
   maxTotalArtifactBytes?: number;
@@ -160,6 +166,7 @@ export class RunRecorder {
   private seenCompleted = new Set<string>();
   private sessionStartedAt: number | undefined;
   private terminalFailure: string | undefined;
+  private collaborationJournal = new CollaborationJournal();
   private constructor(
     directory: string,
     manifest: Manifest,
@@ -182,7 +189,10 @@ export class RunRecorder {
       gitValue(["status", "--porcelain"]),
     ]);
     const manifest: Manifest = {
-      schema_version: 2,
+      schema_version: options.agent?.collaboration ? 3 : 2,
+      ...(options.agent?.collaboration
+        ? { collaboration: options.agent.collaboration }
+        : {}),
       run_kind: options.agent
         ? "agent"
         : options.replayOf
@@ -273,6 +283,14 @@ export class RunRecorder {
       if (event.run_id !== this.manifest.run_id)
         throw new Error("Mismatched event run ID");
       const stored = { ...event };
+      if (
+        this.manifest.schema_version === 3 &&
+        this.collaborationJournal.active
+      )
+        Object.assign(stored, {
+          role: "executor",
+          subtask_id: this.collaborationJournal.active,
+        });
       if (event.type === "session_start" && event.config)
         stored.config = redact(event.config);
       // Large output is referenced in the journal; the immutable snapshot keeps the full payload.
@@ -492,9 +510,14 @@ export class RunRecorder {
           "tool_validation",
           "agent_budget",
           "agent_finish",
+          "subtask_delegated",
+          "subtask_returned",
+          "analysis_submitted",
         ].includes(type)
       )
         throw new Error("Invalid agent event type");
+      if (this.manifest.schema_version === 3)
+        this.collaborationJournal.accept(type, fields);
       const agent = this.manifest.agent;
       if (!agent || agent === "not_applicable")
         throw new Error("Agent metadata required");
@@ -609,7 +632,9 @@ export async function readManifest(directory: string): Promise<Manifest> {
     JSON.parse(await readFile(join(directory, "manifest.json"), "utf8")),
   );
   if (
-    (value.schema_version !== 1 && value.schema_version !== 2) ||
+    (value.schema_version !== 1 &&
+      value.schema_version !== 2 &&
+      value.schema_version !== 3) ||
     !Array.isArray(value.inputs) ||
     !Array.isArray(value.artifacts)
   )
@@ -697,9 +722,27 @@ function parseInputs(value: unknown): InputIdentity[] {
 /** Observational recovery only: never rewrite a source journal or infer missing costs. */
 export async function inspectModelJournal(directory: string) {
   const events = await readEvents(directory);
+  const manifest = await readManifest(directory);
+  const collaboration =
+    manifest.schema_version === 3 ? new CollaborationJournal() : null;
   const pending = new Set<string>();
   let requests = 0;
   for (const event of events) {
+    if (
+      collaboration &&
+      [
+        "model_request",
+        "model_response",
+        "model_failure",
+        "tool_validation",
+        "agent_budget",
+        "agent_finish",
+        "subtask_delegated",
+        "subtask_returned",
+        "analysis_submitted",
+      ].includes(String(event.type))
+    )
+      collaboration.accept(String(event.type), event);
     if (typeof event.attempt_id !== "string") continue;
     if (event.type === "model_request") {
       requests++;
@@ -712,6 +755,12 @@ export async function inspectModelJournal(directory: string) {
   return {
     requests,
     unresolved_attempts: [...pending],
+    ...(collaboration
+      ? {
+          unresolved_roles: collaboration.unresolved(),
+          active_subtask: collaboration.active,
+        }
+      : {}),
     journal_truncated: truncated,
     accounting:
       pending.size || truncated ? "incomplete_or_unknown" : "see_manifest",

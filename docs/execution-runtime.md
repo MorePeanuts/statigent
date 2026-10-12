@@ -1,5 +1,9 @@
 # Docker Notebook 执行环境
 
+双角色 EDA 使用原生运行清单 v3：`collaboration.roles` 分别记录 planner/executor 的模型、提示词和用量，顶层用量为全任务合计；`collaboration.subtasks` 关联委派和执行者用量。角色小计、子任务小计是同一消费的不同视图，不再次相加。旧 v1/v2 记录仍可检查、导出和按原资格重放，不原地迁移。
+
+双角色完整日志保存原始代码与调试历史，规划者仅接收子任务结果。规划者报告由宿主保存，具有模型提交来源，不伪造 Python 单元。Notebook 仅包含实际执行代码；代码重放不调用任何角色模型，也不重新生成规划者报告或验证报告结论。原始错误、截断或状态丢失的轨迹仍按既有规则报告严格重放不支持。
+
 本阶段验证持久 Python 内核、受控代码执行和记录链路，不调用模型、不启动正式 Benchmark，也不表示两章研究方法已完成实验验证。研究依据见 [overview.md](overview.md)，首个变更见 [add-docker-notebook-runtime](../openspec/changes/archive/2026-10-12-add-docker-notebook-runtime/proposal.md)。
 
 ## 本地前提与工程入口
