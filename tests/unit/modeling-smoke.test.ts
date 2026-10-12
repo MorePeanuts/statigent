@@ -21,6 +21,16 @@ test("smoke rejects completed runs without the actual evidence-linked order", ()
   ];
   expect(auditCollaboration(manifest, events, actions).analysis_id).toBe("eda");
   expect(
+    auditCollaboration(manifest, events, [
+      {
+        kind: "train",
+        candidate_id: "failed_attempt",
+        evidence: [{ analysis_id: "eda" }],
+      },
+      ...actions,
+    ]).followup_candidate,
+  ).toBe("next");
+  expect(
     auditCollaboration(
       manifest,
       [

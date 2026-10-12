@@ -41,7 +41,12 @@ export function auditCollaboration(
     (a) =>
       a.kind === "train" &&
       Array.isArray(a.evidence) &&
-      a.evidence.some((v) => obj(v).analysis_id === analysis.id),
+      a.evidence.some((v) => obj(v).analysis_id === analysis.id) &&
+      searches.some(
+        (e) =>
+          e.candidate_id === a.candidate_id &&
+          e.id !== analysis.source_experiment,
+      ),
   );
   if (
     !linked ||
