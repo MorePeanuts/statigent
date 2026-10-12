@@ -1,0 +1,9 @@
+**
+!pyproject.toml
+!uv.lock
+!.python-version
+!python/
+!python/**
+!docker/
+!docker/Dockerfile
+python/**/__pycache__/

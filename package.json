@@ -1,0 +1,20 @@
+{
+  "name": "statigent",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "scripts": {
+    "format": "biome check --write . && uv run ruff format python tests/python",
+    "lint": "biome check . && uv run ruff check python tests/python && uv run ruff format --check python tests/python",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test tests/unit && uv run pytest tests/python",
+    "check": "bun run lint && bun run typecheck && bun run test",
+    "test:integration": "bun test tests/integration && uv run pytest -m integration tests/python",
+    "runtime": "bun src/cli.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.2.4",
+    "@types/bun": "1.3.0",
+    "typescript": "5.9.3"
+  }
+}
