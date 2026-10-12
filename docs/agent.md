@@ -96,7 +96,7 @@ DeepSeek 示例请求 `deepseek-flash`，展示 DeepSeek-V4.1-Flash；别名不�
 
 `reference` 是去掉 `./` 后的报告内写法，`path` 是工作区路径。模型看不到图片，只能依据计算结果描述图表；这一局限保留。评测适配器只把报告和被引用的图片复制进交付目录，引用无需改写即可在交付目录中解析，未被引用的图片不交付。
 
-**统一轨迹（trajectory-v1）**：评测启用 DAComp 上游兼容模式时，适配器根据原生事件生成 `trajectory.txt`：按执行顺序列出每个单元的代码、状态和有界输出预览（截断时标注），最后附上最终报告（文本任务附 summary）。整体上限 256 KiB，超出时保留首尾、从中间截断并写明省略字节数。宿主路径和模型密钥会被替换为 `[host]`；轨迹不含评分材料。多角色实现以后需要按适配器版本另行定义映射。
+**统一轨迹（trajectory-v1）**：评测启用 DAComp 上游兼容模式时，适配器根据原生事件生成 `trajectory.txt`：按执行顺序列出每个单元的代码、状态和有界输出预览（截断时标注），最后附上最终报告（文本任务附 summary）。整体上限 256 KiB，超出时保留首尾、从中间截断并写明省略字节数。宿主路径和模型密钥会被替换为 `[host]`；轨迹不含评分材料。双角色使用适配器 v2 的 `planner-executor-v1` 映射，代码标注 executor/subtask，报告来自 planner。
 
 ## 本地使用
 
@@ -110,11 +110,15 @@ bun run runtime replay runs/agent/<run_id> runs/replays
 bun run runtime cleanup <run_id>
 # 显式付费验收：只运行一个合成任务，不自动重跑。
 bun run test:smoke:model -- --model deepseek-flash --task configs/tasks/synthetic-eda.json
+# 固定双角色合成验收，同样只运行一次；不接受扩大任务或预算的参数。
+bun run test:smoke:collaboration
 ```
 
 运行前打印生效预算和生成参数，结束打印 run_id、目录、终态与原因，非 completed 退出码为 1。Ctrl-C 取消等待/活动执行并进入清理。冒烟还验证至少两个成功单元、分组均值、PNG 解码、结论引用、Notebook、实际 token 和无残留容器，将结果写为 smoke-result.json；检查失败同样退出 1。期望均值只保存在宿主验收器，不向模型提供答案或预写代码。
 
 默认 `bun run check` 与 `bun run test:integration` 只用可控模型，后者使用真实 Docker；即使已设置 API key 也不调用付费服务。自定义 profile 的支持范围以协议测试为准，应另行显式冒烟。运行目录不提交 Git。
+
+双角色冒烟固定使用已提交的 `configs/tasks/collaboration-report.json`、deepseek-flash、20 次模型尝试、10 次执行、400,000 token 阈值与 600 秒任务时限。验收增加至少两次完成委派、两个委派中的成功单元、分组均值与最高均值组的中心化偏差、规划者报告及图片映射检查。状态复用见证来自成功单元中的 Python AST：后续委派加载前一委派直接绑定且未重新赋值的数据变量；不把重复导入模块当作数据状态复用，也不推断复杂控制流。它是此固定冒烟的保守验收，不是通用依赖证明；原始代码仍保留供人工复核。未观察到所需协作或交付即写 failed，不自动重跑到成功。协议本身不强制委派次数。
 
 任务总时限以 `budget.task_timeout_ms` 为准，会覆盖并派生执行会话的 task_timeout_ms；会话启动时限也不能超过剩余任务时间。运行耗时从预检前开始计，清理有执行层独立宽限，墙钟包含清理，不能简单相加可能重叠的阶段字段。`runtime inspect` 附加 model_journal，显示缺失响应/失败终结的请求 ID 和截断尾部，不改写源文件，不据此猜测服务成本。
 
