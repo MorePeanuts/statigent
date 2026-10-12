@@ -126,4 +126,4 @@ bun run test:smoke:collaboration
 
 本次实际检查、真实 DeepSeek 用量、运行 ID 和代码重放结果见 [本地验收记录](eda-agent-validation.md)。
 
-双角色的工程检查、单次真实运行及未通过的状态复用项见 [协作验收记录](eda-collaboration-validation.md)。
+双角色的工程检查、首轮失败及状态复用修复后通过的有界真实验收见 [协作验收记录](eda-collaboration-validation.md)。
