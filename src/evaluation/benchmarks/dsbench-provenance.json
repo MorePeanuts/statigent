@@ -1,0 +1,20 @@
+{
+  "repository": "LiqiangJing/DSBench",
+  "commit": "ba786096137a5108af11c016ad3f09cdb97beefd",
+  "dataset_revision": "liqiang888/DSBench@1196d6553ec200e1262841efc89cda5954ffe89f",
+  "archive": {
+    "url": "https://huggingface.co/datasets/liqiang888/DSBench/resolve/1196d6553ec200e1262841efc89cda5954ffe89f/data_analysis/data.zip",
+    "bytes": 8027257,
+    "sha256": "3a53d89bf0307978522d684fc2b49c8697a754444c0c2dd2e4771d0d8fdfb4e0",
+    "note": "Case files were extracted from this archive (macOS metadata dropped); a file-by-file comparison on 2026-10-12 found the 38 indexed cases identical to it."
+  },
+  "default_judge": "gpt-4o-2024-05-13, temperature 0, max_tokens 256 (compute_answer.py)",
+  "resources": [
+    { "path": "analysis/public/tasks.jsonl", "bytes": 14731, "sha256": "0abf9caf88d4f22db6a0a9008e513ccf85064759949207b521d945bd6af9b753", "source": "data_analysis/data.json without answers" },
+    { "path": "analysis/private/tasks-with-answers.jsonl", "bytes": 19408, "sha256": "e02f5c5f09a3491879f341aab47a8d74d30b943eef8002ddc33c0e1fbfe89001", "source": "data_analysis/data.json" },
+    { "path": "upstream/data_analysis/data.json", "bytes": 19407, "sha256": "ff822b69d46e08b384fa9b93ff39762c33b9887d315a5653bb536aeaba7572ea" },
+    { "path": "upstream/data_analysis/compute_answer.py", "bytes": 3882, "sha256": "59ee46b1a7da40e3863e04ca82c9c9f4786a87b08a374ac80ea32d268185f1d4" },
+    { "path": "upstream/data_analysis/show_result.py", "bytes": 1812, "sha256": "4bcde99ae2e20dbed2cceddf6a83c5768bdc74ccbd124a6a99dabc0daa3978d0" },
+    { "path": "upstream/LICENSE", "bytes": 1218, "sha256": "612efca1b12383f7fc0f18d378153ce3ffd6ed3570d112fb4c69e0bea34d4719" }
+  ]
+}

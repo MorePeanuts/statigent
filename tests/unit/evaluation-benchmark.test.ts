@@ -60,15 +60,18 @@ test("real scoring bridge and fixed denominator differ explicitly from upstream 
   const { root, adapter } = await setup();
   const task = (await adapter.catalog({ root })).tasks[0];
   if (!task) throw new Error("Missing task");
-  const good = await adapter.score({ root }, task, {
-    ...submission(),
-    answer_text: "@a[1] @b[2]",
-  });
-  const bad = await adapter.score({ root }, task, {
-    ...submission("unit-000002"),
-    status: "failed",
-    answer_text: "",
-  });
+  const good = await adapter.score(
+    { root },
+    task,
+    { ...submission(), answer_text: "@a[1] @b[2]" },
+    { deliverables_root: root, scoring: {}, judge: null },
+  );
+  const bad = await adapter.score(
+    { root },
+    task,
+    { ...submission("unit-000002"), status: "failed", answer_text: "" },
+    { deliverables_root: root, scoring: {}, judge: null },
+  );
   const records = [good, bad].map(
     (score, i): UnitRecord => ({
       unit: {
@@ -110,9 +113,13 @@ test("real scoring bridge and fixed denominator differ explicitly from upstream 
     ]).metrics,
   ).toEqual({ abq: null, psaq: null });
   await writeFile(join(root, "private/labels.jsonl"), "corrupted");
-  await expect(adapter.score({ root }, task, submission())).rejects.toThrow(
-    "integrity",
-  );
+  await expect(
+    adapter.score({ root }, task, submission(), {
+      deliverables_root: root,
+      scoring: {},
+      judge: null,
+    }),
+  ).rejects.toThrow("integrity");
 });
 test("bounded process rejects invalid protocol execution, timeout and cancellation", async () => {
   await expect(command(["bun", "-e", "process.exit(2)"])).rejects.toThrow(

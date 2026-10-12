@@ -1,0 +1,19 @@
+{
+  "repository": "ByteDance-Seed/DAComp",
+  "commit": "027ccaf20f0d3743d9291fd575d9bc785a5fe3db",
+  "dataset_revision": "DAComp/dacomp-da@2cc22149cdfe16cec41851ccae791c2d2c873bb3",
+  "pins": {
+    "data_entries_sha256": "bf47a628be37bc2854273c0e44f470d741e4c852da055c9ccbded6510b7fb4f6",
+    "evaluator_entries_sha256": "c8835bd727192c77f8774a3df18dd5971d41b21416026c30a9bf580e94f9052f"
+  },
+  "pins_note": "Digests of the dacomp-da/ entries (path, bytes, sha256) in benchmarks/metadata/dacomp-data-files.json and assets-files.json, whose per-file hashes come from the official Hugging Face LFS and GitHub sources.",
+  "default_judges": "llm_judge.py example: --rubrics-model/--gsb-model-text/--gsb-model-vis gemini-2.5-flash, temperature 0",
+  "deviations": [
+    "Primary protocol judges the final report only; upstream rubric scoring prefers the trajectory (upstream-compatible mode reproduces that and is reported separately).",
+    "The rubric user query is the task instruction; the released upstream metadata has no instruction.txt, so the upstream script passes an empty query.",
+    "Judge models are configurable; upstream examples use gemini-2.5-flash.",
+    "Unparseable judge replies are re-requested a bounded number of times (upstream: up to 10); a comparison still missing after retries fails the unit instead of averaging the remaining references.",
+    "Units without an accepted report (failed, timed out, invalid report) score 0 on every metric without a judge call; upstream skips instances without an answer file.",
+    "Candidate images are the report's validated relative image links; upstream silently drops links that do not resolve."
+  ]
+}

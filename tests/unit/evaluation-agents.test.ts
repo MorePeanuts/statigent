@@ -7,44 +7,21 @@ import {
   parseCommandResponse,
 } from "../../src/evaluation/agents/container-command";
 import { statigentAdapter } from "../../src/evaluation/agents/statigent";
-import {
-  emptyUsage,
-  type Invocation,
-  validateInvocation,
-} from "../../src/evaluation/contracts";
+import { emptyUsage, validateInvocation } from "../../src/evaluation/contracts";
 import { exportNotebooks } from "../../src/records/notebook";
 import {
   call,
   fakeRuntime,
   finish,
   lastFeedback,
-  profile,
   reply,
   ScriptClient,
 } from "../helpers/agent";
-import { submission, task } from "../helpers/evaluation";
-export function invocation(root: string): Invocation {
-  return {
-    schema_version: 1,
-    evaluation_id: "eval-test",
-    unit_id: "unit-000001",
-    task,
-    config: {
-      id: "eda",
-      adapter: "statigent-eda",
-      options: { image: "statigent-runtime:dev" },
-      model: profile,
-      require_seed: true,
-    },
-    budget: { timeout_ms: 10000, model_attempts: 3, total_tokens: 100000 },
-    seed: 42,
-    input_root: root,
-    run_root: join(root, "runs"),
-  };
-}
+import { invocation, submission } from "../helpers/evaluation";
+
 test("invocation and command protocol reject unsupported configuration and forged outputs", () => {
   expect(() =>
-    validateInvocation({ ...invocation("/tmp"), schema_version: 2 }),
+    validateInvocation({ ...invocation("/tmp"), schema_version: 1 }),
   ).toThrow();
   for (const extra of [
     { network: true },
@@ -54,21 +31,68 @@ test("invocation and command protocol reject unsupported configuration and forge
     expect(() =>
       commandOptions({ image: "test", argv: ["uv"], ...extra }),
     ).toThrow();
+  const response = commandResponse();
   expect(
-    parseCommandResponse(JSON.stringify(submission()), "unit-000001")
+    parseCommandResponse(JSON.stringify(response), "unit-000001").submission
       .native_run,
   ).toBeNull();
   for (const out of [
     "{}\n{}",
     "oops",
+    JSON.stringify({ ...response, schema_version: 2 }),
     JSON.stringify({
-      ...submission(),
+      ...response,
       native_run: { id: "foreign", directory: "/etc" },
     }),
-    JSON.stringify({ ...submission(), usage: emptyUsage("unknown") }),
+    JSON.stringify({ ...response, usage: emptyUsage("unknown") }),
   ])
     expect(() => parseCommandResponse(out, "unit-000001")).toThrow();
 });
+test("command files are decoded under safe relative names within configured limits", () => {
+  const file = (name: string, data: string) => ({
+    name,
+    base64: Buffer.from(data).toString("base64"),
+  });
+  const parsed = parseCommandResponse(
+    JSON.stringify(
+      commandResponse([file("report.md", "# r"), file("img/a.png", "x")]),
+    ),
+    "unit-000001",
+  );
+  expect(parsed.files.map((f) => f.path)).toEqual(["report.md", "img/a.png"]);
+  expect(parsed.submission.deliverables).toEqual([]);
+  for (const name of ["../escape", "/etc/passwd", "a//b", "./a"])
+    expect(() =>
+      parseCommandResponse(
+        JSON.stringify(commandResponse([file(name, "x")])),
+        "unit-000001",
+      ),
+    ).toThrow();
+  const limits = { max_file_bytes: 4, max_files_bytes: 6 };
+  expect(() =>
+    parseCommandResponse(
+      JSON.stringify(commandResponse([file("big", "12345")])),
+      "unit-000001",
+      limits,
+    ),
+  ).toThrow("max_file_bytes");
+  expect(() =>
+    parseCommandResponse(
+      JSON.stringify(commandResponse([file("a", "1234"), file("b", "123")])),
+      "unit-000001",
+      limits,
+    ),
+  ).toThrow("total");
+  expect(() =>
+    commandOptions({ image: "i", argv: ["x"], max_file_bytes: 2 ** 40 }),
+  ).toThrow();
+});
+function commandResponse(
+  artifacts: { name: string; base64: string }[] = [],
+): Record<string, unknown> {
+  const { deliverables: _d, trajectory: _t, ...rest } = submission();
+  return { ...rest, schema_version: 1, artifacts };
+}
 test("Statigent preserves exact final summary, native run and measured retry-inclusive usage", async () => {
   const root = await realpath(await mkdtemp(join(tmpdir(), "eda-adapter-")));
   try {

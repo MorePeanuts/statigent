@@ -3,14 +3,20 @@ import {
   resolveCredential,
   validateProfile,
 } from "./config";
+import { checkImages, DEFAULT_IMAGE_LIMITS, type ImageLimits } from "./images";
 import { integer, obj, str } from "./validation";
 export interface ToolCall {
   id: string;
   type: "function";
   function: { name: string; arguments: string };
 }
+/** Image parts carry raw bytes; the client validates and encodes them as data URLs, never remote URLs. */
+export type ContentPart =
+  | { type: "text"; text: string }
+  | { type: "image"; data: Uint8Array };
 export type Message =
-  | { role: "system" | "user"; content: string }
+  | { role: "system"; content: string }
+  | { role: "user"; content: string | ContentPart[] }
   | { role: "tool"; tool_call_id: string; content: string }
   | AssistantMessage;
 export interface AssistantMessage {
@@ -175,12 +181,56 @@ export function parseResponse(
 }
 export interface ModelClient {
   readonly profile: ModelProfile;
-  requestBody(messages: Message[], tools: readonly unknown[]): string;
+  requestBody(
+    messages: Message[],
+    tools: readonly unknown[],
+    images?: ImageLimits,
+  ): string;
   send(
     body: string,
     limits: RequestLimits,
     signal: AbortSignal,
   ): Promise<ModelResponse>;
+}
+/**
+ * Serializes messages for chat-completions. Image parts are only accepted in user messages of a
+ * vision-capable profile and are checked locally before anything is sent.
+ */
+export function serializeMessages(
+  profile: ModelProfile,
+  messages: Message[],
+  limits: ImageLimits = DEFAULT_IMAGE_LIMITS,
+): unknown[] {
+  const images = messages.flatMap((m) =>
+    m.role === "user" && Array.isArray(m.content)
+      ? m.content.flatMap((p) => (p.type === "image" ? [p.data] : []))
+      : [],
+  );
+  if (images.length && !profile.capabilities.vision)
+    throw new Error("vision_capability_required");
+  const infos = checkImages(images, limits);
+  let next = 0;
+  return messages.map((m) => {
+    if (m.role !== "user" || typeof m.content === "string") {
+      if (typeof m.content !== "string" && m.content !== null)
+        throw new Error("image_parts_only_in_user_messages");
+      return m;
+    }
+    return {
+      role: "user",
+      content: m.content.map((p) => {
+        if (p.type === "text") return { type: "text", text: p.text };
+        const info = infos[next++];
+        if (!info) throw new Error("image_accounting_error");
+        return {
+          type: "image_url",
+          image_url: {
+            url: `data:${info.mime};base64,${Buffer.from(p.data).toString("base64")}`,
+          },
+        };
+      }),
+    };
+  });
 }
 export class ChatClient implements ModelClient {
   readonly profile: ModelProfile;
@@ -192,7 +242,11 @@ export class ChatClient implements ModelClient {
     this.profile = validateProfile(profile);
     this.#key = resolveCredential(this.profile, environment);
   }
-  requestBody(messages: Message[], tools: readonly unknown[]): string {
+  requestBody(
+    messages: Message[],
+    tools: readonly unknown[],
+    images: ImageLimits = DEFAULT_IMAGE_LIMITS,
+  ): string {
     const p = this.profile;
     const generation: Record<string, unknown> = {
       max_tokens: p.generation.max_output_tokens,
@@ -204,11 +258,11 @@ export class ChatClient implements ModelClient {
     }
     if (p.generation.temperature !== undefined)
       generation.temperature = p.generation.temperature;
+    // A request without tools (scoring) must not advertise tool_choice either.
     return JSON.stringify({
       model: p.model,
-      messages,
-      tools,
-      tool_choice: "auto",
+      messages: serializeMessages(p, messages, images),
+      ...(tools.length ? { tools, tool_choice: "auto" } : {}),
       stream: false,
       ...generation,
     });
@@ -315,4 +369,39 @@ export class ChatClient implements ModelClient {
       clearTimeout(timer);
     }
   }
+}
+/**
+ * Single-turn request without tools, used by scorers. Truncated replies, tool calls and empty content are
+ * failures with their known usage, never usable output.
+ */
+export async function completeText(
+  client: ModelClient,
+  messages: Message[],
+  limits: RequestLimits & { images?: ImageLimits },
+  signal: AbortSignal,
+): Promise<ModelResponse & { text: string }> {
+  let body: string;
+  try {
+    body = client.requestBody(messages, [], limits.images);
+  } catch (error) {
+    throw new ModelFailure(
+      error instanceof Error ? error.message : "invalid_request",
+      "not_generated",
+    );
+  }
+  const response = await client.send(body, limits, signal);
+  const fail = (code: string) =>
+    new ModelFailure(
+      code,
+      response.usage.status === "known" ? "known" : "unknown",
+      false,
+      response.usage,
+    );
+  if (response.finish_reason === "length") throw fail("truncated");
+  if (response.message.tool_calls || response.finish_reason === "tool_calls")
+    throw fail("unexpected_tool_calls");
+  if (response.finish_reason !== "stop") throw fail(response.finish_reason);
+  const text = response.message.content ?? "";
+  if (!text.trim()) throw fail("empty_content");
+  return { ...response, text };
 }

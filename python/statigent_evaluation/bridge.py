@@ -3,11 +3,55 @@
 import json
 import sys
 
+from . import dacomp, dsbench
 from .infiagent import PROTOCOL, score
 
 
+def _fields(request, names):
+    if set(request) != {"operation", *names}:
+        raise ValueError("Invalid request fields")
+    return [request[name] for name in names]
+
+
 def handle(request):
-    if isinstance(request, dict) and request.get("operation") == "aggregate":
+    operation = request.get("operation") if isinstance(request, dict) else None
+    if operation == "dsbench_prompt":
+        question, answer, prediction = _fields(
+            request, ["question", "answer", "prediction"]
+        )
+        # Upstream formats the reference with str() (dicts print as Python reprs).
+        if (
+            not isinstance(question, str)
+            or not isinstance(prediction, str)
+            or isinstance(answer, bool)
+            or not isinstance(answer, (str, int, float, dict))
+        ):
+            raise ValueError("Invalid DSBench prompt request")
+        return {"text": dsbench.judge_prompt(question, str(answer), prediction)}
+    if operation == "dsbench_verdict":
+        (reply,) = _fields(request, ["reply"])
+        return {"correct": dsbench.parse_verdict(reply)}
+    if operation == "dacomp_prepare":
+        fields = ["instance_dir", "report_path", "report_images", "query"]
+        _fields(request, [*fields, "trajectory_path"])
+        if not isinstance(request["report_images"], list):
+            raise ValueError("Invalid report images")
+        return dacomp.prepare(request)
+    if operation == "dacomp_valid":
+        kind, reply = _fields(request, ["kind", "reply"])
+        if kind not in ("rubric", "gsb") or not isinstance(reply, str):
+            raise ValueError("Invalid validity request")
+        valid = (
+            dacomp.valid_rubric(reply) if kind == "rubric" else dacomp.valid_gsb(reply)
+        )
+        return {"valid": valid}
+    if operation == "dacomp_combine":
+        _fields(
+            request,
+            ["instance_dir", "rubric", "gsb_text", "gsb_vision", "compat_rubric"],
+        )
+        return dacomp.combine(request)
+    if operation == "aggregate":
         if set(request) != {"operation", "scores"} or not isinstance(
             request["scores"], list
         ):
@@ -56,8 +100,9 @@ def handle(request):
 
 def main():
     try:
-        raw = sys.stdin.buffer.read(262145)
-        if len(raw) > 262144:
+        # DAComp combine requests carry several long judge replies.
+        raw = sys.stdin.buffer.read(16777217)
+        if len(raw) > 16777216:
             raise ValueError("Request size exceeded")
         print(json.dumps(handle(json.loads(raw)), allow_nan=False))
     except (ValueError, TypeError, KeyError) as error:

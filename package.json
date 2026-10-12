@@ -13,7 +13,8 @@
     "runtime": "bun src/cli.ts",
     "agent": "bun src/agent/cli.ts",
     "test:smoke:model": "bun src/agent/smoke.ts",
-    "test:evaluation:upstream": "uv run pytest -m upstream tests/python/test_evaluation_upstream.py",
+    "test:smoke:judge": "bun src/evaluation/judge-smoke.ts",
+    "test:evaluation:upstream": "uv run pytest -m upstream tests/python",
     "evaluate": "bun src/evaluation/cli.ts",
     "test:evaluation:integration": "bun test tests/integration/evaluation-agents.test.ts"
   },

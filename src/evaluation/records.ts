@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, open, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, stat } from "node:fs/promises";
 import { cpus, platform, release, totalmem } from "node:os";
 import { join, resolve } from "node:path";
 import { integer, keys, obj, str } from "../models/validation";
@@ -7,6 +7,7 @@ import { sha256, writeJson } from "../records/store";
 import {
   type Budget,
   bounded,
+  contractVersion,
   envelope,
   hash,
   id,
@@ -19,6 +20,7 @@ import {
   validateSubmission,
   validateTask,
 } from "./contracts";
+import { verifyDeliverables } from "./deliverables";
 import { describeFile, regular } from "./files";
 import { type Plan, type Unit, validateConfig } from "./plan";
 import { command } from "./process";
@@ -40,11 +42,13 @@ export interface UnitRecord {
   effective_budget: Budget | null;
   budget_status: "within" | "exceeded" | "unknown" | "reduced";
   submission_sha256: string | null;
-  scoring_status: "pending" | "scored" | "failed";
+  /** `not_scored`: judging never started for this unit, e.g. the judge budget ran out first. */
+  scoring_status: "pending" | "scored" | "failed" | "not_scored";
+  scoring_reason?: string;
   score: Score | null;
 }
 export interface Manifest {
-  schema_version: 1;
+  schema_version: 2;
   evaluation_id: string;
   created_at: string;
   completed_at: string | null;
@@ -146,7 +150,7 @@ export class EvaluationStore {
     await mkdir(join(directory, "scores"));
     await mkdir(join(directory, "native"));
     const manifest: Manifest = {
-      schema_version: 1,
+      schema_version: 2,
       evaluation_id: evaluationId,
       created_at: new Date().toISOString(),
       completed_at: null,
@@ -156,13 +160,13 @@ export class EvaluationStore {
       environment: environment ?? (await environmentSnapshot()),
       preflight,
     };
-    const secrets = plan.config.agents.flatMap((a) =>
-      a.model
-        ? [process.env[a.model.api_key_env]].filter((v): v is string =>
-            Boolean(v),
-          )
-        : [],
-    );
+    const profiles = [
+      ...plan.config.agents.flatMap((a) => (a.model ? [a.model] : [])),
+      ...Object.values(plan.config.scoring?.judges ?? {}),
+    ];
+    const secrets = profiles
+      .map((p) => process.env[p.api_key_env])
+      .filter((v): v is string => Boolean(v));
     const store = new EvaluationStore(directory, manifest, secrets);
     await store.json("plan.json", plan);
     await store.json("manifest.json", manifest);
@@ -208,6 +212,7 @@ export class EvaluationStore {
   async unit(record: UnitRecord): Promise<void> {
     await this.json(`units/${id(record.unit.id)}/record.json`, record);
   }
+  /** Writes the submission once; its deliverables were already frozen in `units/<id>/deliverables`. */
   async freeze(submission: Submission): Promise<string> {
     const s = validateSubmission(
       sanitize(submission, this.secrets),
@@ -222,13 +227,6 @@ export class EvaluationStore {
     } finally {
       await file.close();
     }
-    await mkdir(join(directory, "artifacts"));
-    for (const a of s.artifacts)
-      await writeFile(
-        join(directory, "artifacts", a.name),
-        Buffer.from(a.base64, "base64"),
-        { flag: "wx", mode: 0o400 },
-      );
     return sha256(bytes);
   }
   async finish(status: Manifest["status"], reason: string): Promise<void> {
@@ -245,50 +243,79 @@ export async function readJson(root: string, path: string): Promise<unknown> {
     throw new Error("Record quota exceeded");
   return JSON.parse(await readFile(file, "utf8"));
 }
+export interface StoredSubmission {
+  submission: Submission;
+  /** Absolute directory holding the frozen deliverables (`artifacts/` for v1 records). */
+  deliverables_root: string;
+}
+/** Reads a frozen submission and re-verifies its deliverables; v1 inline artifacts stay readable. */
 export async function readSubmission(
   directory: string,
   record: UnitRecord,
-): Promise<Submission | null> {
+): Promise<StoredSubmission | null> {
   if (record.submission_sha256 === null) return null;
   const path = `units/${id(record.unit.id)}/submission.json`,
     description = await describeFile(directory, path);
   if (description.sha256 !== record.submission_sha256)
     throw new Error("Submission integrity mismatch");
-  const s = validateSubmission(await readJson(directory, path), record.unit.id);
-  for (const a of s.artifacts) {
-    const f = await describeFile(
-      directory,
-      `units/${s.unit_id}/artifacts/${a.name}`,
-    );
-    if (f.sha256 !== sha256(Buffer.from(a.base64, "base64")))
-      throw new Error("Artifact integrity mismatch");
+  const raw = await readJson(directory, path);
+  const s = validateSubmission(raw, record.unit.id);
+  if (contractVersion(raw) === 1) {
+    for (const d of s.deliverables) {
+      const f = await describeFile(
+        directory,
+        `units/${s.unit_id}/artifacts/${d.path}`,
+      );
+      if (f.sha256 !== d.sha256) throw new Error("Artifact integrity mismatch");
+    }
+    return {
+      submission: s,
+      deliverables_root: join(
+        resolve(directory),
+        "units",
+        s.unit_id,
+        "artifacts",
+      ),
+    };
   }
-  return s;
+  const root = join(resolve(directory), "units", s.unit_id, "deliverables");
+  await verifyDeliverables(root, s.deliverables);
+  return { submission: s, deliverables_root: root };
 }
 export async function inspect(
   directory: string,
 ): Promise<{ manifest: Manifest; plan: Plan; records: UnitRecord[] }> {
-  const m = envelope(await readJson(directory, "manifest.json"), [
-    "evaluation_id",
-    "created_at",
-    "completed_at",
-    "plan_sha256",
-    "status",
-    "reason",
-    "environment",
-    "preflight",
-  ]);
-  if (m.schema_version !== 1 || typeof m.plan_sha256 !== "string")
-    throw new Error("Invalid manifest");
-  const planValue = envelope(await readJson(directory, "plan.json"), [
-      "config",
-      "tasks",
-      "units",
-      "source_root",
-      "provenance",
-      "adapters",
-      "sha256",
-    ]),
+  const m = envelope(
+    await readJson(directory, "manifest.json"),
+    [
+      "evaluation_id",
+      "created_at",
+      "completed_at",
+      "plan_sha256",
+      "status",
+      "reason",
+      "environment",
+      "preflight",
+    ],
+    [1, 2],
+  );
+  if (typeof m.plan_sha256 !== "string") throw new Error("Invalid manifest");
+  const rawPlan = await readJson(directory, "plan.json");
+  const planVersion = contractVersion(rawPlan);
+  const planValue = envelope(
+      rawPlan,
+      [
+        "config",
+        "tasks",
+        "units",
+        "source_root",
+        "provenance",
+        "adapters",
+        ...(planVersion === 2 ? ["groups"] : []),
+        "sha256",
+      ],
+      [1, 2],
+    ),
     { sha256: checksum, ...body } = planValue;
   if (
     checksum !== m.plan_sha256 ||
@@ -331,18 +358,22 @@ export async function inspect(
       str(v, "adapter version"),
     ]),
   );
+  const groups = Object.fromEntries(
+    Object.entries(obj(planValue.groups ?? {})).map(([k, v]) => [id(k), id(v)]),
+  );
   const plan: Plan = {
-    schema_version: 1,
+    schema_version: 2,
     config,
     tasks,
     units,
     source_root: str(planValue.source_root, "source_root"),
     provenance: obj(planValue.provenance),
     adapters,
+    groups,
     sha256: hash(checksum),
   };
   const manifest: Manifest = {
-    schema_version: 1,
+    schema_version: 2,
     evaluation_id: id(m.evaluation_id),
     created_at: str(m.created_at, "created_at"),
     completed_at:
@@ -371,6 +402,7 @@ export async function inspect(
       "budget_status",
       "submission_sha256",
       "scoring_status",
+      "scoring_reason",
       "score",
     ]);
     if (
@@ -438,13 +470,17 @@ export async function inspect(
         "pending",
         "scored",
         "failed",
+        "not_scored",
       ]),
+      ...(r.scoring_reason === undefined
+        ? {}
+        : { scoring_reason: str(r.scoring_reason, "scoring_reason") }),
       score: r.score === null ? null : validateScore(r.score, u.id),
     };
     if (
       record.score
         ? record.scoring_status !== record.score.status
-        : record.scoring_status !== "pending"
+        : !["pending", "not_scored"].includes(record.scoring_status)
     )
       throw new Error("Inconsistent scoring status");
     await readSubmission(directory, record);

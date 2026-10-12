@@ -14,7 +14,7 @@
 
 **章节划分的文献依据：** [DSBench](https://arxiv.org/abs/2409.07703) 将数据分析与预测建模分别定义、分别评测：前者理解已有数据并回答问题，后者训练模型并预测未见样本。这支持本课题将两类任务设为独立核心章节。其 Analysis 来自 ModelOff，Modeling 来自 Kaggle，二者不是配对数据；两章的递进关系仍通过“建模智能体按需调用探索智能体”的关联实验验证。第一章中，DAComp-DA 评价开放式分析质量，DSBench-Analysis 评价复杂案例解题能力，InfiAgent-DABench 补充标准答案的计算正确性。
 
-下面每个示例都取自官方数据，大表在正文只展示一行预览。数据统一存放于项目根目录的 [benchmarks](../benchmarks/README.md)，原临时样本目录已移除，示例链接改为正式数据路径。数据下载与评测环境接入是两个步骤；InfiAgent 已完成三题开发冒烟，见 [评测验收记录](evaluation-validation.md)，尚未开展正式全量评测或建模实验。评分演算中的假设数字会单独标明。
+下面每个示例都取自官方数据，大表在正文只展示一行预览。数据统一存放于项目根目录的 [benchmarks](../benchmarks/README.md)，原临时样本目录已移除，示例链接改为正式数据路径。数据下载与评测环境接入是两个步骤；InfiAgent 已完成三题开发冒烟，见 [评测验收记录](evaluation-validation.md)。DAComp-DA 与 DSBench-Analysis 已接入统一评测层（软件接入与开发冒烟见 [分析基准验收记录](analysis-benchmarks-validation.md)），尚未开展正式全量评测或建模实验。评分演算中的假设数字会单独标明。
 
 ## 第一章：探索性数据分析
 
@@ -80,6 +80,8 @@
 每题总分为 `100 × (0.6R + 0.1G可读性 + 0.1G专业性 + 0.2G可视化)`，再对任务取平均，越高越好。**演算示例：** 假设内容得分 11 / 22，后三项都为“3 次更好、1 次相当、1 次更差”，各 G = 0.4，则总分为 **46 分**。这不是本次运行结果。
 
 这是“按细则评价分析质量”，不是对文字答案做完全匹配；需要额外的裁判 API 调用。
+
+**本项目接入（`dacomp-da`）：** 智能体只获得任务说明和该题 SQLite，交付英文 `report.md` 及其引用的 PNG/JPEG 图表；评分细则、满分元数据和 5 份参考报告只在评分侧使用。**主口径**（`dacomp-da-report-v1`）只把冻结的报告和图片交给评委：1 次 rubric 打分、5 次文本比较、报告有图时再加 5 次视觉比较（无图时可视化计 0，与上游相同），按上游的 ±3 阈值映射和 0.6/0.1/0.1/0.2 权重得到 0–100 总分。上游 rubric 评分实际优先读取智能体轨迹；为便于与上游设置对照，可选的**上游兼容口径**（`dacomp-da-upstream-trajectory-v1`）额外用统一格式轨迹做一次 rubric 打分，结果单列，不与主口径平均。评委模型可配置；相对上游的全部偏离（rubric 查询使用任务说明、重试上限、比较缺失时整题评分失败、无报告记 0 等）随每次计划写入来源记录，详见 [评测说明](evaluation.md#dacomp-da-评分)。
 
 [本地任务数据库](../benchmarks/dacomp-da/public/dacomp-002/dacomp-002.sqlite) · [原始任务集合](https://huggingface.co/datasets/DAComp/dacomp-da/blob/main/dacomp-da.jsonl) · [该题完整评分材料](https://github.com/ByteDance-Seed/DAComp/tree/main/dacomp-da/evaluation_suite/src/dacomp-002) · [官方计分代码](https://github.com/ByteDance-Seed/DAComp/blob/main/dacomp-da/evaluation_suite/core/rubric_scoring.py)
 
@@ -195,6 +197,8 @@ Question 1 What is your average hourly electricity usage?  a. 0.641kWh b. 0.782k
 两项均越高越好。**演算示例：** 假设只评测两个案例，分别答对 2/3 题和 1/7 题，题目准确率为 3/10 = **30%**，案例平均准确率为 `(2/3 + 1/7) ÷ 2 ≈ 40.48%`。这是解释权重差异的假设数字，不是实验结果。
 
 **使用定位：** 全量成绩保留与已有研究的可比性；其中也有 Excel 知识、财务计算和逻辑题，不能把全部 466 题等同于开放式 EDA。Notebook 证据与可复现性仍需本课题另外检查，原生准确率只评价最终答案。
+
+**本项目接入（`dsbench-analysis`）：** 每道题一个任务、按案例分组；9 个案例的 140 道题没有数据文件，以空输入发布（已与官方压缩包逐文件核对，属基准本身特点）。案例 `00000006` 自带的 Notebook 可能含解答，不发布给智能体。评委 prompt 与判定规则原样沿用上游，评委模型可配置；评委失败记为评分错误而不是答错。主汇总报告题目准确率与案例平均准确率，见 [评测说明](evaluation.md#dsbench-analysis-评分)。
 
 [本地完整案例](../benchmarks/dsbench/analysis/public/00000032) · [官方案例索引](https://github.com/LiqiangJing/DSBench/blob/main/data_analysis/data.json) · [官方数据包](https://huggingface.co/datasets/liqiang888/DSBench/blob/main/data_analysis/data.zip) · [答案判定代码](https://github.com/LiqiangJing/DSBench/blob/main/data_analysis/compute_answer.py) · [准确率汇总代码](https://github.com/LiqiangJing/DSBench/blob/main/data_analysis/show_result.py)
 

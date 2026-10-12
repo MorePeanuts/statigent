@@ -4,11 +4,16 @@ import { id } from "./contracts";
 import { buildPlan, type Registry } from "./plan";
 import { inspect } from "./records";
 import { defaultRegistry } from "./registry";
-import { createReport, rescore } from "./report";
+import {
+  createReport,
+  parseJudgeBudget,
+  type RescoreOptions,
+  rescore,
+} from "./report";
 import { runEvaluation } from "./run";
 
 export const HELP =
-  "bun run evaluate plan|run --config FILE [--models FILE] [--root RUN_ROOT]\nbun run evaluate inspect|score|cleanup EVALUATION_ID [--root RUN_ROOT]";
+  "bun run evaluate plan|run --config FILE [--models FILE] [--root RUN_ROOT]\nbun run evaluate inspect|cleanup EVALUATION_ID [--root RUN_ROOT]\nbun run evaluate score EVALUATION_ID [--root RUN_ROOT] [--allow-model-calls --judge-budget FILE]";
 export function parseArguments(args: string[]) {
   if (!args.length || args[0] === "--help") return null;
   const [operation, ...rest] = args;
@@ -19,12 +24,19 @@ export function parseArguments(args: string[]) {
     throw new Error(HELP);
   const values: Record<string, string> = {};
   let evaluationId: string | undefined;
+  let allowModelCalls = false;
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i];
     if (!arg) throw new Error(HELP);
+    if (arg === "--allow-model-calls") {
+      if (operation !== "score" || allowModelCalls) throw new Error(HELP);
+      allowModelCalls = true;
+      continue;
+    }
     if (arg.startsWith("--")) {
       if (
-        !["--config", "--models", "--root"].includes(arg) ||
+        !["--config", "--models", "--root", "--judge-budget"].includes(arg) ||
+        (arg === "--judge-budget" && operation !== "score") ||
         values[arg] !== undefined ||
         !rest[i + 1] ||
         rest[i + 1]?.startsWith("--")
@@ -46,6 +58,8 @@ export function parseArguments(args: string[]) {
   return {
     operation,
     evaluationId,
+    allowModelCalls,
+    judgeBudget: values["--judge-budget"],
     config: values["--config"],
     models: values["--models"] ?? "configs/models.json",
     root: resolve(values["--root"] ?? "runs/evaluations"),
@@ -54,6 +68,7 @@ export function parseArguments(args: string[]) {
 export async function main(
   args: string[],
   registry: Registry = defaultRegistry(),
+  dependencies: Pick<RescoreOptions, "judgeFactory"> = {},
 ): Promise<unknown> {
   const options = parseArguments(args);
   if (!options) return { help: HELP };
@@ -69,8 +84,14 @@ export async function main(
     try {
       const run = await runEvaluation(plan, registry, options.root, {
         signal: controller.signal,
+        judgeFactory: dependencies.judgeFactory,
       });
-      const report = await createReport(run.directory, registry);
+      const report = await createReport(
+        run.directory,
+        registry,
+        undefined,
+        run.score_id,
+      );
       return {
         ...run,
         score_id: report.score_id,
@@ -84,7 +105,14 @@ export async function main(
   }
   const directory = join(options.root, id(options.evaluationId));
   if (options.operation === "inspect") return inspect(directory);
-  if (options.operation === "score") return rescore(directory, registry);
+  if (options.operation === "score")
+    return rescore(directory, registry, {
+      ...dependencies,
+      allowModelCalls: options.allowModelCalls,
+      judgeBudget: options.judgeBudget
+        ? parseJudgeBudget(await Bun.file(options.judgeBudget).json())
+        : undefined,
+    });
   return cleanupEvaluation(directory);
 }
 if (import.meta.main) {

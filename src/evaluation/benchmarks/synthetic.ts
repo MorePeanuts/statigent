@@ -19,7 +19,7 @@ export const syntheticBenchmark: BenchmarkAdapter = {
       provenance: { version: "synthetic-v1", input },
       tasks: [
         validateTask({
-          schema_version: 1,
+          schema_version: 2,
           id: "sum",
           version: input.sha256,
           goal: "Calculate the sum of the value column in data.csv.",
@@ -33,7 +33,7 @@ export const syntheticBenchmark: BenchmarkAdapter = {
   async preflight() {},
   async score(_options, _task, submission) {
     return {
-      schema_version: 1,
+      schema_version: 2,
       unit_id: submission.unit_id,
       protocol: this.protocol,
       status: "scored",
@@ -51,6 +51,7 @@ export const syntheticBenchmark: BenchmarkAdapter = {
       ],
       details: { synthetic: true },
       error: null,
+      judge: null,
     };
   },
 };

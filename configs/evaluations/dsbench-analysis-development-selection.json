@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "version": "dsbench-analysis-development-v1",
+  "purpose": "development",
+  "data_version": "4d9335ce3975e5eeca791ab0989a3c5ade3bdaab085f8e9771e90ad73d73e1eb",
+  "selection": {
+    "rule": "cases with at least one data file, all data files .xlsx/.csv (no images, notebooks, .xlsb/.xlsm), at least two questions; ascending case id; first 3 cases; first 2 questions of each in index order",
+    "smoke": "first two selected tasks",
+    "reason": "Exercise workbook reading and the judge path cheaply; independent of answers and scores"
+  },
+  "cases": [
+    "00000001",
+    "00000005",
+    "00000008"
+  ],
+  "tasks": [
+    "00000001-question6",
+    "00000001-question7",
+    "00000005-question20",
+    "00000005-question21",
+    "00000008-question26",
+    "00000008-question27"
+  ]
+}

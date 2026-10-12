@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { constants, createReadStream } from "node:fs";
-import { chmod, copyFile, lstat, mkdir, realpath } from "node:fs/promises";
+import { chmod, copyFile, lstat, mkdir, realpath, rm } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { safeRelativePath } from "../records/store";
 import type { InputFile, PublicTask } from "./contracts";
@@ -50,19 +50,46 @@ export async function verifyFiles(
       throw new Error(`Input integrity mismatch: ${expected.path}`);
   }
 }
+export type PublicationMethod = "clone" | "copy" | "mixed" | "none";
+/**
+ * Publishes allowlisted inputs. Copy-on-write clones avoid duplicating multi-GB SQLite files per unit;
+ * where the filesystem cannot clone, a plain copy is used. Integrity is verified either way.
+ */
 export async function publishInputs(
   sourceRoot: string,
   task: PublicTask,
   destination: string,
-): Promise<void> {
+  options: { clone?: boolean } = {},
+): Promise<PublicationMethod> {
   await verifyFiles(sourceRoot, task.inputs);
   await mkdir(destination, { recursive: false, mode: 0o755 });
+  const used = new Set<"clone" | "copy">();
   for (const file of task.inputs) {
     const source = await regular(sourceRoot, file.path),
       target = join(destination, file.path);
     await mkdir(dirname(target), { recursive: true, mode: 0o755 });
-    await copyFile(source, target, constants.COPYFILE_EXCL);
+    let method: "clone" | "copy" = "copy";
+    if (options.clone !== false)
+      try {
+        await copyFile(
+          source,
+          target,
+          constants.COPYFILE_EXCL | constants.COPYFILE_FICLONE_FORCE,
+        );
+        method = "clone";
+      } catch {
+        // Unsupported on this filesystem (or across devices); remove any partial target and copy.
+        await rm(target, { force: true });
+      }
+    if (method === "copy")
+      await copyFile(source, target, constants.COPYFILE_EXCL);
+    used.add(method);
     await chmod(target, 0o444);
   }
   await verifyFiles(destination, task.inputs);
+  return used.size === 0
+    ? "none"
+    : used.size === 2
+      ? "mixed"
+      : ([...used][0] ?? "none");
 }

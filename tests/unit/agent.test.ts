@@ -352,7 +352,11 @@ test("switching two model profiles does not change loop; request is durable befo
       id: "generic-test",
       provider: "generic" as const,
       model: "custom-x",
-      capabilities: { tool_calls: true as const, thinking: false },
+      capabilities: {
+        tool_calls: true as const,
+        thinking: false,
+        vision: false,
+      },
       generation: { max_output_tokens: 500 },
     },
   ]) {

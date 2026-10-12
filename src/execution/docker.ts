@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { constants } from "node:fs";
+import { constants, createReadStream } from "node:fs";
 import {
   chmod,
   copyFile,
@@ -92,14 +92,21 @@ export async function stageInputs(config: SessionConfig, sessionId: string) {
         throw new ProtocolError(`input is not a regular file: ${path}`);
       const destination = join(staging, path);
       await mkdir(resolve(destination, ".."), { recursive: true, mode: 0o755 });
-      await copyFile(source, destination, constants.COPYFILE_EXCL);
+      // Clone where the filesystem allows it (falls back to a copy) and hash by streaming:
+      // benchmark databases can be several GB and must not be duplicated or held in memory.
+      await copyFile(
+        source,
+        destination,
+        constants.COPYFILE_EXCL | constants.COPYFILE_FICLONE,
+      );
       await chmod(destination, 0o444);
-      const data = await Bun.file(destination).arrayBuffer();
-      inputs.push({
-        path,
-        sha256: createHash("sha256").update(new Uint8Array(data)).digest("hex"),
-        size_bytes: data.byteLength,
-      });
+      const hash = createHash("sha256");
+      let size = 0;
+      for await (const chunk of createReadStream(destination)) {
+        hash.update(chunk);
+        size += chunk.length;
+      }
+      inputs.push({ path, sha256: hash.digest("hex"), size_bytes: size });
     }
     return { staging, inputs };
   } catch (error) {

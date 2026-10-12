@@ -1,4 +1,5 @@
 import { keys, obj, str, strings } from "../models/validation";
+import type { AnalysisReport } from "./report";
 export const TOOLS = [
   {
     type: "function",
@@ -58,21 +59,50 @@ export const TOOLS = [
     },
   },
 ] as const;
+const FINISH = TOOLS[1];
+/**
+ * Tool set for a task. Report tasks get a finish tool with a required `report_artifact_id`; text tasks
+ * keep the original schema unchanged.
+ */
+export function tools(report: boolean): readonly unknown[] {
+  if (!report) return TOOLS;
+  const parameters = FINISH.function.parameters;
+  return [
+    TOOLS[0],
+    {
+      type: "function",
+      function: {
+        name: "finish_analysis",
+        description: `${FINISH.function.description} Set report_artifact_id to the artifact_id of the saved Markdown report.`,
+        parameters: {
+          ...parameters,
+          properties: {
+            ...parameters.properties,
+            report_artifact_id: { type: "string", minLength: 1 },
+          },
+          required: [...parameters.required, "report_artifact_id"],
+        },
+      },
+    },
+  ];
+}
 export interface Analysis {
   summary: string;
   findings: { statement: string; value?: unknown; evidence_refs: string[] }[];
   methods: string[];
   limitations: string[];
+  report?: AnalysisReport;
 }
 export type Action =
   | { kind: "execute"; code: string }
-  | { kind: "finish"; analysis: Analysis };
+  | { kind: "finish"; analysis: Analysis; report_artifact_id?: string };
 export function validateAction(
   name: string,
   args: string,
   evidence: ReadonlySet<string>,
   successfulCells: number,
   codeLimit: number,
+  report = false,
 ): Action {
   const x = obj(JSON.parse(args));
   if (name === "execute_python") {
@@ -82,7 +112,13 @@ export function validateAction(
     return { kind: "execute", code };
   }
   if (name !== "finish_analysis") throw new Error("Unknown tool");
-  keys(x, ["summary", "findings", "methods", "limitations"]);
+  keys(x, [
+    "summary",
+    "findings",
+    "methods",
+    "limitations",
+    ...(report ? ["report_artifact_id"] : []),
+  ]);
   if (!successfulCells) throw new Error("Successful execution required");
   if (!Array.isArray(x.findings) || !x.findings.length)
     throw new Error("Findings required");
@@ -108,6 +144,9 @@ export function validateAction(
       methods,
       limitations: strings(x.limitations, "limitations"),
     },
+    ...(report
+      ? { report_artifact_id: str(x.report_artifact_id, "report_artifact_id") }
+      : {}),
   };
 }
 export function renderAnalysis(analysis: Analysis, runId: string): string {

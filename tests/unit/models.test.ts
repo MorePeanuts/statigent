@@ -244,7 +244,7 @@ test("no-tool assistant reasoning is retained and tool schemas sent unchanged", 
       const body = (await req.json()) as Record<string, unknown>;
       expect(body.tools).toEqual(tools);
       expect(body.thinking).toEqual({ type: "enabled" });
-      expect(body.max_tokens).toBe(4096);
+      expect(body.max_tokens).toBe(65536);
       if (index++ === 0)
         return Response.json(
           response({

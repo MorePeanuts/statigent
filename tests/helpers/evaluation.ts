@@ -1,15 +1,18 @@
+import { join } from "node:path";
 import {
   type AgentAdapter,
   type BenchmarkAdapter,
   emptyUsage,
+  type Invocation,
   type PublicTask,
   type Submission,
 } from "../../src/evaluation/contracts";
 import { Registry } from "../../src/evaluation/plan";
 import { keys, obj } from "../../src/models/validation";
 import { sha256 } from "../../src/records/store";
+import { profile } from "./agent";
 export const task: PublicTask = {
-  schema_version: 1,
+  schema_version: 2,
   id: "one",
   version: "v1",
   goal: "Sum the value column",
@@ -25,12 +28,13 @@ export const task: PublicTask = {
 };
 export function submission(unit = "unit-000001"): Submission {
   return {
-    schema_version: 1,
+    schema_version: 2,
     unit_id: unit,
     status: "completed",
     answer_text: "@sum[3]",
     reason: "done",
-    artifacts: [],
+    deliverables: [],
+    trajectory: null,
     native_run: null,
     usage: emptyUsage("not_applicable"),
     cleanup_error: null,
@@ -58,7 +62,7 @@ export function fixtureRegistry(
     }),
     preflight: async () => {},
     score: async (_o, _t, s) => ({
-      schema_version: 1,
+      schema_version: 2,
       unit_id: s.unit_id,
       protocol: "exact-v1",
       status: "scored",
@@ -75,14 +79,16 @@ export function fixtureRegistry(
       ],
       details: {},
       error: null,
+      judge: null,
     }),
   };
   const agent: AgentAdapter = {
     id: "fixture",
     version: "1",
     capabilities: {
-      schema_version: 1,
-      output: "text",
+      schema_version: 2,
+      outputs: ["text"],
+      trajectory: "none",
       model: "none",
       seed: "execution",
       isolation: "docker",
@@ -115,5 +121,27 @@ export function config() {
       model_attempts: null,
       total_tokens: null,
     },
+  };
+}
+/** Statigent invocation over `root` (inputs at the root, native runs and deliverables beneath it). */
+export function invocation(root: string): Invocation {
+  return {
+    schema_version: 2,
+    evaluation_id: "eval-test",
+    unit_id: "unit-000001",
+    task,
+    config: {
+      id: "eda",
+      adapter: "statigent-eda",
+      options: { image: "statigent-runtime:dev" },
+      model: profile,
+      require_seed: true,
+    },
+    budget: { timeout_ms: 10000, model_attempts: 3, total_tokens: 100000 },
+    seed: 42,
+    input_root: root,
+    run_root: join(root, "runs"),
+    deliverables_root: join(root, "deliverables"),
+    trajectory: false,
   };
 }

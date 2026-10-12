@@ -6,6 +6,7 @@ import {
   readFile,
   realpath,
   rm,
+  stat,
   symlink,
   writeFile,
 } from "node:fs/promises";
@@ -133,4 +134,20 @@ test("disk records are runtime validated before reporting costs", async () => {
     native: async () => [],
   });
   expect(cleaned).toEqual([store.manifest.evaluation_id]);
+});
+test("publication clones when possible, falls back to copying, and stays verified and read-only", async () => {
+  const root = await setup();
+  for (const [name, clone] of [
+    ["auto", undefined],
+    ["copied", false],
+  ] as const) {
+    const target = join(root, name);
+    const method = await publishInputs(root, task, target, { clone });
+    expect(clone === false ? ["copy"] : ["clone", "copy"]).toContain(method);
+    await verifyFiles(target, task.inputs);
+    expect((await stat(join(target, "data.csv"))).mode & 0o777).toBe(0o444);
+  }
+  expect(
+    await publishInputs(root, { ...task, inputs: [] }, join(root, "empty")),
+  ).toBe("none");
 });

@@ -1,6 +1,13 @@
 import { expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { containerCommandAdapter } from "../../src/evaluation/agents/container-command";
@@ -29,8 +36,10 @@ test("real offline command: isolation, artifacts, cancellation, timeout and owne
       "python",
       "/opt/fixture.py",
     ];
+    for (const unit of ["probe", "timeout", "cancel"])
+      await mkdir(join(root, "deliverables", unit), { recursive: true });
     const i: Invocation = {
-      schema_version: 1,
+      schema_version: 2,
       evaluation_id: evaluationId,
       unit_id: "probe",
       task,
@@ -48,6 +57,8 @@ test("real offline command: isolation, artifacts, cancellation, timeout and owne
       seed: 42,
       input_root: join(root, "input"),
       run_root: join(root, "runs"),
+      deliverables_root: join(root, "deliverables", "probe"),
+      trajectory: false,
     };
     await adapter.preflight(i.config);
     await command([
@@ -62,11 +73,16 @@ test("real offline command: isolation, artifacts, cancellation, timeout and owne
     const success = await adapter.run(i);
     expect(success.status).toBe("completed");
     expect(success.answer_text).toBe("@sum[3]");
-    expect(success.artifacts).toHaveLength(1);
+    // The host decodes inline command files into the unit's deliverables directory.
+    expect(success.deliverables).toEqual([]);
+    expect(
+      await readFile(join(root, "deliverables", "probe", "result.txt"), "utf8"),
+    ).toBe("3.0");
     expect(success.native_run).toBeNull();
     const timeout = await adapter.run({
       ...i,
       unit_id: "timeout",
+      deliverables_root: join(root, "deliverables", "timeout"),
       config: {
         ...i.config,
         options: { ...i.config.options, argv: [...argv, "sleep"] },
@@ -81,6 +97,7 @@ test("real offline command: isolation, artifacts, cancellation, timeout and owne
       {
         ...i,
         unit_id: "cancel",
+        deliverables_root: join(root, "deliverables", "cancel"),
         config: {
           ...i.config,
           options: { ...i.config.options, argv: [...argv, "sleep"] },
