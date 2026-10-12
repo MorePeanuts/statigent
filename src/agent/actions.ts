@@ -120,7 +120,20 @@ export function validateAction(
     ...(report ? ["report_artifact_id"] : []),
   ]);
   if (!successfulCells) throw new Error("Successful execution required");
-  if (!Array.isArray(x.findings) || !x.findings.length)
+  return {
+    kind: "finish",
+    analysis: validateAnalysis(x, evidence),
+    ...(report
+      ? { report_artifact_id: str(x.report_artifact_id, "report_artifact_id") }
+      : {}),
+  };
+}
+export function validateAnalysis(
+  x: Record<string, unknown>,
+  evidence: ReadonlySet<string>,
+  requireResult = true,
+): Analysis {
+  if (!Array.isArray(x.findings) || (requireResult && !x.findings.length))
     throw new Error("Findings required");
   const findings = x.findings.map((value) => {
     const f = obj(value);
@@ -135,18 +148,12 @@ export function validateAction(
     };
   });
   const methods = strings(x.methods, "methods");
-  if (!methods.length) throw new Error("Methods required");
+  if (requireResult && !methods.length) throw new Error("Methods required");
   return {
-    kind: "finish",
-    analysis: {
-      summary: str(x.summary, "summary"),
-      findings,
-      methods,
-      limitations: strings(x.limitations, "limitations"),
-    },
-    ...(report
-      ? { report_artifact_id: str(x.report_artifact_id, "report_artifact_id") }
-      : {}),
+    summary: str(x.summary, "summary"),
+    findings,
+    methods,
+    limitations: strings(x.limitations, "limitations"),
   };
 }
 export function renderAnalysis(analysis: Analysis, runId: string): string {

@@ -45,6 +45,7 @@ export async function agentMain(args: string[]) {
     JSON.stringify({
       model: configuration.profile.model,
       profile: configuration.profile.id,
+      organization: configuration.task.organization,
       budget: configuration.task.budget,
       generation: configuration.profile.generation,
     }),

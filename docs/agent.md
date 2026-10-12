@@ -1,8 +1,14 @@
 # EDA 智能体
 
-当前变更实现单智能体、持久 Docker Python 会话。配置和示例位于 `configs/models.json` 与 `configs/tasks/synthetic-eda.json`。这不是正式 Benchmark 协议或模型能力对比。
+EDA 使用持久 Docker Python 会话。配置和示例位于 `configs/models.json` 与 `configs/tasks/synthetic-eda.json`。这不是正式 Benchmark 协议或模型能力对比。
 
 ## 配置
+
+任务中的 `organization` 可为 `single`（缺省）或 `planner-executor`。后者使用独立的规划者、执行者上下文，两者使用同一个所选模型 profile；CLI `--model` 同时覆盖两者。所有角色与子任务共用 `budget`，模型次数、token、执行次数和时限不因角色切换重置，不为两个角色各复制一份额度。未知组织方式会在调用前被拒绝。
+
+双角色默认以明确的分析问题委派，例如“统一退款口径，分解销售下降来自订单量还是客单价”。执行者可自主进行多步计算、数据检查和修复，返回结果、方法口径、证据及局限；新的分析方向作为线索交回规划者。粒度由版本化提示词引导，不设语义粒度判定器或固定委派次数。规划者用 `delegate_analysis` / `finish_analysis`，执行者用 `execute_python` / `return_result`；宿主强制角色工具权限、子任务身份、证据和预算。完整调试日志保留，但不自动注入规划者上下文。
+
+角色提示词 v2 明确：执行者将总目标作为背景，以当前委派为工作范围，核对已有状态后默认直接复用适用变量并增量计算；确需重新加载或重算时，在代码注释和返回的 methods 中说明原因。规划者负责后续决策与最终报告，执行者只接收必要图片限制，不接收作为自身任务的完整报告契约。每次委派的 `execution_context` 由宿主给出持久后端、会话延续标记、前序委派数及此前已开始执行次数；它不枚举或猜测变量内容。重新读取和变量赋值没有代码级禁令，模型是否遵循复用约定须结合实际轨迹验收。
 
 模型文件是具名 profile 数组；CLI `--model` 优先于任务的 `model_profile`，`--models` 选择整个模型配置文件。任务参数覆盖内置默认值；未知字段、空目标、越界输入、非法预算及不支持的参数组合在调用前失败，不自动降级。
 
@@ -64,6 +70,10 @@ DeepSeek 示例请求 `deepseek-flash`，展示 DeepSeek-V4.1-Flash；别名不�
 
 ## 报告输出
 
+双角色示例为 `configs/tasks/collaboration-report.json`，通过 `bun run agent run --task configs/tasks/collaboration-report.json --model deepseek-flash` 显式运行。执行者生成图表，返回结果中的 `images` 给出绑定特定产物快照的相对引用；规划者用 `report_markdown` 撰写最终正文，宿主校验后保存。`analysis.report` 保持原结构，双角色图片的 `path`/`reference` 为交付别名，不是执行工作区路径；同名文件后续覆盖不改变已返回的图表快照。
+
+报告上限取任务的 `max_report_bytes` 与执行产物单文件上限的较小值，并受累计保存额度约束。两角色都未视觉观察图片。宿主报告记录 planner 来源；代码重放只执行 Notebook 单元，不重新生成规划者报告。单智能体仍使用下述 `report_artifact_id` 路径。
+
 任务配置可以带 `report`（`image_types`、`max_images`、`max_image_bytes`、`max_report_bytes`），要求以 Markdown 报告结束，例如 `configs/tasks/synthetic-report.json`。系统提示词不变；报告要求以约束和工具说明传达，元数据中提示词版本记为 `eda-single-v1+report-v1`，提示词哈希与文本任务相同。文本任务的工具 schema 和提示词版本（`eda-single-v1`）保持原样。
 
 模型用 `execute_python` 在工作目录写 `.md` 报告，并把图表保存为同目录（或子目录）下的 PNG/JPEG 文件；这些文件按工作区快照保存为产物。完成时 `finish_analysis` 必须额外给出 `report_artifact_id`，即报告文件对应的 artifact_id。宿主校验：
@@ -88,7 +98,7 @@ DeepSeek 示例请求 `deepseek-flash`，展示 DeepSeek-V4.1-Flash；别名不�
 
 `reference` 是去掉 `./` 后的报告内写法，`path` 是工作区路径。模型看不到图片，只能依据计算结果描述图表；这一局限保留。评测适配器只把报告和被引用的图片复制进交付目录，引用无需改写即可在交付目录中解析，未被引用的图片不交付。
 
-**统一轨迹（trajectory-v1）**：评测启用 DAComp 上游兼容模式时，适配器根据原生事件生成 `trajectory.txt`：按执行顺序列出每个单元的代码、状态和有界输出预览（截断时标注），最后附上最终报告（文本任务附 summary）。整体上限 256 KiB，超出时保留首尾、从中间截断并写明省略字节数。宿主路径和模型密钥会被替换为 `[host]`；轨迹不含评分材料。多角色实现以后需要按适配器版本另行定义映射。
+**统一轨迹（trajectory-v1）**：评测启用 DAComp 上游兼容模式时，适配器根据原生事件生成 `trajectory.txt`：按执行顺序列出每个单元的代码、状态和有界输出预览（截断时标注），最后附上最终报告（文本任务附 summary）。整体上限 256 KiB，超出时保留首尾、从中间截断并写明省略字节数。宿主路径和模型密钥会被替换为 `[host]`；轨迹不含评分材料。双角色使用适配器 v2 的 `planner-executor-v1` 映射，代码标注 executor/subtask，报告来自 planner。
 
 ## 本地使用
 
@@ -102,12 +112,18 @@ bun run runtime replay runs/agent/<run_id> runs/replays
 bun run runtime cleanup <run_id>
 # 显式付费验收：只运行一个合成任务，不自动重跑。
 bun run test:smoke:model -- --model deepseek-flash --task configs/tasks/synthetic-eda.json
+# 固定双角色合成验收，同样只运行一次；不接受扩大任务或预算的参数。
+bun run test:smoke:collaboration
 ```
 
 运行前打印生效预算和生成参数，结束打印 run_id、目录、终态与原因，非 completed 退出码为 1。Ctrl-C 取消等待/活动执行并进入清理。冒烟还验证至少两个成功单元、分组均值、PNG 解码、结论引用、Notebook、实际 token 和无残留容器，将结果写为 smoke-result.json；检查失败同样退出 1。期望均值只保存在宿主验收器，不向模型提供答案或预写代码。
 
 默认 `bun run check` 与 `bun run test:integration` 只用可控模型，后者使用真实 Docker；即使已设置 API key 也不调用付费服务。自定义 profile 的支持范围以协议测试为准，应另行显式冒烟。运行目录不提交 Git。
 
+双角色冒烟固定使用已提交的 `configs/tasks/collaboration-report.json`、deepseek-flash、20 次模型尝试、10 次执行、400,000 token 阈值与 600 秒任务时限。验收增加至少两次完成委派、两个委派中的成功单元、分组均值与最高均值组的中心化偏差、规划者报告及图片映射检查。状态复用见证来自成功单元中的 Python AST：后续委派加载前一委派直接绑定且未重新赋值的数据变量；不把重复导入模块当作数据状态复用，也不推断复杂控制流。它是此固定冒烟的保守验收，不是通用依赖证明；原始代码仍保留供人工复核。未观察到所需协作或交付即写 failed，不自动重跑到成功。协议本身不强制委派次数。
+
 任务总时限以 `budget.task_timeout_ms` 为准，会覆盖并派生执行会话的 task_timeout_ms；会话启动时限也不能超过剩余任务时间。运行耗时从预检前开始计，清理有执行层独立宽限，墙钟包含清理，不能简单相加可能重叠的阶段字段。`runtime inspect` 附加 model_journal，显示缺失响应/失败终结的请求 ID 和截断尾部，不改写源文件，不据此猜测服务成本。
 
 本次实际检查、真实 DeepSeek 用量、运行 ID 和代码重放结果见 [本地验收记录](eda-agent-validation.md)。
+
+双角色的工程检查、首轮失败及状态复用修复后通过的有界真实验收见 [协作验收记录](eda-collaboration-validation.md)。

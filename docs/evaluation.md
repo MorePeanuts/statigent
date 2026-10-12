@@ -9,7 +9,7 @@
 | statigent-eda | text、report | unified（trajectory-v1） | 现有 model profile | Python 执行，非模型采样保证 | Docker | 请求日志与模型返回用量 |
 | container-command | text、report | none | 无模型，首版不联网 | 由协议提供 | Docker | 无模型调用时不适用 |
 
-模型预算包含尝试次数、token 停止阈值；响应可能使 token 超出阈值，阈值不是账单硬上限。相同智能体可以注册多个配置分别比较。未实现的角色分离、脚本后端、预测文件及联网外部智能体不能通过配置冒充已支持。
+模型预算包含尝试次数、token 停止阈值；响应可能使 token 超出阈值，阈值不是账单硬上限。相同智能体可以注册多个配置分别比较。Statigent 支持 single 与 planner-executor；尚未实现的脚本后端、预测文件及联网外部智能体不能通过配置冒充已支持。
 
 ## 契约版本
 
@@ -127,6 +127,16 @@
 非零退出、协议错误、超限均为失败；超时和取消清理实际容器，清理错误阻止后续派发。联网、宿主 shell、未实现角色/后端等配置被拒绝。模型提供商、模型名及思考参数只通过现有模型 profile 控制。
 
 ## 批次生命周期与预算
+
+Statigent 适配器 v2 增加 `options.organization`（默认 `single`）和 `options.budget`。原生预算允许配置 `executions`（默认 8）、`model_timeout_ms`、`rate_retries`、`code_repairs`、`action_corrections` 及 `max_request_bytes` / `max_response_bytes` / `max_trace_bytes`，均使用原生校验和默认值。`model_attempts`、`total_tokens`、`task_timeout_ms` 禁止在这里覆盖，始终取统一评测下发的有效额度。两个角色共用该额度，只读取原生总账一次，不叠加角色小计。
+
+示例 `configs/evaluations/infiagent-collaboration-smoke.json` 固定使用一题开发任务、同一 deepseek-flash profile、20 次模型请求和 400,000 token 阈值，执行次数显式设为 12：
+
+```sh
+bun run evaluate plan --config configs/evaluations/infiagent-collaboration-smoke.json
+```
+
+预览显示组织、模型、原生预算和统一预算，不调用模型。实际 run 的预检另外保存两角色提示词版本及哈希、原生预算和轨迹映射 `planner-executor-v1`；运行清单记录批次缩减后的有效总预算。双角色仍输出 trajectory-v1，按实际执行顺序列出各单元且标注 executor/subtask，最后附规划者报告，不把委派或文字报告伪造成 Python 单元。原生 v3 报告复制其绑定的图片快照；旧原生 v1/v2 和旧评测批次仍可读取及确定性离线重评。这个配置仅用于开发，未运行则不构成实验结果。
 
 调度顺序为任务清单、智能体配置、重复序号；每个单元最多派发一次，使用独立输入与原生运行目录。模型内部重试计入真实尝试次数，评测器不会自动重跑失败题。普通任务失败在记录、清理和成本可靠时继续；用量未知且影响整批模型预算、记录错误或清理失败则停止。
 

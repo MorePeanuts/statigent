@@ -2,6 +2,7 @@ import { obj } from "../../models/validation";
 import { readEvents } from "../../records/store";
 
 export const TRAJECTORY_FORMAT = "trajectory-v1";
+export const COLLABORATION_MAPPING = "planner-executor-v1";
 export const TRAJECTORY_LIMIT = 256 * 1024;
 interface Step {
   seq: number;
@@ -10,6 +11,7 @@ interface Step {
   status: string;
   output: string;
   truncated: boolean;
+  subtask: string | null;
 }
 /** Keeps the start and end of an oversized trajectory and marks what was cut from the middle. */
 export function truncateMiddle(text: string, limit: number): string {
@@ -52,6 +54,10 @@ export async function buildTrajectory(
         status: "not_finished",
         output: "",
         truncated: false,
+        subtask:
+          event.role === "executor" && typeof event.subtask_id === "string"
+            ? event.subtask_id
+            : null,
       });
     }
     if (event.type === "finish" && event.result) {
@@ -65,12 +71,18 @@ export async function buildTrajectory(
     }
   }
   const lines = [`# Analysis trajectory (${TRAJECTORY_FORMAT})`, ""];
+  if ([...steps.values()].some((s) => s.subtask))
+    lines.push(
+      `Mapping: ${COLLABORATION_MAPPING}; executed cells only; final report authored by planner.`,
+      "",
+    );
   for (const [index, s] of [...steps.values()]
     .sort((a, b) => a.seq - b.seq)
     .entries())
     lines.push(
       `## Step ${index + 1} (cell ${s.cell}, status ${s.status})`,
       "",
+      ...(s.subtask ? [`Role: executor; subtask: ${s.subtask}`, ""] : []),
       "### Code",
       "",
       "```python",

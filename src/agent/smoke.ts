@@ -51,7 +51,7 @@ export async function checkSyntheticRun(result: AgentResult) {
   );
   if (stored.run_id !== result.run_id)
     throw new Error("Analysis run identity mismatch");
-  const { run_id: _id, ...analysis } = stored;
+  const { run_id: _id, report: _report, ...analysis } = stored;
   validateAction(
     "finish_analysis",
     JSON.stringify(analysis),
