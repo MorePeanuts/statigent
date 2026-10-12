@@ -19,3 +19,11 @@ DeepSeek 示例请求 `deepseek-flash`，展示 DeepSeek-V4.1-Flash；别名不�
 每次 HTTP 尝试单独记账，取消/超时/断流/不明确 5xx 的生成结果和成本标 unknown，不自动重试。仅 429 作为服务拒绝生成的限流响应，在次数与剩余时间内退避重试；401/403/参数/协议错误直接失败。单请求大小和超时为硬限，响应分块计数后才解析，超限片段不能执行。工具 ID、响应角色、结束原因与消息结构必须有效；缺失或重复 ID 不能构造下一轮合法历史，直接停止。
 
 用量保留原始 usage 与归一化字段，实际总量为 prompt_tokens + completion_tokens。缓存命中/未命中是输入子项，推理 token 是输出子项，不重复相加。缺失字段保留 null/unknown；货币成本未计算，不能记为免费。请求体 UTF-8 字节数作为输入估计并与单次输出额度作事前检查，估计不冒充实际 tokenizer 计数，也不是数学上界。真实总量达到阈值后停止，允许记录最后一次调用造成的超出；未知消费停止为 failed/accounting_incomplete。
+
+## 记录版本
+
+新运行写 schema_version=2，`run_kind` 为 runtime/agent/code_replay。`config` 保留 SessionConfig，便于原代码重放；模型 profile、实际返回身份、提示词版本/哈希、token ledger 和智能体目标/预算分别存放。runtime/code_replay 的 model/prompt/tokens/agent 为 `not_applicable`。版本 1 可读取，导出生成新 Notebook 和独立 export-UUID.json，不覆盖旧 manifest/events；不做原地迁移。
+
+模型轨迹用 `model_request/model_response/model_failure/tool_validation/agent_budget/agent_finish` 事件，内容保存为有界、带哈希的宿主产物，事件只存引用。模型事件不计为 Python 单元终态。单次请求本地 attempt_id、服务 response_id 与工具/执行/单元身份分别保存；请求意图落盘成功后才允许发起 HTTP。未收到终结事件的意图保持未知，不推断免费或成功。模型轨迹累计配额与执行产物配额分开；写入失败后记录器拒绝继续操作。
+
+脱敏状态示例：成功 ledger 为 `{status:"known", input_tokens:12, output_tokens:4, total_tokens:16, attempts:1, unknown_attempts:0, currency_cost:"not_computed"}`；缺失 usage 或中断保留已有已知小计并设置 `status:"unknown", unknown_attempts:1`，不能把小计当成总消耗。无模型运行整个 tokens 字段是 `not_applicable`。

@@ -2,6 +2,13 @@ import { createHash, randomUUID } from "node:crypto";
 import { lstat, mkdir, open, readFile, rename } from "node:fs/promises";
 import { arch, cpus, platform, release, totalmem } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
+import {
+  type AgentMetadata,
+  type ModelMetadata,
+  type PromptMetadata,
+  type TokenLedger,
+  validateAgentFields,
+} from "./agent-metadata";
 
 export interface RecordEvent {
   type: string;
@@ -33,7 +40,9 @@ export interface ImageIdentity {
   digests?: string[];
 }
 export interface Manifest {
-  schema_version: 1;
+  schema_version: 1 | 2;
+  run_kind?: "runtime" | "agent" | "code_replay";
+  agent?: "not_applicable" | AgentMetadata;
   run_id: string;
   replay_of: string | null;
   started_at: string;
@@ -44,9 +53,9 @@ export interface Manifest {
   image: ImageIdentity;
   environment: Record<string, unknown>;
   code: { commit: string | null; dirty: boolean | null };
-  model: "not_applicable";
-  prompt: "not_applicable";
-  tokens: "not_applicable";
+  model: "not_applicable" | ModelMetadata;
+  prompt: "not_applicable" | PromptMetadata;
+  tokens: "not_applicable" | TokenLedger;
   split: "not_applicable";
   seed: number | null;
   artifacts: ArtifactReference[];
@@ -131,6 +140,12 @@ export interface CreateRecorderOptions {
   environment?: Record<string, unknown>;
   replayOf?: string;
   seed?: number;
+  agent?: {
+    model: ModelMetadata;
+    prompt: PromptMetadata;
+    tokens: TokenLedger;
+    metadata: AgentMetadata;
+  };
   maxArtifactBytes?: number;
   maxTotalArtifactBytes?: number;
 }
@@ -167,7 +182,13 @@ export class RunRecorder {
       gitValue(["status", "--porcelain"]),
     ]);
     const manifest: Manifest = {
-      schema_version: 1,
+      schema_version: 2,
+      run_kind: options.agent
+        ? "agent"
+        : options.replayOf
+          ? "code_replay"
+          : "runtime",
+      agent: options.agent?.metadata ?? "not_applicable",
       run_id: runId,
       replay_of: options.replayOf ?? null,
       started_at: new Date().toISOString(),
@@ -187,9 +208,9 @@ export class RunRecorder {
         ...options.environment,
       },
       code: { commit, dirty: dirty === null ? null : dirty.length > 0 },
-      model: "not_applicable",
-      prompt: "not_applicable",
-      tokens: "not_applicable",
+      model: options.agent?.model ?? "not_applicable",
+      prompt: options.agent?.prompt ?? "not_applicable",
+      tokens: options.agent?.tokens ?? "not_applicable",
       split: "not_applicable",
       seed: options.seed ?? null,
       artifacts: [],
@@ -235,6 +256,7 @@ export class RunRecorder {
     return next;
   }
   async saveManifest(): Promise<void> {
+    validateAgentFields(this.manifest as unknown as Record<string, unknown>);
     await writeJson(join(this.directory, "manifest.json"), this.manifest);
   }
   private async append(event: Record<string, unknown>): Promise<void> {
@@ -284,6 +306,7 @@ export class RunRecorder {
           ? object(event.result)
           : null;
       if (
+        event.type === "finish" &&
         result &&
         typeof result.request_id === "string" &&
         !this.seenCompleted.has(result.request_id)
@@ -455,6 +478,71 @@ export class RunRecorder {
       return ref;
     });
   }
+  async modelEvent(
+    type: string,
+    fields: Record<string, unknown>,
+    content?: unknown,
+  ): Promise<void> {
+    return this.enqueue(async () => {
+      if (
+        ![
+          "model_request",
+          "model_response",
+          "model_failure",
+          "tool_validation",
+          "agent_budget",
+          "agent_finish",
+        ].includes(type)
+      )
+        throw new Error("Invalid agent event type");
+      const agent = this.manifest.agent;
+      if (!agent || agent === "not_applicable")
+        throw new Error("Agent metadata required");
+      let contentRef: ArtifactReference | undefined;
+      if (content !== undefined) {
+        const bytes = Buffer.from(JSON.stringify(content));
+        if (agent.trace_bytes + bytes.length > agent.budget.max_trace_bytes) {
+          agent.trace_incomplete = true;
+          await this.append({
+            type: "model_trace_limit",
+            at: new Date().toISOString(),
+            run_id: this.manifest.run_id,
+            omitted_bytes: bytes.length,
+          });
+          await this.saveManifest();
+          throw new Error("Model trace persistence limit exceeded");
+        }
+        // Dedicated quota: model history cannot consume or enlarge execution output limits.
+        const id = randomUUID();
+        const relative = `artifacts/${id}`;
+        const handle = await open(join(this.directory, relative), "wx", 0o600);
+        try {
+          await handle.writeFile(bytes);
+          await handle.sync();
+        } finally {
+          await handle.close();
+        }
+        contentRef = {
+          artifact_id: id,
+          path: relative,
+          mime_type: "application/json",
+          size_bytes: bytes.length,
+          sha256: sha256(bytes),
+          complete: true,
+        };
+        this.manifest.artifacts.push(contentRef);
+        agent.trace_bytes += bytes.length;
+      }
+      await this.append({
+        type,
+        at: new Date().toISOString(),
+        run_id: this.manifest.run_id,
+        ...fields,
+        ...(contentRef ? { content_ref: contentRef } : {}),
+      });
+      await this.saveManifest();
+    });
+  }
   async finish(status: string): Promise<void> {
     return this.enqueue(async () => {
       if (status === "completed" && this.terminalFailure)
@@ -521,7 +609,7 @@ export async function readManifest(directory: string): Promise<Manifest> {
     JSON.parse(await readFile(join(directory, "manifest.json"), "utf8")),
   );
   if (
-    value.schema_version !== 1 ||
+    (value.schema_version !== 1 && value.schema_version !== 2) ||
     !Array.isArray(value.inputs) ||
     !Array.isArray(value.artifacts)
   )
@@ -576,6 +664,7 @@ export async function readManifest(directory: string): Promise<Manifest> {
   if (value.ended_at !== null) textField(value.ended_at, "ended_at");
   if (value.replay_of !== null) textField(value.replay_of, "replay_of");
   if (value.seed !== null) nonnegative(value.seed, "seed");
+  validateAgentFields(value);
   return value as unknown as Manifest;
 }
 function stringArray(value: unknown, label: string): string[] {

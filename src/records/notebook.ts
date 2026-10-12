@@ -280,7 +280,15 @@ export async function exportNotebooks(
       eligible: view.eligible,
       reasons: view.reasons,
     };
-    await writeJson(join(directory, "manifest.json"), manifest);
+    await writeJson(
+      join(
+        directory,
+        manifest.schema_version === 1
+          ? `export-${randomUUID()}.json`
+          : "manifest.json",
+      ),
+      manifest,
+    );
     return manifest.export;
   } catch (error) {
     manifest.export = {
@@ -288,7 +296,15 @@ export async function exportNotebooks(
       paths: [],
       error: error instanceof Error ? error.message : String(error),
     };
-    await writeJson(join(directory, "manifest.json"), manifest);
+    await writeJson(
+      join(
+        directory,
+        manifest.schema_version === 1
+          ? `export-${randomUUID()}.json`
+          : "manifest.json",
+      ),
+      manifest,
+    );
     throw error;
   }
 }
