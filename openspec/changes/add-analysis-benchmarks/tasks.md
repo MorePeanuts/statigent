@@ -16,11 +16,11 @@
 
 ## 3. 模型层视觉能力与无工具调用
 
-- [ ] 3.1 profile 增加可选的 `capabilities.vision`（默认 false），`configs/models.json` 新增 `deepseek-flash-judge`（vision、thinking disabled、temperature 0、16384 输出上限）。测试旧 profile 无需修改即可通过校验，非法组合会被拒绝。
-- [ ] 3.2 把 `deepseek-flash` 的 `max_output_tokens` 从 4096 改为 65536，并核对响应字节、轨迹累计上限与任务 token 阈值的关系。测试用回环假服务器断言请求中的 `max_tokens` 为 65536，记录快照中出现新值；在 EDA 与评测文档中说明新值、选择理由，以及与此前 4096 冒烟记录的配置差异。
-- [ ] 3.3 `Message` 的用户内容支持文本与图像片段。序列化时按文件头识别 PNG/JPEG/GIF/WebP、解析尺寸，校验单张、张数、总量和像素上限（含 15 张及以上图片时单边 4096 px 的规则），编码为 data URL；拒绝 http(s) 图像和非用户消息中的图像。用合成图片夹具测试每条拒绝规则，并用回环假服务器断言请求体格式。
-- [ ] 3.4 新增无工具单轮调用入口，复用凭据、时限、重试分类和用量记录，大小上限独立配置；响应中出现工具调用或被截断都判为失败。用回环假服务器测试正常文本、截断、限流重试和超时，确认请求不含 `tools` 字段。
-- [ ] 3.5 在模型配置文档中记录视觉能力字段、图像上限、仅支持 chat-completions `image_url` 的限制，以及评委 profile 示例；运行配置解析测试，确认文档示例有效。
+- [x] 3.1 profile 增加可选的 `capabilities.vision`（默认 false），`configs/models.json` 新增 `deepseek-flash-judge`（vision、thinking disabled、temperature 0、16384 输出上限）。测试旧 profile 无需修改即可通过校验，非法组合会被拒绝。
+- [x] 3.2 把 `deepseek-flash` 的 `max_output_tokens` 从 4096 改为 65536，并核对响应字节、轨迹累计上限与任务 token 阈值的关系。测试用回环假服务器断言请求中的 `max_tokens` 为 65536，记录快照中出现新值；在 EDA 与评测文档中说明新值、选择理由，以及与此前 4096 冒烟记录的配置差异。
+- [x] 3.3 `Message` 的用户内容支持文本与图像片段。序列化时按文件头识别 PNG/JPEG/GIF/WebP、解析尺寸，校验单张、张数、总量和像素上限（含 15 张及以上图片时单边 4096 px 的规则），编码为 data URL；拒绝 http(s) 图像和非用户消息中的图像。用合成图片夹具测试每条拒绝规则，并用回环假服务器断言请求体格式。
+- [x] 3.4 新增无工具单轮调用入口，复用凭据、时限、重试分类和用量记录，大小上限独立配置；响应中出现工具调用或被截断都判为失败。用回环假服务器测试正常文本、截断、限流重试和超时，确认请求不含 `tools` 字段。
+- [x] 3.5 在模型配置文档中记录视觉能力字段、图像上限、仅支持 chat-completions `image_url` 的限制，以及评委 profile 示例；运行配置解析测试，确认文档示例有效。
 
 ## 4. 评委评分服务
 

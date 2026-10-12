@@ -141,6 +141,8 @@ bun run evaluate plan --config configs/evaluations/infiagent-smoke.json
 bun run evaluate run --config configs/evaluations/infiagent-smoke.json
 ```
 
+已记录的三题冒烟（见 [验收记录](evaluation-validation.md)）运行时 `deepseek-flash` 的输出上限为 4096；现在 profile 改为 65536，之后的批次与该记录配置不同，不直接比较。由于智能体派发前会预留完整输出上限，100,000 的逐题阈值在新配置下只剩约 3.5 万可用，重新运行这些配置前应按 [EDA 配置说明](agent.md) 评估是否调高阈值。
+
 12 题配置是 `infiagent-development.json`，不会自动运行。正式实验另行冻结配置，披露与开发题及共享 CSV 的重叠。迁移到 Linux 时使用同一锁文件、镜像构建与 CLI，调整基准根、模型环境变量和输出根；保留来源哈希，硬件与平台变化进入运行快照。
 
 默认 `bun run check` 不启动 Docker 容器或调用付费模型。`bun run test:evaluation:integration` 显式验证测试镜像；`bun run test:evaluation:upstream` 显式验证本地上游资源。真实实验和软件测试结果分开记录。

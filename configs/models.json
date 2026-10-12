@@ -8,6 +8,17 @@
     "display_name": "DeepSeek-V4.1-Flash",
     "api_key_env": "DEEPSEEK_API_KEY",
     "capabilities": { "tool_calls": true, "thinking": true },
-    "generation": { "thinking": "enabled", "reasoning_effort": "high", "max_output_tokens": 4096 }
+    "generation": { "thinking": "enabled", "reasoning_effort": "high", "max_output_tokens": 65536 }
+  },
+  {
+    "id": "deepseek-flash-judge",
+    "provider": "deepseek",
+    "protocol": "chat-completions",
+    "base_url": "https://api.deepseek.com",
+    "model": "deepseek-flash",
+    "display_name": "DeepSeek-V4.1-Flash (judge)",
+    "api_key_env": "DEEPSEEK_API_KEY",
+    "capabilities": { "tool_calls": true, "thinking": true, "vision": true },
+    "generation": { "thinking": "disabled", "temperature": 0, "max_output_tokens": 16384 }
   }
 ]

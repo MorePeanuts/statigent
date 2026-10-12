@@ -8,11 +8,35 @@
 
 模型必填 `id/provider/protocol/base_url/model/display_name/api_key_env/capabilities/generation`。`model` 是实际请求标识；`display_name` 仅展示。`provider` 支持 `deepseek` 和 `generic`，协议仅 `chat-completions`。通用提供商支持非流式文本和函数工具，不能假设任意兼容接口的全部功能均适用。自定义模型通过新增 profile 选择，无需改智能体。
 
-DeepSeek 示例请求 `deepseek-flash`，展示 DeepSeek-V4.1-Flash；别名不保证底层权重固定。记录请求及返回模型名、时间和可用指纹。`max_output_tokens` 映射 `max_tokens`；`thinking` 映射 `thinking.type`；`reasoning_effort` 原样传递。推理模式显式启停，开启时拒绝 temperature；通用适配器拒绝 DeepSeek 推理参数。默认 enabled/high/4096 是开发预设，未证明实验最优。历史保留 DeepSeek `reasoning_content`，不进入最终报告。
+DeepSeek 示例请求 `deepseek-flash`，展示 DeepSeek-V4.1-Flash；别名不保证底层权重固定。记录请求及返回模型名、时间和可用指纹。`max_output_tokens` 映射 `max_tokens`；`thinking` 映射 `thinking.type`；`reasoning_effort` 原样传递。推理模式显式启停，开启时拒绝 temperature；通用适配器拒绝 DeepSeek 推理参数。默认 enabled/high/65536 是开发预设，未证明实验最优。
+
+65536 等于 DeepSeek 在 thinking 模式下不设 `max_tokens` 时的服务端默认值（服务端上限 384K，非 thinking 默认 8K）；文档没有说明推理 token 是否单独计算，按与输出共用上限处理。此前的 4096 很可能放不下推理加一次工具参数，已在 `add-analysis-benchmarks` 中调整。2026-10-12 之前的 EDA 冒烟与 InfiAgent 三题冒烟使用 4096 运行，其配置快照保留原值，不重跑，也不与新值的结果直接比较。没有直接设到 384K，是为了限制单次失控生成对任务预算的消耗。
+
+**视觉能力**：`capabilities.vision` 可选，省略即为 false，旧配置无需修改。只有声明视觉能力的 profile 才能发送图像片段；图像只能放在用户消息中，按文件内容识别 PNG/JPEG/GIF/WebP 并读取像素尺寸，在发送前校验：单张 ≤ 8 MiB、每次请求 ≤ 40 张、单边 ≤ 8192 px，请求含 15 张及以上图片时单边 ≤ 4096 px（均低于 DeepSeek 文档的服务端上限）。图像以 base64 data URL 编码为 chat-completions 的 `image_url` 片段；不接受 http(s) 地址，避免让模型服务代为下载任意外部资源。目前只实现这一种多模态格式，其他协议需要时再增加。
+
+评分使用的评委 profile 示例（`configs/models.json` 中的 `deepseek-flash-judge`）：
+
+```json
+{
+  "id": "deepseek-flash-judge",
+  "provider": "deepseek",
+  "protocol": "chat-completions",
+  "base_url": "https://api.deepseek.com",
+  "model": "deepseek-flash",
+  "display_name": "DeepSeek-V4.1-Flash (judge)",
+  "api_key_env": "DEEPSEEK_API_KEY",
+  "capabilities": { "tool_calls": true, "thinking": true, "vision": true },
+  "generation": { "thinking": "disabled", "temperature": 0, "max_output_tokens": 16384 }
+}
+```
+
+评委关闭 thinking、使用 temperature 0，与上游评委设置对齐；输出上限 16384 与上游示例评委配置一致。评委调用不带工具定义（请求中没有 `tools`/`tool_choice`），返回工具调用、被截断或内容为空都视为失败并保留已知用量。历史保留 DeepSeek `reasoning_content`，不进入最终报告。
 
 凭据仅由宿主从 `api_key_env` 读取，不写入配置快照、提示词或容器；不提供自由 headers/body 注入。仅接受 HTTPS，无 URL 用户名密码/query/fragment；测试及本地服务可显式 `allow_loopback_http: true` 使用回环 HTTP。禁止自动重定向，不向跳转目标转发授权。输入清单只读挂载为 `/input/<相对路径>`，禁止越界和符号链接；任务输入不会授予新工具权限。
 
-默认预算：模型尝试 12 次（含限流重试）、实际单元 8 次、累计 token 停止阈值 100000、请求 90000 ms、任务 300000 ms、限流重试 2 次、连续代码错误后修复 2 次、全任务动作纠正 2 次、请求 256 KiB、响应 2 MiB、模型轨迹累计 16 MiB。单次输出上限由模型 profile 控制，示例 4096 tokens；其他预算字段见 `DEFAULT_BUDGET`。
+默认预算：模型尝试 12 次（含限流重试）、实际单元 8 次、累计 token 停止阈值 100000、请求 90000 ms、任务 300000 ms、限流重试 2 次、连续代码错误后修复 2 次、全任务动作纠正 2 次、请求 256 KiB、响应 2 MiB、模型轨迹累计 16 MiB。单次输出上限由模型 profile 控制，示例 65536 tokens；其他预算字段见 `DEFAULT_BUDGET`。
+
+每次派发前，智能体检查“已用 token + 本次输入估算 + profile 输出上限”是否超过累计阈值，超过即以 `token_preflight` 停止。因此输出上限越大，同一阈值下可用的轮次越少：65536 配 100000 阈值时，累计用量超过约 3.5 万就会停止。需要多轮分析的任务应按“预期用量 + 65536”设置阈值。单次响应接收上限 2 MiB 足以容纳 64K token 的回复；模型轨迹累计 16 MiB 不变，接近时如实报告。
 
 ## 调用和失败语义
 
