@@ -12,7 +12,7 @@ import { validateJudgeBudget } from "./plan";
 
 /**
  * Explicit paid check that the vision judge accepts images: one DAComp GSB visual comparison, using
- * reference report 1 (and its charts) as the candidate against reference report 0. Not part of any
+ * another reference report with charts as the candidate against reference report 0. Not part of any
  * routine check; run with `bun run test:smoke:judge`.
  */
 export async function judgeSmoke(
@@ -31,15 +31,27 @@ export async function judgeSmoke(
     "evaluator/upstream/dacomp-da/evaluation_suite/src",
     instance,
   );
-  const candidateDir = join(suite, "gsb_ref_1");
-  const report = (
-    await Array.fromAsync(new Bun.Glob("*.md").scan({ cwd: candidateDir }))
-  ).sort()[0];
-  if (!report) throw new Error("Missing candidate report");
-  const markdown = await Bun.file(join(candidateDir, report)).text();
-  const images = [...markdown.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)]
-    .map((m) => join(candidateDir, m[1] ?? ""))
-    .filter((p) => Bun.file(p).size > 0);
+  // The candidate is the first other reference report that embeds charts, so images are sent.
+  let candidate: { dir: string; report: string; images: string[] } | null =
+    null;
+  for (const k of [1, 2, 3, 4]) {
+    const dir = join(suite, `gsb_ref_${k}`);
+    const report = (
+      await Array.fromAsync(new Bun.Glob("*.md").scan({ cwd: dir }))
+    ).sort()[0];
+    if (!report) continue;
+    const markdown = await Bun.file(join(dir, report)).text();
+    const images = [...markdown.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)]
+      .map((m) => join(dir, m[1] ?? ""))
+      .filter((p) => Bun.file(p).size > 0);
+    if (images.length) {
+      candidate = { dir, report, images };
+      break;
+    }
+  }
+  if (!candidate)
+    throw new Error("No reference report with charts to use as candidate");
+  const { dir: candidateDir, report, images } = candidate;
   const prepared = await scorerRequest(
     {
       operation: "dacomp_prepare",
@@ -132,6 +144,7 @@ export async function judgeSmoke(
       generation: profile.generation,
     },
     instance,
+    candidate: candidateDir.split("/").slice(-1)[0],
     images_sent: parts.filter((p) => p.type === "image").length,
     ...outcome,
     judge: judge.summary(),
