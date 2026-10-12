@@ -41,6 +41,22 @@ test("reports preserve original execution and scoring while rescoring uses no ag
       join(original.directory, "report.json"),
       "utf8",
     );
+    const benchmark = registry.getBenchmark("synthetic");
+    const catalog = benchmark.catalog;
+    benchmark.catalog = async (options) => {
+      const value = await catalog(options);
+      return {
+        ...value,
+        tasks: value.tasks.map((t) => ({
+          ...t,
+          inputs: t.inputs.map((f) => ({
+            bytes: f.bytes,
+            path: f.path,
+            sha256: f.sha256,
+          })),
+        })),
+      };
+    };
     const next = await rescore(result.directory, registry);
     expect(next.score_id).not.toBe(original.score_id);
     expect(next.report.groups[0]?.metrics).toEqual({ accuracy: 0.5 });

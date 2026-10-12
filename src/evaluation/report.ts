@@ -3,7 +3,13 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { writeJson } from "../records/store";
 import { aggregate } from "./aggregate";
-import { bounded, LIMITS, type Score, validateScore } from "./contracts";
+import {
+  bounded,
+  LIMITS,
+  type Score,
+  validateScore,
+  validateTask,
+} from "./contracts";
 import type { Registry } from "./plan";
 import {
   codeSnapshot,
@@ -177,8 +183,9 @@ export async function rescore(directory: string, registry: Registry) {
     throw new Error("Rescore data version mismatch");
   for (const old of view.plan.tasks)
     if (
-      JSON.stringify(catalog.tasks.find((t) => t.id === old.id)) !==
-      JSON.stringify(old)
+      JSON.stringify(
+        validateTask(catalog.tasks.find((t) => t.id === old.id)),
+      ) !== JSON.stringify(old)
     )
       throw new Error("Rescore task/input changed");
   await benchmark.preflight(

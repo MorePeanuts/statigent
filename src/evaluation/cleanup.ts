@@ -36,6 +36,8 @@ export async function cleanupEvaluation(
       throw error;
     }
     for (const entry of entries) {
+      // runAgent owns this shared staging directory; it is not a native run ID.
+      if (entry === ".staging") continue;
       id(entry);
       if ((await realpath(join(parent, entry))) !== join(parent, entry))
         throw new Error("Symlink native run refused");

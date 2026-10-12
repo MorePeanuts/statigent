@@ -1,6 +1,7 @@
 import { afterEach, expect, test } from "bun:test";
 import {
   chmod,
+  mkdir,
   mkdtemp,
   readFile,
   realpath,
@@ -122,6 +123,9 @@ test("disk records are runtime validated before reporting costs", async () => {
   await writeFile(path, JSON.stringify(value));
   await expect(inspect(store.directory)).rejects.toThrow("timing");
   const cleaned: string[] = [];
+  await mkdir(join(store.directory, "native/unit-000001/.staging"), {
+    recursive: true,
+  });
   await cleanupEvaluation(store.directory, {
     external: async (identity) => {
       cleaned.push(identity);
