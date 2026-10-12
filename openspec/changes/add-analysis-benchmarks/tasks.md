@@ -59,7 +59,7 @@
 
 ## 8. 整体验收
 
-- [ ] 8.1 运行 `bun run check`、`bun run test:integration`、`bun run test:evaluation:upstream` 和 `openspec validate add-analysis-benchmarks --strict`，确认 InfiAgent v1 记录的 inspect/重评回归通过，并如实记录全部结果。
+- [x] 8.1 运行 `bun run check`、`bun run test:integration`、`bun run test:evaluation:upstream` 和 `openspec validate add-analysis-benchmarks --strict`，确认 InfiAgent v1 记录的 inspect/重评回归通过，并如实记录全部结果。
 - [ ] 8.2 显式运行一次评委视觉连通冒烟：用 1 次真实 GSB 视觉比较验证 `deepseek-flash-judge` 能接受图像，并记录用量、模型名与指纹；失败则如实留档并只调整 profile。
 - [ ] 8.3 在已提交的冒烟配置上，分别运行一次 DSBench-Analysis 2 题和 DAComp 2 题真实冒烟，核验发布、执行、交付冻结、评委评分、分组指标、成本分列与资源清理；不追加尝试，也不按结果换题。
 - [ ] 8.4 编写验收记录（源码 commit、配置版本、evaluation_id/score_id、智能体与评委用量、实测单题评委开销、已知局限）；审查 diff，确认没有提交密钥、数据、评分材料或运行产物，并按内聚阶段完成本地提交。
