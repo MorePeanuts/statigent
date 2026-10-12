@@ -56,3 +56,31 @@
 例：两题一题正确、一题终止失败，主 ABQ/PSAQ 均为 0.5；第二题未运行时，指标为 null、状态 incomplete；评分器异常时 scoring_status 为 failed，不能把它当作错误答案零分。用量未知时保留已知 token 小计和 unknown_attempts；账单成本为 not_computed，不推算价格。
 
 离线 score 先检查冻结计划、交付和产物哈希及任务数据版本，再生成新的评分身份。旧评分、原始交付、执行费用和原生记录保持不变，整个过程不调用智能体或模型。初始评分和重评结果可直接并列核查。
+
+## 命令与开发清单
+
+在仓库根目录运行，依赖安装和基础镜像构建沿用 README。先完成无需 API 的完整示例：
+
+```sh
+docker build -f docker/evaluation-fixture.Dockerfile -t statigent-evaluation-fixture:dev .
+bun run evaluate plan --config configs/evaluations/synthetic-command.json
+bun run evaluate run --config configs/evaluations/synthetic-command.json
+bun run evaluate inspect EVALUATION_ID
+bun run evaluate score EVALUATION_ID
+bun run evaluate cleanup EVALUATION_ID
+```
+
+`--root` 可指定评测结果根目录，默认 `runs/evaluations`；`--models` 指定模型配置文件，默认 `configs/models.json`。只有显式 `run` 会执行智能体。plan 会校验本地数据和所选标签，但不需要 API key、不启动容器。inspect 只读，score 不调用模型，cleanup 只清理指定批次资源。
+
+固定开发清单为 `configs/evaluations/infiagent-development-selection.json`，依据公开难度、概念、题目/约束的依赖需求选择 12 题，各难度 4 题，每份 CSV 最多 2 题。排除需要额外统计检验或训练依赖的公开要求；选择器不读取答案。复现选择命令是 `bun src/evaluation/development.ts`，会重新生成三个开发配置文件，应审查 diff 后提交，不能根据得分换题。
+
+真实冒烟固定为 0、5、308 三题，使用 DeepSeek `deepseek-flash`，每题 12 次调用、100,000 token、300 秒；整批 36 次调用、300,000 token、1,200 秒。密钥来自 `DEEPSEEK_API_KEY`。先预览后显式运行：
+
+```sh
+bun run evaluate plan --config configs/evaluations/infiagent-smoke.json
+bun run evaluate run --config configs/evaluations/infiagent-smoke.json
+```
+
+12 题配置是 `infiagent-development.json`，不会自动运行。正式实验另行冻结配置，披露与开发题及共享 CSV 的重叠。迁移到 Linux 时使用同一锁文件、镜像构建与 CLI，调整基准根、模型环境变量和输出根；保留来源哈希，硬件与平台变化进入运行快照。
+
+默认 `bun run check` 不启动 Docker 容器或调用付费模型。`bun run test:evaluation:integration` 显式验证测试镜像；`bun run test:evaluation:upstream` 显式验证本地上游资源。真实实验和软件测试结果分开记录。

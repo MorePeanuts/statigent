@@ -13,7 +13,9 @@
     "runtime": "bun src/cli.ts",
     "agent": "bun src/agent/cli.ts",
     "test:smoke:model": "bun src/agent/smoke.ts",
-    "test:evaluation:upstream": "uv run pytest -m upstream tests/python/test_evaluation_upstream.py"
+    "test:evaluation:upstream": "uv run pytest -m upstream tests/python/test_evaluation_upstream.py",
+    "evaluate": "bun src/evaluation/cli.ts",
+    "test:evaluation:integration": "bun test tests/integration/evaluation-agents.test.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",

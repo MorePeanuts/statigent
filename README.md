@@ -1,6 +1,6 @@
 # Statigent
 
-面向探索性数据分析与预测性建模研究的智能体项目。研究定位见 [课题概览](docs/overview.md)，评测约定见 [Benchmark 协议](docs/benchmark.md)。当前已提供 Docker 持久 Python 执行底座和可配置模型的单智能体 EDA 循环；验收使用小型合成数据，尚未接入正式基准或验证论文研究收益。
+面向探索性数据分析与预测性建模研究的智能体项目。研究定位见 [课题概览](docs/overview.md)，评测约定见 [Benchmark 协议](docs/benchmark.md)。当前已提供 Docker 持久 Python 执行底座、可配置模型的单智能体 EDA 循环，以及接入 InfiAgent-DABench 的统一评测层。开发验收与正式实验分开，尚未验证论文研究收益。
 
 本地开发采用 Bun + TypeScript 控制层、uv 管理的 Python 内核桥接，macOS 的 Docker Linux 容器可完成开发和集成验收。大量实验的 Linux 服务器部署另行进行。
 
@@ -24,3 +24,13 @@ bun run agent run --task configs/tasks/synthetic-eda.json --model deepseek-flash
 ```
 
 此命令显式调用模型，需要宿主环境中的 `DEEPSEEK_API_KEY`；默认检查不会调用付费模型。结果保存在独立运行目录，包含带证据的分析报告、原始执行轨迹与 Notebook。
+
+## 评测入口
+
+统一评测支持基准与智能体独立适配，首版接入 InfiAgent-DABench、现有 EDA 及离线容器命令协议。使用方式、评分口径和开发集合见 [评测说明](docs/evaluation.md)。
+
+```sh
+bun run evaluate plan --config configs/evaluations/infiagent-smoke.json
+```
+
+该命令只预览和校验计划。真实模型评测必须显式使用 `run`；无需 API 的完整示例使用 `configs/evaluations/synthetic-command.json`。

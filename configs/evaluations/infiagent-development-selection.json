@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "version": "infi-development-v1",
+  "purpose": "development",
+  "question_sha256": "49ae783b20ecb60449ce1443c524e89f8ca8353a04e05e4d14a055b7a6f06126",
+  "selection": {
+    "order": "difficulty easy/medium/hard then ascending numeric id",
+    "per_difficulty": 4,
+    "maximum_per_csv": 2,
+    "concepts": [
+      "Summary Statistics",
+      "Correlation Analysis",
+      "Feature Engineering",
+      "Data Cleaning",
+      "Data Preprocessing",
+      "Data Filtering",
+      "Data Aggregation"
+    ],
+    "excluded_public_text": "p[- ]?value|significan|ANOVA|regression|hypothesis|scipy|sklearn|scikit|statsmodels|machine learning|t-test",
+    "reason": "Use the existing numpy/pandas image without new statistical-test or training dependencies; independent of answers and scores"
+  },
+  "tasks": [
+    {
+      "id": 0,
+      "level": "easy",
+      "file": "test_ave.csv",
+      "concepts": [
+        "Summary Statistics"
+      ],
+      "input": {
+        "path": "public/tables/test_ave.csv",
+        "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/test_ave.csv",
+        "bytes": 55169,
+        "sha256": "411cf03455d6026823fbd3ab65e2839075a22f9a5c088b85aef0d272d79cca00"
+      }
+    },
+    {
+      "id": 9,
+      "level": "easy",
+      "file": "GODREJIND.csv",
+      "concepts": [
+        "Summary Statistics"
+      ],
+      "input": {
+        "path": "public/tables/GODREJIND.csv",
+        "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/GODREJIND.csv",
+        "bytes": 116303,
+        "sha256": "55770473647050ba8f11d46108aac81f38df600e8261b105321fffd5c5a6ecec"
+      }
+    },
+    {
+      "id": 18,
+      "level": "easy",
+      "file": "unemployement_industry.csv",
+      "concepts": [
+        "Summary Statistics"
+      ],
+      "input": {
+        "path": "public/tables/unemployement_industry.csv",
+        "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/unemployement_industry.csv",
+        "bytes": 4254,
+        "sha256": "405fa22312675badef5b1e8ee7d47122af71584814a39ba7e6a7b9eea1fa7ca2"
+      }
+    },
+    {
+      "id": 24,
+      "level": "easy",
+      "file": "insurance.csv",
+      "concepts": [
+        "Summary Statistics"
+      ],
+      "input": {
+        "path": "public/tables/insurance.csv",
+        "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/insurance.csv",
+        "bytes": 55628,
+        "sha256": "388eff679557d08ac19f463d025de5e0b4adc482537c8456d19934d78621fd47"
+      }
+    },
+    {
+      "id": 5,
+      "level": "medium",
+      "file": "test_ave.csv",
+      "concepts": [
+        "Feature Engineering",
+        "Correlation Analysis"
+      ],
+      "input": {
+        "path": "public/tables/test_ave.csv",
+        "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/test_ave.csv",
+        "bytes": 55169,
+        "sha256": "411cf03455d6026823fbd3ab65e2839075a22f9a5c088b85aef0d272d79cca00"
+      }
+    },
+    {
+      "id": 14,
+      "level": "medium",
+      "file": "GODREJIND.csv",
+      "concepts": [
+        "Feature Engineering",
+        "Summary Statistics"
+      ],
+      "input": {
+        "path": "public/tables/GODREJIND.csv",
+        "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/GODREJIND.csv",
+        "bytes": 116303,
+        "sha256": "55770473647050ba8f11d46108aac81f38df600e8261b105321fffd5c5a6ecec"
+      }
+    },
+    {
+      "id": 69,
+      "level": "medium",
+      "file": "beauty and the labor market.csv",
+      "concepts": [
+        "Feature Engineering",
+        "Correlation Analysis"
+      ],
+      "input": {
+        "path": "public/tables/beauty and the labor market.csv",
+        "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/beauty%20and%20the%20labor%20market.csv",
+        "bytes": 64937,
+        "sha256": "dba6fb21faf1fd88e99f8e55770de819d7cb6db213780d13a42e2f8b3289dbca"
+      }
+    },
+    {
+      "id": 75,
+      "level": "medium",
+      "file": "microsoft.csv",
+      "concepts": [
+        "Feature Engineering",
+        "Summary Statistics"
+      ],
+      "input": {
+        "path": "public/tables/microsoft.csv",
+        "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/microsoft.csv",
+        "bytes": 11515,
+        "sha256": "6d0f08343d42a5ad45d1eb2275a99416aa8a0b26be03fe5e74538cff31352292"
+      }
+    },
+    {
+      "id": 308,
+      "level": "hard",
+      "file": "titanic.csv",
+      "concepts": [
+        "Feature Engineering",
+        "Summary Statistics"
+      ],
+      "input": {
+        "path": "public/tables/titanic.csv",
+        "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/titanic.csv",
+        "bytes": 61194,
+        "sha256": "7d118fef8b6ccf7f81111877bc388536f7b1e498a655e3d649d19aaa010e9f6f"
+      }
+    },
+    {
+      "id": 376,
+      "level": "hard",
+      "file": "2014_q4.csv",
+      "concepts": [
+        "Feature Engineering",
+        "Summary Statistics"
+      ],
+      "input": {
+        "path": "public/tables/2014_q4.csv",
+        "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/2014_q4.csv",
+        "bytes": 5615,
+        "sha256": "f1ec88490c4cf2fde96a2783f2962743a126e66e59b16d83378192941b5dbd82"
+      }
+    },
+    {
+      "id": 480,
+      "level": "hard",
+      "file": "oecd_education_spending.csv",
+      "concepts": [
+        "Feature Engineering",
+        "Summary Statistics"
+      ],
+      "input": {
+        "path": "public/tables/oecd_education_spending.csv",
+        "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/oecd_education_spending.csv",
+        "bytes": 9476,
+        "sha256": "16c4564a091ba48b093da27ec01e07c99bb16d038076f4676c2e54c7e7aa9b1e"
+      }
+    },
+    {
+      "id": 496,
+      "level": "hard",
+      "file": "percent-bachelors-degrees-women-usa.csv",
+      "concepts": [
+        "Feature Engineering",
+        "Summary Statistics"
+      ],
+      "input": {
+        "path": "public/tables/percent-bachelors-degrees-women-usa.csv",
+        "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/percent-bachelors-degrees-women-usa.csv",
+        "bytes": 5681,
+        "sha256": "4f3a2a6a6b15fcddddde55bb48a9a3d78cd9557e0538e83d8c972c0b953da5b0"
+      }
+    }
+  ]
+}
