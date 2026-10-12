@@ -328,3 +328,20 @@ test("provider-reflected credential is scrubbed and failure usage is retained", 
     },
   );
 });
+
+test("partial or invalid usage on rejected HTTP is not a free retry", async () => {
+  for (const usage of [{ prompt_tokens: 10 }, { prompt_tokens: -1 }])
+    await service(
+      () => Response.json({ usage }, { status: 429 }),
+      async (client) => {
+        try {
+          await client.send("{}", limits, new AbortController().signal);
+          throw new Error("Expected failure");
+        } catch (error) {
+          expect(error).toBeInstanceOf(ModelFailure);
+          expect((error as ModelFailure).accounting).toBe("unknown");
+          expect((error as ModelFailure).retryable).toBe(false);
+        }
+      },
+    );
+});

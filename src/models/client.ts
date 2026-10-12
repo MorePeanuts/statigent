@@ -264,8 +264,14 @@ export class ChatClient implements ModelClient {
       const safe = decoded.split(this.#key).join("[REDACTED]");
       if (!response.ok) {
         let usage = normalizeUsage(null);
+        let invalidUsage = false;
         try {
-          usage = normalizeUsage(obj(JSON.parse(safe)).usage);
+          const body = obj(JSON.parse(safe));
+          if (body.usage !== undefined && body.usage !== null) {
+            invalidUsage = true;
+            usage = normalizeUsage(body.usage);
+            invalidUsage = false;
+          }
         } catch {
           /* Error pages need not be JSON. */
         }
@@ -275,13 +281,18 @@ export class ChatClient implements ModelClient {
         const accounting =
           usage.status === "known"
             ? "known"
-            : rejected
-              ? "not_generated"
-              : "unknown";
+            : invalidUsage ||
+                usage.input_tokens !== null ||
+                usage.output_tokens !== null
+              ? "unknown"
+              : rejected
+                ? "not_generated"
+                : "unknown";
         throw new ModelFailure(
           response.status === 429 ? "rate_limited" : `http_${response.status}`,
           accounting,
           response.status === 429 &&
+            accounting !== "unknown" &&
             (usage.total_tokens === null || usage.total_tokens === 0),
           usage,
         );
