@@ -34,6 +34,7 @@ export interface StageOptions {
   stage: "fit" | "predict";
   code: string;
   data: Table;
+  entrypoint?: string;
   model?: Buffer;
   signal: AbortSignal;
   remainingMs: number;
@@ -63,7 +64,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
   );
   const timeout = Math.max(
     1,
-    Math.min(o.remainingMs, o.task.budget.task_timeout_ms),
+    Math.floor(Math.min(o.remainingMs, o.task.budget.task_timeout_ms)),
   );
   const config: SessionConfig = {
     run_id: runId,
@@ -120,9 +121,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
       ) !== JSON.stringify(identities)
     )
       throw new Error("Staged input mismatch");
-    result = await session.execute(
-      `from statigent_modeling.runner import run\nrun(${JSON.stringify(o.stage)})`,
-    );
+    result = await session.execute(o.entrypoint ?? stageEntrypoint(o.stage));
     if (result.status !== "ok" || !result.persistence_complete)
       failure = `${result.status}:${result.error?.evalue ?? result.diagnostic ?? "incomplete execution"}`;
   } catch (e) {
@@ -166,6 +165,9 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     image: recorder.manifest.image,
     elapsed_ms: performance.now() - began,
   };
+}
+export function stageEntrypoint(stage: "fit" | "predict") {
+  return `from statigent_modeling.runner import run\nrun(${JSON.stringify(stage)})\n`;
 }
 export async function stageBytes(stage: StageResult): Promise<Buffer> {
   if (stage.status !== "completed" || !stage.output)
@@ -240,6 +242,7 @@ export async function runExperiment(o: {
   final?: boolean;
   id?: string;
   onStage?: (id: string) => Promise<void>;
+  entrypoints?: { fit: string; predict: string };
 }): Promise<Experiment> {
   const e: Experiment = {
     id: o.id ?? randomUUID(),
@@ -266,6 +269,7 @@ export async function runExperiment(o: {
   e.fit = await runStage({
     ...base,
     stage: "fit",
+    entrypoint: o.entrypoints?.fit,
     data: o.final
       ? o.train
       : select(o.train, o.dataset.split.train, o.dataset.id_column),
@@ -281,7 +285,9 @@ export async function runExperiment(o: {
   }
   e.predict = await runStage({
     ...base,
+    task: { ...o.task, image: e.fit.image.id },
     stage: "predict",
+    entrypoint: o.entrypoints?.predict,
     model: await stageBytes(e.fit),
     data: o.final
       ? o.test

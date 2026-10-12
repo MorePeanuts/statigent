@@ -38,3 +38,7 @@ bun run evaluate plan --config configs/evaluations/infiagent-smoke.json
 ```
 
 该命令只预览和校验计划。真实模型评测必须显式使用 `run`；无需 API 的完整示例使用 `configs/evaluations/synthetic-command.json`。
+
+## 预测建模
+
+回归/RMSE 的独立建模入口、固定划分、定向 EDA、模型交付与预测复现见 [建模说明](docs/modeling.md)。准备数据不调用模型；`modeling run` 与 `test:smoke:modeling` 为显式真实模型入口。当前仅覆盖小型开发闭环，不代表完整建模基准或正式研究实验。
