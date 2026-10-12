@@ -3,15 +3,14 @@ import { integer, keys, obj, str } from "../../models/validation";
 import { sha256 } from "../../records/store";
 import {
   type BenchmarkAdapter,
-  bounded,
   id,
   LIMITS,
   type PublicTask,
   validateScore,
 } from "../contracts";
 import { describeFile, regular } from "../files";
-import { command, commandEnvironment } from "../process";
 import provenance from "./infiagent-provenance.json";
+import { scorerRequest } from "./python";
 
 export const INFI_PROTOCOL = "infiagent-fixed-denominator-v1";
 export interface Resource {
@@ -78,26 +77,7 @@ export function createInfiAgent(
   };
   return {
     async compatibility(scores) {
-      const request = { operation: "aggregate", scores };
-      bounded(request, LIMITS.request);
-      const result = await command(
-        [
-          "uv",
-          "run",
-          "--offline",
-          "--frozen",
-          "python",
-          "-m",
-          "statigent_evaluation.bridge",
-        ],
-        {
-          input: JSON.stringify(request),
-          timeout_ms: 10000,
-          stdout_limit: LIMITS.request,
-          env: { ...commandEnvironment(), PYTHONPATH: resolve("python") },
-        },
-      );
-      return obj(JSON.parse(result.stdout));
+      return scorerRequest({ operation: "aggregate", scores });
     },
     id: "infiagent-dabench",
     version: "1",
@@ -166,26 +146,10 @@ export function createInfiAgent(
         answer_text:
           submission.status === "completed" ? submission.answer_text : "",
       };
-      bounded(request, LIMITS.request);
-      const result = await command(
-        [
-          "uv",
-          "run",
-          "--offline",
-          "--frozen",
-          "python",
-          "-m",
-          "statigent_evaluation.bridge",
-        ],
-        {
-          input: JSON.stringify(request),
-          signal,
-          timeout_ms: 10000,
-          stdout_limit: LIMITS.request,
-          env: { ...commandEnvironment(), PYTHONPATH: resolve("python") },
-        },
+      return validateScore(
+        await scorerRequest(request, { signal }),
+        submission.unit_id,
       );
-      return validateScore(JSON.parse(result.stdout), submission.unit_id);
     },
   };
 }

@@ -89,6 +89,18 @@
 
 当前固定数据中第 734 题存在重复参考答案键；按本变更的标签有效性约定，选择该题会明确预检失败。未选中任务的私有答案结构不影响所选任务。原始标签保持原样；若后续正式集合包含该题，需要显式修订评分协议，不能静默改变标签或排除规则。
 
+## DSBench-Analysis 评分
+
+适配器 `dsbench-analysis`，协议 `dsbench-analysis-judge-v1`，options 为 `{"root":"benchmarks/dsbench"}`。上游代码固定为 LiqiangJing/DSBench `ba786096137a5108af11c016ad3f09cdb97beefd`，数据为 Hugging Face `liqiang888/DSBench@1196d6553ec200e1262841efc89cda5954ffe89f` 的 `data_analysis/data.zip`（SHA-256 `3a53d89b…dfb4e0`）。公开索引、含答案索引、`compute_answer.py`、`show_result.py`、`data.json` 和许可证的大小与 SHA-256 固定在 `src/evaluation/benchmarks/dsbench-provenance.json`；案例文件没有逐文件上游清单，数据版本在建目录时由公开索引哈希和全部案例文件的 SHA-256 计算得出。2026-10-12 逐文件比对确认本地 38 个案例与该压缩包一致。移植的 prompt 与判定规则许可见 `third_party/dsbench/LICENSE`（MIT）。
+
+- **任务**：每道题一个任务，ID 为 `<案例>-<questionN>`（如 `00000032-question1`），案例作为分组键。goal 为案例 `introduction.txt` 加该题题面；输出为文本，要求给出明确的最终答案，选择题写出选项。共 466 题，其中 9 个案例的 140 道题没有数据文件，以空输入发布。
+- **发布**：只发布案例目录中的数据文件（xlsx/xlsm/xlsb/csv/jpg），路径为 `/input/<案例>/<文件>`；题面文件不单独发布。案例 `00000006` 自带的 `get_results.ipynb` 可能含解答，不发布，并在 provenance 的 `excluded` 中列出；上游的 `00000012/answer.ipynb` 在私有目录中。答案只从 `analysis/private/tasks-with-answers.jsonl` 读取并按题目顺序对齐，任何不对齐都在预检时报错。
+- **判定**：评委角色 `equivalence`（text）。prompt 原样使用上游 `evaluate_prediction` 的文字（含 “Flase” 拼写），只包含题面、参考答案和智能体最终回答，不含案例说明；参考答案按上游用 Python `str()` 格式化（字典答案显示为 Python 表示）。评委回复转小写后含 “true” 即判对，与上游相同（因此 “untrue” 也算对）。
+- **指标**：逐题 `accuracy`（0/1），主汇总为每题等权的题目准确率；分组指标 `case_accuracy` 先在案例内平均再跨案例平均。执行失败或没有最终回答的题计 0，不调用评委。
+- **相对上游的偏离**：评委模型可配置（上游为 `gpt-4o-2024-05-13`，temperature 0，max_tokens 256）；评委调用失败或无法使用时记评分错误，上游记为 False；没有回答的题不调用评委；未复现上游作答设置（`eval_GPT.ipynb` 不在仓库中），只复现判定口径；案例内 Notebook 不发布。这些偏离同时写入每次计划的 provenance。
+
+`bun run test:evaluation:upstream` 会用 `ast` 从未修改的 `compute_answer.py` 中取出 `evaluate_prediction`，配合记录 prompt 的桩客户端执行，比对 prompt 原文、请求模型与温度，并核对判定规则。
+
 ## 智能体接入
 
 `statigent-eda` 的 options 为 `{"image":"statigent-runtime:dev"}`，通过 model_profile 选择已有模型配置。文本任务增加通用最终回答约束，原样提交 `analysis.summary`；报告任务把输出契约中的图片类型和上限传给 EDA，完成后只把被接受的报告和它引用的图片复制进交付目录（规则见 [EDA 报告输出](agent.md#报告输出)）。计划要求统一轨迹时，适配器另交付 `trajectory.txt` 并在 submission 的 `trajectory` 字段指向它。完整 analysis 和 Notebook 保留在原生目录。用量来自原生清单与请求日志；未确认请求保留已知小计并标为未知。
