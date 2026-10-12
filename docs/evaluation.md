@@ -30,3 +30,13 @@
 上游兼容结果仅包含非空有效回答，保留四位小数舍入，同时显示回答数和覆盖率。这一分母与主结果不同，不能替代完整任务成绩。默认测试用合成数据；`bun run test:evaluation:upstream` 显式使用已准备的本地上游脚本做差分校验，不下载数据。
 
 当前固定数据中第 734 题存在重复参考答案键；按本变更的标签有效性约定，选择该题会明确预检失败。未选中任务的私有答案结构不影响所选任务。原始标签保持原样；若后续正式集合包含该题，需要显式修订评分协议，不能静默改变标签或排除规则。
+
+## 智能体接入
+
+`statigent-eda` 的 options 为 `{"image":"statigent-runtime:dev"}`，通过 model_profile 选择已有模型配置。适配器增加通用最终回答约束，原样提交 `analysis.summary`，完整 analysis 和 Notebook 保留在原生目录。用量来自原生清单与请求日志；未确认请求保留已知小计并标为未知。
+
+`container-command` 的 options 包含 image 和 argv 数组，可设置 cpus、memory_bytes、pids、workspace_bytes。镜像与命令是受信配置，任务不能覆盖它们。stdin 一条 JSON 请求，stdout 仅一条 JSON 响应；stderr 有界。响应使用通用 Submission，native_run 必须为空，首版用量必须为 not_applicable。产物以 base64 交付，单项最大 1 MiB、总量 4 MiB；stdout 最大 8 MiB、stderr 最大 1 MiB。
+
+构建测试镜像：`docker build -f docker/evaluation-fixture.Dockerfile -t statigent-evaluation-fixture:dev .`，前提是已有 `statigent-runtime:dev`。测试命令为 `uv run --offline --no-sync --frozen --project /opt/runtime python /opt/fixture.py`。容器无网络、无宿主环境透传和密钥，只读挂载当前输入。此测试智能体用于验证协议，不是可用于真实论文对比的分析方法。
+
+非零退出、协议错误、超限均为失败；超时和取消清理实际容器，清理错误阻止后续派发。联网、宿主 shell、未实现角色/后端等配置被拒绝。模型提供商、模型名及思考参数只通过现有模型 profile 控制。
