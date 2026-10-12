@@ -57,3 +57,5 @@ bun run test:smoke:model -- --model deepseek-flash --task configs/tasks/syntheti
 默认 `bun run check` 与 `bun run test:integration` 只用可控模型，后者使用真实 Docker；即使已设置 API key 也不调用付费服务。自定义 profile 的支持范围以协议测试为准，应另行显式冒烟。运行目录不提交 Git。
 
 任务总时限以 `budget.task_timeout_ms` 为准，会覆盖并派生执行会话的 task_timeout_ms；会话启动时限也不能超过剩余任务时间。运行耗时从预检前开始计，清理有执行层独立宽限，墙钟包含清理，不能简单相加可能重叠的阶段字段。`runtime inspect` 附加 model_journal，显示缺失响应/失败终结的请求 ID 和截断尾部，不改写源文件，不据此猜测服务成本。
+
+本次实际检查、真实 DeepSeek 用量、运行 ID 和代码重放结果见 [本地验收记录](eda-agent-validation.md)。
