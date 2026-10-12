@@ -6,6 +6,8 @@ EDA 使用持久 Docker Python 会话。配置和示例位于 `configs/models.js
 
 任务中的 `organization` 可为 `single`（缺省）或 `planner-executor`。后者使用独立的规划者、执行者上下文，两者使用同一个所选模型 profile；CLI `--model` 同时覆盖两者。所有角色与子任务共用 `budget`，模型次数、token、执行次数和时限不因角色切换重置，不为两个角色各复制一份额度。未知组织方式会在调用前被拒绝。
 
+双角色默认以明确的分析问题委派，例如“统一退款口径，分解销售下降来自订单量还是客单价”。执行者可自主进行多步计算、数据检查和修复，返回结果、方法口径、证据及局限；新的分析方向作为线索交回规划者。粒度由版本化提示词引导，不设语义粒度判定器或固定委派次数。规划者用 `delegate_analysis` / `finish_analysis`，执行者用 `execute_python` / `return_result`；宿主强制角色工具权限、子任务身份、证据和预算。完整调试日志保留，但不自动注入规划者上下文。
+
 模型文件是具名 profile 数组；CLI `--model` 优先于任务的 `model_profile`，`--models` 选择整个模型配置文件。任务参数覆盖内置默认值；未知字段、空目标、越界输入、非法预算及不支持的参数组合在调用前失败，不自动降级。
 
 模型必填 `id/provider/protocol/base_url/model/display_name/api_key_env/capabilities/generation`。`model` 是实际请求标识；`display_name` 仅展示。`provider` 支持 `deepseek` 和 `generic`，协议仅 `chat-completions`。通用提供商支持非流式文本和函数工具，不能假设任意兼容接口的全部功能均适用。自定义模型通过新增 profile 选择，无需改智能体。

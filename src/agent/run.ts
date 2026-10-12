@@ -3,26 +3,45 @@ import { writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { ExecutionResult, SessionConfig } from "../execution/protocol";
 import { DockerSession } from "../execution/session";
-import { ChatClient, type ModelClient, type Usage } from "../models/client";
+import {
+  ChatClient,
+  type Message,
+  type ModelClient,
+  type Usage,
+} from "../models/client";
 import {
   type ModelProfile,
   profileSnapshot,
   validateProfile,
 } from "../models/config";
-import type {
-  AgentMetadata,
-  ModelMetadata,
-  TokenLedger,
+import {
+  type AgentMetadata,
+  type AgentRole,
+  type CollaborationRecord,
+  emptyLedger,
+  type ModelMetadata,
+  type RoleRecord,
+  type SubtaskRecord,
+  type TokenLedger,
 } from "../records/agent-metadata";
 import { exportNotebooks } from "../records/notebook";
 import { RunRecorder, readManifest, sha256, writeJson } from "../records/store";
 import {
-  type Action,
   type Analysis,
   renderAnalysis,
   tools,
   validateAction,
 } from "./actions";
+import {
+  type RoleAction,
+  roleTools,
+  validateRoleAction,
+} from "./collaboration-actions";
+import {
+  ROLE_PROMPT_VERSIONS,
+  ROLE_PROMPTS,
+  roleInitialMessages,
+} from "./collaboration-prompt";
 import { type AgentTask, preflightInputs, validateTask } from "./config";
 import { modelCaller } from "./model-call";
 import { initialMessages, promptVersion, SYSTEM_PROMPT } from "./prompt";
@@ -129,6 +148,36 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
     trace_bytes: 0,
     trace_incomplete: false,
   };
+  const roleRecord = (role: AgentRole): RoleRecord => ({
+    model: {
+      profile: profileSnapshot(profile),
+      returned_models: [],
+      response_ids: [],
+      fingerprints: [],
+    },
+    prompt: {
+      version: ROLE_PROMPT_VERSIONS[role],
+      sha256: sha256(Buffer.from(ROLE_PROMPTS[role])),
+    },
+    tokens: emptyLedger(),
+  });
+  const collaboration: CollaborationRecord | undefined =
+    task.organization === "planner-executor"
+      ? {
+          organization: "planner-executor",
+          roles: {
+            planner: roleRecord("planner"),
+            executor: roleRecord("executor"),
+          },
+          subtasks: [],
+        }
+      : undefined;
+  let role: AgentRole = "planner";
+  let subtask: SubtaskRecord | undefined;
+  const identity = () =>
+    collaboration
+      ? { role, subtask_id: subtask?.subtask_id ?? null }
+      : undefined;
   let recorder: RunRecorder;
   try {
     recorder = await (options.createRecorder ?? RunRecorder.create)({
@@ -143,11 +192,16 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
         config.limits.max_artifacts_bytes + config.limits.max_output_bytes,
       agent: {
         model,
+        collaboration,
         tokens,
         metadata: agent,
         prompt: {
-          version: promptVersion(task),
-          sha256: sha256(Buffer.from(SYSTEM_PROMPT)),
+          version: collaboration ? "eda-collaboration-v1" : promptVersion(task),
+          sha256: sha256(
+            Buffer.from(
+              collaboration ? JSON.stringify(ROLE_PROMPTS) : SYSTEM_PROMPT,
+            ),
+          ),
         },
       },
     });
@@ -181,13 +235,20 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
     };
   };
   const settle = (usage: Usage, unknown: boolean, elapsed: number) => {
-    tokens.elapsed_ms += elapsed;
-    tokens.input_tokens += usage.input_tokens ?? 0;
-    tokens.output_tokens += usage.output_tokens ?? 0;
-    tokens.total_tokens = tokens.input_tokens + tokens.output_tokens;
-    if (unknown) {
-      tokens.status = "unknown";
-      tokens.unknown_attempts++;
+    const ledgers = [
+      tokens,
+      ...(collaboration ? [collaboration.roles[role].tokens] : []),
+      ...(subtask ? [subtask.tokens] : []),
+    ];
+    for (const ledger of ledgers) {
+      ledger.elapsed_ms += elapsed;
+      ledger.input_tokens += usage.input_tokens ?? 0;
+      ledger.output_tokens += usage.output_tokens ?? 0;
+      ledger.total_tokens = ledger.input_tokens + ledger.output_tokens;
+      if (unknown) {
+        ledger.status = "unknown";
+        ledger.unknown_attempts++;
+      }
     }
     updateRemaining();
   };
@@ -204,8 +265,12 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
     updateRemaining,
     settle,
   });
-  const messages = initialMessages(task);
-  const toolSet = tools(task.report !== null);
+  const singleMessages = initialMessages(task);
+  const histories: Record<AgentRole, Message[]> = {
+    planner: roleInitialMessages(task, "planner"),
+    executor: roleInitialMessages(task, "executor"),
+  };
+  const visibleEvidence = new Set<string>();
   const seenIds = new Set<string>();
   const evidence = new Set<string>();
   let successes = 0;
@@ -223,30 +288,50 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
     );
     checkClock();
     for (;;) {
+      const messages = collaboration ? histories[role] : singleMessages;
+      const toolSet = collaboration
+        ? roleTools(role, task.report !== null)
+        : tools(task.report !== null);
       checkClock();
       updateRemaining();
-      const { attemptId, response } = await callModel(messages, toolSet, model);
+      const { attemptId, response } = await callModel(
+        messages,
+        toolSet,
+        model,
+        identity(),
+      );
       const calls = response.message.tool_calls ?? [];
       for (const call of calls) {
         if (seenIds.has(call.id)) throw new Stop("failed", "duplicate_tool_id");
         seenIds.add(call.id);
       }
       messages.push(response.message);
-      let action: Action | undefined;
+      let action: RoleAction | undefined;
       let invalid: string | undefined;
       try {
         if (calls.length !== 1)
           throw new Error("Exactly one tool action required");
         const call = calls[0];
         if (!call) throw new Error("Missing tool");
-        action = validateAction(
-          call.function.name,
-          call.function.arguments,
-          evidence,
-          successes,
-          config.limits.max_code_bytes,
-          task.report !== null,
-        );
+        action = collaboration
+          ? validateRoleAction(
+              role,
+              call.function.name,
+              call.function.arguments,
+              role === "planner" ? visibleEvidence : evidence,
+              successes,
+              config.limits.max_code_bytes,
+              subtask?.subtask_id ?? null,
+              task.report !== null,
+            )
+          : validateAction(
+              call.function.name,
+              call.function.arguments,
+              evidence,
+              successes,
+              config.limits.max_code_bytes,
+              task.report !== null,
+            );
         // Report checks read saved artifacts, so they run here rather than in the pure validator.
         if (
           action.kind === "finish" &&
@@ -263,6 +348,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
         invalid = error instanceof Error ? error.message : "Invalid action";
       }
       await recorder.modelEvent("tool_validation", {
+        ...identity(),
         attempt_id: attemptId,
         tool_ids: calls.map((c) => c.id),
         valid: !invalid,
@@ -289,7 +375,79 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
         continue;
       }
       checkClock();
+      if (action.kind === "delegate") {
+        if (!collaboration || role !== "planner" || subtask)
+          throw new Stop("failed", "invalid_delegation_state");
+        const call = calls[0];
+        if (!call) throw new Stop("failed", "missing_tool");
+        subtask = {
+          subtask_id: randomUUID(),
+          tool_id: call.id,
+          status: "running",
+          tokens: emptyLedger(),
+          evidence_refs: [],
+        };
+        collaboration.subtasks.push(subtask);
+        await recorder.modelEvent(
+          "subtask_delegated",
+          {
+            role: "planner",
+            subtask_id: subtask.subtask_id,
+            tool_id: call.id,
+            attempt_id: attemptId,
+          },
+          action,
+        );
+        histories.executor.push({
+          role: "user",
+          content: JSON.stringify({
+            subtask_id: subtask.subtask_id,
+            task: action.task,
+            constraints: action.constraints,
+            remaining: agent.remaining,
+          }),
+        });
+        role = "executor";
+        continue;
+      }
+      if (action.kind === "return") {
+        if (!collaboration || role !== "executor" || !subtask)
+          throw new Stop("failed", "invalid_return_state");
+        subtask.status = action.result.status;
+        subtask.evidence_refs = [
+          ...new Set(action.result.findings.flatMap((f) => f.evidence_refs)),
+        ];
+        for (const ref of subtask.evidence_refs) visibleEvidence.add(ref);
+        const feedback = { ...action.result, remaining: agent.remaining };
+        await recorder.modelEvent(
+          "subtask_returned",
+          { ...identity(), tool_id: calls[0]?.id, attempt_id: attemptId },
+          feedback,
+        );
+        messages.push({
+          role: "tool",
+          tool_call_id: calls[0]?.id ?? "",
+          content: JSON.stringify({
+            status: "accepted",
+            remaining: agent.remaining,
+          }),
+        });
+        histories.planner.push({
+          role: "tool",
+          tool_call_id: subtask.tool_id,
+          content: JSON.stringify(feedback),
+        });
+        role = "planner";
+        subtask = undefined;
+        continue;
+      }
       if (action.kind === "finish") {
+        if (collaboration)
+          await recorder.modelEvent(
+            "analysis_submitted",
+            { ...identity(), attempt_id: attemptId, tool_id: calls[0]?.id },
+            action.analysis,
+          );
         analysis = action.analysis;
         await writeJson(join(recorder.directory, "analysis.json"), {
           run_id: runId,
@@ -311,6 +469,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
       const call = calls[0];
       if (!call) throw new Stop("failed", "missing_tool");
       await recorder.modelEvent("tool_validation", {
+        ...identity(),
         attempt_id: attemptId,
         tool_id: call.id,
         request_id: requestId,
@@ -355,10 +514,12 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
           }),
         ),
         evidence_refs: [...evidence],
+        ...(collaboration ? { remaining: agent.remaining } : {}),
       };
       await recorder.modelEvent(
         "tool_validation",
         {
+          ...identity(),
           attempt_id: attemptId,
           tool_id: call.id,
           request_id: requestId,
@@ -444,7 +605,11 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
   }
   agent.termination = reason;
   try {
-    await recorder.modelEvent("agent_finish", { status, reason });
+    await recorder.modelEvent("agent_finish", {
+      ...identity(),
+      status,
+      reason,
+    });
     await recorder.finish(status);
     if (recorder.manifest.status !== status && status === "completed") {
       status = "failed";

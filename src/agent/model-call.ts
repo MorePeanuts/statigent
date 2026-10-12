@@ -9,6 +9,7 @@ import {
 import type { ModelProfile } from "../models/config";
 import type {
   AgentMetadata,
+  AgentRole,
   ModelMetadata,
   TokenLedger,
 } from "../records/agent-metadata";
@@ -48,6 +49,7 @@ export function modelCaller(context: CallContext) {
     messages: Message[],
     toolSet: readonly unknown[],
     model: ModelMetadata,
+    identity?: { role: AgentRole; subtask_id: string | null },
   ) => {
     for (;;) {
       checkClock();
@@ -65,6 +67,7 @@ export function modelCaller(context: CallContext) {
         throw new Stop("budget_exhausted", "token_preflight");
       const attemptId = randomUUID();
       await recorder.modelEvent("agent_budget", {
+        ...identity,
         remaining: agent.remaining,
         input_estimate: estimate,
         estimate_method: "utf8_bytes_estimate",
@@ -73,6 +76,7 @@ export function modelCaller(context: CallContext) {
       await recorder.modelEvent(
         "model_request",
         {
+          ...identity,
           attempt_id: attemptId,
           requested_model: profile.model,
           input_estimate: estimate,
@@ -82,6 +86,17 @@ export function modelCaller(context: CallContext) {
       );
       checkClock();
       tokens.attempts++;
+      const collaboration = recorder.manifest.collaboration;
+      if (collaboration && identity) {
+        collaboration.roles[identity.role].tokens.attempts++;
+        if (identity.subtask_id) {
+          const subtask = collaboration.subtasks.find(
+            (s) => s.subtask_id === identity.subtask_id,
+          );
+          if (!subtask) throw new Error("Missing active subtask");
+          subtask.tokens.attempts++;
+        }
+      }
       updateRemaining();
       const started = performance.now();
       let response: ModelResponse;
@@ -109,6 +124,7 @@ export function modelCaller(context: CallContext) {
           performance.now() - started,
         );
         await recorder.modelEvent("model_failure", {
+          ...identity,
           attempt_id: attemptId,
           code: failure.code,
           accounting: failure.accounting,
@@ -144,6 +160,13 @@ export function modelCaller(context: CallContext) {
         response.usage.status === "unknown",
         response.elapsed_ms,
       );
+      if (collaboration && identity) {
+        const roleModel = collaboration.roles[identity.role].model;
+        roleModel.returned_models.push(response.model);
+        roleModel.response_ids.push(response.id);
+        if (response.system_fingerprint)
+          roleModel.fingerprints.push(response.system_fingerprint);
+      }
       model.returned_models.push(response.model);
       model.response_ids.push(response.id);
       if (response.system_fingerprint)
@@ -151,6 +174,7 @@ export function modelCaller(context: CallContext) {
       await recorder.modelEvent(
         "model_response",
         {
+          ...identity,
           attempt_id: attemptId,
           response_id: response.id,
           returned_model: response.model,
@@ -164,6 +188,7 @@ export function modelCaller(context: CallContext) {
         throw new Stop("failed", "accounting_incomplete");
       if (tokens.total_tokens >= task.budget.total_tokens) {
         await recorder.modelEvent("agent_budget", {
+          ...identity,
           overage_tokens: Math.max(
             0,
             tokens.total_tokens - task.budget.total_tokens,
