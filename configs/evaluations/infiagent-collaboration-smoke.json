@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "purpose": "development",
+  "development_overlap": "infi-development-v1; task 0 and its CSV are development-exposed; not formal evaluation",
+  "benchmark": {
+    "adapter": "infiagent-dabench",
+    "version": "49ae783b20ecb60449ce1443c524e89f8ca8353a04e05e4d14a055b7a6f06126",
+    "options": { "root": "benchmarks/infiagent-dabench" },
+    "task_ids": ["0"]
+  },
+  "agents": [{
+    "id": "eda-collaboration-flash", "adapter": "statigent-eda",
+    "options": { "image": "statigent-runtime:dev", "organization": "planner-executor", "budget": { "executions": 12 } },
+    "model_profile": "deepseek-flash", "require_seed": true
+  }],
+  "repetitions": 1, "seed": 42,
+  "task_budget": { "timeout_ms": 600000, "model_attempts": 20, "total_tokens": 400000 },
+  "batch_budget": { "timeout_ms": 660000, "model_attempts": 20, "total_tokens": 400000 }
+}

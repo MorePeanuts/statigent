@@ -3,13 +3,18 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import type { Analysis } from "../../agent/actions";
 import {
+  ROLE_PROMPT_VERSIONS,
+  ROLE_PROMPTS,
+} from "../../agent/collaboration-prompt";
+import { DEFAULT_BUDGET, validateOrganization } from "../../agent/config";
+import {
   PROMPT_VERSION,
   REPORT_PROMPT_VERSION,
   SYSTEM_PROMPT,
 } from "../../agent/prompt";
 import { type RunOptions, runAgent } from "../../agent/run";
 import { resolveCredential } from "../../models/config";
-import { keys, obj, str } from "../../models/validation";
+import { integer, keys, obj, str } from "../../models/validation";
 import { resolveImageReference } from "../../records/markdown";
 import {
   inspectModelJournal,
@@ -25,7 +30,7 @@ import {
   validateSubmission,
 } from "../contracts";
 import { inspectImage } from "./docker";
-import { buildTrajectory } from "./trajectory";
+import { buildTrajectory, COLLABORATION_MAPPING } from "./trajectory";
 
 /** Deliverable name of the unified trajectory; report files must end in .md, so it cannot collide. */
 const TRAJECTORY_FILE = "trajectory.txt";
@@ -70,12 +75,33 @@ export function statigentAdapter(
 ): AgentAdapter {
   const options = (value: unknown) => {
     const x = obj(value);
-    keys(x, ["image"]);
-    return { image: str(x.image, "image") };
+    keys(x, ["image", "organization", "budget"]);
+    const overrides = obj(x.budget ?? {});
+    // Unified task/batch budgets own these three limits. Native options cannot increase them.
+    const {
+      model_attempts: _a,
+      total_tokens: _t,
+      task_timeout_ms: _m,
+      ...budget
+    } = DEFAULT_BUDGET;
+    keys(overrides, Object.keys(budget));
+    for (const key of Object.keys(overrides) as (keyof typeof budget)[])
+      budget[key] = integer(
+        overrides[key],
+        key,
+        ["rate_retries", "code_repairs", "action_corrections"].includes(key)
+          ? 0
+          : 1,
+      );
+    return {
+      image: str(x.image, "image"),
+      organization: validateOrganization(x.organization),
+      budget,
+    };
   };
   return {
     id: "statigent-eda",
-    version: "1",
+    version: "2",
     capabilities: {
       schema_version: 2,
       outputs: ["text", "report"],
@@ -90,16 +116,33 @@ export function statigentAdapter(
     async preflight(config) {
       if (!config.model) throw new Error("Model profile required");
       if (!dependencies.overrides?.client) resolveCredential(config.model);
+      const settings = options(config.options);
       return {
-        ...(await (dependencies.image ?? inspectImage)(
-          str(options(config.options).image, "image"),
-        )),
-        prompt: {
-          version: PROMPT_VERSION,
-          report_version: `${PROMPT_VERSION}+${REPORT_PROMPT_VERSION}`,
-          sha256: sha256(Buffer.from(SYSTEM_PROMPT)),
-        },
-        role: "single",
+        ...(await (dependencies.image ?? inspectImage)(settings.image)),
+        ...(settings.organization === "planner-executor"
+          ? {
+              role_prompts: Object.fromEntries(
+                (["planner", "executor"] as const).map((role) => [
+                  role,
+                  {
+                    version: ROLE_PROMPT_VERSIONS[role],
+                    sha256: sha256(Buffer.from(ROLE_PROMPTS[role])),
+                  },
+                ]),
+              ),
+              trajectory_mapping: COLLABORATION_MAPPING,
+            }
+          : {
+              trajectory_mapping: "single-v1",
+              prompt: {
+                version: PROMPT_VERSION,
+                report_version: `${PROMPT_VERSION}+${REPORT_PROMPT_VERSION}`,
+                sha256: sha256(Buffer.from(SYSTEM_PROMPT)),
+              },
+            }),
+        role: settings.organization,
+        native_budget: settings.budget,
+        unified_budget_source: "invocation.effective_budget",
         backend: "persistent-kernel",
         capabilities: this.capabilities,
       };
@@ -114,10 +157,12 @@ export function statigentAdapter(
       )
         throw new Error("Model and budgets required");
       const output = i.task.output;
+      const settings = options(i.config.options);
       const result = await (dependencies.run ?? runAgent)({
         ...dependencies.overrides,
         profile,
         task: {
+          organization: settings.organization,
           goal: i.task.goal,
           constraints: [
             ...i.task.constraints,
@@ -143,12 +188,13 @@ export function statigentAdapter(
             : {}),
           model_profile: profile.id,
           execution: {
-            image: str(options(i.config.options).image, "image"),
+            image: settings.image,
             input_root: i.input_root,
             inputs: i.task.inputs.map((f) => f.path),
             seed: i.seed,
           },
           budget: {
+            ...settings.budget,
             model_attempts: i.budget.model_attempts,
             total_tokens: i.budget.total_tokens,
             task_timeout_ms: i.budget.timeout_ms,

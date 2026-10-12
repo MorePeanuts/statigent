@@ -19,6 +19,8 @@ bun run test:integration
 
 自然语言任务入口、DeepSeek 与自定义模型配置、预算/用量口径及验收命令见 [智能体使用说明](docs/agent.md)。
 
+EDA 支持默认单角色与 `planner-executor` 双角色组织。双角色采用提示词引导的适中委派粒度，执行者在同一内核中多步求解，规划者依据返回证据继续委派或交付报告；两角色共享总预算。合成报告示例：`bun run agent run --task configs/tasks/collaboration-report.json`。开发评测预览：`bun run evaluate plan --config configs/evaluations/infiagent-collaboration-smoke.json`（预览不调用模型）。
+
 ```sh
 bun run agent run --task configs/tasks/synthetic-eda.json --model deepseek-flash
 ```
