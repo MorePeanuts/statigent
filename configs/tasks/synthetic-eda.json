@@ -1,0 +1,7 @@
+{
+  "goal": "分析 synthetic.csv：先检查数据并保留 DataFrame，然后在后续单元复用它计算各组 value 均值，用结构化 value 提交 group_means 对象，生成并保存 PNG 分组均值图。至少分两次执行，说明数据范围、缺失值处理和统计口径，结论引用实际成功单元及图表产物。",
+  "constraints": ["只使用允许的输入，不安装依赖，不联网。", "先观察数据，再计算；图表不能代替实际统计值。"],
+  "model_profile": "deepseek-flash",
+  "execution": { "image": "statigent-runtime:dev", "input_root": "tests/fixtures", "inputs": ["synthetic.csv"], "seed": 42 },
+  "budget": {}
+}

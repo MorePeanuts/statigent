@@ -1,0 +1,13 @@
+[
+  {
+    "id": "deepseek-flash",
+    "provider": "deepseek",
+    "protocol": "chat-completions",
+    "base_url": "https://api.deepseek.com",
+    "model": "deepseek-flash",
+    "display_name": "DeepSeek-V4.1-Flash",
+    "api_key_env": "DEEPSEEK_API_KEY",
+    "capabilities": { "tool_calls": true, "thinking": true },
+    "generation": { "thinking": "enabled", "reasoning_effort": "high", "max_output_tokens": 4096 }
+  }
+]
