@@ -7,6 +7,7 @@ import {
 } from "../execution/protocol";
 import { integer, keys, obj, str, strings } from "../models/validation";
 import { safeRelativePath } from "../records/store";
+import { type ReportSpec, validateReportSpec } from "./report";
 export const DEFAULT_BUDGET = {
   model_attempts: 12,
   executions: 8,
@@ -27,10 +28,19 @@ export interface AgentTask {
   model_profile: string;
   execution: Omit<SessionConfig, "run_id" | "staging_root">;
   budget: AgentBudget;
+  /** Present when the task must end with a Markdown report saved in the workspace. */
+  report: ReportSpec | null;
 }
 export function validateTask(value: unknown): AgentTask {
   const x = obj(value);
-  keys(x, ["goal", "constraints", "model_profile", "execution", "budget"]);
+  keys(x, [
+    "goal",
+    "constraints",
+    "model_profile",
+    "execution",
+    "budget",
+    "report",
+  ]);
   const b = obj(x.budget ?? {});
   keys(b, Object.keys(DEFAULT_BUDGET));
   const budget = { ...DEFAULT_BUDGET };
@@ -55,10 +65,8 @@ export function validateTask(value: unknown): AgentTask {
     staging_root: "preflight",
     limits,
   });
-  if (
-    !config.inputs.length ||
-    new Set(config.inputs).size !== config.inputs.length
-  )
+  // An empty list is allowed (questions without data files); listed inputs must be unique.
+  if (new Set(config.inputs).size !== config.inputs.length)
     throw new Error("Explicit unique input files required");
   config.inputs.forEach(safeRelativePath);
   const { run_id: _runId, staging_root: _staging, ...execution } = config;
@@ -68,6 +76,10 @@ export function validateTask(value: unknown): AgentTask {
     model_profile: str(x.model_profile, "model_profile"),
     execution: { ...execution, input_root: resolve(execution.input_root) },
     budget,
+    report:
+      x.report === undefined || x.report === null
+        ? null
+        : validateReportSpec(x.report),
   };
 }
 export async function preflightInputs(task: AgentTask): Promise<void> {

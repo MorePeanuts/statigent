@@ -301,6 +301,7 @@ export async function runEvaluation(
             unitSignal,
           ),
           unit.id,
+          { frozen: false },
         );
         if (
           cap.model === "none"

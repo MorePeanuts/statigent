@@ -470,6 +470,9 @@ export class DockerSession {
       !safeRelativePath(message.path) ||
       ![
         "image/png",
+        // Report tasks deliver Markdown with PNG/JPEG charts saved in the workspace.
+        "image/jpeg",
+        "text/markdown",
         "text/plain",
         "text/csv",
         "text/html",

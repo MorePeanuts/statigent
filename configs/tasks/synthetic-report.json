@@ -1,0 +1,8 @@
+{
+  "goal": "Analyze synthetic.csv and write a short English report on the value distribution by group, with one bar chart of the group means.",
+  "constraints": ["Use only the provided input; do not install dependencies or access the network."],
+  "model_profile": "deepseek-flash",
+  "execution": { "image": "statigent-runtime:dev", "input_root": "tests/fixtures", "inputs": ["synthetic.csv"], "seed": 42 },
+  "budget": { "total_tokens": 300000 },
+  "report": { "image_types": ["png", "jpeg"], "max_images": 5, "max_image_bytes": 2097152, "max_report_bytes": 262144 }
+}

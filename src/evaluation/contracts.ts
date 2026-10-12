@@ -355,7 +355,15 @@ function legacyArtifacts(value: unknown): Deliverable[] {
     throw new Error("Artifact limit/duplicate");
   return artifacts;
 }
-export function validateSubmission(value: unknown, unitId: string): Submission {
+/**
+ * `frozen: false` is for adapter returns, whose deliverable list is still empty: a declared trajectory
+ * is then checked by the harness after freezing instead.
+ */
+export function validateSubmission(
+  value: unknown,
+  unitId: string,
+  { frozen = true }: { frozen?: boolean } = {},
+): Submission {
   bounded(value, LIMITS.response);
   const version = contractVersion(value);
   const x = envelope(
@@ -385,7 +393,13 @@ export function validateSubmission(value: unknown, unitId: string): Submission {
     version === 1 || x.trajectory === null
       ? null
       : safeRelativePath(str(x.trajectory, "trajectory"));
-  if (trajectory !== null && !deliverables.some((d) => d.path === trajectory))
+  if (!frozen && deliverables.length)
+    throw new Error("Adapters must not list deliverables themselves");
+  if (
+    frozen &&
+    trajectory !== null &&
+    !deliverables.some((d) => d.path === trajectory)
+  )
     throw new Error("Trajectory is not a deliverable");
   let native: Submission["native_run"] = null;
   if (x.native_run !== null) {

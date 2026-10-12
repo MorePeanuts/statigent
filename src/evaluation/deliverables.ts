@@ -10,6 +10,7 @@ import {
 } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 import { imageInfo } from "../models/images";
+import { imageReferences, resolveImageReference } from "../records/markdown";
 import { safeRelativePath } from "../records/store";
 import { type Deliverable, LIMITS, type OutputContract } from "./contracts";
 
@@ -99,8 +100,6 @@ export async function verifyDeliverables(
       throw new Error(`Deliverable integrity mismatch: ${d.path}`);
   }
 }
-// Same pattern as the DAComp upstream judge (`llm_judge.py`), so both sides see the same image list.
-const IMAGE_REFERENCE = /!\[[^\]]*\]\(([^)]+)\)/g;
 export interface ReportDeliverable {
   report: string;
   images: string[];
@@ -124,16 +123,8 @@ export async function validateReport(
     throw new Error("Report is not UTF-8");
   }
   const images: string[] = [];
-  for (const match of text.matchAll(IMAGE_REFERENCE)) {
-    const raw = (match[1] ?? "").trim();
-    if (/^[a-z][a-z0-9+.-]*:/i.test(raw) || raw.startsWith("/"))
-      throw new Error(`Report image must be a relative path: ${raw}`);
-    // References are relative to the report's own directory; `./` segments are allowed, `..` is not.
-    const path = safeRelativePath(
-      [...output.report_file.split("/").slice(0, -1), ...raw.split("/")]
-        .filter((part) => part !== ".")
-        .join("/"),
-    );
+  for (const raw of imageReferences(text)) {
+    const path = resolveImageReference(output.report_file, raw);
     const d = deliverables.find((x) => x.path === path);
     if (!d) throw new Error(`Report image not delivered: ${raw}`);
     const info = imageInfo(await Bun.file(join(resolve(root), d.path)).bytes());

@@ -89,6 +89,7 @@ export function parseCommandResponse(
   const s = validateSubmission(
     { ...rest, schema_version: 2, deliverables: [], trajectory: null },
     unitId,
+    { frozen: false },
   );
   if (
     s.native_run !== null ||
@@ -257,7 +258,7 @@ export function containerCommandAdapter(): AgentAdapter {
           s.status = "failed";
         }
       }
-      return validateSubmission(s, i.unit_id);
+      return validateSubmission(s, i.unit_id, { frozen: false });
     },
   };
 }

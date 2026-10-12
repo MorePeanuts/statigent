@@ -7,43 +7,18 @@ import {
   parseCommandResponse,
 } from "../../src/evaluation/agents/container-command";
 import { statigentAdapter } from "../../src/evaluation/agents/statigent";
-import {
-  emptyUsage,
-  type Invocation,
-  validateInvocation,
-} from "../../src/evaluation/contracts";
+import { emptyUsage, validateInvocation } from "../../src/evaluation/contracts";
 import { exportNotebooks } from "../../src/records/notebook";
 import {
   call,
   fakeRuntime,
   finish,
   lastFeedback,
-  profile,
   reply,
   ScriptClient,
 } from "../helpers/agent";
-import { submission, task } from "../helpers/evaluation";
-export function invocation(root: string): Invocation {
-  return {
-    schema_version: 2,
-    evaluation_id: "eval-test",
-    unit_id: "unit-000001",
-    task,
-    config: {
-      id: "eda",
-      adapter: "statigent-eda",
-      options: { image: "statigent-runtime:dev" },
-      model: profile,
-      require_seed: true,
-    },
-    budget: { timeout_ms: 10000, model_attempts: 3, total_tokens: 100000 },
-    seed: 42,
-    input_root: root,
-    run_root: join(root, "runs"),
-    deliverables_root: join(root, "deliverables"),
-    trajectory: false,
-  };
-}
+import { invocation, submission } from "../helpers/evaluation";
+
 test("invocation and command protocol reject unsupported configuration and forged outputs", () => {
   expect(() =>
     validateInvocation({ ...invocation("/tmp"), schema_version: 1 }),

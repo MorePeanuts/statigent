@@ -4,10 +4,10 @@
 
 智能体只需返回终态、明确最终回答、交付文件和用量，无需使用 Notebook 或 Statigent 的角色/工具实现。模型配置复用 `configs/models.json`，用量区分模型返回的测量值、外部自报告、未知与不适用。缺失遥测不能记为零。
 
-| 适配器 | 模型控制 | 执行种子 | 隔离 | 用量 |
-| --- | --- | --- | --- | --- |
-| statigent-eda | 现有 model profile | Python 执行，非模型采样保证 | Docker | 请求日志与模型返回用量 |
-| container-command | 无模型，首版不联网 | 由协议提供 | Docker | 无模型调用时不适用 |
+| 适配器 | 输出类型 | 统一轨迹 | 模型控制 | 执行种子 | 隔离 | 用量 |
+| --- | --- | --- | --- | --- | --- | --- |
+| statigent-eda | text、report | unified（trajectory-v1） | 现有 model profile | Python 执行，非模型采样保证 | Docker | 请求日志与模型返回用量 |
+| container-command | text、report | none | 无模型，首版不联网 | 由协议提供 | Docker | 无模型调用时不适用 |
 
 模型预算包含尝试次数、token 停止阈值；响应可能使 token 超出阈值，阈值不是账单硬上限。相同智能体可以注册多个配置分别比较。未实现的角色分离、脚本后端、预测文件及联网外部智能体不能通过配置冒充已支持。
 
@@ -91,7 +91,7 @@
 
 ## 智能体接入
 
-`statigent-eda` 的 options 为 `{"image":"statigent-runtime:dev"}`，通过 model_profile 选择已有模型配置。适配器增加通用最终回答约束，原样提交 `analysis.summary`，完整 analysis 和 Notebook 保留在原生目录。用量来自原生清单与请求日志；未确认请求保留已知小计并标为未知。
+`statigent-eda` 的 options 为 `{"image":"statigent-runtime:dev"}`，通过 model_profile 选择已有模型配置。文本任务增加通用最终回答约束，原样提交 `analysis.summary`；报告任务把输出契约中的图片类型和上限传给 EDA，完成后只把被接受的报告和它引用的图片复制进交付目录（规则见 [EDA 报告输出](agent.md#报告输出)）。计划要求统一轨迹时，适配器另交付 `trajectory.txt` 并在 submission 的 `trajectory` 字段指向它。完整 analysis 和 Notebook 保留在原生目录。用量来自原生清单与请求日志；未确认请求保留已知小计并标为未知。
 
 `container-command` 的 options 包含 image 和 argv 数组，可设置 cpus、memory_bytes、pids、workspace_bytes，以及交付上限 max_file_bytes（默认 8 MiB）和 max_files_bytes（默认 32 MiB），二者不能超过评测层上限，并写入配置快照。镜像与命令是受信配置，任务不能覆盖它们。stdin 一条 JSON 请求（不含宿主路径，输入位于 `/input`），stdout 仅一条 JSON 响应；stderr 有界。响应使用命令协议 v1：形如 v1 Submission，`artifacts` 中的 base64 文件以相对路径命名，native_run 必须为空，首版用量必须为 not_applicable。宿主校验名称和大小后把文件解码写入该单元的交付目录，再由评测层冻结；stdout 上限随 max_files_bytes 换算，stderr 最大 1 MiB。不采用可写挂载输出目录，因为宿主无法限制 bind mount 的写入量。
 

@@ -1,13 +1,16 @@
+import { join } from "node:path";
 import {
   type AgentAdapter,
   type BenchmarkAdapter,
   emptyUsage,
+  type Invocation,
   type PublicTask,
   type Submission,
 } from "../../src/evaluation/contracts";
 import { Registry } from "../../src/evaluation/plan";
 import { keys, obj } from "../../src/models/validation";
 import { sha256 } from "../../src/records/store";
+import { profile } from "./agent";
 export const task: PublicTask = {
   schema_version: 2,
   id: "one",
@@ -118,5 +121,27 @@ export function config() {
       model_attempts: null,
       total_tokens: null,
     },
+  };
+}
+/** Statigent invocation over `root` (inputs at the root, native runs and deliverables beneath it). */
+export function invocation(root: string): Invocation {
+  return {
+    schema_version: 2,
+    evaluation_id: "eval-test",
+    unit_id: "unit-000001",
+    task,
+    config: {
+      id: "eda",
+      adapter: "statigent-eda",
+      options: { image: "statigent-runtime:dev" },
+      model: profile,
+      require_seed: true,
+    },
+    budget: { timeout_ms: 10000, model_attempts: 3, total_tokens: 100000 },
+    seed: 42,
+    input_root: root,
+    run_root: join(root, "runs"),
+    deliverables_root: join(root, "deliverables"),
+    trajectory: false,
   };
 }

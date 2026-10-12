@@ -28,9 +28,17 @@ test("CLI profile precedence, explicit smoke selection and strict flags", async 
       "explicit --model",
     );
     expect(() => parseFlags([...args, "--models", models])).toThrow("unique");
+    // Questions without data files run with an empty, read-only /input; duplicates stay invalid.
+    expect(
+      validateTask({ ...task, execution: { ...task.execution, inputs: [] } })
+        .execution.inputs,
+    ).toEqual([]);
     expect(() =>
-      validateTask({ ...task, execution: { ...task.execution, inputs: [] } }),
-    ).toThrow();
+      validateTask({
+        ...task,
+        execution: { ...task.execution, inputs: ["a.csv", "a.csv"] },
+      }),
+    ).toThrow("unique");
     await expect(
       preflightInputs(
         validateTask({

@@ -62,6 +62,34 @@ DeepSeek 示例请求 `deepseek-flash`，展示 DeepSeek-V4.1-Flash；别名不�
 
 完成产物为 analysis.json 和确定性生成的 analysis.md，记录 Notebook 路径与导出状态。completed 仅在完成提交、关闭、导出和记录成功后返回；预算耗尽、超时、取消、失败不会再调用模型补写总结。错误修复后的 Notebook 保留错误单元，分析可完成但严格代码重放仍为 unsupported。重放只执行已保存代码，不复现模型决策，也不复制源运行的模型成本。
 
+## 报告输出
+
+任务配置可以带 `report`（`image_types`、`max_images`、`max_image_bytes`、`max_report_bytes`），要求以 Markdown 报告结束，例如 `configs/tasks/synthetic-report.json`。系统提示词不变；报告要求以约束和工具说明传达，元数据中提示词版本记为 `eda-single-v1+report-v1`，提示词哈希与文本任务相同。文本任务的工具 schema 和提示词版本（`eda-single-v1`）保持原样。
+
+模型用 `execute_python` 在工作目录写 `.md` 报告，并把图表保存为同目录（或子目录）下的 PNG/JPEG 文件；这些文件按工作区快照保存为产物。完成时 `finish_analysis` 必须额外给出 `report_artifact_id`，即报告文件对应的 artifact_id。宿主校验：
+
+- 该 ID 是本次运行保存的完整产物，路径以 `.md` 结尾，UTF-8，大小不超过 `max_report_bytes`；
+- 报告中的图片引用（`![说明](路径)`，与 DAComp 上游评委相同的匹配规则）必须是相对报告所在目录的相对路径，可以带 `./`，不能带 URL scheme、绝对路径或 `..`；
+- 每个引用解析到本次运行在该工作区路径上最新保存的产物，按内容识别为允许的图片类型，大小不超过 `max_image_bytes`，去重后数量不超过 `max_images`。
+
+任一项不满足即拒绝完成动作并计入动作纠正预算，模型可以改写报告后再次提交。通过后 `analysis.json` 增加：
+
+```json
+{
+  "report": {
+    "artifact_id": "<报告产物 ID>",
+    "source_path": "report.md",
+    "images": [
+      { "reference": "chart.png", "path": "chart.png", "artifact_id": "<图片产物 ID>" }
+    ]
+  }
+}
+```
+
+`reference` 是去掉 `./` 后的报告内写法，`path` 是工作区路径。模型看不到图片，只能依据计算结果描述图表；这一局限保留。评测适配器只把报告和被引用的图片复制进交付目录，引用无需改写即可在交付目录中解析，未被引用的图片不交付。
+
+**统一轨迹（trajectory-v1）**：评测启用 DAComp 上游兼容模式时，适配器根据原生事件生成 `trajectory.txt`：按执行顺序列出每个单元的代码、状态和有界输出预览（截断时标注），最后附上最终报告（文本任务附 summary）。整体上限 256 KiB，超出时保留首尾、从中间截断并写明省略字节数。宿主路径和模型密钥会被替换为 `[host]`；轨迹不含评分材料。多角色实现以后需要按适配器版本另行定义映射。
+
 ## 本地使用
 
 先按 README 构建 `statigent-runtime:dev`，在宿主环境设置 `DEEPSEEK_API_KEY`。密钥不写入仓库，不需要传给 Docker。相对输入根按命令工作目录解析。

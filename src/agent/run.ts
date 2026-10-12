@@ -26,11 +26,12 @@ import {
   type Action,
   type Analysis,
   renderAnalysis,
-  TOOLS,
+  tools,
   validateAction,
 } from "./actions";
 import { type AgentTask, preflightInputs, validateTask } from "./config";
-import { initialMessages, PROMPT_VERSION, SYSTEM_PROMPT } from "./prompt";
+import { initialMessages, promptVersion, SYSTEM_PROMPT } from "./prompt";
+import { resolveReport } from "./report";
 export type AgentStatus =
   | "completed"
   | "budget_exhausted"
@@ -157,7 +158,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
         tokens,
         metadata: agent,
         prompt: {
-          version: PROMPT_VERSION,
+          version: promptVersion(task),
           sha256: sha256(Buffer.from(SYSTEM_PROMPT)),
         },
       },
@@ -203,6 +204,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
     updateRemaining();
   };
   const messages = initialMessages(task);
+  const toolSet = tools(task.report !== null);
   const seenIds = new Set<string>();
   const evidence = new Set<string>();
   let successes = 0;
@@ -225,7 +227,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
       updateRemaining();
       if (tokens.attempts >= task.budget.model_attempts)
         throw new Stop("budget_exhausted", "model_attempts");
-      const body = client.requestBody(messages, TOOLS);
+      const body = client.requestBody(messages, toolSet);
       const estimate = Buffer.byteLength(body);
       if (estimate > task.budget.max_request_bytes)
         throw new Stop("budget_exhausted", "request_size_limit");
@@ -367,7 +369,20 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
           evidence,
           successes,
           config.limits.max_code_bytes,
+          task.report !== null,
         );
+        // Report checks read saved artifacts, so they run here rather than in the pure validator.
+        if (
+          action.kind === "finish" &&
+          task.report &&
+          action.report_artifact_id
+        )
+          action.analysis.report = await resolveReport(
+            recorder.directory,
+            recorder.manifest.artifacts,
+            action.report_artifact_id,
+            task.report,
+          );
       } catch (error) {
         invalid = error instanceof Error ? error.message : "Invalid action";
       }
