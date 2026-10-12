@@ -9,6 +9,7 @@ import {
   roleInitialMessages,
 } from "../../src/agent/collaboration-prompt";
 import { validateTask } from "../../src/agent/config";
+import { obj } from "../../src/models/validation";
 import { sha256 } from "../../src/records/store";
 import { task } from "../helpers/agent";
 
@@ -84,6 +85,37 @@ test("role tool permissions, current identity, evidence and diagnostic contract"
       }).kind,
     ).toBe("delegate");
   }
+});
+
+test("report responsibility stays with planner while executor receives background and artifact limits", async () => {
+  const t = validateTask(
+    await Bun.file("configs/tasks/collaboration-report.json").json(),
+  );
+  const planner = obj(
+    JSON.parse(String(roleInitialMessages(t, "planner")[1]?.content)),
+  );
+  const executor = obj(
+    JSON.parse(String(roleInitialMessages(t, "executor")[1]?.content)),
+  );
+  expect(planner.goal).toBe(t.goal);
+  expect(planner.report).toEqual(t.report);
+  expect(executor.overall_goal).toBe(t.goal);
+  expect(executor.goal_scope).toContain("background_only");
+  expect(executor).not.toHaveProperty("goal");
+  expect(executor).not.toHaveProperty("report");
+  expect(executor.final_report_author).toBe("planner");
+  expect(executor.artifact_requirements).toEqual({
+    image_types: t.report?.image_types,
+    max_images: t.report?.max_images,
+    max_image_bytes: t.report?.max_image_bytes,
+  });
+  expect(executor.constraints).toEqual(t.constraints);
+  expect(executor.budget).toEqual(t.budget);
+  // This tests context construction; model compliance is measured separately by the bounded smoke.
+  expect(ROLE_PROMPTS.executor).toContain("默认直接复用");
+  expect(ROLE_PROMPTS.executor).toContain("代码注释及返回的 methods");
+  expect(ROLE_PROMPTS.executor).toContain("不要提前执行尚未委派的后续分析");
+  expect(ROLE_PROMPTS.planner).toContain("变量名和实现细节由执行者维护");
 });
 
 test("role prompts and tools expose only their responsibilities and carry global constraints", () => {

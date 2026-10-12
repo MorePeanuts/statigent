@@ -430,6 +430,12 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
             task: action.task,
             constraints: action.constraints,
             remaining: agent.remaining,
+            execution_context: {
+              backend: "persistent-kernel",
+              session_continues: collaboration.subtasks.length > 1,
+              prior_subtasks: collaboration.subtasks.length - 1,
+              prior_executions: agent.executions,
+            },
           }),
         });
         role = "executor";

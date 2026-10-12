@@ -3,17 +3,23 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  ROLE_PROMPT_VERSIONS,
+  ROLE_PROMPTS,
+} from "../../src/agent/collaboration-prompt";
+import {
   type AgentResult,
   type RunOptions,
   runAgent,
 } from "../../src/agent/run";
 import { ModelFailure } from "../../src/models/client";
+import { obj } from "../../src/models/validation";
 import { exportNotebooks } from "../../src/records/notebook";
 import {
   inspectModelJournal,
   readArtifact,
   readEvents,
   readManifest,
+  sha256,
 } from "../../src/records/store";
 import {
   call,
@@ -70,7 +76,28 @@ test("two delegated subtasks keep executor history and isolate planner messages 
         expect(JSON.stringify(client.bodies[i])).not.toContain("secret_state");
       expect(JSON.stringify(client.bodies[4])).toContain("secret_state=2");
       expect(JSON.stringify(client.bodies[4])).toContain("accepted");
+      for (const [index, prior] of [
+        [1, 0],
+        [4, 1],
+      ]) {
+        const body = client.bodies[index ?? -1];
+        if (!body || !Array.isArray(body.messages))
+          throw new Error("Missing messages");
+        const users = body.messages.map(obj).filter((m) => m.role === "user");
+        const delegation = obj(JSON.parse(String(users.at(-1)?.content)));
+        expect(delegation.execution_context).toEqual({
+          backend: "persistent-kernel",
+          session_continues: prior === 1,
+          prior_subtasks: prior,
+          prior_executions: prior,
+        });
+      }
       const m = await readManifest(r.directory);
+      for (const role of ["planner", "executor"] as const)
+        expect(m.collaboration?.roles[role].prompt).toEqual({
+          version: ROLE_PROMPT_VERSIONS[role],
+          sha256: sha256(Buffer.from(ROLE_PROMPTS[role])),
+        });
       expect(m.tokens).toMatchObject({ attempts: 7, total_tokens: 105 });
       expect(m.collaboration?.roles.planner.tokens.attempts).toBe(3);
       expect(m.collaboration?.roles.executor.tokens.attempts).toBe(4);
