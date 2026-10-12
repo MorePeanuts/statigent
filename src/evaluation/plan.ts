@@ -44,6 +44,7 @@ export class Registry {
 }
 export interface EvaluationConfig {
   schema_version: 1;
+  cache_policy: "disabled";
   purpose: "development" | "formal";
   development_overlap: string;
   benchmark: {
@@ -60,10 +61,11 @@ export interface EvaluationConfig {
 }
 export function validateConfig(
   value: unknown,
-  registry: Registry,
+  registry: Registry | null,
   profiles: unknown = [],
 ): EvaluationConfig {
   const x = envelope(value, [
+    "cache_policy",
     "purpose",
     "development_overlap",
     "benchmark",
@@ -75,7 +77,7 @@ export function validateConfig(
   ]);
   const b = obj(x.benchmark);
   keys(b, ["adapter", "version", "options", "task_ids"]);
-  const benchmark = registry.getBenchmark(id(b.adapter));
+  const benchmark = registry?.getBenchmark(id(b.adapter));
   const tasks = strings(b.task_ids, "task_ids").map(id);
   if (
     !tasks.length ||
@@ -100,23 +102,24 @@ export function validateConfig(
       (a.model_profile !== undefined && a.model !== undefined)
     )
       throw new Error("Invalid agent config");
-    const adapter = registry.getAgent(id(a.adapter));
+    const adapter = registry?.getAgent(id(a.adapter));
     const model =
       a.model_profile !== undefined
         ? selectProfile(profiles, str(a.model_profile, "model_profile"))
         : a.model === null || a.model === undefined
           ? null
           : validateProfile(a.model);
-    const cap = validateCapabilities(adapter.capabilities);
+    const cap = adapter ? validateCapabilities(adapter.capabilities) : null;
     if (
-      (cap.model === "configurable") !== (model !== null) ||
-      (a.require_seed && cap.seed === "unsupported")
+      cap &&
+      ((cap.model === "configurable") !== (model !== null) ||
+        (a.require_seed && cap.seed === "unsupported"))
     )
       throw new Error("Unsupported model/seed requirement");
     return {
       id: id(a.id),
-      adapter: adapter.id,
-      options: adapter.options(a.options),
+      adapter: id(a.adapter),
+      options: adapter ? adapter.options(a.options) : obj(a.options),
       model,
       require_seed: a.require_seed,
     };
@@ -126,8 +129,9 @@ export function validateConfig(
   const task = validateBudget(x.task_budget),
     batch = validateBudget(x.batch_budget);
   for (const a of agents) {
-    const cap = registry.getAgent(a.adapter).capabilities;
+    const cap = registry?.getAgent(a.adapter).capabilities;
     if (
+      cap &&
       cap.model !== "none" &&
       (!cap.model_budget ||
         [
@@ -140,16 +144,19 @@ export function validateConfig(
       throw new Error("Model budgets required and must be supported");
   }
   const repetitions = integer(x.repetitions, "repetitions");
+  if (!Number.isSafeInteger(integer(x.seed, "seed", 0) + repetitions - 1))
+    throw new Error("Seed range overflow");
   if (tasks.length * agents.length * repetitions > 10000)
     throw new Error("Plan too large");
   return {
     schema_version: 1,
+    cache_policy: literal(x.cache_policy ?? "disabled", ["disabled"]),
     purpose: literal(x.purpose, ["development", "formal"]),
     development_overlap: str(x.development_overlap, "development_overlap"),
     benchmark: {
-      adapter: benchmark.id,
+      adapter: id(b.adapter),
       version: str(b.version, "version"),
-      options: benchmark.options(b.options),
+      options: benchmark ? benchmark.options(b.options) : obj(b.options),
       task_ids: tasks,
     },
     agents,

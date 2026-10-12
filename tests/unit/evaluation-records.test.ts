@@ -10,6 +10,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { cleanupEvaluation } from "../../src/evaluation/cleanup";
 import {
   describeFile,
   publishInputs,
@@ -109,4 +110,23 @@ test("record quotas and storage errors do not silently succeed", async () => {
   expect(
     await Bun.file(join(store.directory, "redaction.json")).json(),
   ).toEqual({ api_key: "[REDACTED]", api_key_env: "TEST_KEY" });
+});
+
+test("disk records are runtime validated before reporting costs", async () => {
+  const root = await setup(),
+    plan = await buildPlan(config(), fixtureRegistry(root));
+  const store = await EvaluationStore.create(join(root, "runs"), plan, {}, {});
+  const path = join(store.directory, "units/unit-000001/record.json");
+  const value = await Bun.file(path).json();
+  value.elapsed_ms = "free";
+  await writeFile(path, JSON.stringify(value));
+  await expect(inspect(store.directory)).rejects.toThrow("timing");
+  const cleaned: string[] = [];
+  await cleanupEvaluation(store.directory, {
+    external: async (identity) => {
+      cleaned.push(identity);
+    },
+    native: async () => [],
+  });
+  expect(cleaned).toEqual([store.manifest.evaluation_id]);
 });

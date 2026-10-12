@@ -210,6 +210,7 @@ export async function runEvaluation(
         status: submission.status,
         usage: submission.usage,
       });
+      const scoringBegan = Date.now();
       try {
         if (submission.cleanup_error)
           throw new Error("Scoring blocked by incomplete cleanup");
@@ -234,6 +235,7 @@ export async function runEvaluation(
         };
       }
       record.scoring_status = record.score.status;
+      record.scoring_elapsed_ms = Date.now() - scoringBegan;
       await store.unit(record);
     }
     const complete = records.every(

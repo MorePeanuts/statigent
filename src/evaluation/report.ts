@@ -5,7 +5,12 @@ import { writeJson } from "../records/store";
 import { aggregate } from "./aggregate";
 import { bounded, LIMITS, type Score, validateScore } from "./contracts";
 import type { Registry } from "./plan";
-import { inspect, readSubmission, type UnitRecord } from "./records";
+import {
+  codeSnapshot,
+  inspect,
+  readSubmission,
+  type UnitRecord,
+} from "./records";
 
 export function csv(rows: Record<string, unknown>[]): string {
   const names = [...new Set(rows.flatMap(Object.keys))];
@@ -78,6 +83,7 @@ export async function createReport(
         effective_budget: r.effective_budget,
         reason: r.reason,
         elapsed_ms: r.elapsed_ms,
+        scoring_elapsed_ms: r.scoring_elapsed_ms ?? null,
         attempts: u?.attempts ?? null,
         total_tokens: u?.total_tokens ?? null,
         unknown_attempts: u?.unknown_attempts ?? null,
@@ -115,6 +121,11 @@ export async function createReport(
         currency_cost: "not_computed",
       },
       elapsed_ms: elapsed,
+      scoring_elapsed_ms: selected.every(
+        (r) => r.scoring_elapsed_ms !== undefined,
+      )
+        ? selected.reduce((n, r) => n + (r.scoring_elapsed_ms ?? 0), 0)
+        : null,
       comparison_limits: [
         ...(selected.some((r) => r.budget_status !== "within")
           ? ["effective budget reduced, exceeded or unknown"]
@@ -142,6 +153,7 @@ export async function createReport(
     plan_sha256: view.plan.sha256,
     rescored: Boolean(rescored),
     scorer_version: benchmark.version,
+    scoring_code: await codeSnapshot(),
     protocol: benchmark.protocol,
     groups,
     rows,
@@ -189,6 +201,7 @@ export async function rescore(directory: string, registry: Registry) {
     const task = view.plan.tasks.find((t) => t.id === record.unit.task_id);
     if (!task) throw new Error("Missing task");
     let score: Score;
+    const scoringBegan = Date.now();
     try {
       score = validateScore(
         await benchmark.score(
@@ -209,7 +222,12 @@ export async function rescore(directory: string, registry: Registry) {
         error: error instanceof Error ? error.message : String(error),
       };
     }
-    records.push({ ...record, score, scoring_status: score.status });
+    records.push({
+      ...record,
+      score,
+      scoring_status: score.status,
+      scoring_elapsed_ms: Date.now() - scoringBegan,
+    });
   }
   return createReport(directory, registry, records);
 }
