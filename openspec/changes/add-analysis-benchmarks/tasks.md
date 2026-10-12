@@ -41,7 +41,7 @@
 
 ## 6. DSBench-Analysis 接入
 
-- [ ] 6.1 在执行镜像的运行依赖中加入锁定版本的 `openpyxl` 与 `pyxlsb`，更新 `uv.lock` 并重建镜像；集成测试在容器中读取合成的 xlsx 和 xlsb 夹具，记录新的镜像 ID。
+- [x] 6.1 在执行镜像的运行依赖中加入锁定版本的 `openpyxl` 与 `pyxlsb`，更新 `uv.lock` 并重建镜像；集成测试在容器中读取合成的 xlsx 和 xlsb 夹具，记录新的镜像 ID。
 - [ ] 6.2 实现 DSBench-Analysis 目录：按题建任务、案例作为分组键、goal 由说明与题面拼接、按允许清单发布数据文件（排除 `.ipynb` 和 `question*.txt` 并记录原因）、答案按序对齐，对齐失败时报错。用合成案例目录测试发布内容、空输入案例、Notebook 排除和答案隔离；真实本地预检 466 题全部通过。
 - [ ] 6.3 在 `python/statigent_evaluation/dsbench.py` 移植语义判定 prompt 与 `true` 解析，并附来源与许可说明；适配器使用 `equivalence` 评委角色，没有回答的单元直接记 0，指标为 `accuracy` 与分组 `case_accuracy`。`uv run pytest` 覆盖解析边界（`Flase`、大小写、空输出），TS 测试覆盖评委失败映射为评分错误。
 - [ ] 6.4 把 DSBench 的上游差分测试加入 `upstream` 入口，用合成判定输入比较移植 prompt 与上游原文；记录评分协议的来源哈希与偏离（评委模型、失败处理、未复现作答设置）。
