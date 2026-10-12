@@ -255,12 +255,15 @@ export async function validateNotebook(notebook: Notebook): Promise<void> {
 export async function exportNotebooks(
   directory: string,
   validate: (notebook: Notebook) => Promise<void> = validateNotebook,
+  finalizingStatus?: string,
 ): Promise<Manifest["export"]> {
   const manifest = await readManifest(directory);
   try {
     const view = buildNotebooks(await readEvents(directory), manifest.run_id);
-    if (!manifest.ended_at) view.reasons.push("run_not_finished");
-    if (manifest.status !== "completed") view.reasons.push("run_not_completed");
+    if (!manifest.ended_at && !finalizingStatus)
+      view.reasons.push("run_not_finished");
+    if ((finalizingStatus ?? manifest.status) !== "completed")
+      view.reasons.push("run_not_completed");
     view.eligible = view.reasons.length === 0;
     const paths: string[] = [];
     for (const [epoch, notebook] of view.notebooks) {
@@ -280,7 +283,15 @@ export async function exportNotebooks(
       eligible: view.eligible,
       reasons: view.reasons,
     };
-    await writeJson(join(directory, "manifest.json"), manifest);
+    await writeJson(
+      join(
+        directory,
+        manifest.schema_version === 1
+          ? `export-${randomUUID()}.json`
+          : "manifest.json",
+      ),
+      manifest,
+    );
     return manifest.export;
   } catch (error) {
     manifest.export = {
@@ -288,7 +299,15 @@ export async function exportNotebooks(
       paths: [],
       error: error instanceof Error ? error.message : String(error),
     };
-    await writeJson(join(directory, "manifest.json"), manifest);
+    await writeJson(
+      join(
+        directory,
+        manifest.schema_version === 1
+          ? `export-${randomUUID()}.json`
+          : "manifest.json",
+      ),
+      manifest,
+    );
     throw error;
   }
 }

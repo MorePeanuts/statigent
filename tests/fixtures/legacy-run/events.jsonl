@@ -1,0 +1,2 @@
+{"type":"dispatch","run_id":"legacy","request":{"request_id":"r1","cell_id":"c1","kernel_epoch":1,"execution_seq":1,"code":"print(1)"}}
+{"type":"finish","run_id":"legacy","result":{"request_id":"r1","cell_id":"c1","kernel_epoch":1,"execution_seq":1,"started":true,"status":"ok","persistence_complete":true,"elapsed_ms":10,"waiting_ms":0}}

@@ -5,7 +5,11 @@ import { DEFAULT_LIMITS, type SessionConfig } from "./execution/protocol";
 import { DockerSession } from "./execution/session";
 import { exportNotebooks } from "./records/notebook";
 import { replayRun } from "./records/replay";
-import { RunRecorder, readManifest } from "./records/store";
+import {
+  inspectModelJournal,
+  RunRecorder,
+  readManifest,
+} from "./records/store";
 
 export const DEMO_CELLS = [
   'import pandas as pd\ndf = pd.read_csv("/input/synthetic.csv")\nprint("rows", len(df))',
@@ -118,7 +122,10 @@ async function main() {
       return exportNotebooks(resolve(value));
     case "inspect":
       if (!value) throw new Error("inspect requires RUN_DIRECTORY");
-      return readManifest(resolve(value));
+      return {
+        ...(await readManifest(resolve(value))),
+        model_journal: await inspectModelJournal(resolve(value)),
+      };
     case "replay":
       if (!value) throw new Error("replay requires RUN_DIRECTORY");
       return replayRun(resolve(value), resolve(extra ?? "runs"));
