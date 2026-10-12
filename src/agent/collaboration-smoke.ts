@@ -143,20 +143,25 @@ export async function checkCollaborationEvidence(result: AgentResult) {
   };
 }
 
-export async function collaborationSmokeMain(args: string[]) {
-  if (args.length)
-    throw new Error(
-      "Fixed smoke takes no arguments; edit/review the committed task for a different experiment",
-    );
-  const config = await loadConfiguration(
+export function loadCollaborationSmokeConfiguration() {
+  return loadConfiguration(
     [
       "--task",
       "configs/tasks/collaboration-report.json",
+      "--model",
+      "deepseek-flash",
       "--runs",
       "runs/collaboration-smoke",
     ],
     true,
   );
+}
+export async function collaborationSmokeMain(args: string[]) {
+  if (args.length)
+    throw new Error(
+      "Fixed smoke takes no arguments; edit/review the committed task for a different experiment",
+    );
+  const config = await loadCollaborationSmokeConfiguration();
   console.log(
     JSON.stringify({
       kind: "explicit_collaboration_smoke",

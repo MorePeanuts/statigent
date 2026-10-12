@@ -3,12 +3,27 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import config from "../../configs/tasks/collaboration-report.json";
-import { checkCollaborationEvidence } from "../../src/agent/collaboration-smoke";
+import {
+  checkCollaborationEvidence,
+  loadCollaborationSmokeConfiguration,
+} from "../../src/agent/collaboration-smoke";
 import { runAgent } from "../../src/agent/run";
 import { exportNotebooks } from "../../src/records/notebook";
 import { fakeRuntime, profile, ScriptClient } from "../helpers/agent";
 import { collaborationScript } from "../helpers/collaboration-script";
 import { png } from "../helpers/images";
+
+test("fixed smoke entry explicitly selects model, task and bounded budget", async () => {
+  const c = await loadCollaborationSmokeConfiguration();
+  expect(c.profile.id).toBe("deepseek-flash");
+  expect(c.task.organization).toBe("planner-executor");
+  expect(c.task.budget).toMatchObject({
+    model_attempts: 20,
+    executions: 10,
+    total_tokens: 400000,
+    task_timeout_ms: 600000,
+  });
+});
 
 test("collaboration smoke verifier requires real delegation/state evidence and correct report", async () => {
   const root = await mkdtemp(join(tmpdir(), "collaboration-smoke-"));
