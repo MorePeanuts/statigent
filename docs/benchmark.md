@@ -153,6 +153,8 @@
 
 例如，答案全部写对是 1 道正确题，不是 4 道正确题。正式实验将无输出和失败也计入分母，避免遗漏失败任务虚增准确率。
 
+统一评测层的接入与使用见 [评测说明](evaluation.md)。其主汇总逐题等权报告 ABQ 和 PSAQ，失败计零；预算停止导致的未运行和评分系统错误标记为不完整，完整批次得分为空。上游兼容结果另列非空回答分母及覆盖率。数据下载、软件接入验证和真实实验结果分别记录，不以合成测试成绩代替基准结果。
+
 [本地问题与数据](../benchmarks/infiagent-dabench/public) · [官方问题](https://github.com/InfiAgent/InfiAgent/blob/main/examples/DA-Agent/data/da-dev-questions.jsonl) · [官方答案](https://github.com/InfiAgent/InfiAgent/blob/main/examples/DA-Agent/data/da-dev-labels.jsonl) · [评分代码](https://github.com/InfiAgent/InfiAgent/blob/main/examples/DA-Agent/eval_closed_form.py)
 
 论文：Xueyu Hu 等，[*InfiAgent-DABench: Evaluating Agents on Data Analysis Tasks*](https://arxiv.org/abs/2401.05507)，ICML 2024。这里的 257 题是公开 validation 集，不是隐藏测试集。

@@ -1,0 +1,341 @@
+{
+  "commit": "3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c",
+  "resources": [
+    {
+      "path": "upstream/LICENSE",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/LICENSE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "path": "private/labels.jsonl",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-labels.jsonl",
+      "bytes": 23680,
+      "sha256": "83b8fb8133c1794fcb6b42435e9cce124d22f68b71e2eedb37c973e40b5a18c2"
+    },
+    {
+      "path": "public/questions.jsonl",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-questions.jsonl",
+      "bytes": 217518,
+      "sha256": "49ae783b20ecb60449ce1443c524e89f8ca8353a04e05e4d14a055b7a6f06126"
+    },
+    {
+      "path": "public/tables/0020200722.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/0020200722.csv",
+      "bytes": 32429,
+      "sha256": "d9b292cecc04c3993caf084927a1318feb990e641accc966d367eedc6d9c349a"
+    },
+    {
+      "path": "public/tables/2014_q4.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/2014_q4.csv",
+      "bytes": 5615,
+      "sha256": "f1ec88490c4cf2fde96a2783f2962743a126e66e59b16d83378192941b5dbd82"
+    },
+    {
+      "path": "public/tables/2015.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/2015.csv",
+      "bytes": 16557,
+      "sha256": "d79be64d11b4e36159242055e028e29ee6b4c3da6838e62d7a925bdde26eab5d"
+    },
+    {
+      "path": "public/tables/20170413_000000_group_statistics.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/20170413_000000_group_statistics.csv",
+      "bytes": 5692,
+      "sha256": "17da5edda18a5a5c2168f5f06a0a90604efef810cac0d17492723ddad2685753"
+    },
+    {
+      "path": "public/tables/3901.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/3901.csv",
+      "bytes": 221938,
+      "sha256": "6d488bbdc2e708acc82bcda862ae8eb78fc657d663a1e8806dc6acc935c158f1"
+    },
+    {
+      "path": "public/tables/Credit.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/Credit.csv",
+      "bytes": 21967,
+      "sha256": "eb75b3d418d190a4b71f01a8333c49819928591b5a0e1f595546f1987358f875"
+    },
+    {
+      "path": "public/tables/Current_Logan.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/Current_Logan.csv",
+      "bytes": 2405,
+      "sha256": "045a58d23610362327912f887c6bf24e0ddde01a46bcf1f2ea8acda47e05b350"
+    },
+    {
+      "path": "public/tables/DES=+2006261.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/DES%3D%2B2006261.csv",
+      "bytes": 40500,
+      "sha256": "753bcb0a243256986b0b663666d0bbf5dd273f0de753ad0705be1c9cbacf8f83"
+    },
+    {
+      "path": "public/tables/GODREJIND.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/GODREJIND.csv",
+      "bytes": 116303,
+      "sha256": "55770473647050ba8f11d46108aac81f38df600e8261b105321fffd5c5a6ecec"
+    },
+    {
+      "path": "public/tables/YAHOO-BTC_USD_D.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/YAHOO-BTC_USD_D.csv",
+      "bytes": 173887,
+      "sha256": "ddbd797b7db4999bbb7e836ad928aba56bea7a5dbeb516afb7d63fd42662a328"
+    },
+    {
+      "path": "public/tables/Zip_MedianSoldPricePerSqft_AllHomes.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/Zip_MedianSoldPricePerSqft_AllHomes.csv",
+      "bytes": 394007,
+      "sha256": "f4dac692bdc69c427a63fe3e77eda2c7ca07c7eb1bdb52a3061b0b91c66f4b7b"
+    },
+    {
+      "path": "public/tables/abalone.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/abalone.csv",
+      "bytes": 191962,
+      "sha256": "6fda3c4b0c0cff9bd5f7a46434509179069ed620c8fc7090d872a08d2c1a729a"
+    },
+    {
+      "path": "public/tables/arrest_expungibility.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/arrest_expungibility.csv",
+      "bytes": 670664,
+      "sha256": "c985ca12445770b8559667f3a4c8d18166571b114f2d1c4dc2ac1b3a56c94b39"
+    },
+    {
+      "path": "public/tables/auto-mpg.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/auto-mpg.csv",
+      "bytes": 14179,
+      "sha256": "555a2b668da52d7431215df842fb073d1ad220c56d4ac6ec359c0ae9b1beea6b"
+    },
+    {
+      "path": "public/tables/baro_2015.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/baro_2015.csv",
+      "bytes": 382752,
+      "sha256": "34919769cf48ec84fc6358cc1c2f27b56a4e624af293f3ffcd7531f00bcc1d8a"
+    },
+    {
+      "path": "public/tables/baseball_data.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/baseball_data.csv",
+      "bytes": 21647,
+      "sha256": "ffcf9e1931e1fa882782df55c638d8f698a0487c7048126bfcefe088f22e4cf7"
+    },
+    {
+      "path": "public/tables/beauty and the labor market.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/beauty%20and%20the%20labor%20market.csv",
+      "bytes": 64937,
+      "sha256": "dba6fb21faf1fd88e99f8e55770de819d7cb6db213780d13a42e2f8b3289dbca"
+    },
+    {
+      "path": "public/tables/bitconnect_price.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/bitconnect_price.csv",
+      "bytes": 15668,
+      "sha256": "c970dd13f2e735fc9a654f69ef6c9669ff2d0466f01eccee000d1dc6e24f5bc2"
+    },
+    {
+      "path": "public/tables/city_departments_in_current_budget.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/city_departments_in_current_budget.csv",
+      "bytes": 2677,
+      "sha256": "8fcaca49cb80ea8345bcee68d545c2046b016de71f5989cd7459a451b75ece51"
+    },
+    {
+      "path": "public/tables/cost_data_with_errors.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/cost_data_with_errors.csv",
+      "bytes": 82522,
+      "sha256": "83efce074700d226453f08c9b8faddc4703c70ae0e1888e8e8422994416d1ce0"
+    },
+    {
+      "path": "public/tables/country_vaccinations.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/country_vaccinations.csv",
+      "bytes": 680231,
+      "sha256": "eb38b5933c1dafbd884a9042c23afc5181bedf6c434d941115444284ea215fcc"
+    },
+    {
+      "path": "public/tables/e5_aapl.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/e5_aapl.csv",
+      "bytes": 34849,
+      "sha256": "d81f47727583df630307cc7d648d0f30ae5fea79fe9ff8ad799db344c36f7ae2"
+    },
+    {
+      "path": "public/tables/election2016.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/election2016.csv",
+      "bytes": 291557,
+      "sha256": "b2d37e2153fa661b710170db1c9b2d62cef2baf2910535bd5600c32892f48a45"
+    },
+    {
+      "path": "public/tables/estimated_numbers.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/estimated_numbers.csv",
+      "bytes": 66590,
+      "sha256": "bc485997a837c738907ac5b03aef0f4d0a938edb415861ab37af22bdd243329c"
+    },
+    {
+      "path": "public/tables/fb_articles_20180822_20180829_df.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/fb_articles_20180822_20180829_df.csv",
+      "bytes": 927008,
+      "sha256": "506726b8aa93fd36bdb626a4c5fa702295a2207e6b2536e82f738d9cc2522050"
+    },
+    {
+      "path": "public/tables/ferret-Pitt-2-preinf-lib2-100_sitediffsel.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/ferret-Pitt-2-preinf-lib2-100_sitediffsel.csv",
+      "bytes": 57084,
+      "sha256": "c9e411ff75df8d966f6e5de9270a4a7276289c478a6b7aa216ce667eac66f540"
+    },
+    {
+      "path": "public/tables/gapminder_cleaned.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/gapminder_cleaned.csv",
+      "bytes": 82019,
+      "sha256": "9e6f0a924da3b91a0c7ba24260f773f8648deb2475ca4bbd5d16f1366a0b45a7"
+    },
+    {
+      "path": "public/tables/gapminder_gdp_asia.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/gapminder_gdp_asia.csv",
+      "bytes": 5103,
+      "sha256": "d59ff928054c78dfb6613046d306fbc044ef754c6ca3b2aff71b661a240f869e"
+    },
+    {
+      "path": "public/tables/hotel_data.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/hotel_data.csv",
+      "bytes": 83961,
+      "sha256": "581144a1a813e187abc75c3db8f71c25cbec27afe7956e9be9de369acde1c0f7"
+    },
+    {
+      "path": "public/tables/imp.score.ldlr.metabolome.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/imp.score.ldlr.metabolome.csv",
+      "bytes": 55375,
+      "sha256": "8aa6112a864d4491ec14b7821f0ce889a6f751793ec30c7b9d86c5443e25c553"
+    },
+    {
+      "path": "public/tables/insurance.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/insurance.csv",
+      "bytes": 55628,
+      "sha256": "388eff679557d08ac19f463d025de5e0b4adc482537c8456d19934d78621fd47"
+    },
+    {
+      "path": "public/tables/microsoft.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/microsoft.csv",
+      "bytes": 11515,
+      "sha256": "6d0f08343d42a5ad45d1eb2275a99416aa8a0b26be03fe5e74538cff31352292"
+    },
+    {
+      "path": "public/tables/my_test_01.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/my_test_01.csv",
+      "bytes": 23732,
+      "sha256": "3134c6c7260510da5aaa33441743d7aaa52efd88fc4d443e7c7a98f80d734c25"
+    },
+    {
+      "path": "public/tables/oecd_education_spending.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/oecd_education_spending.csv",
+      "bytes": 9476,
+      "sha256": "16c4564a091ba48b093da27ec01e07c99bb16d038076f4676c2e54c7e7aa9b1e"
+    },
+    {
+      "path": "public/tables/percent-bachelors-degrees-women-usa.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/percent-bachelors-degrees-women-usa.csv",
+      "bytes": 5681,
+      "sha256": "4f3a2a6a6b15fcddddde55bb48a9a3d78cd9557e0538e83d8c972c0b953da5b0"
+    },
+    {
+      "path": "public/tables/random_stock_data.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/random_stock_data.csv",
+      "bytes": 31050,
+      "sha256": "27c593b871b4fae87cec46e2575065113e0742ab4c73bd7658a0cd92001ded1b"
+    },
+    {
+      "path": "public/tables/ravenna_250715.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/ravenna_250715.csv",
+      "bytes": 2306,
+      "sha256": "323831969f08919961b36bb8f6b06f06493b25b01a5cf4fb649f7b39224df7de"
+    },
+    {
+      "path": "public/tables/test_Y3wMUE5_7gLdaTN.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/test_Y3wMUE5_7gLdaTN.csv",
+      "bytes": 21589,
+      "sha256": "2248e254edd4260a5cbae11856115d3d0336396239188e970c18c6e12dda4cd8"
+    },
+    {
+      "path": "public/tables/test_ave.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/test_ave.csv",
+      "bytes": 55169,
+      "sha256": "411cf03455d6026823fbd3ab65e2839075a22f9a5c088b85aef0d272d79cca00"
+    },
+    {
+      "path": "public/tables/test_x.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/test_x.csv",
+      "bytes": 7159,
+      "sha256": "fef103a434692c5f60ee2a7247ca743da04d3de3b1893d0a3ab42a073ad99b67"
+    },
+    {
+      "path": "public/tables/titanic.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/titanic.csv",
+      "bytes": 61194,
+      "sha256": "7d118fef8b6ccf7f81111877bc388536f7b1e498a655e3d649d19aaa010e9f6f"
+    },
+    {
+      "path": "public/tables/titanic_test.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/titanic_test.csv",
+      "bytes": 28210,
+      "sha256": "5c78320a80dc159b35c408363be46a5d93f078183d539db75ee42a796d6a4e95"
+    },
+    {
+      "path": "public/tables/titanic_train.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/titanic_train.csv",
+      "bytes": 60302,
+      "sha256": "4a437fde05fe5264e1701a7387ac6fb75393772ba38bb2c9c566405af5af4bd7"
+    },
+    {
+      "path": "public/tables/tr_eikon_eod_data.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/tr_eikon_eod_data.csv",
+      "bytes": 209046,
+      "sha256": "eb59a911fcc95b0b7fd5df55ce9349850dd20e6ae9c8efc9e5db308151c9a5f4"
+    },
+    {
+      "path": "public/tables/traj-Osak.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/traj-Osak.csv",
+      "bytes": 67251,
+      "sha256": "a7c439f3f74f6f096579a66fe17d191f600556bacdf4d15060589a4f36912691"
+    },
+    {
+      "path": "public/tables/tree.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/tree.csv",
+      "bytes": 699211,
+      "sha256": "2d0abdcd475f0394b8f2f106faf14e1ae86887c20c3d23bb0541e1a20ef73129"
+    },
+    {
+      "path": "public/tables/ts-sc4-wi100000-sl25000-Qrob_Chr05.tree_table.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/ts-sc4-wi100000-sl25000-Qrob_Chr05.tree_table.csv",
+      "bytes": 2295032,
+      "sha256": "3e0540386cf89b4f5e1d7f2760f9aa3885ea21119d3b12e9e5c07056caae7367"
+    },
+    {
+      "path": "public/tables/unemployement_industry.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/unemployement_industry.csv",
+      "bytes": 4254,
+      "sha256": "405fa22312675badef5b1e8ee7d47122af71584814a39ba7e6a7b9eea1fa7ca2"
+    },
+    {
+      "path": "public/tables/veracruz 2016.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/veracruz%202016.csv",
+      "bytes": 828158,
+      "sha256": "3c8492f5f163a5a74a53c10f993234b2db3e694aee85d2a0e658f70a2828e680"
+    },
+    {
+      "path": "public/tables/weather_data_1864.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/weather_data_1864.csv",
+      "bytes": 285512,
+      "sha256": "6bd35d0c907e8c70ba15cced1d773e0e31b7bfff9f4251719e7740111958aef9"
+    },
+    {
+      "path": "public/tables/weather_train.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/weather_train.csv",
+      "bytes": 840734,
+      "sha256": "c9bd23cabbba04970b574259b62025c9ac08ef103ae760f66e353b73116620c0"
+    },
+    {
+      "path": "public/tables/well_2_complete.csv",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/data/da-dev-tables/well_2_complete.csv",
+      "bytes": 699451,
+      "sha256": "003079038a1763367cbcaa9a2bcc223fd1d4c3d8ad7e2315cdb5975fcc62dc6c"
+    },
+    {
+      "path": "upstream/examples/DA-Agent/eval_closed_form.py",
+      "url": "https://raw.githubusercontent.com/InfiAgent/InfiAgent/3d6c4a70198e0a41fadf539f5b43c88b8c1a2d9c/examples/DA-Agent/eval_closed_form.py",
+      "bytes": 8634,
+      "sha256": "8c4cbeed80c6c95aca65f72cea3213581629e81894a0fa5a496f22726b6e4501"
+    }
+  ]
+}

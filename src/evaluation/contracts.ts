@@ -407,6 +407,7 @@ export function validateInvocation(value: unknown): Invocation {
   };
 }
 export interface BenchmarkAdapter {
+  compatibility?(scores: Score[]): Promise<Record<string, unknown>>;
   id: string;
   version: string;
   protocol: string;
