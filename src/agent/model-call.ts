@@ -10,6 +10,7 @@ import type { ModelProfile } from "../models/config";
 import type {
   AgentMetadata,
   AgentRole,
+  CollaborationRecord,
   ModelMetadata,
   TokenLedger,
 } from "../records/agent-metadata";
@@ -17,12 +18,14 @@ import type { RunRecorder } from "../records/store";
 import type { AgentTask } from "./config";
 import { Stop } from "./stop";
 export interface CallContext {
-  task: AgentTask;
+  task: Pick<AgentTask, "budget">;
   profile: ModelProfile;
   client: ModelClient;
-  recorder: RunRecorder;
+  recorder: Pick<RunRecorder, "modelEvent"> & {
+    manifest: { collaboration?: CollaborationRecord };
+  };
   tokens: TokenLedger;
-  agent: AgentMetadata;
+  agent: Pick<AgentMetadata, "remaining">;
   signal: AbortSignal;
   remainingTime: () => number;
   checkClock: () => void;

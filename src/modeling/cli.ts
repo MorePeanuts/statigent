@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { prepareDataset } from "./data";
+import { inspectModeling } from "./records";
 export function flags(
   args: string[],
   allowed: string[],
@@ -21,6 +22,11 @@ export function flags(
   return out;
 }
 export async function modelingMain(args: string[]): Promise<unknown> {
+  if (args[0] === "inspect") {
+    const f = flags(args.slice(1), ["--run"]);
+    if (!f["--run"]) throw new Error("inspect requires --run");
+    return inspectModeling(resolve(f["--run"]));
+  }
   if (args[0] !== "prepare")
     throw new Error(
       "Usage: modeling prepare --config CONFIG --out NEW_DIRECTORY",

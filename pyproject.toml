@@ -12,6 +12,9 @@ dependencies = [
   # DSBench-Analysis ships .xlsx/.xlsm workbooks (openpyxl) and .xlsb workbooks (pyxlsb).
   "openpyxl==3.1.5",
   "pyxlsb==1.0.10",
+  "scikit-learn==1.7.2",
+  "scipy==1.16.2",
+  "joblib==1.5.2",
 ]
 
 [dependency-groups]
