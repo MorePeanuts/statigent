@@ -79,17 +79,24 @@ export function validateTask(value: unknown): AgentTask {
     throw new Error("Explicit unique input files required");
   config.inputs.forEach(safeRelativePath);
   const { run_id: _runId, staging_root: _staging, ...execution } = config;
+  const organization = validateOrganization(x.organization);
+  const report =
+    x.report === undefined || x.report === null
+      ? null
+      : validateReportSpec(x.report);
+  if (report && organization === "planner-executor")
+    report.max_report_bytes = Math.min(
+      report.max_report_bytes,
+      config.limits.max_artifact_bytes,
+    );
   return {
-    organization: validateOrganization(x.organization),
+    organization,
     goal: str(x.goal, "goal"),
     constraints: strings(x.constraints ?? [], "constraints"),
     model_profile: str(x.model_profile, "model_profile"),
     execution: { ...execution, input_root: resolve(execution.input_root) },
     budget,
-    report:
-      x.report === undefined || x.report === null
-        ? null
-        : validateReportSpec(x.report),
+    report,
   };
 }
 export async function preflightInputs(task: AgentTask): Promise<void> {

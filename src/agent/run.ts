@@ -42,9 +42,15 @@ import {
   ROLE_PROMPTS,
   roleInitialMessages,
 } from "./collaboration-prompt";
+import {
+  type ReturnedImage,
+  returnedImages,
+  validatePlannerReport,
+} from "./collaboration-report";
 import { type AgentTask, preflightInputs, validateTask } from "./config";
 import { modelCaller } from "./model-call";
 import { initialMessages, promptVersion, SYSTEM_PROMPT } from "./prompt";
+import type { AnalysisReport } from "./report";
 import { resolveReport } from "./report";
 import { Stop } from "./stop";
 export type AgentStatus =
@@ -271,6 +277,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
     executor: roleInitialMessages(task, "executor"),
   };
   const visibleEvidence = new Set<string>();
+  const visibleImages = new Map<string, ReturnedImage>();
   const seenIds = new Set<string>();
   const evidence = new Set<string>();
   let successes = 0;
@@ -307,6 +314,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
       }
       messages.push(response.message);
       let action: RoleAction | undefined;
+      let reportImages: AnalysisReport["images"] | undefined;
       let invalid: string | undefined;
       try {
         if (calls.length !== 1)
@@ -344,6 +352,23 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
             action.report_artifact_id,
             task.report,
           );
+        if (
+          action.kind === "finish" &&
+          collaboration &&
+          task.report &&
+          action.report_markdown
+        ) {
+          recorder.validateReportSize(
+            Buffer.byteLength(action.report_markdown),
+          );
+          reportImages = await validatePlannerReport(
+            action.report_markdown,
+            recorder.directory,
+            recorder.manifest.artifacts,
+            visibleImages,
+            task.report,
+          );
+        }
       } catch (error) {
         invalid = error instanceof Error ? error.message : "Invalid action";
       }
@@ -418,7 +443,17 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
           ...new Set(action.result.findings.flatMap((f) => f.evidence_refs)),
         ];
         for (const ref of subtask.evidence_refs) visibleEvidence.add(ref);
-        const feedback = { ...action.result, remaining: agent.remaining };
+        const images = await returnedImages(
+          recorder.directory,
+          recorder.manifest.artifacts,
+          subtask.evidence_refs,
+        );
+        for (const image of images) visibleImages.set(image.reference, image);
+        const feedback = {
+          ...action.result,
+          images,
+          remaining: agent.remaining,
+        };
         await recorder.modelEvent(
           "subtask_returned",
           { ...identity(), tool_id: calls[0]?.id, attempt_id: attemptId },
@@ -446,8 +481,21 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
           await recorder.modelEvent(
             "analysis_submitted",
             { ...identity(), attempt_id: attemptId, tool_id: calls[0]?.id },
-            action.analysis,
+            action,
           );
+        if (collaboration && action.report_markdown && reportImages) {
+          const call = calls[0];
+          if (!call) throw new Stop("failed", "missing_tool");
+          const report = await recorder.savePlannerReport(
+            action.report_markdown,
+            { role: "planner", attempt_id: attemptId, tool_id: call.id },
+          );
+          action.analysis.report = {
+            artifact_id: report.artifact_id,
+            source_path: "report.md",
+            images: reportImages,
+          };
+        }
         analysis = action.analysis;
         await writeJson(join(recorder.directory, "analysis.json"), {
           run_id: runId,

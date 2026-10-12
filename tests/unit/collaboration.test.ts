@@ -19,7 +19,6 @@ import {
   call,
   fakeRuntime,
   finish,
-  lastFeedback,
   profile,
   reply,
   ScriptClient,

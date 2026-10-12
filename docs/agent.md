@@ -68,6 +68,10 @@ DeepSeek 示例请求 `deepseek-flash`，展示 DeepSeek-V4.1-Flash；别名不�
 
 ## 报告输出
 
+双角色示例为 `configs/tasks/collaboration-report.json`，通过 `bun run agent run --task configs/tasks/collaboration-report.json --model deepseek-flash` 显式运行。执行者生成图表，返回结果中的 `images` 给出绑定特定产物快照的相对引用；规划者用 `report_markdown` 撰写最终正文，宿主校验后保存。`analysis.report` 保持原结构，双角色图片的 `path`/`reference` 为交付别名，不是执行工作区路径；同名文件后续覆盖不改变已返回的图表快照。
+
+报告上限取任务的 `max_report_bytes` 与执行产物单文件上限的较小值，并受累计保存额度约束。两角色都未视觉观察图片。宿主报告记录 planner 来源；代码重放只执行 Notebook 单元，不重新生成规划者报告。单智能体仍使用下述 `report_artifact_id` 路径。
+
 任务配置可以带 `report`（`image_types`、`max_images`、`max_image_bytes`、`max_report_bytes`），要求以 Markdown 报告结束，例如 `configs/tasks/synthetic-report.json`。系统提示词不变；报告要求以约束和工具说明传达，元数据中提示词版本记为 `eda-single-v1+report-v1`，提示词哈希与文本任务相同。文本任务的工具 schema 和提示词版本（`eda-single-v1`）保持原样。
 
 模型用 `execute_python` 在工作目录写 `.md` 报告，并把图表保存为同目录（或子目录）下的 PNG/JPEG 文件；这些文件按工作区快照保存为产物。完成时 `finish_analysis` 必须额外给出 `report_artifact_id`，即报告文件对应的 artifact_id。宿主校验：

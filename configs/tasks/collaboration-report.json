@@ -1,0 +1,9 @@
+{
+  "organization": "planner-executor",
+  "goal": "分析 synthetic.csv 的分组差异：识别均值最高的组，根据该结果进一步检查该组内各观察值相对组均值的偏差，评估样本量对解释的限制。提交含分组均值图表的 Markdown 报告，findings 的结构化 value 中保存 group_means 和最高均值组的 centered_values。",
+  "constraints": ["使用全部允许的输入数据，保留中间数据供后续分析复用。", "图表只依据计算结果描述，不声称看过图像。"],
+  "model_profile": "deepseek-flash",
+  "execution": {"image": "statigent-runtime:dev", "input_root": "tests/fixtures", "inputs": ["synthetic.csv"], "seed": 42},
+  "budget": {"model_attempts": 20, "executions": 10, "total_tokens": 400000, "task_timeout_ms": 600000},
+  "report": {"image_types": ["png", "jpeg"], "max_images": 3, "max_image_bytes": 524288, "max_report_bytes": 131072}
+}

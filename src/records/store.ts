@@ -496,6 +496,42 @@ export class RunRecorder {
       return ref;
     });
   }
+  validateReportSize(bytes: number): void {
+    if (
+      bytes > (this.options.maxArtifactBytes ?? 16 * 1024 * 1024) ||
+      bytes + this.totalArtifactBytes >
+        (this.options.maxTotalArtifactBytes ?? 128 * 1024 * 1024)
+    )
+      throw new Error("Report exceeds artifact persistence limit");
+  }
+  async savePlannerReport(
+    markdown: string,
+    origin: NonNullable<ArtifactReference["origin"]>,
+  ): Promise<ArtifactReference> {
+    return this.enqueue(async () => {
+      if (
+        this.manifest.schema_version !== 3 ||
+        this.collaborationJournal.active !== null
+      )
+        throw new Error("Planner report requires completed subtask routing");
+      const ref = await this.storeArtifact(
+        Buffer.from(markdown),
+        "text/markdown",
+        {},
+        true,
+      );
+      ref.origin = origin;
+      ref.delivery_path = "report.md";
+      await this.append({
+        type: "report_saved",
+        at: new Date().toISOString(),
+        run_id: this.manifest.run_id,
+        artifact: ref,
+      });
+      await this.saveManifest();
+      return ref;
+    });
+  }
   async modelEvent(
     type: string,
     fields: Record<string, unknown>,
@@ -684,6 +720,19 @@ export async function readManifest(directory: string): Promise<Manifest> {
     nonnegative(ref.size_bytes, "artifact size");
     if (typeof ref.complete !== "boolean")
       throw new Error("Invalid completeness");
+    if (ref.origin !== undefined) {
+      const origin = object(ref.origin);
+      if (
+        value.schema_version !== 3 ||
+        origin.role !== "planner" ||
+        ref.cell_id !== undefined ||
+        ref.source_path !== undefined
+      )
+        throw new Error("Invalid planner report origin");
+      textField(origin.attempt_id, "report attempt");
+      textField(origin.tool_id, "report tool");
+      safeRelativePath(textField(ref.delivery_path, "report delivery path"));
+    }
   }
   for (const key of ["started_at", "status"]) textField(value[key], key);
   if (value.ended_at !== null) textField(value.ended_at, "ended_at");
