@@ -1,0 +1,18 @@
+{
+  "mode": "deterministic",
+  "seed": 42,
+  "prediction_timeout_seconds": 30,
+  "task_template": {
+    "method": "no_eda",
+    "confirmation": { "mode": "none" },
+    "resource_version": "tabarena-system-verification-v1",
+    "goal": "使用允许的训练数据建立固定、可复现的预测流水线，用于软件链路验收。",
+    "image": "statigent-runtime:modeling-benchmarks",
+    "budget": {
+      "task_timeout_ms": 300000,
+      "fit_timeout_ms": 60000,
+      "predict_timeout_ms": 30000,
+      "final_reserve_ms": 100000
+    }
+  }
+}

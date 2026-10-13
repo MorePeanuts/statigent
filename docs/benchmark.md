@@ -328,7 +328,7 @@ credit_score,country,gender,age,tenure,balance,products_number,credit_card,activ
 
 ### 下载范围与实验清单的区别
 
-建模适配现已建立 [全候选目录](../benchmarks/metadata/modeling-task-catalog.json) 和 [DSBench 逐题审计矩阵](modeling-dsbench-audit.md)，`bun run evaluate audit` 可执行只读来源/结构审计。2026-10-14 的 103 项来源检查未发现哈希错误，RPG 的 104 个固定参考成员均可安全解析且方向一致；完整解码、内部划分、资源与模型执行尚须分层验收。TabArena 固定官方接口/指标探针在独立锁定环境通过，尚不代表本项目 system wrapper 或真实任务已接入，见 [兼容环境](../environments/tabarena/README.md)。
+建模适配现已建立 [全候选目录](../benchmarks/metadata/modeling-task-catalog.json) 和 [DSBench 逐题审计矩阵](modeling-dsbench-audit.md)，`bun run evaluate audit` 可执行只读来源/结构审计。2026-10-14 的 103 项来源检查未发现哈希错误，RPG 的 104 个固定参考成员均可安全解析且方向一致；完整解码、内部划分、资源与模型执行尚须分层验收。TabArena 固定官方接口/指标探针及本项目 system wrapper 的合成真实调用已在独立锁定环境通过；小型真实 r0f0 与付费智能体验收仍待执行，见 [兼容环境](../environments/tabarena/README.md)。
 
 主兼容口径依据发布评分实现：s3e13 使用前三命中而非位置加权；s3e19 双零属于未定义边界；s3e20、s3e23 的误导变量分别实际计算 RMSE、AUC。s3e18 的 EC3–EC6 以及 bike-sharing-demand 的 casual/registered 均不能进入预测特征。原题面不改写，差异公开记录；后续修订公式需要独立版本和参考。
 

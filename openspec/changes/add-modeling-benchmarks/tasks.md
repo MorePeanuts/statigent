@@ -42,8 +42,8 @@
 - [x] 5.1 从现有 finalize/experiment/delivery 抽取 fit-only 冻结模型阶段，明确 model_frozen、待预测及不完整交付；测试没有测试文件也能完成合法内部搜索/确认/最终拟合，模型冻结后无新增 LLM。
 - [x] 5.2 实现受控 frozen-model predict 入口及每次独立输入/输出记录，模型只在 Docker 内加载；验证两次合法预测复用同一模型且零新增拟合/LLM，坏输入、超时、取消和预测失败不回到搜索。
 - [x] 5.3 将普通 modeling run 组合为完整 fit→predict 流程，保持父总时限、收尾预留和保护交付；回归测试未知 LLM 用量、连续无进展、用户取消、总超时及清理失败，确认没有放宽原确认条件。
-- [ ] 5.4 实现有界受信 Bun/Python 桥接与 TabArena system wrapper，映射固定接口的指标、种子、CPU/内存/时间和类别返回；在固定官方环境运行可控模型合成 system 用例，验证无外部 HPO、无提前测试访问、取消和定向清理。
-- [ ] 5.5 文档记录 standalone 与 system 的 fit/predict 时间边界、生命周期及可选环境安装；按说明验证无模型 wrapper 示例，并列本地链路与官方兼容验收状态。
+- [x] 5.4 实现有界受信 Bun/Python 桥接与 TabArena system wrapper，映射固定接口的指标、种子、CPU/内存/时间和类别返回；在固定官方环境运行可控模型合成 system 用例，验证无外部 HPO、无提前测试访问、取消和定向清理。
+- [x] 5.5 文档记录 standalone 与 system 的 fit/predict 时间边界、生命周期及可选环境安装；按说明验证无模型 wrapper 示例，并列本地链路与官方兼容验收状态。
 
 ## 6. 统一评测契约与建模适配器
 

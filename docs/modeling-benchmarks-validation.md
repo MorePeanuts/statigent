@@ -11,7 +11,9 @@
 | 数据准备与隔离检查 | 43 个相关 Python 快速用例、4 个 TS 加载/评分用例通过 | 原生训练另见后续行，统一批次待接入 |
 | DSBench 真实发布数据准备 | Titanic、Bike Sharing、s3e5、s3e13、s3e18、s4e3 六项通过 | 源哈希不变；没有拟合模型 |
 | TabArena 真实准备 | 363612、363621、363685 三项通过 | ARFF/Parquet 合成解码均通过；APSFailure 真实准备待执行 |
-| 官方 system 接口探针 | 固定可选环境安装与无训练探针通过 | Statigent 薄 wrapper 未验收 |
+| 官方 system 接口探针 | 固定可选环境安装与无训练探针通过 | 薄 wrapper 的实际调用另列 |
+| 官方 Statigent system | 固定官方类的回归/二分类/多分类实际 Docker 拟合、两次延迟预测、同预测评分对照及资源拒绝共 7 项通过（117.38 秒）；取消、定向清理及零新增 LLM/拟合断言通过 | 合成数据，零真实 LLM；真实 r0f0 待执行；独立运行根目录 `runs/tabarena-system-synthetic-verify-v1` |
+| system 有界桥接及文档示例 | 5 个桥接快速用例、2 个 TS 协议用例通过；有界读取/截止时间更新后，官方二分类及资源拒绝 5 项补充回归通过（42.68 秒） | 文档 CLI 二分类示例通过，索引 `runs/tabarena-system-example/6ec0c891-3ac5-4112-865a-43575de74b10/system-verification.json`；零付费调用 |
 | 显式准备 CLI | Titanic、airfoil 新建及 Titanic 只读复用实际通过；3 个服务测试、6 个 CLI/原评测回归通过 | 源和准备哈希核对；独立回执保留本次及原始成本 |
 | stage 4 隔离 runner | 23 个新旧 Python runner 用例及 6 个真实 Docker 拟合/独立加载预测用例通过 | 回归、二分类、有序类别、前三候选、双/七目标；父级交付另见后续行 |
 | 共用实验生命周期 | 新版等级、前三候选、七目标的搜索、诊断、两次确认及最终 fit-only 共 3 个 Docker 用例通过；同次 7 个旧实验回归通过（共 10 例，159 项断言） | 实际移走测试特征目录后仍完成内部阶段；零付费调用 |

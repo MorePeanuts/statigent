@@ -7,13 +7,8 @@ from importlib.metadata import version
 from pathlib import Path
 
 
-def verify() -> dict:
-    import numpy as np
-    import pandas as pd
-    from autogluon.core.data.label_cleaner import LabelCleaner
-    from autogluon.core.metrics import get_metric
+def verify_environment() -> dict:
     from tabarena.benchmark.exec_models import ExternalSystemModel
-    from tabarena.benchmark.experiment.experiment_runner import evaluate
 
     root = Path(__file__).resolve().parents[2]
     manifest = json.loads(
@@ -46,6 +41,18 @@ def verify() -> dict:
             != resource["sha256"]
         ):
             raise ValueError(f"Official code hash mismatch: {relative}")
+    return manifest
+
+
+def verify() -> dict:
+    import numpy as np
+    import pandas as pd
+    from autogluon.core.data.label_cleaner import LabelCleaner
+    from autogluon.core.metrics import get_metric
+    from tabarena.benchmark.exec_models import ExternalSystemModel
+    from tabarena.benchmark.experiment.experiment_runner import evaluate
+
+    manifest = verify_environment()
 
     class Probe(ExternalSystemModel):
         def _fit_system(self, X, y, **kwargs):
@@ -132,7 +139,7 @@ def verify() -> dict:
             "roc_auc": float(binary_error),
             "log_loss": float(logloss),
         },
-        "statigent_wrapper": "not_implemented",
+        "statigent_wrapper": "separate_explicit_verification",
         "real_tasks": "not_run",
     }
 
