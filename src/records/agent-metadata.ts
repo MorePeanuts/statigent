@@ -176,7 +176,10 @@ export function validateAgentFields(value: Record<string, unknown>): void {
   if (agent.termination !== null) str(agent.termination, "termination");
   if (agent.final_result !== null && agent.final_result !== "analysis.json")
     throw new Error("Invalid final result path");
-  if (value.schema_version === 3) {
+  if (
+    value.schema_version === 3 ||
+    (value.schema_version === 4 && value.collaboration !== undefined)
+  ) {
     const c = obj(value.collaboration);
     keys(c, ["organization", "roles", "subtasks"]);
     if (c.organization !== "planner-executor")
@@ -268,6 +271,6 @@ export function validateAgentFields(value: Record<string, unknown>): void {
     )
       throw new Error("Subtask totals do not match executor ledger");
   } else if (value.collaboration !== undefined) {
-    throw new Error("Collaboration requires manifest v3");
+    throw new Error("Collaboration requires manifest v3 or v4");
   }
 }

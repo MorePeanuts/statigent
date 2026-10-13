@@ -12,6 +12,12 @@ import {
   validateAgentFields,
 } from "./agent-metadata";
 import { CollaborationJournal } from "./collaboration-journal";
+import {
+  type ExecutionMetadata,
+  executionMetadata,
+  validateExecutionMetadata,
+} from "./execution-metadata";
+import { ScriptJournal } from "./script-journal";
 
 export interface RecordEvent {
   type: string;
@@ -29,6 +35,7 @@ export interface ArtifactReference {
   complete: boolean;
   source_path?: string;
   cell_id?: string;
+  execution_id?: string;
   request_id?: string;
   kernel_epoch?: number;
   origin?: { role: "planner"; attempt_id: string; tool_id: string };
@@ -45,7 +52,8 @@ export interface ImageIdentity {
   digests?: string[];
 }
 export interface Manifest {
-  schema_version: 1 | 2 | 3;
+  schema_version: 1 | 2 | 3 | 4;
+  execution?: ExecutionMetadata;
   collaboration?: CollaborationRecord;
   run_kind?: "runtime" | "agent" | "code_replay";
   agent?: "not_applicable" | AgentMetadata;
@@ -69,7 +77,14 @@ export interface Manifest {
     status: "not_collected" | "complete" | "incomplete_or_unknown";
     reason: string | null;
   };
-  export: { status: string; paths: string[]; error?: string };
+  export: {
+    status: string;
+    paths: string[];
+    error?: string;
+    kind?: "notebook" | "scripts";
+    notebook_status?: "not_applicable";
+    directory?: string;
+  };
   replay: { eligible: boolean; reasons: string[]; result: string };
   timing: {
     wall_ms: number;
@@ -78,6 +93,13 @@ export interface Manifest {
     wait_ms: number;
     cleanup_ms: number;
     execution_count: number;
+    script_stages?: {
+      process_startup_ms: number;
+      execution_ms: number;
+      collection_ms: number;
+      cleanup_ms: number;
+      unknown_stages: number;
+    };
   };
 }
 export function object(value: unknown): Record<string, unknown> {
@@ -167,6 +189,7 @@ export class RunRecorder {
   private seenCompleted = new Set<string>();
   private sessionStartedAt: number | undefined;
   private terminalFailure: string | undefined;
+  private scriptJournal = new ScriptJournal();
   private collaborationJournal = new CollaborationJournal();
   private constructor(
     directory: string,
@@ -190,7 +213,8 @@ export class RunRecorder {
       gitValue(["status", "--porcelain"]),
     ]);
     const manifest: Manifest = {
-      schema_version: options.agent?.collaboration ? 3 : 2,
+      schema_version: 4,
+      execution: executionMetadata(options.config.backend),
       ...(options.agent?.collaboration
         ? { collaboration: options.agent.collaboration }
         : {}),
@@ -239,6 +263,17 @@ export class RunRecorder {
         wait_ms: 0,
         cleanup_ms: 0,
         execution_count: 0,
+        ...(options.config.backend === "fresh-script"
+          ? {
+              script_stages: {
+                process_startup_ms: 0,
+                execution_ms: 0,
+                collection_ms: 0,
+                cleanup_ms: 0,
+                unknown_stages: 0,
+              },
+            }
+          : {}),
       },
     };
     const recorder = new RunRecorder(directory, manifest, options);
@@ -283,9 +318,18 @@ export class RunRecorder {
     return this.enqueue(async () => {
       if (event.run_id !== this.manifest.run_id)
         throw new Error("Mismatched event run ID");
+      if (this.manifest.execution?.backend === "fresh-script")
+        this.scriptJournal.accept(event);
+      if (
+        this.manifest.execution?.backend === "persistent-kernel" &&
+        (event.backend === "fresh-script" ||
+          (event.request && object(event.request).protocol_version === 2) ||
+          (event.result && object(event.result).protocol_version === 2))
+      )
+        throw Error("Persistent event backend mismatch");
       const stored = { ...event };
       if (
-        this.manifest.schema_version === 3 &&
+        this.manifest.collaboration !== undefined &&
         this.collaborationJournal.active
       )
         Object.assign(stored, {
@@ -331,7 +375,25 @@ export class RunRecorder {
         !this.seenCompleted.has(result.request_id)
       ) {
         this.seenCompleted.add(result.request_id);
-        if (result.started === true) {
+        const stages = this.manifest.timing.script_stages;
+        if (stages && result.execution_seq !== undefined) {
+          const measured = object(result.timing);
+          for (const key of [
+            "process_startup_ms",
+            "execution_ms",
+            "collection_ms",
+            "cleanup_ms",
+          ] as const) {
+            const value = measured[key];
+            if (value === null) stages.unknown_stages++;
+            else stages[key] += nonnegative(value, key);
+          }
+        }
+        if (
+          result.started === true ||
+          (this.manifest.execution?.backend === "fresh-script" &&
+            result.execution_seq !== undefined)
+        ) {
           this.manifest.timing.execution_count += 1;
           this.manifest.timing.execution_ms +=
             typeof result.elapsed_ms === "number" ? result.elapsed_ms : 0;
@@ -449,6 +511,8 @@ export class RunRecorder {
     if (typeof source.path === "string")
       ref.source_path = safeRelativePath(source.path);
     if (typeof source.cell_id === "string") ref.cell_id = source.cell_id;
+    if (typeof source.execution_id === "string")
+      ref.execution_id = source.execution_id;
     if (typeof source.request_id === "string")
       ref.request_id = source.request_id;
     if (typeof source.kernel_epoch === "number")
@@ -506,7 +570,7 @@ export class RunRecorder {
   ): Promise<ArtifactReference> {
     return this.enqueue(async () => {
       if (
-        this.manifest.schema_version !== 3 ||
+        this.manifest.collaboration === undefined ||
         this.collaborationJournal.active !== null
       )
         throw new Error("Planner report requires completed subtask routing");
@@ -548,7 +612,7 @@ export class RunRecorder {
         ].includes(type)
       )
         throw new Error("Invalid agent event type");
-      if (this.manifest.schema_version === 3)
+      if (this.manifest.collaboration !== undefined)
         this.collaborationJournal.accept(type, fields);
       const agent = this.manifest.agent;
       if (!agent || agent === "not_applicable")
@@ -657,6 +721,20 @@ export async function readEvents(
       type: "journal_truncated",
       message: "Incomplete final event omitted; its result remains unknown",
     });
+  const manifest = await readManifest(directory);
+  if (manifest.execution?.backend === "fresh-script") {
+    const journal = new ScriptJournal();
+    for (const event of events) journal.accept(event);
+  } else if (
+    manifest.schema_version === 4 &&
+    events.some(
+      (event) =>
+        event.backend === "fresh-script" ||
+        (event.request && object(event.request).protocol_version === 2) ||
+        (event.result && object(event.result).protocol_version === 2),
+    )
+  )
+    throw Error("Persistent event backend mismatch");
   return events;
 }
 export async function readManifest(directory: string): Promise<Manifest> {
@@ -666,7 +744,8 @@ export async function readManifest(directory: string): Promise<Manifest> {
   if (
     (value.schema_version !== 1 &&
       value.schema_version !== 2 &&
-      value.schema_version !== 3) ||
+      value.schema_version !== 3 &&
+      value.schema_version !== 4) ||
     !Array.isArray(value.inputs) ||
     !Array.isArray(value.artifacts)
   )
@@ -719,7 +798,7 @@ export async function readManifest(directory: string): Promise<Manifest> {
     if (ref.origin !== undefined) {
       const origin = object(ref.origin);
       if (
-        value.schema_version !== 3 ||
+        (value.schema_version !== 3 && value.schema_version !== 4) ||
         origin.role !== "planner" ||
         ref.cell_id !== undefined ||
         ref.source_path !== undefined
@@ -734,6 +813,33 @@ export async function readManifest(directory: string): Promise<Manifest> {
   if (value.ended_at !== null) textField(value.ended_at, "ended_at");
   if (value.replay_of !== null) textField(value.replay_of, "replay_of");
   if (value.seed !== null) nonnegative(value.seed, "seed");
+  if (value.schema_version === 4) {
+    const execution = validateExecutionMetadata(value.execution);
+    if (execution.backend === "fresh-script") {
+      const stages = object(timing.script_stages);
+      for (const key of [
+        "process_startup_ms",
+        "execution_ms",
+        "collection_ms",
+        "cleanup_ms",
+        "unknown_stages",
+      ])
+        nonnegative(stages[key], key);
+      for (const item of value.artifacts) {
+        const ref = object(item);
+        if (ref.cell_id !== undefined || ref.kernel_epoch !== undefined)
+          throw Error("Script artifact cannot have kernel identity");
+        if (ref.execution_id !== undefined)
+          textField(ref.execution_id, "execution ID");
+      }
+    }
+    if (
+      execution.backend !==
+      executionMetadata(object(value.config).backend).backend
+    )
+      throw Error("Backend/config mismatch");
+  } else if (value.execution !== undefined)
+    throw Error("Execution metadata requires v4");
   validateAgentFields(value);
   return value as unknown as Manifest;
 }
@@ -768,8 +874,9 @@ function parseInputs(value: unknown): InputIdentity[] {
 export async function inspectModelJournal(directory: string) {
   const events = await readEvents(directory);
   const manifest = await readManifest(directory);
-  const collaboration =
-    manifest.schema_version === 3 ? new CollaborationJournal() : null;
+  const collaboration = manifest.collaboration
+    ? new CollaborationJournal()
+    : null;
   const pending = new Set<string>();
   let requests = 0;
   for (const event of events) {

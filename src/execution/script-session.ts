@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import {
   FramedDockerTransport,
   safeRelativePath,
@@ -234,6 +234,7 @@ export class ScriptSession {
       await this.emit("dispatch", {
         request: p.request,
         code: p.request.code,
+        code_sha256: createHash("sha256").update(p.request.code).digest("hex"),
         request_id: p.request.request_id,
         execution_id: p.request.execution_id,
         execution_seq: p.request.execution_seq,
