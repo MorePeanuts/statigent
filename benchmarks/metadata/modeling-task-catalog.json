@@ -11384,7 +11384,7 @@
           "column": "id"
         },
         "metric": {
-          "id": "log-loss-sklearn-v1",
+          "id": "log-loss-sklearn-inferred-binary-v1",
           "direction": "minimize"
         },
         "prediction_columns": [

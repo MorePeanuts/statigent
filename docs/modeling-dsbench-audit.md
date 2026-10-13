@@ -48,7 +48,7 @@
 | playground-series-s3e11 | cost | rmsle-sklearn-v1 (minimize) | 288268/72068 | 15 | id | — | — |
 | playground-series-s3e13 | prognosis | top3-hit-ds-v1 (maximize) | 565/142 | 64 | id | — | 题面的位置权重与代码不符：实际为无位置权重的前三命中；导出按空白拆分，类别含空白须阻塞；原 sort_values 未赋回；本地先按固定评价成员顺序对齐 ID，再调用上游公式 |
 | playground-series-s3e5 | quality | quadratic-kappa-ds10-v1 (maximize) | 1644/412 | 11 | Id | — | 原 sort_values 未赋回；本地先按固定评价成员顺序对齐 ID，再调用上游公式 |
-| playground-series-s3e10 | Class | log-loss-sklearn-v1 (minimize) | 94051/23513 | 8 | id | — | 上游优先读取 Strength，否则 Class；本地显式导出 Class，使用 fallback 分支；原 sort_values 未赋回；本地先按固定评价成员顺序对齐 ID，再调用上游公式 |
+| playground-series-s3e10 | Class | log-loss-sklearn-inferred-binary-v1 (minimize) | 94051/23513 | 8 | id | — | 上游优先读取 Strength，否则 Class；本地显式导出 Class，使用 fallback 分支；原 sort_values 未赋回；本地先按固定评价成员顺序对齐 ID，再调用上游公式 |
 | playground-series-s3e2 | stroke | roc-auc-v1 (maximize) | 12243/3061 | 10 | id | — | — |
 | playground-series-s3e9 | Strength | rmse-v1 (minimize) | 4325/1082 | 8 | id | — | 原 sort_values 未赋回；本地先按固定评价成员顺序对齐 ID，再调用上游公式 |
 | playground-series-s3e8 | price | rmse-v1 (minimize) | 154858/38715 | 9 | id | — | — |

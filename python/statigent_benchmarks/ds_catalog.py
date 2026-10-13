@@ -50,7 +50,7 @@ playground-series-s3e18|EC1,EC2|id|multilabel|mean-target-auc-v1|multilabel-prob
 playground-series-s3e11|cost|id|regression|rmsle-sklearn-v1|numeric
 playground-series-s3e13|prognosis|id|multiclass|top3-hit-ds-v1|ranked-labels
 playground-series-s3e5|quality|Id|ordinal|quadratic-kappa-ds10-v1|label
-playground-series-s3e10|Class|id|binary|log-loss-sklearn-v1|probabilities
+playground-series-s3e10|Class|id|binary|log-loss-sklearn-inferred-binary-v1|probabilities
 playground-series-s3e2|stroke|id|binary|roc-auc-v1|probabilities
 playground-series-s3e9|Strength|id|regression|rmse-v1|numeric
 playground-series-s3e8|price|id|regression|rmse-v1|numeric
@@ -81,6 +81,7 @@ MINIMIZE = {
     "rmsle-sklearn-v1",
     "smape-ds-v1",
     "log-loss-sklearn-v1",
+    "log-loss-sklearn-inferred-binary-v1",
 }
 ISSUES = {
     "playground-series-s3e13": [
