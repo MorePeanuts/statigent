@@ -73,4 +73,4 @@ bun run test:smoke:classification --kind multiclass
 
 本机沙箱内 uv 曾因 macOS 系统配置访问限制崩溃；检查最终在允许访问本机 uv/Docker 的执行环境中完成。没有用模拟结果替代未执行检查，也没有安装新依赖或调用付费 API。上游数据测试与真实模型冒烟不属于默认检查，本轮未执行。
 
-实现位于短期分支 feat/tabular-modeling-classification，已按阶段本地提交；未推送、合并或归档。实验适配继续后置。
+实现与验收按阶段本地提交，对应 OpenSpec 变更已同步主规格并归档至 [2026-10-13-add-tabular-modeling-classification](../openspec/changes/archive/2026-10-13-add-tabular-modeling-classification/)。实验适配继续后置。
