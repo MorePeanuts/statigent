@@ -1,0 +1,10 @@
+{
+  "input_root": "tests/fixtures/modeling/multiclass",
+  "train": "train.csv",
+  "test": "test.csv",
+  "target": "target",
+  "id_column": "id",
+  "kind": "multiclass",
+  "metric": "log_loss",
+  "seed": 42
+}

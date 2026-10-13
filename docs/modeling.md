@@ -128,3 +128,16 @@ bun run test:smoke:modeling
 现有任务配置无需迁移；旧模型工具参数不能直接用于新的运行。旧父记录没有扩展时输出 `candidate_control: "not_recorded"`，不从自然语言补造状态、不改写原文件，仍支持既有交付复现。原生 EDA schema 不变。
 
 本轮真实验收仅在上文固定开发任务执行 **一次**，保持 900 秒/40 次总尝试/600,000 token 阈值、3 次搜索+1 次最终拟合、180 秒预留，以及一次 EDA 的 20 次尝试/400,000 token/300 秒/10 次执行上限。任务明确要求候选清单、显式 EDA 额度申请、证据关联更新和后续训练。不同额度裁剪与故障修复由可控测试保证，真实模型不强求触发故障或改进成绩。首次报告不可覆盖；失败不自动加跑，若只修验收器则单独保存同一记录的离线复核。结果和实际成本见 `docs/modeling-candidate-budget-validation.md`。
+
+## 表格任务协议与分类数据准备
+
+新准备产物使用 dataset schema 2；schema 1 回归数据继续只读加载，保留原划分。支持矩阵为 regression/rmse、binary/accuracy/roc_auc/log_loss、multiclass/accuracy/log_loss。二分类必须显式提供 `positive_class`，多分类至少三类且不接受该字段。
+
+分类目标按 CSV 原始字符串保留（例如 `01` 与 `1` 不同，`NA` 是合法标签），拒绝空白目标。类别按 UTF-8 字节排序映射到整数。默认分类划分在每类内按种子与 ID 哈希排序，验证样本数为 `min(n-1,max(1,floor(0.2*n)))`；少于两条的类别拒绝。显式划分也必须完整且两侧覆盖全部类别。小样本时实际比例不一定为 20%，精确成员写入清单。
+
+```sh
+bun run modeling prepare --config configs/modeling/binary-prepare.json --out runs/modeling-binary-data
+bun run modeling prepare --config configs/modeling/multiclass-prepare.json --out runs/modeling-multiclass-data
+```
+
+这些命令只准备合成数据，不调用模型；输出目录必须尚不存在。各示例有 60 条训练来源记录，冻结为 48 条内部训练和 12 条验证。数据与协议校验值在每次加载时核对。
