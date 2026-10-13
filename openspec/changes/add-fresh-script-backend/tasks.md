@@ -42,7 +42,7 @@
 
 - [x] 6.1 执行 `bun run check`、`bun run test:integration` 及新增后端专项；确认 Python 检查均经 uv，既有持久状态、报告、建模及取消链路回归通过，无法运行的检查保留原因而非标为通过。
 - [x] 6.2 核对四组开发计划、脚本独立重放、旧目录哈希、真实进程清理和全任务成本记录，形成 `docs/fresh-script-validation.md`；分别列出软件接入、无模型 Docker 验收、真实模型冒烟和研究预实验的实际状态，未运行明确写未运行。
-- [ ] 6.3 执行 `openspec validate add-fresh-script-backend --strict` 并自审代码、规格、任务及文档的一致性；确认只涉及本变更、阶段提交完整，无数据/模型/运行轨迹入库，剩余限制如实交付。
+- [x] 6.3 执行 `openspec validate add-fresh-script-backend --strict` 并自审代码、规格、任务及文档的一致性；确认只涉及本变更、阶段提交完整，无数据/模型/运行轨迹入库，剩余限制如实交付。
 
 ## Workflow follow-up
 
