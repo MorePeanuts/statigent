@@ -69,6 +69,8 @@ export async function finalizeModeling(o: {
       onStage: (child) => o.onStage(child, id),
     });
     if (
+      result.id !== id ||
+      result.candidate_id !== candidate.candidate_id ||
       !result.evaluation ||
       result.phase !== evaluation.phase ||
       result.final !== (evaluation.phase === "final") ||
@@ -83,6 +85,8 @@ export async function finalizeModeling(o: {
     else if (result.score !== null)
       throw new Error("Unexpected finalization score");
     await o.onResult(result);
+    if (result.execution_confirmed === false)
+      throw new Stop("failed", `unconfirmed_finalization:${result.reason}`);
     return result;
   };
   if (o.plan.mode !== "none") {

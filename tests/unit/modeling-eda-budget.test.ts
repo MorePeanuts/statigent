@@ -43,7 +43,7 @@ async function options(): Promise<Parameters<typeof analyze>[0]> {
     runId: "child-1",
     root,
     task: validateModelingTask({
-      schema_version: 2,
+      schema_version: 3,
       method: "adaptive_eda",
       confirmation: { mode: "none" },
       resource_version: "smoke-v1",
@@ -173,7 +173,7 @@ test("complete EDA role loop retains actual token overshoot then stops; unknown 
           result.executions,
           result.role_usage,
         ),
-      ).toThrow("accounting_incomplete");
+      ).not.toThrow();
       expect(() => parent.hostChildBudget()).toThrow("accounting_incomplete");
     } else {
       expect(result.status).toBe("budget_exhausted");

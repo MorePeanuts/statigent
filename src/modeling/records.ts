@@ -8,7 +8,8 @@ import { readManifest, sha256, writeJson } from "../records/store";
 import {
   type ModelingAction as NewAction,
   action as newAction,
-} from "./actions";
+} from "./actions-v3";
+import { inspectWorkflow } from "./audit-v4";
 import {
   ledger,
   roleLedgers,
@@ -25,7 +26,7 @@ import {
   validateCandidateState,
   validateRepair,
 } from "./candidates";
-import { validateModelingTask } from "./config";
+import { validateRecordedModelingTask } from "./config";
 import { datasetProtocol, validateDataset } from "./data";
 import { inspectKnowledge } from "./knowledge-records";
 import { action, type ModelingAction as LegacyAction } from "./legacy-actions";
@@ -67,11 +68,13 @@ export class ModelingRecord {
       dirty = Bun.spawnSync(["git", "status", "--porcelain"]);
     const header = {
       schema_version:
-        obj(config.task ?? {}).schema_version === 2
-          ? 3
-          : config.protocol === undefined
-            ? 1
-            : 2,
+        obj(config.task ?? {}).schema_version === 3
+          ? 4
+          : obj(config.task ?? {}).schema_version === 2
+            ? 3
+            : config.protocol === undefined
+              ? 1
+              : 2,
       kind: "modeling",
       run_id: id,
       started_at: new Date().toISOString(),
@@ -157,7 +160,8 @@ export async function inspectModeling(directory: string) {
     throw new Error("Manifest too large");
   const manifest = obj(JSON.parse(await readFile(path, "utf8")));
   if (
-    ![1, 2, 3].includes(Number(manifest.schema_version)) ||
+    typeof manifest.schema_version !== "number" ||
+    ![1, 2, 3, 4].includes(manifest.schema_version) ||
     manifest.kind !== "modeling"
   )
     throw new Error("Unsupported modeling record");
@@ -208,6 +212,12 @@ export async function inspectModeling(directory: string) {
         throw new Error("Model visible context identity mismatch");
     }
   }
+  if (manifest.schema_version === 4)
+    return {
+      manifest,
+      events,
+      ...(await inspectWorkflow(directory, manifest, events, payloads)),
+    };
   const completed = new Set(
     events.filter((e) => e.type === "child_result").map((e) => e.child_id),
   );
@@ -360,7 +370,7 @@ async function inspectControl(
   if (position > events.length)
     throw new Error("Candidate snapshot sequence beyond journal");
   const modern = manifest.schema_version === 3;
-  const method = modern ? validateModelingTask(task).method : null;
+  const method = modern ? validateRecordedModelingTask(task).method : null;
   const validationAudit = modern
     ? await ValidationAudit.create(directory, manifest)
     : null;

@@ -1,27 +1,27 @@
 # 建模智能体
 
-支持单目标表格回归、二分类与多分类，复用候选管理、定向双角色 EDA、预算、隔离执行与交付链路。支持矩阵见下文；不含多标签、阈值搜索、概率校准或 Benchmark 适配。
+支持单目标表格回归、二分类与多分类，复用实验历史、定向双角色 EDA、预算、隔离执行与交付链路。支持矩阵见下文；不含多标签、阈值搜索、概率校准或 Benchmark 适配。
 
 ## 研究方向与当前实现
 
 第二章采用“分析与建模协同驱动的自主机器学习方法”，以独立测试预测效果为主，同时关注可靠性与实际效率。三项核心机制、研究假设和消融以 [研究大纲](overview.md#第二核心章节面向预测性数据建模的智能体研究) 为准，评价口径见 [Benchmark 协议](benchmark.md#第二章预测性建模)。预算管理在研究中承担运行保护与公平控制的作用。
 
-新版实现包含任务内认识、自主分析交接、终局确认及四种方法权限。任务 schema 2、模型侧接口 modeling-decision-v1、内部动作协议 3、提示词 modeling-v6、父记录与交付 schema 3 配套使用。固定原始数据与搜索划分继续保留。软件检查、真实模型验收和研究效果分别报告，见 [本轮开发验收](modeling-collaboration-validation.md)。
+新版实现包含可选笔记、自主分析交接、训练诊断、统一收尾及四种方法权限。任务 schema 3、模型侧接口 modeling-decision-v2、动作协议 4、提示词 modeling-v7、父记录与交付 schema 4 配套使用。固定原始数据与搜索划分继续保留。软件检查、真实模型验收和研究效果分别报告，见 [本轮开发验收](modeling-workflow-validation.md)。
 
 当前默认一次 EDA、三次搜索拟合和一次最终拟合用于开发验证，不代表正式实验的协同深度或资源条件。历史验收记录保留其当时配置与结论；功能链路通过不等于上述方法具有稳定的预测收益。
 
 ## 新任务配置与基础概览
 
-新启动配置要求 `schema_version: 2`、`method`、`confirmation: {"mode": "none" | "terminal_repeated_holdout"}` 和 `resource_version`。四组共享基础概览、候选管理、训练、确认和交付能力：
+新启动配置要求 `schema_version: 3`、`method`、`confirmation: {"mode": "none" | "terminal_repeated_holdout"}` 和 `resource_version`。四组共享基础概览、实验历史、训练、确认和交付能力：
 
 | method | 分析与认识机制 |
 | --- | --- |
 | no_eda | 无 EDA 工具 |
 | initial_eda | 首次模型决策前由宿主固定委派一次任务相关 EDA；已知失败可继续建模，不自动重做 |
 | adaptive_eda | 智能体按需调用 EDA，保留普通动作与结果历史 |
-| collaborative | 按需 EDA 加显式认识修订、来源和跨轮上下文 |
+| collaborative | 按需 EDA 加可替换笔记、来源和 EDA 笔记交接 |
 
-普通三组不接收认识更新字段；no_eda/initial_eda 的模型无法通过伪造 analyze 调用越权。未使用 EDA 不产生虚拟消费。
+普通三组不提供笔记字段，越权提交笔记会警告并忽略；no_eda/initial_eda 的模型无法通过伪造 analyze 调用越权。未使用 EDA 不产生虚拟消费。
 
 仓库原任务示例迁移为 `adaptive_eda`、关闭确认、资源版本 `smoke-v1`，保留原有全部显式额度。旧任务直接启动会提示迁移；历史交付使用独立冻结配置解析器，不补造新方法身份。确认模式 `terminal_repeated_holdout` 的预检要求额外预留最多四次确认及最终拟合/预测，现有小额示例不能直接开启。
 
@@ -41,17 +41,13 @@ bun run modeling prepare --config configs/modeling/synthetic-prepare.json --out 
 
 源配置使用 input_root/train/test/target/id_column/kind/metric/seed；类型/指标按下方支持矩阵校验；二分类另需 positive_class。原始数据和准备产物不提交 Git。每次加载校验哈希、列结构和划分成员，输入变化须重新准备并保留新版本。
 
-## 认识状态与原子决策 v3
+## 可选笔记与统一来源
 
-完整协同模式可随任一动作提交 `knowledge_updates` 和 `knowledge_refs`，没有变化时可以省略；普通模式不提供这两个字段。模型只需给出认识的 `id/kind/statement/reason`，同 ID 表示更新当前认识。宿主填入内部 `create/revise` 及准确基版本，保存新旧修订、任务作用域和接受序号。状态可省略：新 observation 默认 active，新 hypothesis/question 默认 open；修订默认保留原判断。显式合法状态分别为 observation（active/withdrawn）、hypothesis（open/supported/challenged/withdrawn）、question（open/resolved/withdrawn），宿主不会自行宣布假设获得支持或问题已解决。
+完整协同模式可随动作提交 `notes: {text, sources?}`，省略保留旧版，空文本清空。宿主生成递增 revision 和接受序号，文本限 8 KiB UTF-8，每组 sources 最多 16 项。不要求认识类型、状态、基版本或候选事务。笔记是待检验的模型判断，不是可信指标。其他方法保留普通任务、报告和实验历史，不接收额外笔记状态。
 
-模型选择简短来源，例如 `{source_id:"profile:/columns/1/missing"}`，或者 `{source_id:"experiment:真实搜索实验ID:score"}`。成功 EDA 的 `knowledge_sources` 提供逐 finding 的 `source_id` 和陈述，引用时增加 `applicability` 说明。宿主补齐真实哈希、finding 序号和原始执行证据，再执行完整来源校验；模型不能自填可信分数、伪造来源或将历史预测换成另一模型。实验 failure 仅表示真实执行故障，不自动否定统计假设。
+所有方法可附加 `sources: [{source_id, applicability?}]`。句柄为 `profile:/rows` 等概览路径、`analysis:<id>:<finding序号>`、`experiment:<id>:score/failure/train_diagnostic`。宿主绑定本任务的原数据、评价身份、预测及证据；探索 finding 始终没有模型来源，不能随以后的训练改写。失败 EDA 不能成为 finding，实验 failure 仅证明执行失败。
 
-`knowledge_refs:["认识ID"]` 绑定本动作更新后的修订，未更新则绑定当前修订；需要使用历史版本时仍可传 `{id,revision}`。观察必须提供来源，supported 假设必须引用成功实验分数。简短接口与内部协议分离，程序调用的显式协议 3 字段仍可严格校验，错误状态和陈旧版本不会被静默修正。完整组初始上下文提供 `profile:/rows` 等示例，未知路径或未完成 finding 仍拒绝。原始模型响应和编译后的接受动作分别保存。
-
-认识、候选、动作引用及资源一起预检；宿主持久化一次 `action_accepted` 后才更新状态和派发。任何非法来源、陈旧修订、额度拒绝或接受记录故障均不留下部分状态。检查入口重演接受事件，核对 `knowledge_control` 修订快照、基本概览哈希与实验事实；普通方法显示 disabled，旧记录显示 not_recorded。文字中的“supported”是模型判断，不改变可信指标排名。
-
-新版分析参数为 `purpose`（explore/diagnose/compare）、`candidates`、`question`、`expected_evidence` 和 `source_experiments`。三个目的分别要求 0/1/2 个成功搜索来源；探索允许空候选。不接收 requested_budget、budget_reason 或 decision_rules，宿主按配置和剩余资源分配。训练可采用更早的分析，也可解释后不采用最近分析。
+核心动作先检查工具数量、必需字段、实验关系、权限及资源。核心非法时整项拒绝；核心合法后逐条验证来源、整份验证笔记。错误附加项只警告并忽略，非法笔记保留旧版，不消耗核心纠错次数。接受事件保存原始参数、有效动作和警告，持久记录成功后才更新快照和派发；记录失败不执行。inspect 重演这些绑定和笔记版本，不将模型原文自动视为证据。
 
 ## 实验执行
 
@@ -59,9 +55,9 @@ bun run modeling prepare --config configs/modeling/synthetic-prepare.json --out 
 
 实验以 `phase: search/confirmation/final` 区分，成绩同时绑定指标协议与 `evaluation_id`。确认成绩不能进入搜索最佳排名，最终全量拟合的验证成绩为 null。`search_best_experiment_id` 与 `selected_experiment_id` 分列，检查入口重演短名单及确认排名，不依据文字判断覆盖成绩。
 
-开启 `terminal_repeated_holdout` 后，接受完成即冻结搜索，按搜索指标取前两份不同代码哈希的成功流水线。同代码取最好成绩，平局取先完成者；候选优先级或暂缓不影响名单，同候选的不同实现可以同时入选。每份流水线分别在两份额外划分重新拟合，以额外两次成绩的均值选择，平局沿用搜索排名。报告逐划分成绩、均值和极差，不混入搜索成绩。任何规定确认失败或超时均为 incomplete，不按部分结果平均或退回未经确认交付；确认与最终拟合期间不再调用模型修代码。
+开启 `terminal_repeated_holdout` 后，接受完成即冻结搜索，按搜索指标取前两份不同代码哈希的成功流水线。同代码取最好成绩，平局取先完成者；名单由实际实验与代码哈希决定。每份流水线分别在两份额外划分重新拟合，以额外两次成绩的均值选择，平局沿用搜索排名。报告逐划分成绩、均值和极差，不混入搜索成绩。任何规定确认失败或超时均为 incomplete，不按部分结果平均或退回未经确认交付；确认与最终拟合期间不再调用模型修代码。
 
-这是训练内重采样与终局选择，EDA 和特征设计可能已接触这些训练标签，划分之间也有重叠，不能视为独立 holdout 或外层测试证据。schema 3 交付保存搜索最佳、实际所选、确认依据与冻结计划；预测复现和 refit 只使用所选流水线，不重新搜索或确认。
+这是训练内重采样与终局选择，EDA 和特征设计可能已接触这些训练标签，划分之间也有重叠，不能视为独立 holdout 或外层测试证据。schema 4 交付保存搜索最佳、实际所选、确认依据与冻结计划；预测复现和 refit 只使用所选流水线，不重新搜索或确认。
 
 生成代码导出 `build_pipeline(seed)`，返回支持 `fit(X, y)` 的 scikit-learn 兼容流水线。预处理放入流水线；目标变换须在 predict 时逆变换。X 不含 ID 和目标列。运行镜像锁定 scikit-learn 1.7.2、scipy 1.16.2、joblib 1.5.2，不能运行时安装库。
 
@@ -69,15 +65,25 @@ bun run modeling prepare --config configs/modeling/synthetic-prepare.json --out 
 
 默认拟合上限 120 秒、预测 30 秒；建模默认内存上限 4 GiB、工作区 512 MiB、单产物 256 MiB、每执行会话累计产物 1 GiB，清理/中断宽限 15 秒。超时、取消、不完整收集或超限均不产生成功实验。累计额包含执行结束和关闭时的独立快照；传输帧默认按 base64 膨胀自动推导，显式配置保留。建模智能体会收到有效资源上限。实测依据、适用范围及覆盖方式见 [建模资源限制](modeling-resource-limits.md)。
 
-新拟合以 stage 3 声明 `zlib-3` 压缩和单模型上限。压缩后超限会删除模型文件并产生 `ModelArtifactLimitError`，避免收集器因大文件陷入不完整保存。执行回执完整、内核可用且清理/记录成功时，搜索收到 `model_artifact_limit` 诊断及实际大小，可在原 `code_repairs` 上限内提交修正；失败模型不参与排名、不交接预测。未知执行、记录或清理故障仍停止任务，确认阶段仍禁止模型修改代码。
+新拟合以 stage 3 声明 `zlib-3` 压缩和单模型上限。压缩后超限会删除模型文件并产生 `ModelArtifactLimitError`，避免收集器因大文件陷入不完整保存。执行回执完整、内核可用且清理/记录成功时，搜索收到 `model_artifact_limit` 诊断及实际大小，可在连续无进展保护范围内提交修正；失败模型不参与排名、不交接预测。未知执行、记录或清理故障仍停止任务，确认阶段仍禁止模型修改代码。
 
-## 父运行与预算
+## 父运行、故障恢复与收尾
 
-父运行保存 modeling.json、追加 events.jsonl 和有界 payloads，关联每次训练阶段及 EDA 子运行。使用 `bun run modeling inspect --run RUN_DIRECTORY` 检查父运行和未确认子调用。原 EDA 的 manifest.json 与 Notebook 读取方式不变。
+父运行保存 modeling.json、追加 events.jsonl 和有界 payloads，关联训练、辅助诊断及 EDA 子运行。`bun run modeling inspect --run RUN_DIRECTORY` 重演动作、实验关系、笔记、警告、评价和确认排名，列出未确认调用。原 EDA 的 manifest.json 与 Notebook 协议不变。
 
-总模型尝试及 token 包含建模智能体和 EDA 全部角色/重试；EDA 子额度从父剩余量分配，结果按调用身份只结算一次。默认最多 3 次搜索拟合、1 次最终拟合，最终拟合/预测预留 180 秒；预留属于总任务 900 秒的一部分。未知模型用量导致全任务停止。总墙钟和阶段耗时分列，不能再次相加。
+总调用和 token 包含建模及 EDA 全部角色与重试，子消费按身份只结算一次。未知用量保持 unknown 并停止新增 LLM。若已有可信搜索最佳、执行与清理明确、记录可写、未取消且确认和最终拟合预留足够，可无 LLM 进入原确定性收尾。普通已确认训练/EDA 失败可返回诊断继续决策；取消、总时限、记录失败、完整性故障或未知执行/清理均停止新执行。
 
-新运行记录纠错策略 `consecutive-unproductive-v1`：`action_corrections` 限制两次成功进展之间的拒绝次数，成功 EDA 或合法搜索分数使该计数清零；只有动作被接受、执行失败或资源被拒绝均不清零。资源拒绝同样计数，避免反复申请不可用动作。总调用、token、时间、拟合上限和代码修复额度不重置。错误反馈说明本次未提交、可修正原因和剩余纠正次数；训练反馈同时给出先前最佳成绩及本次是否改善。模型仍自主决定分析、建模方向和完成，历史累计纠错策略的失败记录不改写。
+纠错策略 `consecutive-unproductive-v2`：核心拒绝、不可派发请求和失败执行累计，成功分析或有效搜索分数重置，附加警告不计入。达到保护边界后按交付资格收尾或保留失败。不自动重试未知请求，不请求另一个模型补写完成。
+
+明确完成与宿主保护共享唯一 search_frozen 事件和 finalize 入口，均执行原确认、全量拟合和预测；确认任一失败仍不能交付。三个维度独立记录：
+
+| 维度 | 示例与含义 |
+| --- | --- |
+| search_end | agent_finished 为主动完成，protected 为宿主保护停止；failed/cancelled 保留真实原因 |
+| delivery | not_started/running/completed/failed/cancelled；artifact 只关联真实完整交付 |
+| usage.tokens.status | known/unknown；交付成功不会补造未知用量 |
+
+例如 search_end=protected/accounting_incomplete、delivery=completed、accounting=unknown 表示受保护交付，不是自主完成。根 completed 要求交付成功，不能用现成搜索模型代替最终交付。父墙钟已包含子阶段耗时，各分项只作解释，不能再次相加。
 
 ## 建模与定向 EDA
 
@@ -85,7 +91,7 @@ bun run modeling prepare --config configs/modeling/synthetic-prepare.json --out 
 bun run modeling run --task configs/modeling/synthetic.json
 ```
 
-此命令调用真实模型，使用配置中的 model_profile/eda_profile；`--model ID` 可同时覆盖两者。建模智能体只有 run_experiment/analyze/finish_modeling 三个动作。分析描述疑问、证据需求和可选候选；采用分析证据时须关联已接受的分析身份、来源实验与有效证据。普通运行允许直接训练或无 EDA 完成，协作验收则要求真实走过分析后训练。
+此命令调用真实模型，使用配置中的 model_profile/eda_profile；`--model ID` 可同时覆盖两者。建模智能体只有 run_experiment/analyze/finish_modeling 三个动作。分析描述疑问及零至两个成功搜索来源，附加引用由宿主核验。自然开发运行允许直接训练或无 EDA 完成，可控协同链路测试另行核验分析与后续实验的关联。
 
 每次 EDA 为独立双角色子运行，同次 EDA 内部共享 Notebook；多次调用通过显式文件和结构化结果交接。失败分析只作为诊断，不能引用为成功证据。后续训练变差时保留原最佳实验；平局保留先完成者。
 
@@ -117,58 +123,41 @@ bun run test:smoke:modeling
 
 这是独立付费入口，固定使用 `dsbench-s3e9.json` 和 deepseek-flash；调用前核对已提交的来源清单、输入哈希及精确划分。最多运行一次建模任务，全部角色共享 40 次尝试、600,000 token 阈值和 900 秒，EDA 子上限 20 次/400,000 token/300 秒。成功后无模型地复现预测并独立评分；任一验收失败保存 smoke-result.json、以非零退出且不自动加跑。预测改善不是通过条件。
 
-## 候选状态与动作协议 v3
+## 三个最小动作与实验历史
 
-候选表示固定的建模假设，实验表示一次实际尝试。例：`linear_x` 的假设是残差随 x 变化、方向是线性拟合；改正代码错误或调整同方向参数保留该 ID，但每次均产生新的实验 ID。改用树模型属于新方向，应另建候选。宿主只检查身份和结构，不判断两个自然语言想法是否等价。
+| 工具 | 核心参数 |
+| --- | --- |
+| analyze | question，可选 source_experiments（零至两个成功搜索实验，同一评价身份） |
+| run_experiment | code、change、reason，可选 source_experiment、repair_of_experiment |
+| finish_modeling | reason |
 
-每个候选保存固定的 `id/hypothesis/change`、可更新的正整数优先级（越小越优先）、理由、证据和修订号。`pending` 表示尚无已接受实验意图；`tried` 表示已有尝试，不表示成功或假设有效；`deferred` 表示暂缓，恢复后由已有实验关联派生为 pending/tried。最终全量拟合仍关联所选候选，以 `final` 区别于搜索实验。未确认执行单独显示，不能作为修复来源自动重试。
+宿主根据分析来源数推断探索、诊断或对比，生成实验 ID，记录方案沿用和修复关系。repair_of_experiment 必须是已确认失败的搜索实验；未知实验不能重试。未执行想法只留在笔记，不生成待办候选，也无须在完成时关闭状态。完成不接收最佳 ID，宿主按真实分数选择。
 
-三个工具都要求 `candidate_updates`（无变更时传 `[]`）。创建和更新随当前动作一起接受，没有额外候选管理工具或角色。批次中同一 ID 不能出现两次，不能覆盖固定定义、伪造状态/实验/成绩；暂缓候选须先恢复，可在本次动作中恢复。优先级是决策建议，允许解释后选择非首位候选。候选上限包含已暂缓候选。
-
-首个 `run_experiment` 参数示例：
-
-```json
-{
-  "candidate_updates": [{
-    "op": "create", "id": "baseline",
-    "hypothesis": "均值预测可作为参考", "change": "均值回归",
-    "priority": 1, "reason": "建立可比较的参考成绩", "evidence": []
-  }],
-  "candidate_id": "baseline",
-  "change": "使用默认均值策略", "reason": "取得内部验证 RMSE",
-  "source_experiment": null, "repair_of_experiment": null, "evidence": [],
-  "code": "from sklearn.dummy import DummyRegressor\ndef build_pipeline(seed):\n    return DummyRegressor()\n"
-}
-```
-
-其后可在 `analyze` 中创建新的 `linear_x` 候选，`candidates` 只传已有或本次创建的 ID。分析返回后，在下一次训练同时提交证据关联更新及训练证据，例如以下更新项（身份替换为本次返回值）：
+首个训练可直接提交：
 
 ```json
-{
-  "op": "update", "id": "linear_x", "priority": 1, "disposition": "keep",
-  "reason": "验证残差与 x 有关，优先检验线性方向",
-  "evidence": [{
-    "analysis_id": "analysis_id", "source_experiment": "baseline_experiment_id",
-    "refs": ["cell_id"], "applicability": "同一冻结划分上的基线预测残差"
-  }]
-}
+{"code":"from sklearn.dummy import DummyRegressor\ndef build_pipeline(seed):\n    return DummyRegressor()\n","change":"建立均值参考","reason":"取得可比较的内部验证结果"}
 ```
 
-`disposition` 还可为 `defer/resume`；`priority:null` 保留原值。训练动作自身也要携带相应 evidence，候选更新的证据不能代替训练证据。代码失败后修复用同一候选的 `repair_of_experiment` 指向已确认失败的非最终实验；成功、未知或其他候选实验均拒绝。`source_experiment` 描述分析/决策来源，和修复来源是两个独立关系。
+工具未知字段没有执行语义；缺少核心字段、多工具响应、错误核心来源或超限代码均拒绝。附加字段处理见上文。事件依次保存接受、派发意图、实际结果；未确认执行单独列出，不伪造实验成功或用其生成修复对象。
 
-典型事件顺序：接受初始候选与训练 → 实验意图/结果 → 接受新候选与分析分配 → EDA 子意图/结果 → 接受带证据的候选更新与训练 → 实验结果 → 接受完成动作 → 最终拟合/预测及交付。后续更差成绩不替换可信最佳。完成动作可同时暂缓剩余方向。
+## 训练与验证诊断
 
-宿主先验证整项动作、全部候选更新、证据来源、修复关系和预算，再持久化 `action_accepted`，然后更新快照并派发。非法批次和预算拒绝不会留下部分候选更新或触发执行，但本轮已发生的模型调用仍计费。接受日志写入失败则不执行；日志已写而快照/执行被中断时，inspect 显示已接受决定和未确认实验，不伪造成功。
+成功搜索先完成验证预测和可信评分，再复用同一保存模型预测该次 fit 的训练成员，预测输入不含目标。宿主独立评分，保存 training_diagnostic 的 partition=train、成员/模型/预测哈希、指标、状态和 elapsed_ms，不增加 fit。确认和最终拟合不产生该辅助阶段。
+
+训练分数仅解释拟合与验证差异，不参与最佳排名，也不是独立测试。普通辅助预测失败记录 unavailable 和原因，保留合法验证分数；未知执行、清理或完整性故障停止后续执行。反馈发布实际可用的 train_diagnostic 来源，诊断预测与评分耗时已包含在父任务中。
+
+EDA 输入用 validation.csv 与 training-diagnostics.csv 分列；双模型文件名带真实实验 ID。source.json.sources 的 partition、path、fields 和 training 字段明确分区、类别概率映射、模型与成员身份。不可用训练诊断显式标注，不向 EDA 开放模型二进制或整个运行目录。
 
 ## 分析交接与宿主资源分配
 
 每次 EDA 都有独立执行会话。输入包括允许的训练数据、原搜索划分、source.json 和有界 context.json；探索没有预测来源，诊断有一个，比较有两个成功搜索实验。双模型预测分别按稳定 ID 与真实标签连接，保留各自预测哈希、评价身份、模型种子及分类概率字段映射；列名冲突时添加下划线。外层测试、确认阶段成绩和私有标签不会传入分析搜索。
 
-context.json 显式携带相关候选、认识的准确修订、原始证据来源与开放问题；历史认识标注其历史身份，不伪装为本轮发现。最多 128 KiB；提示中的认识视图最多 24 条、64 KiB，显式引用优先，其他省略项列出 ID/修订。必需引用超限则拒绝，不静默丢失。上下文产物与模型实际请求分别记录哈希。第二次分析不会获得上一次 Notebook 的隐式变量。
+context.json 保存问题，仅 collaborative 增加最新笔记快照与原始来源；历史判断不伪装为本轮发现。总输入上下文最多 128 KiB，笔记文本最多 8 KiB，来源最多 16 项。上下文产物与模型实际请求分别记录哈希。第二次分析不会获得上一次 Notebook 的隐式变量。
 
-analyze 不再要求申请额度。宿主使用分配记录 v2 的 host-cap-v1 策略，逐项取配置与真实剩余量的最小值，时间扣除收尾预留。eda_executions 是父任务累计上限。分配记录保存 effective/remaining/limits/clipped；无可用量则拒绝。旧 requested_budget/budget_reason/decision_rules 参数在新协议中拒绝。
+analyze 不再要求申请额度。宿主使用分配记录 v2 的 host-cap-v1 策略，逐项取配置与真实剩余量的最小值，时间扣除收尾预留。eda_executions 是父任务累计上限。分配记录保存 effective/remaining/limits/clipped；无可用量则拒绝。旧额度申请字段在新协议中不获得执行语义。
 
-截止时间从父动作接受时开始，包含输入准备、角色切换、模型与执行。同次 EDA 的规划者、执行者和重试共享额度。未派发的准备失败记录已知零模型消费；派发后用量未知则停止父任务。已知失败返回诊断，不能当作成功证据。取消向活动子运行传播并清理会话。
+截止时间从父动作接受时开始，包含输入准备、角色切换、模型与执行。同次 EDA 的规划者、执行者和重试共享额度。未派发的准备失败记录已知零模型消费；派发后用量未知则停止新增模型请求，是否收尾由父任务执行资格决定。已知失败返回诊断，不能当作成功证据。取消向活动子运行传播并清理会话。
 
 建模 EDA 显式启用 `modeling-diagnostic-v1` 收尾策略，所有允许 EDA 的方法共用。每次生成上限为 8,192 token（仍受模型配置与真实剩余量裁剪），优先分析已有预测与统计，候选拟合建议交回建模端。宿主根据两角色当前请求的保守字节估计、返回内容余量和剩余调用/执行/时间，在硬上限前触发 `analysis_closing`，保存触发原因及数值；之后执行者只能 `return_result`、规划者只能 `finish_analysis`，宿主拒绝新执行或委派。保留完整历史及原证据校验；未解问题如实写入局限，没有有效证据不能完成。独立 EDA 默认不启用该策略。
 
@@ -176,23 +165,25 @@ analyze 不再要求申请额度。宿主使用分配记录 v2 的 host-cap-v1 �
 
 ## 独立方法开发入口
 
-共享配置见 configs/modeling/methods.json 和 resources/collaboration-dev-v1.json。以下命令仅预检，不调用模型、不训练，也不遍历其他任务：
+共享配置见 configs/modeling/methods.json 和 resources/workflow-dev-v1.json。以下命令仅预检，不调用模型、不训练，也不遍历其他任务：
 
 ```sh
-bun run modeling develop --task binary --method collaborative --seed 42 --resource configs/modeling/resources/collaboration-dev-v1.json --preflight
+bun run modeling develop --task binary --method collaborative --seed 42 --resource configs/modeling/resources/workflow-dev-v1.json --preflight
 ```
 
 任务只能显式选 s3e9/binary/multiclass，方法必须显式指定。种子须匹配已准备数据的冻结种子；变更种子需要独立准备新数据版本。输出包含完整任务、指标与数据身份、工具集合、确认划分/种子/哈希以及搜索和收尾额度。普通 run 也支持 --preflight、--method、--resource 和 --seed。
 
-移除 --preflight 才启动选定任务一次，调用真实模型；完整协同开发目标明确要求探索先行、两次分析、来源修订及后续训练，验收不要求某次分析后分数提升。终局完成后独立复现预测，保存不可覆盖的 smoke-result.json，失败不自动重跑。新入口不读取外层标签；独立 score 仍由操作者另行执行。
+移除 --preflight 才启动选定任务一次，调用真实模型；目标直接使用自然建模需求，不规定分析次数或动作顺序。验收检查合法交付和独立预测复现；未实际发生分析—实验关联时标为未覆盖，保护交付不报告自主完成。终局完成后独立复现预测，保存不可覆盖的 smoke-result.json，失败不自动重跑。新入口不读取外层标签；独立 score 仍由操作者另行执行。
 
-collaboration-dev-v1 每任务 45 分钟、80 次模型尝试、1,200,000 token 阈值、12 次拟合（最多 7 次搜索、4 次确认、1 次最终拟合），收尾预留 750 秒。最多 3 次 EDA，累计 30 次执行，每次上限 20 次模型尝试、400,000 token、300 秒；父剩余额度仍约束每次分配。这是根据历史调用与无 LLM 训练测量制定的开发保护上限，不是预计费用、正式预算或效果保证。依据及实际执行状态见验收记录。
+workflow-dev-v1 每任务 45 分钟、80 次模型尝试、1,200,000 token 阈值，training_attempts:null 明确关闭总拟合次数上限，逐次照实记录；省略仍使用有限默认值。保留最多 4 次确认、1 次最终拟合，收尾预留 750 秒。历史 collaboration-dev-v1 不改写。最多 3 次 EDA，累计 30 次执行，每次上限 20 次模型尝试、400,000 token、300 秒；父剩余额度仍约束每次分配。这是根据历史调用与无 LLM 训练测量制定的开发保护上限，不是预计费用、正式预算或效果保证。依据及实际执行状态见验收记录。
+
+本次真实开发验收仅 s3e9、collaborative/no_eda 各一次，seed 42、deepseek-flash、同一 workflow-dev-v1 和原冻结数据。完整检查通过并提交代码后才执行，不读外层测试标签，不自动重跑；报告核心拒绝、附加警告、无进展、保护原因、实际协同与复现状态。微小 RMSE 差异不作为通过依据。
 
 ## 记录兼容与回退
 
-新父记录和交付为 schema 3，数据仍为 schema 1/2，新 runner stage 为 3；各版本含义不能互换。交付保存 `stage_version`，复现沿用该版本；旧交付未记录时保留原 stage 1/2 协议及镜像，不向旧镜像注入新字段。inspect 重演动作、认识、评价身份、短名单与确认排名，核对产物哈希及实际消费。新格式缺少必需的确认/选择字段不能按旧格式降级读取。
+新父记录和交付为 schema 4，任务为 schema 3，数据仍为 schema 1/2，新 runner stage 为 3；各版本含义不能互换。交付保存 `stage_version`，复现沿用该版本；旧交付未记录时保留原 stage 1/2 协议及镜像，不向旧镜像注入新字段。inspect 重演动作、笔记、评价身份、短名单与确认排名，核对产物哈希及实际消费。新格式缺少必需的确认/选择字段不能按旧格式降级读取。
 
-schema 1/2 父记录和交付使用冻结旧动作与配置解析，不补造方法、认识或确认身份，不改写源文件；保持原代码、镜像、类别/概率及选中模型的复现/评分语义。新运行不能直接用旧任务配置启动。回退代码时保留新记录，以对应版本代码读取；不能把新记录降为旧版本。历史验收报告保持原文，见 [候选/预算历史报告](modeling-candidate-budget-validation.md) 与 [分类历史报告](modeling-classification-validation.md)。
+schema 1/2/3 父记录和交付使用冻结旧动作与配置解析，不补造方法、认识或确认身份，不改写源文件；保持原代码、镜像、类别/概率及选中模型的复现/评分语义。新运行不能直接用旧任务配置启动。回退代码时保留新记录，以对应版本代码读取；不能把新记录降为旧版本。历史验收报告保持原文，见 [候选/预算历史报告](modeling-candidate-budget-validation.md) 与 [分类历史报告](modeling-classification-validation.md)。
 
 ## 表格任务协议与分类数据准备
 
@@ -226,7 +217,7 @@ bun run modeling prepare --config configs/modeling/multiclass-prepare.json --out
 
 EDA 的 source.json 描述冻结协议、真实标签字段、预测字段、实际可用概率列及对应类别，并绑定预测产物哈希。validation.csv 以稳定 ID 连接原标签与预测，新增字段遇原特征同名时追加下划线。accuracy 不补算概率；纯数据分析的预测来源为 null。可按需诊断混淆、类别分布或置信度，返回证据后由建模智能体决定下一项实验。普通 run 不强制调用 EDA，也不强制后续成绩提升。
 
-dataset schema 2 的分类协议保持不变。新父 modeling.json 和 delivery.json 使用 schema 3，内部 score 另绑定 evaluation_id；失败和最终拟合 score 为 null。inspect 与在线选择使用同一指标方向和平局规则，并检查来源身份。候选控制扩展仍为 1。
+dataset schema 2 的分类协议保持不变。新父 modeling.json 和 delivery.json 使用 schema 4，内部 score 另绑定 evaluation_id；失败和最终拟合 score 为 null。inspect 与在线选择使用同一指标方向和平局规则，并检查来源身份。新运行不维护候选控制或类型化认识扩展；旧版读取保持原语义。
 
 旧 schema 1 回归数据与父记录只读兼容，新运行可读取旧数据而不重写划分。旧交付复现使用原镜像和原三字段 stage.json；新交付使用版本化 stage 与模型元信息。预测复现对类别逐项精确比较，对概率/回归数值使用交付冻结的 atol=1e-8、rtol=1e-6。refit 重训冻结流水线，不重新搜索。旧程序不能读取 v2；回退时保留新记录，以原代码和镜像继续读取 v1。
 

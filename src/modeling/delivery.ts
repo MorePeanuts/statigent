@@ -8,7 +8,7 @@ import { readManifest, writeJson } from "../records/store";
 import {
   type ModelingExecutionTask,
   validateFrozenModelingTask,
-  validateModelingTask,
+  validateRecordedModelingTask,
 } from "./config";
 import type { ConfirmationResult } from "./confirmation";
 import {
@@ -87,7 +87,12 @@ export async function deliver(
     await writeFile(join(dir, p), v, { flag: "wx", mode: 0o444 });
   const native = await readManifest(final.fit.directory);
   const manifest = {
-    schema_version: selection ? 3 : 2,
+    schema_version:
+      "schema_version" in task && task.schema_version === 3
+        ? 4
+        : selection
+          ? 3
+          : 2,
     stage_version: final.fit.stage_version ?? 2,
     protocol,
     source_experiment: selected.id,
@@ -121,12 +126,14 @@ async function frozen(root: string) {
     JSON.parse(await readFile(await regular(root, "modeling.json"), "utf8")),
   );
   if (
-    ![1, 2, 3].includes(Number(parent.schema_version)) ||
+    typeof parent.schema_version !== "number" ||
+    ![1, 2, 3, 4].includes(parent.schema_version) ||
     parent.kind !== "modeling" ||
     parent.status !== "completed"
   )
     throw new Error("Delivery is not frozen and completed");
-  if (parent.schema_version === 3) await inspectModeling(root);
+  if (parent.schema_version === 3 || parent.schema_version === 4)
+    await inspectModeling(root);
   const directory = join(root, "delivery");
   const manifest = obj(
     JSON.parse(
@@ -135,7 +142,11 @@ async function frozen(root: string) {
   );
   if (
     manifest.schema_version !== parent.schema_version ||
-    JSON.stringify(parent.delivery) !== JSON.stringify(manifest)
+    JSON.stringify(
+      parent.schema_version === 4
+        ? obj(parent.delivery).artifact
+        : parent.delivery,
+    ) !== JSON.stringify(manifest)
   )
     throw new Error("Delivery manifest mismatch");
   if (!Array.isArray(manifest.files)) throw new Error("Invalid delivery files");
@@ -201,7 +212,7 @@ async function frozen(root: string) {
   const tolerance = obj(manifest.prediction_tolerance);
   if (tolerance.atol !== 1e-8 || tolerance.rtol !== 1e-6)
     throw new Error("Invalid prediction tolerance");
-  if (manifest.schema_version === 3) {
+  if (manifest.schema_version === 3 || manifest.schema_version === 4) {
     if (!Array.isArray(parent.experiments))
       throw new Error("Missing frozen experiments");
     const experiments = parent.experiments.map(obj);
@@ -245,8 +256,8 @@ async function frozen(root: string) {
     directory,
     manifest,
     task:
-      manifest.schema_version === 3
-        ? validateModelingTask(manifest.task)
+      manifest.schema_version === 3 || manifest.schema_version === 4
+        ? validateRecordedModelingTask(manifest.task)
         : validateFrozenModelingTask(manifest.task),
     dataset,
     files,

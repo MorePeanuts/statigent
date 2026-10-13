@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { modelingTools } from "../../src/modeling/actions";
+import { modelingTools } from "../../src/modeling/actions-v3";
 import {
   applyKnowledgeUpdates,
   type KnowledgeUpdate,

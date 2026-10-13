@@ -5,9 +5,9 @@ import { validateAnalysis } from "../agent/actions";
 import { regular, verifyFiles } from "../evaluation/files";
 import { integer, keys, obj, str, strings } from "../models/validation";
 import { readManifest, sha256 } from "../records/store";
-import { action } from "./actions";
+import { action } from "./actions-v3";
 import { applyCandidateUpdates, type CandidateState } from "./candidates";
-import { validateModelingTask } from "./config";
+import { validateRecordedModelingTask } from "./config";
 import { datasetProtocol, validateDataset } from "./data";
 import {
   applyKnowledgeUpdates,
@@ -38,7 +38,7 @@ export async function inspectKnowledge(
 ) {
   if (manifest.schema_version !== 3) return "not_recorded" as const;
   const config = obj(manifest.config),
-    task = validateModelingTask(config.task),
+    task = validateRecordedModelingTask(config.task),
     dataset = validateDataset(config.dataset),
     protocol = datasetProtocol(dataset);
   const profileEvents = events.filter(

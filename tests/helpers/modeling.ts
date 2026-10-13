@@ -57,6 +57,10 @@ export function trainCall(
     source_experiment: source,
     repair_of_experiment: options.repairOf ?? null,
     evidence,
+    sources: evidence.map((raw) => ({
+      source_id: `analysis:${obj(raw).analysis_id}:0`,
+      applicability: obj(raw).applicability,
+    })),
     code,
   });
 }
@@ -147,7 +151,7 @@ export function modelingEdaScript() {
     if (i === 1)
       return reply([
         call("execute_python", {
-          code: "import pandas as pd\nfrom pathlib import Path\nassert 'df' not in globals()\nassert sorted(p.name for p in Path('/input').iterdir()) == ['context.json','source.json','split.json','train.csv','validation.csv']\ndf=pd.read_csv('/input/validation.csv')\nprint((df['target']-df['__prediction']).tolist())\nprint(df['x'].tolist())",
+          code: "import pandas as pd\nfrom pathlib import Path\nassert 'df' not in globals()\nassert sorted(p.name for p in Path('/input').iterdir()) == ['context.json','source.json','split.json','train.csv','training-diagnostics.csv','validation.csv']\ndf=pd.read_csv('/input/validation.csv')\nprint((df['target']-df['__prediction']).tolist())\nprint(df['x'].tolist())",
         }),
       ]);
     if (i === 2) {

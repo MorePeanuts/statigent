@@ -12,12 +12,23 @@ import { loadDataset } from "./data";
 import { reproduce, scoreDelivery } from "./delivery";
 import { inspectModeling } from "./records";
 import { runModeling } from "./run";
+import { workflowTrajectory } from "./trajectory";
 /** inspectModeling validates the journal first; this adds functional smoke criteria. */
 export function auditCollaboration(
   manifest: Record<string, unknown>,
   events: Record<string, unknown>[],
   actions: Record<string, unknown>[],
 ) {
+  if (manifest.schema_version === 4) {
+    const result = workflowTrajectory(manifest, events, actions);
+    if (
+      manifest.status !== "completed" ||
+      result.collaboration !== "covered" ||
+      !result.analysis_experiment_links.length
+    )
+      throw new Error("Controlled collaboration chain not covered");
+    return result;
+  }
   if (manifest.schema_version === 3)
     return auditCollaborationV3(manifest, events, actions);
   if (

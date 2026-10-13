@@ -13,7 +13,7 @@ async function setup() {
   const root = await mkdtemp(join(await realpath(tmpdir()), "model-start-"));
   await prepareDataset(source, join(root, "data"));
   const task = {
-    schema_version: 2,
+    schema_version: 3,
     method: "collaborative",
     resource_version: "smoke-v1",
     confirmation: { mode: "none" },
@@ -45,6 +45,7 @@ test("four methods receive identical basic statistics before their first decisio
         run_id: o.runId,
         directory: null,
         dispatch: "not_started",
+        execution_confirmed: true,
         status: "failed",
         reason: "synthetic initial failure",
         source_experiment: null,
@@ -75,13 +76,10 @@ test("four methods receive identical basic statistics before their first decisio
         basic_profile_sha256: visible.basic_profile_sha256,
       }),
     );
-    if (method === "collaborative")
-      expect(visible.profile_source_examples).toEqual(
-        ["/rows", "/column_count", "/columns"].map((path) => ({
-          source_id: `profile:${path}`,
-        })),
-      );
-    else expect(visible.profile_source_examples).toBeUndefined();
+    expect(visible.profile_source_examples).toEqual([
+      "profile:/rows",
+      "profile:/columns",
+    ]);
     const manifest = JSON.parse(
       await readFile(join(result.directory, "modeling.json"), "utf8"),
     );

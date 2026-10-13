@@ -9,58 +9,39 @@ import {
   profileSnapshot,
   validateProfile,
 } from "../models/config";
+import { obj } from "../models/validation";
 import type { ModelMetadata } from "../records/agent-metadata";
 import { sha256 } from "../records/store";
 import {
-  action,
   MODELING_PROMPT_VERSION,
-  type ModelingAction,
   modelingPrompt,
+  modelingTools,
 } from "./actions";
 import { Budget } from "./budget";
-import {
-  applyCandidateUpdates,
-  attachExperiment,
-  type CandidateState,
-  candidateSummary,
-  requireCandidate,
-  validateRepair,
-} from "./candidates";
 import { validateModelingTask } from "./config";
 import { type ConfirmationResult, shortlist } from "./confirmation";
 import { datasetProtocol, loadDataset } from "./data";
-import {
-  CORRECTION_POLICY,
-  compileDecision,
-  DECISION_INTERFACE,
-  decisionTools,
-  findingSources,
-} from "./decision";
+import { findingSources } from "./decision";
 import { deliver } from "./delivery";
-import { type AnalysisRecord, analyze, validateEvidence } from "./eda";
+import { type AnalysisRecord, analyze } from "./eda";
 import { type Experiment, runExperiment } from "./experiments";
 import { finalizeModeling } from "./finalize";
-import {
-  applyKnowledgeUpdates,
-  type KnowledgeRevision,
-  requireKnowledge,
-} from "./knowledge";
-import {
-  validateKnowledgeLinks,
-  validateKnowledgeSources,
-} from "./knowledge-sources";
-import { initialAnalysis } from "./methods";
 import { createBasicProfile } from "./profile";
-import {
-  analysisContext,
-  boundedState,
-  CONTEXT_LIMITS,
-  contextIdentity,
-  knowledgeView,
-} from "./prompt";
+import { boundedState, contextIdentity } from "./prompt";
 import { better, validateScore } from "./protocol";
 import { ModelingRecord } from "./records";
 import { assertEvaluation, createValidationPlan } from "./validation";
+import {
+  acceptAttachments,
+  CORRECTION_POLICY,
+  type CoreAction,
+  DECISION_INTERFACE,
+  type Notes,
+  parseCore,
+  type SearchEnd,
+  validateCore,
+} from "./workflow";
+
 export interface ModelingOptions {
   task: unknown;
   profile: ModelProfile;
@@ -75,6 +56,15 @@ export interface ModelingOptions {
   createRecord?: typeof ModelingRecord.create;
   prepareProfile?: typeof createBasicProfile;
 }
+const protectedReasons = new Set([
+  "accounting_incomplete",
+  "model_attempts",
+  "token_threshold",
+  "token_preflight",
+  "request_size_limit",
+  "action_corrections",
+  "exploration_reserve",
+]);
 export async function runModeling(o: ModelingOptions) {
   const start = performance.now(),
     task = validateModelingTask(o.task),
@@ -82,8 +72,8 @@ export async function runModeling(o: ModelingOptions) {
     edaProfile = validateProfile(o.edaProfile);
   if (profile.id !== task.model_profile || edaProfile.id !== task.eda_profile)
     throw new Error("Profile/task mismatch");
-  const data = await loadDataset(task.dataset_root);
-  const protocol = datasetProtocol(data.dataset);
+  const data = await loadDataset(task.dataset_root),
+    protocol = datasetProtocol(data.dataset);
   const validationPlan = createValidationPlan(
     data.dataset,
     data.train,
@@ -131,13 +121,10 @@ export async function runModeling(o: ModelingOptions) {
         validation_plan_sha256: contextIdentity(validationPlan).sha256,
         model: profileSnapshot(profile),
         eda_model: profileSnapshot(edaProfile),
-        tools: decisionTools(protocol, task.method).map(
-          (tool) => tool.function.name,
-        ),
+        tools: modelingTools(protocol, task.method).map((t) => t.function.name),
         prompt: {
           decision_interface: DECISION_INTERFACE,
           correction_policy: CORRECTION_POLICY,
-          context_limits: CONTEXT_LIMITS,
           version: MODELING_PROMPT_VERSION,
           sha256: sha256(Buffer.from(prompt)),
         },
@@ -149,29 +136,39 @@ export async function runModeling(o: ModelingOptions) {
     throw e;
   }
   const experiments: Experiment[] = [],
-    analyses: AnalysisRecord[] = [];
-  let selectedExperiment: Experiment | undefined;
-  let confirmation: ConfirmationResult | null = null;
-  let best: Experiment | undefined,
-    status = "running",
+    analyses: AnalysisRecord[] = [],
+    notesHistory: Notes[] = [];
+  let best: Experiment | undefined, selectedExperiment: Experiment | undefined;
+  let confirmation: ConfirmationResult | null = null,
+    searchEnd: SearchEnd | null = null;
+  let status = "running",
     reason = "",
-    delivery: Awaited<ReturnType<typeof deliver>> | null = null,
     recordError = false,
     corrections = 0,
-    repairs = 0;
-  let knowledge: KnowledgeRevision[] = [];
-  let initialPending = task.method === "initial_eda";
-  let candidates: CandidateState[] = [];
+    executionConfirmed = true;
+  let deliveryStatus:
+    | "not_started"
+    | "running"
+    | "completed"
+    | "failed"
+    | "cancelled" = "not_started";
+  let artifact: Awaited<ReturnType<typeof deliver>> | null = null;
   let basicProfile: Awaited<ReturnType<typeof createBasicProfile>> | null =
-    null;
-  let profileElapsed = 0;
-  let appliedSequence = 0;
+      null,
+    profileElapsed = 0;
+  let initialPending = task.method === "initial_eda";
   const seenCalls = new Set<string>();
-  const check = () => {
+  const checkExecution = () => {
     if (o.signal?.aborted) throw new Stop("cancelled", "user_cancelled");
     if (signal.aborted || remaining() <= 0)
       throw new Stop("timed_out", "task_deadline");
+    budget.checkExecution();
+  };
+  const check = () => {
+    checkExecution();
     budget.check();
+    if (budget.explorationMs() <= 0)
+      throw new Stop("budget_exhausted", "exploration_reserve");
   };
   const agent = {
     remaining: { model_attempts: 0, executions: 0, tokens: 0, task_ms: 0 },
@@ -179,7 +176,10 @@ export async function runModeling(o: ModelingOptions) {
   const update = () => {
     agent.remaining = {
       model_attempts: task.budget.model_attempts - budget.total.attempts,
-      executions: task.budget.training_attempts - budget.training,
+      executions:
+        task.budget.training_attempts === null
+          ? Number.MAX_SAFE_INTEGER
+          : task.budget.training_attempts - budget.training,
       tokens: task.budget.total_tokens - budget.total.total_tokens,
       task_ms: remaining(),
     };
@@ -197,11 +197,10 @@ export async function runModeling(o: ModelingOptions) {
     tokens: budget.total,
     agent,
     signal,
-    remainingTime: remaining,
+    remainingTime: () => Math.min(remaining(), budget.explorationMs()),
     checkClock: check,
     updateRemaining: update,
     settle: (...args) => {
-      // A persisted request may still be cancelled before dispatch.
       budget.modeling.attempts++;
       budget.settleModel(...args);
     },
@@ -219,7 +218,13 @@ export async function runModeling(o: ModelingOptions) {
           training_rows: data.dataset.split.train.length,
           validation_rows: data.dataset.split.validation.length,
         },
-        budget: task.budget,
+        resources: {
+          model_attempts: task.budget.model_attempts,
+          total_tokens: task.budget.total_tokens,
+          task_timeout_ms: task.budget.task_timeout_ms,
+          training_attempts: task.budget.training_attempts,
+          final_reserve_ms: task.budget.final_reserve_ms,
+        },
         execution_limits: {
           memory_bytes: task.limits.memory_bytes,
           workspace_bytes: task.limits.workspace_bytes,
@@ -242,16 +247,16 @@ export async function runModeling(o: ModelingOptions) {
           task.budget.action_corrections - corrections,
         ),
       },
-      candidates: candidateSummary(candidates, experiments),
+      experiments: experiments
+        .filter((e) => e.phase === "search")
+        .map((e) => ({
+          id: e.id,
+          status: e.status,
+          score: e.score,
+          reason: e.reason,
+        })),
       ...(task.method === "collaborative"
-        ? {
-            knowledge: knowledgeView(
-              knowledge,
-              [],
-              candidates,
-              best?.candidate_id,
-            ),
-          }
+        ? { notes: notesHistory.at(-1) ?? null }
         : {}),
     });
   const state = () => ({
@@ -263,33 +268,22 @@ export async function runModeling(o: ModelingOptions) {
     experiments,
     analyses,
     best_experiment_id: best?.id ?? null,
-    delivery,
     search_best_experiment_id: best?.id ?? null,
     selected_experiment_id: selectedExperiment?.id ?? null,
+    search_end: searchEnd,
+    delivery: { status: deliveryStatus, artifact },
     confirmation,
     wall_ms: performance.now() - start,
     basic_profile: basicProfile,
     preparation: { profile_elapsed_ms: profileElapsed },
-    knowledge_control:
+    notes_control:
       task.method === "collaborative"
-        ? { version: 1, history: knowledge, applied_sequence: appliedSequence }
+        ? { version: 1, history: notesHistory }
         : "disabled",
-    candidate_control: {
-      version: 1,
-      candidates,
-      applied_sequence: appliedSequence,
-    },
   });
-  const source = (id: string | null, requireSuccess = true) => {
-    if (id === null) return null;
-    const e = experiments.find((x) => x.id === id);
-    if (!e || (requireSuccess && e.status !== "completed") || e.final)
-      throw new Error("Invalid source experiment");
-    return e;
-  };
   const recordExperiment = async (e: Experiment) => {
     experiments.push(e);
-    for (const stage of [e.fit, e.predict])
+    for (const stage of [e.fit, e.predict, e.training_diagnostic?.prediction])
       if (stage)
         await record.event("child_result", {
           child_id: stage.run_id,
@@ -303,8 +297,126 @@ export async function runModeling(o: ModelingOptions) {
       reason: e.reason,
       evaluation: e.evaluation,
       phase: e.phase,
+      training_diagnostic: e.training_diagnostic ?? null,
       source_search_experiment_id: e.source_search_experiment_id ?? null,
     });
+  };
+  const closeSearch = async (
+    end: SearchEnd,
+    acceptedSequence: number | null,
+  ) => {
+    checkExecution();
+    if (searchEnd || !best || !executionConfirmed)
+      throw new Error("Search cannot safely finalize");
+    const candidates = shortlist(experiments, protocol, validationPlan);
+    const count =
+      (validationPlan.mode === "none"
+        ? 0
+        : candidates.length * validationPlan.confirmation.length) +
+      task.budget.final_training_attempts;
+    // Exploration already protects the reserve. Requiring its full nominal
+    // duration again would reject the time trigger after ordinary bookkeeping.
+    // Confirmation still protects final fitting; each stage uses the hard clock.
+    if (
+      (validationPlan.mode !== "none" && budget.confirmationMs() <= 0) ||
+      (task.budget.training_attempts !== null &&
+        budget.training + count > task.budget.training_attempts)
+    )
+      throw new Error("Insufficient closing execution reserve");
+    const frozenSequence = await record.event("search_frozen", {
+      origin: end.kind === "agent_finished" ? "model" : "host_protection",
+      accepted_sequence: acceptedSequence,
+      search_end: end,
+      protection:
+        end.kind === "protected"
+          ? {
+              tokens: budget.total,
+              remaining_ms: remaining(),
+              consecutive_unproductive: corrections,
+              request_bytes: Buffer.byteLength(
+                client.requestBody(
+                  messages,
+                  modelingTools(protocol, task.method),
+                ),
+              ),
+            }
+          : null,
+      search_best_experiment_id: best.id,
+      shortlist: candidates.map((e) => ({
+        experiment_id: e.id,
+        code_sha256: e.code_sha256,
+      })),
+    });
+    searchEnd = end;
+    deliveryStatus = "running";
+    await record.save(state());
+    const result = await finalizeModeling({
+      task,
+      ...data,
+      root: record.directory,
+      signal,
+      remaining,
+      check: checkExecution,
+      budget,
+      plan: validationPlan,
+      candidates,
+      finalId: randomUUID(),
+      execute: o.experiment,
+      onConfirmation: async (value) => {
+        confirmation = value;
+        selectedExperiment = candidates.find(
+          (e) => e.id === value.selected_experiment_id,
+        );
+        await record.event("confirmation_result", {}, value);
+        await record.save(state());
+      },
+      onIntent: async (id, candidate, evaluation, retry) => {
+        executionConfirmed = false;
+        await record.event("experiment_intent", {
+          experiment_id: id,
+          candidate_id: candidate.candidate_id,
+          final: evaluation.phase === "final",
+          phase: evaluation.phase,
+          evaluation,
+          source_search_experiment_id: candidate.id,
+          frozen_sequence: frozenSequence,
+          repair_of_experiment: null,
+          retry,
+        });
+      },
+      onStage: async (child, experiment) => {
+        await record.event("child_intent", {
+          child_id: child,
+          experiment_id: experiment,
+        });
+      },
+      onResult: async (e) => {
+        await recordExperiment(e);
+        executionConfirmed =
+          !/kernel_lost|protocol_error|cleanup|record_failure|incomplete execution/.test(
+            e.reason,
+          );
+        await record.save(state());
+      },
+    });
+    checkExecution();
+    selectedExperiment = result.selected;
+    artifact = await (o.delivery ?? deliver)(
+      record.directory,
+      task,
+      result.selected,
+      result.final,
+      data.dataset,
+      {
+        searchBest: best,
+        confirmation: result.confirmation,
+        plan: validationPlan,
+      },
+    );
+    checkExecution();
+    deliveryStatus = "completed";
+    status = "completed";
+    reason = "delivery_validated";
   };
   try {
     await record.event("run_started");
@@ -314,7 +426,7 @@ export async function runModeling(o: ModelingOptions) {
       { flag: "wx", mode: 0o444 },
     );
     await record.save(state());
-    const profileStarted = performance.now();
+    const began = performance.now();
     try {
       basicProfile = await (o.prepareProfile ?? createBasicProfile)({
         root: record.directory,
@@ -324,54 +436,46 @@ export async function runModeling(o: ModelingOptions) {
         signal,
       });
     } finally {
-      profileElapsed = performance.now() - profileStarted;
+      profileElapsed = performance.now() - began;
     }
     await record.event("basic_profile_completed", {
       artifact: basicProfile.artifact,
       elapsed_ms: profileElapsed,
     });
-    const profileSha = basicProfile.artifact.sha256;
     messages.push({
       role: "user",
       content: JSON.stringify({
         basic_profile: basicProfile.profile,
         basic_profile_sha256: basicProfile.artifact.sha256,
-        ...(task.method === "collaborative"
-          ? {
-              profile_source_examples: [
-                "/rows",
-                "/column_count",
-                "/columns",
-              ].map((path) => ({ source_id: `profile:${path}` })),
-            }
-          : {}),
+        profile_source_examples: ["profile:/rows", "profile:/columns"],
       }),
     });
     await record.save(state());
-    while (true) {
+    while (status === "running") {
       check();
-      update();
+      if (budget.explorationMs() <= 0)
+        throw new Stop("budget_exhausted", "exploration_reserve");
       const hostInitial = initialPending;
       initialPending = false;
       let calls: NonNullable<
-        Extract<Message, { role: "assistant" }>["tool_calls"]
-      >;
-      let attemptId: string;
+          Extract<Message, { role: "assistant" }>["tool_calls"]
+        >,
+        attemptId: string;
       if (hostInitial) {
-        attemptId = "host-initial-eda-v1";
+        const request = {
+          question: `Examine allowed training data for ${data.dataset.kind} prediction of ${data.dataset.target}. Which missingness, distributions or data-quality issues should inform the initial pipeline?`,
+        };
+        attemptId = "host-initial-eda-v2";
         await record.event(
           "initial_analysis_scheduled",
-          { version: 1 },
-          initialAnalysis(data.dataset),
+          { version: 2 },
+          request,
         );
         calls = [
           {
             id: randomUUID(),
             type: "function",
-            function: {
-              name: "analyze",
-              arguments: JSON.stringify(initialAnalysis(data.dataset)),
-            },
+            function: { name: "analyze", arguments: JSON.stringify(request) },
           },
         ];
       } else {
@@ -382,130 +486,35 @@ export async function runModeling(o: ModelingOptions) {
         );
         const response = await call(
           messages,
-          decisionTools(protocol, task.method),
+          modelingTools(protocol, task.method),
           model,
         );
         messages.push(response.response.message);
         calls = response.response.message.tool_calls ?? [];
         attemptId = response.attemptId;
       }
-      let selected: ModelingAction;
-      let nextCandidates: CandidateState[];
-      let nextKnowledge: KnowledgeRevision[];
-      let nextContext: ReturnType<typeof analysisContext> | undefined;
+      let core: CoreAction,
+        raw: Record<string, unknown>,
+        allocation: ReturnType<Budget["hostChildBudget"]> | undefined;
       try {
         if (calls.length !== 1 || !calls[0] || seenCalls.has(calls[0].id))
           throw new Error("Exactly one new tool call is required");
-        selected = action(
+        raw = obj(JSON.parse(calls[0].function.arguments));
+        core = parseCore(
           calls[0].function.name,
-          task.method === "collaborative" && !hostInitial
-            ? compileDecision(calls[0].function.arguments, {
-                profile_sha256: profileSha,
-                knowledge,
-                analyses,
-              })
-            : calls[0].function.arguments,
+          raw,
           task.limits.max_code_bytes,
-          task.budget.max_candidates,
           hostInitial ? "adaptive_eda" : task.method,
         );
-        for (const change of selected.candidate_updates)
-          validateEvidence(
-            change.evidence,
-            analyses,
-            data.dataset,
-            experiments,
-          );
-        nextCandidates = applyCandidateUpdates(
-          candidates,
-          selected.candidate_updates,
-          task.budget.max_candidates,
-          task.method === "collaborative",
-        );
-        const scope = {
-          run_id: record.id,
-          dataset_sha256: data.dataset.files[0]?.sha256 ?? "",
-          protocol_sha256: protocol.protocol_sha256,
-        };
-        const updates = selected.knowledge_updates ?? [];
-        validateKnowledgeSources(updates, {
-          scope,
-          profile: basicProfile.profile,
-          profile_sha256: basicProfile.artifact.sha256,
-          protocol,
-          experiments: experiments.map((e) => ({
-            id: e.id,
-            scope,
-            status: e.status,
-            phase: e.final ? "final" : "search",
-            score: e.score,
-            reason: e.reason,
-            prediction_sha256: e.predict?.output?.sha256 ?? null,
-          })),
-          analyses: analyses.map((a) => ({
-            id: a.id,
-            scope,
-            status: a.status,
-            analysis: a.analysis,
-            source_sha256: a.source_sha256 ?? "",
-            sources: a.source_experiments ?? [],
-          })),
-        });
-        nextKnowledge = applyKnowledgeUpdates(
-          knowledge,
-          updates,
-          scope,
-          record.nextSequence,
-        );
-        validateKnowledgeLinks(nextKnowledge, nextCandidates);
-        for (const ref of selected.knowledge_refs ?? [])
-          requireKnowledge(nextKnowledge, ref);
-        if (selected.kind === "analyze")
-          nextContext = analysisContext({
-            question: selected.question,
-            candidates: selected.candidates.map((id) =>
-              requireCandidate(nextCandidates, id),
-            ),
-            history: task.method === "collaborative" ? nextKnowledge : [],
-            refs: selected.knowledge_refs ?? [],
-            bestCandidate: best?.candidate_id,
-          });
-        if (selected.kind === "finish") {
-          if (!best || best.id !== selected.experiment_id)
-            throw new Error(
-              "Finish must select current best successful experiment",
-            );
-        } else {
-          if (selected.kind === "analyze")
-            for (const id of selected.source_experiments) source(id);
-          else source(selected.source_experiment, false);
-          if (selected.kind === "train") {
-            requireCandidate(nextCandidates, selected.candidate_id, {
-              active: true,
-            });
-            validateRepair(
-              experiments,
-              selected.candidate_id,
-              selected.repair_of_experiment,
-            );
-            validateEvidence(
-              selected.evidence,
-              analyses,
-              data.dataset,
-              experiments,
-            );
-          }
-          if (selected.kind === "analyze")
-            for (const id of selected.candidates)
-              requireCandidate(nextCandidates, id, { active: true });
-        }
-      } catch (e) {
-        if (e instanceof Stop) throw e;
-        corrections++;
+        validateCore(core, experiments);
+        if (core.kind === "analyze") allocation = budget.hostChildBudget();
+        else budget.canTrain(core.kind === "finish");
+      } catch (error) {
+        if (error instanceof Stop) throw error;
         await record.event("action_rejected", {
-          reason: String(e),
+          reason: String(error),
           correction_policy: CORRECTION_POLICY,
-          consecutive_rejections: corrections,
+          consecutive_rejections: ++corrections,
         });
         if (corrections > task.budget.action_corrections)
           throw new Stop("failed", "action_corrections");
@@ -515,9 +524,9 @@ export async function runModeling(o: ModelingOptions) {
               ? { role: "user" as const }
               : { role: "tool" as const, tool_call_id: c.id }),
             content: JSON.stringify({
-              error: String(e),
+              error: String(error),
               recovery_hint:
-                "Nothing was committed or executed. Correct the indicated field and resubmit; retain the modeling plan. Omit optional knowledge changes only if they are not needed for this decision; never fabricate evidence.",
+                "No action was executed. Correct core fields, choose a feasible action, or finish if a valid model exists.",
               ...view(),
             }),
           });
@@ -529,55 +538,30 @@ export async function runModeling(o: ModelingOptions) {
         continue;
       }
       const tool = calls[0];
-      if (!tool) throw new Error("Missing validated tool");
-      let allocation: ReturnType<Budget["hostChildBudget"]> | undefined;
-      try {
-        if (selected.kind === "analyze") allocation = budget.hostChildBudget();
-        else budget.canTrain(selected.kind === "finish");
-      } catch (e) {
-        if (e instanceof Stop) throw e;
-        await record.event(
-          "action_rejected",
-          {
-            reason: String(e),
-            tool_id: tool.id,
-            correction_policy: CORRECTION_POLICY,
-            consecutive_rejections: ++corrections,
-          },
-          selected,
-        );
-        if (corrections > task.budget.action_corrections)
-          throw new Stop("failed", "action_corrections");
-        messages.push({
-          ...(hostInitial
-            ? { role: "user" as const }
-            : { role: "tool" as const, tool_call_id: tool.id }),
-          content: JSON.stringify({
-            error: String(e),
-            recovery_hint: best
-              ? "Choose another feasible action or finish_modeling with best_experiment_id; repeating the refused action cannot progress."
-              : "Choose a feasible training/analysis action; repeating the refused action cannot progress.",
-            ...view(),
-          }),
-        });
-        continue;
-      }
+      if (!tool) throw new Error("Missing tool");
+      seenCalls.add(tool.id);
       const operationId = randomUUID(),
-        childId = randomUUID();
-      const frozenCandidates =
-        selected.kind === "finish"
-          ? shortlist(experiments, protocol, validationPlan)
-          : [];
-      const candidateId =
-        selected.kind === "train" ? selected.candidate_id : best?.candidate_id;
-      const repair =
-        selected.kind === "train" ? selected.repair_of_experiment : null;
-      const allocatedAt = Date.now();
-      const deadline = allocation
-        ? performance.now() + allocation.effective.task_timeout_ms
-        : null;
+        childId = randomUUID(),
+        allocatedAt = Date.now(),
+        childDeadline =
+          performance.now() + (allocation?.effective.task_timeout_ms ?? 0);
+      const accepted = acceptAttachments(
+        core,
+        raw,
+        task.method,
+        {
+          run_id: record.id,
+          profile: basicProfile.profile,
+          profile_sha256: basicProfile.artifact.sha256,
+          protocol,
+          experiments,
+          analyses,
+        },
+        notesHistory.at(-1) ?? null,
+        record.nextSequence,
+      );
       const intent =
-        selected.kind === "analyze"
+        core.kind === "analyze"
           ? {
               kind: "analysis",
               analysis_id: operationId,
@@ -588,284 +572,231 @@ export async function runModeling(o: ModelingOptions) {
                 allocatedAt + (allocation?.effective.task_timeout_ms ?? 0),
               ).toISOString(),
             }
-          : selected.kind === "finish"
+          : core.kind === "train"
             ? {
-                kind: "finish",
-                experiment_id: operationId,
-                search_best_experiment_id: best?.id,
-                shortlist: frozenCandidates.map((e) => ({
-                  experiment_id: e.id,
-                  code_sha256: e.code_sha256,
-                })),
-              }
-            : {
                 kind: "experiment",
                 experiment_id: operationId,
-                candidate_id: candidateId,
-                final: false,
+                candidate_id: operationId,
                 phase: "search",
+                final: false,
                 evaluation: validationPlan.search,
-                repair_of_experiment: repair,
-              };
-      seenCalls.add(tool.id);
-      const acceptedSequence = await record.event(
+                source_experiment: core.source_experiment,
+                repair_of_experiment: core.repair_of_experiment,
+              }
+            : { kind: "finish" };
+      const seq = await record.event(
         "action_accepted",
         {
-          protocol_version: 3,
+          protocol_version: 4,
           attempt_id: attemptId,
           origin: hostInitial ? "host_initial" : "model",
           tool_id: tool.id,
+          tool_name: tool.function.name,
           intent,
         },
-        selected,
+        { raw, accepted },
       );
-      candidates = nextCandidates;
-      knowledge = nextKnowledge;
-      if (selected.kind === "train") {
-        if (!candidateId) throw new Error("Missing accepted candidate");
-        candidates = attachExperiment(candidates, candidateId, operationId);
-      }
-      appliedSequence = acceptedSequence;
+      if (accepted.notes) notesHistory.push(accepted.notes);
       await record.save(state());
-      check();
-      if (selected.kind === "finish") {
-        const result = await finalizeModeling({
-          task,
-          ...data,
-          root: record.directory,
-          signal,
-          remaining,
-          check,
-          budget,
-          plan: validationPlan,
-          candidates: frozenCandidates,
-          finalId: operationId,
-          execute: o.experiment,
-          onConfirmation: async (value) => {
-            confirmation = value;
-            selectedExperiment = frozenCandidates.find(
-              (e) => e.id === value.selected_experiment_id,
-            );
-            await record.event("confirmation_result", {}, value);
-            await record.save(state());
-          },
-          onIntent: async (id, candidate, evaluation, retry) => {
-            const sequence = await record.event("experiment_intent", {
-              experiment_id: id,
-              candidate_id: candidate.candidate_id,
-              final: evaluation.phase === "final",
-              phase: evaluation.phase,
-              evaluation,
-              source_search_experiment_id: candidate.id,
-              accepted_sequence: acceptedSequence,
-              repair_of_experiment: null,
-              retry,
-            });
-            candidates = attachExperiment(
-              candidates,
-              candidate.candidate_id,
-              id,
-            );
-            appliedSequence = sequence;
-            await record.save(state());
-          },
-          onStage: async (child, experiment) => {
-            await record.event("child_intent", {
-              child_id: child,
-              experiment_id: experiment,
-            });
-          },
-          onResult: async (e) => {
-            await recordExperiment(e);
-            await record.save(state());
-          },
-        });
-        selectedExperiment = result.selected;
-        delivery = await (o.delivery ?? deliver)(
-          record.directory,
-          task,
-          result.selected,
-          result.final,
-          data.dataset,
-          {
-            searchBest: best ?? result.selected,
-            confirmation: result.confirmation,
-            plan: validationPlan,
-          },
-        );
-        check();
-        status = "completed";
-        reason = "delivery_validated";
+      checkExecution();
+      if (core.kind === "finish") {
+        await closeSearch({ kind: "agent_finished", reason: core.reason }, seq);
         break;
       }
       let feedback: unknown;
-      if (selected.kind === "analyze") {
-        if (!allocation || deadline === null)
-          throw new Error("Missing accepted allocation");
-        const id = operationId;
+      executionConfirmed = false;
+      if (core.kind === "analyze") {
+        if (!allocation) throw new Error("Missing analysis allocation");
         await record.event("child_intent", {
           child_id: childId,
-          analysis_id: id,
+          analysis_id: operationId,
           allocation,
-          accepted_sequence: acceptedSequence,
+          accepted_sequence: seq,
         });
         budget.edaCalls++;
-        let a: AnalysisRecord;
-        try {
-          a = await (o.analysis ?? analyze)({
-            id,
-            runId: childId,
-            root: record.directory,
-            task,
-            dataset: data.dataset,
-            train: data.train,
-            experiment: source(selected.source_experiments[0] ?? null),
-            experiments: selected.source_experiments.map((id) => {
-              const e = source(id);
-              if (!e) throw new Error("Missing analysis source");
-              return e;
-            }),
-            context: nextContext,
-            request: selected,
-            resolvedCandidates: selected.candidates.map((id) =>
-              requireCandidate(candidates, id),
-            ),
-            profile: edaProfile,
-            signal,
-            budget: allocation.effective,
-            deadline,
-            client: o.edaClient,
-          });
-        } catch (e) {
-          budget.total.status = "unknown";
-          throw new Stop("failed", `unconfirmed_eda:${String(e)}`);
-        }
+        const a = await (o.analysis ?? analyze)({
+          id: operationId,
+          runId: childId,
+          root: record.directory,
+          task,
+          dataset: data.dataset,
+          train: data.train,
+          experiment:
+            experiments.find((e) => e.id === core.source_experiments[0]) ??
+            null,
+          experiments: experiments.filter((e) =>
+            core.source_experiments.includes(e.id),
+          ),
+          context: {
+            version: 1,
+            question: core.question,
+            ...(task.method === "collaborative"
+              ? { notes: notesHistory.at(-1) ?? null }
+              : {}),
+          },
+          request: core,
+          profile: edaProfile,
+          signal,
+          budget: allocation.effective,
+          deadline: childDeadline,
+          client: o.edaClient,
+        });
         analyses.push(a);
         await record.event("child_result", {
           child_id: childId,
-          analysis_id: id,
+          analysis_id: operationId,
           status: a.status,
           dispatch: a.dispatch,
         });
         budget.settleChild(childId, a.cost, a.executions, a.role_usage);
-        if (/cleanup|record_failure/.test(a.reason))
-          throw new Stop("failed", a.reason);
-        check();
+        executionConfirmed = a.execution_confirmed === true;
+        if (
+          !executionConfirmed ||
+          /cleanup|record_failure|kernel_lost|protocol_error/.test(a.reason)
+        )
+          throw new Stop("failed", `unconfirmed_eda:${a.reason}`);
         if (a.status === "completed") corrections = 0;
+        else corrections++;
         feedback = {
-          analysis_id: id,
+          analysis_id: a.id,
           status: a.status,
           diagnostic: a.reason,
-          source_experiment: a.source_experiment,
           source_experiments: a.source_experiments,
-          source_sha256: a.source_sha256,
           analysis: a.analysis,
-          ...(task.method === "collaborative"
-            ? { knowledge_sources: findingSources(a) }
-            : {}),
+          sources: findingSources(a),
           allocation,
         };
       } else {
         budget.train(false);
-        const id = operationId;
         await record.event("experiment_intent", {
-          experiment_id: id,
-          candidate_id: selected.candidate_id,
-          final: false,
-          phase: "search",
-          evaluation: validationPlan.search,
-          accepted_sequence: acceptedSequence,
-          repair_of_experiment: repair,
+          ...intent,
+          accepted_sequence: seq,
           retry: false,
         });
         const e = await (o.experiment ?? runExperiment)({
           task,
           ...data,
-          code: selected.code,
-          candidateId: selected.candidate_id,
+          code: core.code,
+          candidateId: operationId,
           root: record.directory,
           signal,
           remaining: () => Math.min(remaining(), budget.explorationMs()),
           final: false,
           evaluation: validationPlan.search,
-          id,
+          id: operationId,
           onStage: async (child) => {
             await record.event("child_intent", {
               child_id: child,
-              experiment_id: id,
+              experiment_id: operationId,
             });
           },
         });
-        if (!e.evaluation || e.phase !== "search" || e.final)
-          throw new Error("Missing search experiment evaluation");
+        if (
+          e.id !== operationId ||
+          e.candidate_id !== operationId ||
+          e.code !== core.code ||
+          e.code_sha256 !== sha256(Buffer.from(core.code)) ||
+          !e.evaluation ||
+          e.phase !== "search" ||
+          e.final
+        )
+          throw new Error("Unconfirmed search experiment identity");
         assertEvaluation(e.evaluation, validationPlan.search);
         if (e.status === "completed")
           validateScore(e.score, protocol, validationPlan.search.evaluation_id);
         else if (e.score !== null)
           throw new Error("Unexpected experiment score");
-        const previousBest = best?.score ?? null;
         await recordExperiment(e);
-        if (e.status === "completed") corrections = 0;
+        // Preserve the validated result even when auxiliary execution prevents further work.
         if (
           e.status === "completed" &&
           e.score &&
           better(e.score, best?.score ?? null)
         )
           best = e;
-        check();
-        if (
-          e.status !== "completed" &&
-          /^(kernel_lost|protocol_error|cleanup|scoring_failure):|record persistence|record_failure|incomplete execution/.test(
+        executionConfirmed =
+          e.execution_confirmed !== false &&
+          !/kernel_lost|protocol_error|cleanup|scoring_failure|record persistence|record_failure|incomplete execution/.test(
             e.reason,
-          )
-        )
-          throw new Stop("failed", e.reason);
-        if (e.status !== "completed" && ++repairs > task.budget.code_repairs)
-          throw new Stop("failed", "training_repairs");
+          );
+        if (!executionConfirmed) throw new Stop("failed", e.reason);
+        if (e.status === "completed") {
+          corrections = 0;
+        } else corrections++;
         feedback = {
           experiment_id: e.id,
           status: e.status,
           score: e.score,
+          training_diagnostic: e.training_diagnostic ?? null,
           diagnostic: e.reason,
-          comparison: {
-            previous_best: previousBest,
-            improved:
-              e.score && previousBest ? better(e.score, previousBest) : null,
-          },
-          ...(task.method === "collaborative"
-            ? {
-                knowledge_sources: [
-                  {
-                    source_id: `experiment:${e.id}:${e.status === "completed" ? "score" : "failure"}`,
-                  },
-                ],
-              }
-            : {}),
+          sources: [
+            {
+              source_id: `experiment:${e.id}:${e.status === "completed" ? "score" : "failure"}`,
+            },
+            ...(e.training_diagnostic?.status === "available"
+              ? [{ source_id: `experiment:${e.id}:train_diagnostic` }]
+              : []),
+          ],
         };
       }
       messages.push({
         ...(hostInitial
           ? { role: "user" as const }
           : { role: "tool" as const, tool_call_id: tool.id }),
-        content: JSON.stringify({ ...view(), result: feedback }),
+        content: JSON.stringify({
+          ...view(),
+          warnings: accepted.warnings,
+          result: feedback,
+        }),
       });
       await record.save(state());
+      check();
+      if (corrections > task.budget.action_corrections)
+        throw new Stop("failed", "action_corrections");
     }
-  } catch (e) {
-    status = e instanceof Stop ? e.status : "failed";
-    reason = e instanceof Stop ? e.reason : String(e);
-    if (o.signal?.aborted) {
-      status = "cancelled";
-      reason = "user_cancelled";
-    } else if (controller.signal.aborted) {
-      status = "timed_out";
-      reason = "task_deadline";
+  } catch (error) {
+    let e = error;
+    if (
+      e instanceof Stop &&
+      protectedReasons.has(e.reason) &&
+      !searchEnd &&
+      best &&
+      executionConfirmed &&
+      !signal.aborted
+    ) {
+      try {
+        await closeSearch({ kind: "protected", reason: e.reason }, null);
+      } catch (closingError) {
+        e = closingError;
+      }
     }
-    if (reason.includes("record_failure")) recordError = true;
+    if (status !== "completed") {
+      status = e instanceof Stop ? e.status : "failed";
+      reason = e instanceof Stop ? e.reason : String(e);
+      if (o.signal?.aborted) {
+        status = "cancelled";
+        reason = "user_cancelled";
+      } else if (controller.signal.aborted) {
+        status = "timed_out";
+        reason = "task_deadline";
+      }
+      searchEnd ??= {
+        kind: status === "cancelled" ? "cancelled" : "failed",
+        reason,
+      };
+      if (["running"].includes(deliveryStatus))
+        deliveryStatus = status === "cancelled" ? "cancelled" : "failed";
+      if (reason.includes("record_failure")) recordError = true;
+    }
   } finally {
     clearTimeout(timer);
     try {
-      await record.event("run_finished", { status, reason });
+      await record.event("run_finished", {
+        status,
+        reason,
+        search_end: searchEnd,
+        delivery_status: deliveryStatus,
+      });
       await record.save(state());
     } catch (e) {
       recordError = true;

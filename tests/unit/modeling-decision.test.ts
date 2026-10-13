@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { action } from "../../src/modeling/actions";
+import { action } from "../../src/modeling/actions-v3";
 import {
   compileDecision,
   type DecisionContext,

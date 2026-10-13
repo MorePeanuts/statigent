@@ -26,126 +26,63 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
   let firstAnalysis: Record<string, unknown> = {},
     baseline = "",
     ref = "";
-  const question = (revision: number, sources: unknown[], status = "open") => ({
-    id: "q",
-    kind: "question",
-    statement:
-      revision === 1
-        ? "What patterns could guide modeling?"
-        : "Does validation support a linear feature?",
-    status,
-    reason: "Update understanding from actual evidence",
-    sources,
-    candidate_ids: revision === 1 ? [] : ["baseline"],
-  });
-  const client = new ScriptClient((body, requestIndex) => {
-    // Reproduce two initial formatting mistakes, a real successful EDA, then a
-    // new mistake before first training. Progress must permit recovery here.
-    if ([0, 1, 3].includes(requestIndex)) {
-      if (requestIndex === 3) firstAnalysis = obj(lastFeedback(body).result);
+  const client = new ScriptClient((body, i) => {
+    if ([0, 1, 3].includes(i)) {
+      if (i === 3) firstAnalysis = obj(lastFeedback(body).result);
       return reply([
         call("analyze", {
-          candidate_updates: [],
-          knowledge_updates: [
-            {
-              id: "bad",
-              kind: "hypothesis",
-              status: "active",
-              statement: "Try linear modeling",
-              reason: "Test",
-            },
-          ],
-          purpose: "explore",
-          candidates: [],
-          source_experiments: [],
-          question: "Describe x and target",
-          expected_evidence: "Numerical pattern",
+          question: 42,
+          notes: { text: "invalid core must not replace notes" },
         }),
       ]);
     }
-    const i = requestIndex === 2 ? 0 : requestIndex - 3;
-    if (i === 0)
+    if (i === 2)
       return reply([
         call("analyze", {
-          candidate_updates: [],
-          knowledge_updates: [question(1, [])],
-          knowledge_refs: ["q"],
-          purpose: "explore",
-          candidates: [],
-          source_experiments: [],
           question: "Describe x and target",
-          expected_evidence: "Numerical pattern",
+          notes: { text: "What patterns could guide modeling?" },
         }),
       ]);
-    if (i === 1) {
-      expect(lastFeedback(body).error).toContain("Invalid knowledge status");
-      const t = trainCall();
-      return reply([
-        call("run_experiment", {
-          ...obj(JSON.parse(t.function.arguments)),
-          knowledge_refs: ["q"],
-          knowledge_updates: [],
-        }),
-      ]);
-    }
-    if (i === 2) {
+    if (i === 4) return reply([trainCall()]);
+    if (i === 5) {
       baseline = String(obj(lastFeedback(body).result).experiment_id);
-      if (!Array.isArray(firstAnalysis.knowledge_sources))
-        throw Error("Missing accepted source hints");
-      const hint = obj(firstAnalysis.knowledge_sources[0]);
-      expect(hint).toMatchObject({
-        source_id: `analysis:${firstAnalysis.analysis_id}:0`,
-      });
       return reply([
         call("analyze", {
-          candidate_updates: [],
-          knowledge_updates: [
-            question(2, [
-              {
-                source_id: hint.source_id,
-                applicability: "Original data-only exploration",
-              },
-              { source_id: `experiment:${baseline}:score` },
-            ]),
-          ],
-          knowledge_refs: ["q"],
-          purpose: "diagnose",
-          candidates: ["baseline"],
-          source_experiments: [baseline],
           question: "Check remaining residual pattern",
-          expected_evidence: "Residual trend",
+          source_experiments: [baseline],
+          notes: {
+            text: "Does validation support a linear feature?",
+            sources: [
+              { source_id: `analysis:${firstAnalysis.analysis_id}:0` },
+              { source_id: `experiment:${baseline}:score` },
+            ],
+          },
         }),
       ]);
     }
-    if (i === 3) {
-      const t = trainCall(linearCode, [], baseline);
+    if (i === 6) {
+      const analysis = obj(lastFeedback(body).result);
       return reply([
         call("run_experiment", {
-          ...obj(JSON.parse(t.function.arguments)),
-          reason:
-            "Defer the latest diagnostic suggestion and directly test the earlier linear direction",
-          knowledge_updates: [],
-          knowledge_refs: ["q"],
+          code: linearCode,
+          change: "Test linear x",
+          reason: "Test the observed residual dependence",
+          source_experiment: baseline,
+          sources: [{ source_id: `analysis:${analysis.analysis_id}:0` }],
         }),
       ]);
     }
     return reply([
       call("finish_modeling", {
-        candidate_updates: [],
-        experiment_id: lastFeedback(body).best_experiment_id,
         reason: "Freeze both pipelines",
-        knowledge_updates: [
-          question(
-            3,
-            [
-              {
-                source_id: `experiment:${lastFeedback(body).best_experiment_id}:score`,
-              },
-            ],
-            "resolved",
-          ),
-        ],
-        knowledge_refs: ["q"],
+        notes: {
+          text: "Linear modeling validated on the internal split",
+          sources: [
+            {
+              source_id: `experiment:${lastFeedback(body).best_experiment_id}:score`,
+            },
+          ],
+        },
       }),
     ]);
   });
@@ -162,7 +99,7 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
     if (step === 1)
       return reply([
         call("execute_python", {
-          code: `import json\nimport pandas as pd\nassert 'df' not in globals()\ncontext=json.load(open('/input/context.json'))\nassert context['knowledge']['entries'][0]['revision'] == ${revision}\ndf=pd.read_csv('/input/train.csv')\nprint(df[['x','target']].head().to_dict())\n`,
+          code: `import json\nimport pandas as pd\nassert 'df' not in globals()\ncontext=json.load(open('/input/context.json'))\nassert context['notes']['revision'] == ${revision}\ndf=pd.read_csv('/input/train.csv')\nprint(df[['x','target']].head().to_dict())\n`,
         }),
       ]);
     if (step === 2) {
@@ -186,7 +123,7 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
   });
   const result = await runModeling({
     task: {
-      schema_version: 2,
+      schema_version: 3,
       method: "collaborative",
       confirmation: { mode: "terminal_repeated_holdout" },
       resource_version: "collaboration-test-v1",
@@ -224,7 +161,7 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
     analyses = (view.manifest.analyses as unknown[]).map(obj);
   expect(analyses).toHaveLength(2);
   expect(analyses[0]?.run_id).not.toBe(analyses[1]?.run_id);
-  expect(obj(view.knowledge_control).history).toHaveLength(3);
+  expect(obj(view.manifest.notes_control).history).toHaveLength(3);
   expect(view.unconfirmed_children).toHaveLength(0);
   const context = JSON.parse(
     await readFile(
@@ -232,7 +169,7 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
       "utf8",
     ),
   );
-  expect(context.knowledge.entries[0].revision).toBe(2);
+  expect(context.notes.revision).toBe(2);
   expect(obj(view.manifest.confirmation).status).toBe("complete");
   expect(view.manifest.usage).toMatchObject({
     eda_calls: 2,
@@ -243,7 +180,7 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
     (await reproduce(result.directory, join(root, "reproductions"))).status,
   ).toBe("passed");
   expect(await validateSmoke(result.directory)).toMatchObject({
-    mode: "full_collaboration",
+    collaboration: "covered",
   });
   for (const path of [
     join(result.directory, `${String(analyses[1]?.id)}-input/context.json`),

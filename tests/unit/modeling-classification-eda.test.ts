@@ -219,3 +219,124 @@ test("two model snapshots preserve aligned IDs and separate provenance; invalid 
     ]),
   ).rejects.toThrow();
 });
+
+test("two-model EDA separates training diagnostics from validation and publishes only available data", async () => {
+  const o = await fixture(),
+    protocol = datasetProtocol(o.dataset);
+  const { createValidationPlan } = await import(
+    "../../src/modeling/validation"
+  );
+  const evaluation = createValidationPlan(o.dataset, o.train, "none").search;
+  const bytes = Buffer.from(
+    csv({
+      columns: [
+        "id",
+        protocol.prediction.column,
+        ...protocol.prediction.probability_columns,
+      ],
+      rows: o.dataset.split.train
+        .map((id) => [id, "01", "0.6", "0.4"])
+        .reverse(),
+    }),
+  );
+  await writeFile(join(o.root, "stage", "artifacts", "training.csv"), bytes);
+  if (!o.experiment.predict) throw Error("fixture");
+  const prediction = {
+    ...o.experiment.predict,
+    run_id: "training",
+    output: {
+      path: "artifacts/training.csv",
+      bytes: bytes.length,
+      sha256: sha256(bytes),
+    },
+  };
+  const members = sha256(Buffer.from(JSON.stringify(o.dataset.split.train)));
+  const modelHash = "b".repeat(64);
+  const diagnostic = {
+    partition: "train" as const,
+    status: "available" as const,
+    members_sha256: members,
+    model_sha256: modelHash,
+    prediction,
+    score: {
+      metric: protocol.metric,
+      direction: protocol.direction,
+      protocol_sha256: protocol.protocol_sha256,
+      scoring_version: protocol.scoring_version,
+      value: 0.7,
+      evaluation_id: sha256(
+        Buffer.from(
+          JSON.stringify({
+            partition: "train",
+            search_evaluation_id: evaluation.evaluation_id,
+            members_sha256: members,
+          }),
+        ),
+      ),
+    },
+    reason: "ok",
+    elapsed_ms: 12,
+  };
+  const first = {
+    ...o.experiment,
+    phase: "search" as const,
+    evaluation,
+    fit: {
+      ...prediction,
+      output: { path: "model.joblib", bytes: 1, sha256: modelHash },
+    },
+    training_diagnostic: diagnostic,
+  };
+  const second = {
+    ...first,
+    id: "e2",
+    training_diagnostic: {
+      ...diagnostic,
+      status: "unavailable" as const,
+      prediction: null,
+      score: null,
+      reason: "auxiliary failure",
+    },
+  };
+  const input = join(o.root, "diagnostics");
+  await prepareAnalysisInput(input, o.dataset, o.train, [first, second]);
+  expect((await readdir(input)).sort()).toEqual([
+    "context.json",
+    "source.json",
+    "split.json",
+    "train.csv",
+    "training-diagnostics-e.csv",
+    "validation-e.csv",
+    "validation-e2.csv",
+  ]);
+  const source = JSON.parse(await readFile(join(input, "source.json"), "utf8"));
+  expect(source.sources[0]).toMatchObject({
+    partition: "validation",
+    path: "validation-e.csv",
+    training: {
+      partition: "train",
+      path: "training-diagnostics-e.csv",
+      status: "available",
+      model_sha256: modelHash,
+    },
+  });
+  expect(source.sources[1].training).toEqual({
+    status: "unavailable",
+    reason: "auxiliary failure",
+  });
+  const table = parseCsv(
+    await readFile(join(input, "training-diagnostics-e.csv"), "utf8"),
+  );
+  expect(table.rows.map((r) => r[0])).toEqual(o.dataset.split.train);
+  expect(
+    source.sources[0].training.fields.probabilities.map(
+      (p: { label: string }) => p.label,
+    ),
+  ).toEqual(protocol.classes);
+  await expect(
+    prepareAnalysisInput(join(o.root, "bad-diagnostic"), o.dataset, o.train, {
+      ...first,
+      training_diagnostic: { ...diagnostic, members_sha256: "wrong" },
+    }),
+  ).rejects.toThrow("provenance");
+});

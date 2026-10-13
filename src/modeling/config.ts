@@ -19,7 +19,10 @@ export const MODELING_BUDGET = {
   eda_timeout_ms: 300000,
   max_candidates: 16,
 };
-export type ModelingBudget = typeof MODELING_BUDGET;
+export type ModelingBudget = Omit<
+  typeof MODELING_BUDGET,
+  "training_attempts"
+> & { training_attempts: number | null };
 export const MODELING_METHODS = [
   "no_eda",
   "initial_eda",
@@ -30,7 +33,10 @@ export type ModelingMethod = (typeof MODELING_METHODS)[number];
 
 // Historical delivery reads retain their original configuration semantics.
 // This parser is never an alternate entry point for starting a new search.
-export function validateFrozenModelingTask(value: unknown) {
+export function validateFrozenModelingTask(
+  value: unknown,
+  allowUnbounded = false,
+) {
   const x = obj(value);
   keys(x, [
     "goal",
@@ -43,8 +49,12 @@ export function validateFrozenModelingTask(value: unknown) {
   ]);
   const raw = obj(x.budget ?? {});
   keys(raw, Object.keys(MODELING_BUDGET));
-  const budget = { ...MODELING_BUDGET };
-  for (const k of Object.keys(raw) as (keyof ModelingBudget)[])
+  const budget: ModelingBudget = { ...MODELING_BUDGET };
+  for (const k of Object.keys(raw) as (keyof ModelingBudget)[]) {
+    if (k === "training_attempts" && raw[k] === null && allowUnbounded) {
+      budget.training_attempts = null;
+      continue;
+    }
     budget[k] = integer(
       raw[k],
       k,
@@ -58,8 +68,10 @@ export function validateFrozenModelingTask(value: unknown) {
         ? 0
         : 1,
     );
+  }
   if (
-    budget.final_training_attempts >= budget.training_attempts ||
+    (budget.training_attempts !== null &&
+      budget.final_training_attempts >= budget.training_attempts) ||
     budget.final_reserve_ms >= budget.task_timeout_ms ||
     budget.final_reserve_ms < budget.fit_timeout_ms + budget.predict_timeout_ms
   )
@@ -109,9 +121,12 @@ export function validateFrozenModelingTask(value: unknown) {
     budget,
   };
 }
-export function validateModelingTask(value: unknown) {
+export function validateRecordedModelingTask(value: unknown) {
   const x = obj(value);
-  if (x.schema_version !== 2 || x.method === undefined)
+  if (
+    (x.schema_version !== 2 && x.schema_version !== 3) ||
+    x.method === undefined
+  )
     throw new Error(
       "Migrate modeling task: declare schema_version: 2, method and confirmation.mode explicitly",
     );
@@ -129,7 +144,7 @@ export function validateModelingTask(value: unknown) {
     resource_version,
     ...base
   } = x;
-  const task = validateFrozenModelingTask(base);
+  const task = validateFrozenModelingTask(base, x.schema_version === 3);
   if (
     method === "initial_eda" &&
     (!task.budget.eda_calls || !task.budget.eda_executions)
@@ -137,8 +152,9 @@ export function validateModelingTask(value: unknown) {
     throw new Error("initial_eda requires a positive EDA allowance");
   const confirmationAttempts = mode === "none" ? 0 : 4;
   if (
-    task.budget.training_attempts <=
-      confirmationAttempts + task.budget.final_training_attempts ||
+    (task.budget.training_attempts !== null &&
+      task.budget.training_attempts <=
+        confirmationAttempts + task.budget.final_training_attempts) ||
     task.budget.final_reserve_ms <
       (confirmationAttempts + task.budget.final_training_attempts) *
         (task.budget.fit_timeout_ms + task.budget.predict_timeout_ms)
@@ -146,11 +162,18 @@ export function validateModelingTask(value: unknown) {
     throw new Error("Insufficient confirmation/finalization reserve");
   return {
     ...task,
-    schema_version: 2 as const,
+    schema_version: x.schema_version as 2 | 3,
     method: method as ModelingMethod,
     confirmation: { mode: mode as "none" | "terminal_repeated_holdout" },
     resource_version: str(resource_version, "resource_version"),
   };
+}
+export function validateModelingTask(value: unknown) {
+  if (obj(value).schema_version !== 3)
+    throw new Error(
+      "Migrate modeling task: declare schema_version: 3, method and confirmation.mode explicitly",
+    );
+  return { ...validateRecordedModelingTask(value), schema_version: 3 as const };
 }
 export type ModelingExecutionTask = ReturnType<
   typeof validateFrozenModelingTask

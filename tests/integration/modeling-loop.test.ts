@@ -48,7 +48,7 @@ test("modeling keeps candidate identity through EDA, failed code and repair, the
     edaClient = new ScriptClient(modelingEdaScript());
   const result = await runModeling({
     task: {
-      schema_version: 2,
+      schema_version: 3,
       method: "adaptive_eda",
       confirmation: { mode: "none" },
       resource_version: "smoke-v1",
@@ -71,7 +71,7 @@ test("modeling keeps candidate identity through EDA, failed code and repair, the
   expect(
     view.events.filter((e) => e.type === "experiment_result"),
   ).toHaveLength(4);
-  expect(view.events.filter((e) => e.type === "child_intent")).toHaveLength(8);
+  expect(view.events.filter((e) => e.type === "child_intent")).toHaveLength(10);
   const experiments = (view.manifest.experiments as unknown[]).map(obj);
   const [baseline, failed, repaired, final] = experiments;
   expect(experiments.map((e) => e.status)).toEqual([
@@ -80,10 +80,10 @@ test("modeling keeps candidate identity through EDA, failed code and repair, the
     "completed",
     "completed",
   ]);
-  expect(failed?.candidate_id).toBe("linear");
-  expect(repaired?.candidate_id).toBe(failed?.candidate_id);
+  expect(failed?.candidate_id).toBe(failed?.id);
+  expect(repaired?.candidate_id).toBe(repaired?.id);
   expect(repaired?.id).not.toBe(failed?.id);
-  expect(final?.candidate_id).toBe("linear");
+  expect(final?.candidate_id).toBe(repaired?.id);
   expect(Number(obj(repaired?.score).value)).toBeLessThan(
     Number(obj(baseline?.score).value),
   );
@@ -92,17 +92,7 @@ test("modeling keeps candidate identity through EDA, failed code and repair, the
       (e) => e.type === "experiment_intent" && e.experiment_id === repaired?.id,
     )?.repair_of_experiment,
   ).toBe(failed?.id);
-  const candidates = (
-    obj(view.manifest.candidate_control).candidates as unknown[]
-  ).map(obj);
-  expect(candidates).toHaveLength(2);
-  expect(candidates.find((c) => c.id === "linear")).toMatchObject({
-    status: "tried",
-    experiment_ids: [failed?.id, repaired?.id, final?.id],
-  });
-  expect(
-    candidates.find((c) => c.id === "linear")?.evidence as unknown[],
-  ).toHaveLength(1);
+  expect(view.manifest.candidate_control).toBeUndefined();
   expect(client.bodies).toHaveLength(5);
   expect(edaClient.bodies).toHaveLength(4);
   await expectContainersClean(view.events);
@@ -161,16 +151,21 @@ test("two EDA calls use host allocations from remaining resources, shared parent
     if (i === 2) {
       const previous = obj(lastFeedback(body).result);
       return reply([
-        analyzeCall(String(previous.source_experiment), {
-          candidateUpdates: [],
-        }),
+        analyzeCall(
+          String(
+            obj((previous.source_experiments as unknown[])[0]).experiment_id,
+          ),
+          {
+            candidateUpdates: [],
+          },
+        ),
       ]);
     }
     return base(body, i > 2 ? i - 1 : i);
   });
   const result = await runModeling({
     task: {
-      schema_version: 2,
+      schema_version: 3,
       method: "adaptive_eda",
       confirmation: { mode: "none" },
       resource_version: "smoke-v1",
