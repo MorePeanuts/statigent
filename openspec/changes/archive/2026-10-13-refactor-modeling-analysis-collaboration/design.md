@@ -2,7 +2,7 @@
 
 ## Context
 
-动机与用户确认范围见 [proposal.md](proposal.md)。研究依据为 [overview.md](../../../docs/overview.md)，当前主线合并提交为 `72c83a3`。下表来自本次只读核查，不表示相应改动已经实现。
+动机与用户确认范围见 [proposal.md](proposal.md)。研究依据为 [overview.md](../../../../docs/overview.md)，规划时主线合并提交为 `72c83a3`。下表来自规划时的只读核查，不表示相应改动已经实现。
 
 | 当前位置 | 观察到的行为 | 对本设计的影响 |
 | --- | --- | --- |
