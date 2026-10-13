@@ -21,6 +21,7 @@ import {
   tableFile,
   validateDataset,
 } from "./data";
+import { reproduceV5, scoreDeliveryV5 } from "./delivery-v2";
 import {
   type Experiment,
   predictionValues,
@@ -268,6 +269,12 @@ export async function reproduce(
   runRoot: string,
   mode: "predict" | "refit" = "predict",
 ) {
+  if (
+    obj(
+      JSON.parse(await readFile(await regular(root, "modeling.json"), "utf8")),
+    ).schema_version === 5
+  )
+    return reproduceV5(root, runRoot, mode);
   const f = await frozen(root),
     data = await loadDataset(f.task.dataset_root),
     image = obj(f.manifest.image);
@@ -372,6 +379,12 @@ export async function scoreDelivery(
   labelsFile: string,
   outRoot: string,
 ) {
+  if (
+    obj(
+      JSON.parse(await readFile(await regular(root, "modeling.json"), "utf8")),
+    ).schema_version === 5
+  )
+    return scoreDeliveryV5(root, labelsRoot, labelsFile, outRoot);
   const f = await frozen(root),
     data = await loadDataset(f.task.dataset_root);
   if (JSON.stringify(data.dataset) !== JSON.stringify(f.dataset))

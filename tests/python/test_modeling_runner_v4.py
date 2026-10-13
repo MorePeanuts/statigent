@@ -8,7 +8,7 @@ from statigent_modeling.limits import DEFAULT_DATA_LIMITS
 from statigent_modeling.runner import run
 
 
-def fixture(tmp_path, kind, target_count=1):
+def fixture(tmp_path, kind, target_count=1, include_labels=False):
     names = [f"y{i}" for i in range(target_count)]
     classes = (
         ["3", "5", "8"]
@@ -64,7 +64,18 @@ def fixture(tmp_path, kind, target_count=1):
             for i in range(40)
         ),
         prediction=((f"test:{i}", i, {"x": i}) for i in range(4)),
-        labels=None,
+        labels=[
+            (
+                f"test:{i}",
+                [
+                    i if kind == "regression" else classes[i % len(classes)]
+                    for _ in names
+                ],
+            )
+            for i in range(4)
+        ]
+        if include_labels
+        else None,
         seed=17,
         limits=DEFAULT_DATA_LIMITS,
         provenance={"benchmark": "synthetic"},
