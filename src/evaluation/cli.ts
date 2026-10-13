@@ -1,5 +1,6 @@
 import { join, resolve } from "node:path";
 import { auditModeling } from "./benchmarks/modeling/audit";
+import { PREPARE_HELP, prepareModeling } from "./benchmarks/modeling/prepare";
 import { cleanupEvaluation } from "./cleanup";
 import { id } from "./contracts";
 import { buildPlan, type Registry } from "./plan";
@@ -13,8 +14,7 @@ import {
 } from "./report";
 import { runEvaluation } from "./run";
 
-export const HELP =
-  "bun run evaluate plan|run --config FILE [--models FILE] [--root RUN_ROOT]\nbun run evaluate inspect|cleanup EVALUATION_ID [--root RUN_ROOT]\nbun run evaluate score EVALUATION_ID [--root RUN_ROOT] [--allow-model-calls --judge-budget FILE]\nbun run evaluate audit [--data-root benchmarks] [--catalog FILE] [--output NEW_FILE]";
+export const HELP = `bun run evaluate plan|run --config FILE [--models FILE] [--root RUN_ROOT]\nbun run evaluate inspect|cleanup EVALUATION_ID [--root RUN_ROOT]\nbun run evaluate score EVALUATION_ID [--root RUN_ROOT] [--allow-model-calls --judge-budget FILE]\nbun run evaluate audit [--data-root benchmarks] [--catalog FILE] [--output NEW_FILE]\n${PREPARE_HELP}`;
 export function parseArguments(args: string[]) {
   if (!args.length || args[0] === "--help") return null;
   const [operation, ...rest] = args;
@@ -72,6 +72,20 @@ export async function main(
   dependencies: Pick<RescoreOptions, "judgeFactory"> = {},
 ): Promise<unknown> {
   if (args[0] === "audit") return auditModeling(args.slice(1));
+  if (args[0] === "prepare") {
+    const controller = new AbortController();
+    const cancel = () => controller.abort();
+    process.on("SIGINT", cancel);
+    process.on("SIGTERM", cancel);
+    try {
+      return await prepareModeling(args.slice(1), {
+        signal: controller.signal,
+      });
+    } finally {
+      process.off("SIGINT", cancel);
+      process.off("SIGTERM", cancel);
+    }
+  }
   const options = parseArguments(args);
   if (!options) return { help: HELP };
   if (options.operation === "plan" || options.operation === "run") {

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "benchmark": "dsbench-modeling",
+  "task_id": "titanic",
+  "data_root": "benchmarks",
+  "catalog": "benchmarks/metadata/modeling-task-catalog.json",
+  "seed": 17,
+  "limits": {
+    "max_file_bytes": 33554432,
+    "max_rows": 1000000,
+    "max_columns": 4096,
+    "max_field_bytes": 65536,
+    "max_memory_bytes": 536870912
+  },
+  "timeout_ms": 120000
+}

@@ -12,6 +12,7 @@
 | DSBench 真实发布数据准备 | Titanic、Bike Sharing、s3e5、s3e13、s3e18、s4e3 六项通过 | 源哈希不变；没有拟合模型 |
 | TabArena 真实准备 | 363612、363621、363685 三项通过 | ARFF/Parquet 合成解码均通过；APSFailure 真实准备待执行 |
 | 官方 system 接口探针 | 固定可选环境安装与无训练探针通过 | Statigent 薄 wrapper 未验收 |
+| 显式准备 CLI | Titanic、airfoil 新建及 Titanic 只读复用实际通过；3 个服务测试、6 个 CLI/原评测回归通过 | 源和准备哈希核对；独立回执保留本次及原始成本 |
 | 真实 LLM、正式研究实验 | 未运行 | 后续需要明确任务、方法、模型和预算 |
 
 ## 数据规模检查

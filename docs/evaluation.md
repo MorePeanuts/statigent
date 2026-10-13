@@ -11,7 +11,43 @@
 
 模型预算包含尝试次数、token 停止阈值；响应可能使 token 超出阈值，阈值不是账单硬上限。相同智能体可以注册多个配置分别比较。Statigent 支持 single 与 planner-executor；尚未实现的脚本后端、预测文件及联网外部智能体不能通过配置冒充已支持。
 
-## 契约版本
+## 建模基准的显式数据准备
+
+`evaluate prepare` 独立于 plan/run。它不读取模型配置、不调用 LLM、不训练或下载；
+默认计划入口不会隐式生成准备目录。建模训练与评测 v3 的接线仍在实施中，
+准备通过只能作为数据层证据，进度见 [建模基准验收记录](modeling-benchmarks-validation.md)。
+
+```bash
+uv sync --frozen --group data
+mkdir -p runs/prepared
+bun run evaluate prepare --config configs/evaluations/dsbench-modeling-prepare.json --out runs/prepared/titanic
+bun run evaluate prepare --config configs/evaluations/tabarena-modeling-prepare.json --out runs/prepared/airfoil
+bun run evaluate prepare --config configs/evaluations/dsbench-modeling-prepare.json --reuse runs/prepared/titanic --receipt runs/prepared/titanic-reuse.json
+```
+
+配置显式指定一个候选、来源清单、种子、五项数据限额与准备时限。输出及回执必须不存在；
+新建默认回执是 `<out>.preparation.json`，可用 `--receipt` 指定其他新文件。
+已有目录不得覆盖，也不能向原始基准树写入准备产物；复用必须显式使用 `--reuse`。
+复用会重新验证源文件、准备文件、划分、协议及配置身份，保存本次校验耗时和原始成本文件的哈希，
+不会把历史准备报告为本次免费完成。`dataset.preparation.elapsed_ms` 是材料化耗时；
+`preparation-cost.json` 另存完整准备/校验进程耗时，回执的 `original_cost` 引用该事实。
+失败回执保存错误和本次耗时；部分准备产物保留，不能被误用为成功任务。
+
+新数据清单为 schema 3，目标协议为 v2；旧原生 `modeling prepare` 的 schema 1/2 读取规则保留。
+目录内容及发布边界：
+
+| 目录/文件 | 内容与用途 |
+| --- | --- |
+| `search/train.csv` | 允许训练成员及全部目标；预测特征采用冻结白名单 |
+| `search/features.json`、`split.json` | 完整特征类型、缺失编码和内部成员 |
+| `search/task.txt`、`adaptation.json` | 原题面或公开任务说明、实际发布规模及协议勘误 |
+| `final-prediction/test.csv` | 冻结后才可发布的无标签测试特征 |
+| `evaluator/labels.csv`、`source-rows.jsonl` | 私有评分标签与来源/导出身份映射 |
+| `dataset.json`、`preparation-cost.json` | 受信调度端使用的身份、限额、哈希及成本事实 |
+
+这些目录名不是安全沙箱。实际执行必须按阶段只挂载白名单文件，不能把准备根目录整体挂载给智能体。
+
+## 契约版本（现有评测 v2）
 
 版本 2 相对版本 1 的变化：
 
