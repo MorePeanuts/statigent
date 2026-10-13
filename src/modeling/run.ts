@@ -30,6 +30,7 @@ import { datasetProtocol, loadDataset } from "./data";
 import { deliver } from "./delivery";
 import { type AnalysisRecord, analyze, validateEvidence } from "./eda";
 import { type Experiment, runExperiment } from "./experiments";
+import { createBasicProfile } from "./profile";
 import { better, validateScore } from "./protocol";
 import { ModelingRecord } from "./records";
 export interface ModelingOptions {
@@ -44,6 +45,7 @@ export interface ModelingOptions {
   analysis?: typeof analyze;
   delivery?: typeof deliver;
   createRecord?: typeof ModelingRecord.create;
+  prepareProfile?: typeof createBasicProfile;
 }
 export async function runModeling(o: ModelingOptions) {
   const start = performance.now(),
@@ -111,6 +113,9 @@ export async function runModeling(o: ModelingOptions) {
     repairs = 0;
   let pendingAnalysis: string | null = null;
   let candidates: CandidateState[] = [];
+  let basicProfile: Awaited<ReturnType<typeof createBasicProfile>> | null =
+    null;
+  let profileElapsed = 0;
   let appliedSequence = 0;
   const seenCalls = new Set<string>();
   const check = () => {
@@ -192,6 +197,8 @@ export async function runModeling(o: ModelingOptions) {
     best_experiment_id: best?.id ?? null,
     delivery,
     wall_ms: performance.now() - start,
+    basic_profile: basicProfile,
+    preparation: { profile_elapsed_ms: profileElapsed },
     candidate_control: {
       version: 1,
       candidates,
@@ -207,6 +214,27 @@ export async function runModeling(o: ModelingOptions) {
   };
   try {
     await record.event("run_started");
+    await record.save(state());
+    const profileStarted = performance.now();
+    try {
+      basicProfile = await (o.prepareProfile ?? createBasicProfile)({
+        root: record.directory,
+        dataset: data.dataset,
+        train: data.train,
+        timeout_ms: remaining(),
+        signal,
+      });
+    } finally {
+      profileElapsed = performance.now() - profileStarted;
+    }
+    await record.event("basic_profile_completed", {
+      artifact: basicProfile.artifact,
+      elapsed_ms: profileElapsed,
+    });
+    messages.push({
+      role: "user",
+      content: JSON.stringify({ basic_profile: basicProfile.profile }),
+    });
     await record.save(state());
     while (true) {
       check();

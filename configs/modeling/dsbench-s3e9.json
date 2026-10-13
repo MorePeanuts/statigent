@@ -1,4 +1,10 @@
 {
+  "schema_version": 2,
+  "method": "adaptive_eda",
+  "confirmation": {
+    "mode": "none"
+  },
+  "resource_version": "smoke-v1",
   "goal": "Build a regression pipeline for Strength using the allowed training data. This development task checks collaboration: train an initial model, propose concrete alternatives based on its validation results, ask the EDA agent one bounded diagnostic question about those alternatives, then use returned evidence to choose and train a follow-up experiment. Finally select the best validated pipeline and deliver predictions. Do not require the follow-up score to improve. Keep the single analysis focused and leave the reserved finalization time unused during exploration. Maintain explicit candidate identities; request a proportionate EDA allowance with a budget reason, then record evidence-backed candidate_updates before or with follow-up training.",
   "dataset_root": "runs/modeling-s3e9-data",
   "model_profile": "deepseek-flash",

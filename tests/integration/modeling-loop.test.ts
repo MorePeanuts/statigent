@@ -48,6 +48,11 @@ test("modeling keeps candidate identity through EDA, failed code and repair, the
     edaClient = new ScriptClient(modelingEdaScript());
   const result = await runModeling({
     task: {
+      schema_version: 2,
+      method: "adaptive_eda",
+      confirmation: { mode: "none" },
+      resource_version: "smoke-v1",
+
       goal: "Test synthetic loop",
       dataset_root: join(root, "data"),
       model_profile: profile.id,
@@ -174,6 +179,11 @@ test("two EDA calls use distinct requested allowances, shared parent costs and i
   });
   const result = await runModeling({
     task: {
+      schema_version: 2,
+      method: "adaptive_eda",
+      confirmation: { mode: "none" },
+      resource_version: "smoke-v1",
+
       goal: "Two independent analyses",
       dataset_root: join(root, "data"),
       model_profile: profile.id,

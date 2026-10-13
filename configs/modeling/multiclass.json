@@ -1,4 +1,10 @@
 {
+  "schema_version": 2,
+  "method": "adaptive_eda",
+  "confirmation": {
+    "mode": "none"
+  },
+  "resource_version": "smoke-v1",
   "goal": "Build a multiclass classification pipeline using the frozen metric and class mapping. This development smoke checks collaboration: train a first model, ask one focused model-directed EDA question, update a candidate using returned evidence, train a follow-up, then deliver the best validated pipeline. Improvement is not required. Keep preprocessing within the pipeline and preserve finalization reserve.",
   "dataset_root": "runs/modeling-multiclass-data",
   "model_profile": "deepseek-flash",

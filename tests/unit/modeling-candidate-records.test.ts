@@ -17,6 +17,11 @@ import { RunRecorder } from "../../src/records/store";
 import { collaborationMetadata } from "../helpers/collaboration";
 
 const task = validateModelingTask({
+  schema_version: 2,
+  method: "adaptive_eda",
+  confirmation: { mode: "none" },
+  resource_version: "smoke-v1",
+
   goal: "check records",
   dataset_root: ".",
   model_profile: "test",

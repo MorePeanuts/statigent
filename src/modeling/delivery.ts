@@ -5,7 +5,10 @@ import { describeFile, regular, verifyFiles } from "../evaluation/files";
 import { dockerCommand } from "../execution/docker";
 import { obj, str } from "../models/validation";
 import { readManifest, writeJson } from "../records/store";
-import { type ModelingTask, validateModelingTask } from "./config";
+import {
+  type ModelingExecutionTask,
+  validateFrozenModelingTask,
+} from "./config";
 import {
   type Dataset,
   datasetProtocol,
@@ -34,7 +37,7 @@ import {
 import { scoreTables } from "./scoring";
 export async function deliver(
   root: string,
-  task: ModelingTask,
+  task: ModelingExecutionTask,
   selected: Experiment,
   final: Experiment,
   dataset: Dataset,
@@ -181,7 +184,7 @@ async function frozen(root: string) {
   return {
     directory,
     manifest,
-    task: validateModelingTask(manifest.task),
+    task: validateFrozenModelingTask(manifest.task),
     dataset,
     files,
   };

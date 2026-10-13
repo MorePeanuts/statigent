@@ -40,6 +40,11 @@ async function options(
   let count = 0;
   return {
     task: {
+      schema_version: 2,
+      method: "adaptive_eda",
+      confirmation: { mode: "none" },
+      resource_version: "smoke-v1",
+
       goal: "test",
       dataset_root: join(root, "data"),
       model_profile: profile.id,

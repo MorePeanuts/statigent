@@ -30,6 +30,11 @@ test("a tree ensemble above the old 16 MiB limit is saved, collected on close an
   );
   await prepareDataset({ ...source, input_root: input }, join(root, "data"));
   const task = validateModelingTask({
+    schema_version: 2,
+    method: "adaptive_eda",
+    confirmation: { mode: "none" },
+    resource_version: "smoke-v1",
+
     goal: "large model persistence",
     dataset_root: join(root, "data"),
     model_profile: "test",
@@ -70,6 +75,11 @@ async function setup() {
   await prepareDataset(source, join(root, "dataset"));
   const loaded = await loadDataset(join(root, "dataset"));
   const task = validateModelingTask({
+    schema_version: 2,
+    method: "adaptive_eda",
+    confirmation: { mode: "none" },
+    resource_version: "smoke-v1",
+
     goal: "regress",
     dataset_root: join(root, "dataset"),
     model_profile: "deepseek-flash",

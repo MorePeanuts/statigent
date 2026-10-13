@@ -43,6 +43,11 @@ async function options(): Promise<Parameters<typeof analyze>[0]> {
     runId: "child-1",
     root,
     task: validateModelingTask({
+      schema_version: 2,
+      method: "adaptive_eda",
+      confirmation: { mode: "none" },
+      resource_version: "smoke-v1",
+
       goal: "test",
       dataset_root: join(root, "data"),
       model_profile: profile.id,

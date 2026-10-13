@@ -20,7 +20,17 @@ export const MODELING_BUDGET = {
   max_candidates: 16,
 };
 export type ModelingBudget = typeof MODELING_BUDGET;
-export function validateModelingTask(value: unknown) {
+export const MODELING_METHODS = [
+  "no_eda",
+  "initial_eda",
+  "adaptive_eda",
+  "collaborative",
+] as const;
+export type ModelingMethod = (typeof MODELING_METHODS)[number];
+
+// Historical delivery reads retain their original configuration semantics.
+// This parser is never an alternate entry point for starting a new search.
+export function validateFrozenModelingTask(value: unknown) {
   const x = obj(value);
   keys(x, [
     "goal",
@@ -99,4 +109,50 @@ export function validateModelingTask(value: unknown) {
     budget,
   };
 }
+export function validateModelingTask(value: unknown) {
+  const x = obj(value);
+  if (x.schema_version !== 2 || x.method === undefined)
+    throw new Error(
+      "Migrate modeling task: declare schema_version: 2, method and confirmation.mode explicitly",
+    );
+  if (!MODELING_METHODS.some((method) => method === x.method))
+    throw new Error("Invalid modeling method");
+  const confirmation = obj(x.confirmation);
+  keys(confirmation, ["mode"]);
+  const mode = confirmation.mode;
+  if (mode !== "none" && mode !== "terminal_repeated_holdout")
+    throw new Error("Invalid confirmation mode");
+  const {
+    schema_version: _version,
+    method,
+    confirmation: _confirmation,
+    resource_version,
+    ...base
+  } = x;
+  const task = validateFrozenModelingTask(base);
+  if (
+    method === "initial_eda" &&
+    (!task.budget.eda_calls || !task.budget.eda_executions)
+  )
+    throw new Error("initial_eda requires a positive EDA allowance");
+  const confirmationAttempts = mode === "none" ? 0 : 4;
+  if (
+    task.budget.training_attempts <=
+      confirmationAttempts + task.budget.final_training_attempts ||
+    task.budget.final_reserve_ms <
+      (confirmationAttempts + task.budget.final_training_attempts) *
+        (task.budget.fit_timeout_ms + task.budget.predict_timeout_ms)
+  )
+    throw new Error("Insufficient confirmation/finalization reserve");
+  return {
+    ...task,
+    schema_version: 2 as const,
+    method: method as ModelingMethod,
+    confirmation: { mode },
+    resource_version: str(resource_version, "resource_version"),
+  };
+}
+export type ModelingExecutionTask = ReturnType<
+  typeof validateFrozenModelingTask
+>;
 export type ModelingTask = ReturnType<typeof validateModelingTask>;

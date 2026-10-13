@@ -7,7 +7,7 @@ import { DockerSession } from "../execution/session";
 import { obj } from "../models/validation";
 import { exportNotebooks } from "../records/notebook";
 import { RunRecorder, readArtifact, sha256 } from "../records/store";
-import type { ModelingTask } from "./config";
+import type { ModelingExecutionTask } from "./config";
 import {
   csv,
   type Dataset,
@@ -33,7 +33,7 @@ export interface StageResult {
   elapsed_ms: number;
 }
 export interface StageOptions {
-  task: ModelingTask;
+  task: ModelingExecutionTask;
   dataset: Dataset;
   root: string;
   runId?: string;
@@ -256,7 +256,7 @@ export interface Experiment {
   final: boolean;
 }
 export async function runExperiment(o: {
-  task: ModelingTask;
+  task: ModelingExecutionTask;
   dataset: Dataset;
   train: Table;
   test: Table;
