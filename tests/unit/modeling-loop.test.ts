@@ -168,6 +168,15 @@ test("EDA evidence drives follow-up while worse scores preserve original best an
     r = await runModeling(o);
   expect(r.status, r.reason).toBe("completed");
   const { manifest } = await inspectModeling(r.directory);
+  const firstBody = (o.client as ScriptClient).bodies[0];
+  const firstMessages = obj(firstBody).messages as {
+    role: string;
+    content: string;
+  }[];
+  const initial = firstMessages.find((m) => m.role === "user");
+  expect(JSON.parse(initial?.content ?? "{}").execution_limits).toMatchObject({
+    max_artifact_bytes: 256 * 1024 ** 2,
+  });
   const experiments = manifest.experiments as { id: string }[];
   expect(r.best_experiment_id).toBe(experiments[0]?.id ?? null);
   expect(manifest.usage).toMatchObject({

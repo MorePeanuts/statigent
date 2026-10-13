@@ -165,6 +165,12 @@ export async function runModeling(o: ModelingOptions) {
           validation_rows: data.dataset.split.validation.length,
         },
         budget: task.budget,
+        execution_limits: {
+          memory_bytes: task.limits.memory_bytes,
+          workspace_bytes: task.limits.workspace_bytes,
+          max_artifact_bytes: task.limits.max_artifact_bytes,
+          max_artifacts_bytes: task.limits.max_artifacts_bytes,
+        },
       }),
     },
   ];

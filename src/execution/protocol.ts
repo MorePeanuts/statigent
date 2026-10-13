@@ -1,4 +1,6 @@
 /** Versioned JSONL contract. Container messages remain untrusted input. */
+import { validBase64 } from "./base64";
+
 export const PROTOCOL_VERSION = 1 as const;
 export type TerminalStatus =
   | "ok"
@@ -356,11 +358,7 @@ export function parseBridgeMessage(
       str(x.path, "path");
       str(x.mime_type, "mime_type");
       str(x.data_base64, "data_base64");
-      if (
-        !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
-          x.data_base64,
-        )
-      )
+      if (!validBase64(x.data_base64))
         throw new ProtocolError("invalid base64");
       if (x.cell_id !== undefined) identifier(x.cell_id, "cell_id");
       if (x.execution_seq !== undefined)

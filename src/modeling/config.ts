@@ -54,6 +54,32 @@ export function validateModelingTask(value: unknown) {
     budget.final_reserve_ms < budget.fit_timeout_ms + budget.predict_timeout_ms
   )
     throw new Error("Invalid finalization reserve");
+  const limits = {
+    ...DEFAULT_LIMITS,
+    // Tree ensembles can exceed 150 MiB even on the 4,325-row development task.
+    // Leave room for fitting plus tmpfs and the current base64/JSON transport copies.
+    memory_bytes: 4 * 1024 ** 3,
+    workspace_bytes: 512 * 1024 ** 2,
+    tmp_bytes: 128 * 1024 ** 2,
+    // Closing collects another snapshot; a ~174 MiB frame takes over 3 seconds.
+    interrupt_grace_ms: 15000,
+    max_artifact_bytes: 256 * 1024 ** 2,
+    // Execution and close snapshots both count, including per-file metadata.
+    max_artifacts_bytes: 1024 ** 3,
+    ...obj(x.limits ?? {}),
+    task_timeout_ms: budget.task_timeout_ms,
+  };
+  // Artifacts use one base64 JSON frame. Derive the frame allowance unless the
+  // caller explicitly froze it (including older runs used for reproduction).
+  const artifactBytes = integer(
+    limits.max_artifact_bytes,
+    "max_artifact_bytes",
+  );
+  if (obj(x.limits ?? {}).max_frame_bytes === undefined)
+    limits.max_frame_bytes = Math.max(
+      DEFAULT_LIMITS.max_frame_bytes,
+      Math.ceil(artifactBytes / 3) * 4 + 64 * 1024,
+    );
   const execution = validateConfig({
     run_id: "preflight",
     staging_root: "preflight",
@@ -61,16 +87,7 @@ export function validateModelingTask(value: unknown) {
     input_root: resolve(str(x.dataset_root, "dataset_root")),
     inputs: [],
     seed: 0,
-    limits: {
-      ...DEFAULT_LIMITS,
-      memory_bytes: 2 * 1024 ** 3,
-      workspace_bytes: 256 * 1024 ** 2,
-      tmp_bytes: 128 * 1024 ** 2,
-      max_artifact_bytes: 16 * 1024 ** 2,
-      max_artifacts_bytes: 64 * 1024 ** 2,
-      ...obj(x.limits ?? {}),
-      task_timeout_ms: budget.task_timeout_ms,
-    },
+    limits,
   });
   return {
     goal: str(x.goal, "goal"),
