@@ -21,6 +21,7 @@ import {
 import { validatePredictions } from "./predictions";
 import { type Score, validateModelMetadata } from "./protocol";
 import { ScoringFailure, scoreTables } from "./scoring";
+import type { Evaluation, ExperimentPhase } from "./validation";
 
 export interface StageResult {
   run_id: string;
@@ -42,6 +43,7 @@ export interface StageOptions {
   data: Table;
   entrypoint?: string;
   legacy?: boolean;
+  modelSeed?: number;
   model?: Buffer;
   signal: AbortSignal;
   remainingMs: number;
@@ -63,7 +65,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
         : {}),
       target: o.dataset.target,
       id_column: o.dataset.id_column,
-      seed: o.dataset.seed,
+      seed: o.modelSeed ?? o.dataset.seed,
     }),
   };
   if (o.model) values["model.joblib"] = o.model;
@@ -82,7 +84,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     input_root: inputs,
     inputs: Object.keys(values),
     staging_root: resolve(o.root, ".staging"),
-    seed: o.dataset.seed,
+    seed: o.modelSeed ?? o.dataset.seed,
     limits: {
       ...o.task.limits,
       task_timeout_ms: timeout,
@@ -101,7 +103,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     config: { ...config },
     inputs: [],
     image: { id: "unresolved", platform: "unresolved" },
-    seed: o.dataset.seed,
+    seed: o.modelSeed ?? o.dataset.seed,
     maxArtifactBytes: config.limits.max_artifact_bytes,
     maxTotalArtifactBytes:
       config.limits.max_artifacts_bytes + config.limits.max_output_bytes,
@@ -254,6 +256,9 @@ export interface Experiment {
   fit: StageResult | null;
   predict: StageResult | null;
   final: boolean;
+  phase?: ExperimentPhase;
+  evaluation?: Evaluation;
+  source_search_experiment_id?: string | null;
 }
 export async function runExperiment(o: {
   task: ModelingExecutionTask;
@@ -266,6 +271,8 @@ export async function runExperiment(o: {
   signal: AbortSignal;
   remaining: () => number;
   final?: boolean;
+  evaluation?: Evaluation;
+  sourceSearchExperimentId?: string;
   id?: string;
   onStage?: (id: string) => Promise<void>;
   entrypoints?: { fit: string; predict: string };
@@ -283,7 +290,23 @@ export async function runExperiment(o: {
     fit: null,
     predict: null,
     final: o.final ?? false,
+    ...(o.evaluation
+      ? {
+          phase: o.evaluation.phase,
+          evaluation: o.evaluation,
+          source_search_experiment_id: o.sourceSearchExperimentId ?? null,
+        }
+      : {}),
   };
+  if (
+    o.evaluation &&
+    ((o.evaluation.phase === "final") !== Boolean(o.final) ||
+      o.evaluation.protocol_sha256 !==
+        datasetProtocol(o.dataset).protocol_sha256 ||
+      o.evaluation.train_sha256 !== o.dataset.files[0]?.sha256)
+  )
+    throw new Error("Experiment evaluation mismatch");
+  const split = o.evaluation?.split ?? o.dataset.split;
   if (Buffer.byteLength(o.code) > o.task.limits.max_code_bytes)
     throw new Error("Code exceeds limit");
   const base = {
@@ -294,14 +317,13 @@ export async function runExperiment(o: {
     signal: o.signal,
     onIntent: o.onStage,
     legacy: o.legacy,
+    modelSeed: o.evaluation?.model_seed,
   };
   e.fit = await runStage({
     ...base,
     stage: "fit",
     entrypoint: o.entrypoints?.fit,
-    data: o.final
-      ? o.train
-      : select(o.train, o.dataset.split.train, o.dataset.id_column),
+    data: o.final ? o.train : select(o.train, split.train, o.dataset.id_column),
     remainingMs: o.remaining(),
   });
   if (e.fit.status !== "completed") {
@@ -320,7 +342,7 @@ export async function runExperiment(o: {
     model: await stageBytes(e.fit),
     data: o.final
       ? o.test
-      : select(o.train, o.dataset.split.validation, o.dataset.id_column, [
+      : select(o.train, split.validation, o.dataset.id_column, [
           o.dataset.target,
         ]),
     remainingMs: o.remaining(),
@@ -332,7 +354,7 @@ export async function runExperiment(o: {
   try {
     const expected = o.final
       ? rowIds(o.test, o.dataset.id_column)
-      : o.dataset.split.validation;
+      : split.validation;
     const predictions = parseCsv((await stageBytes(e.predict)).toString());
     const protocol = datasetProtocol(o.dataset);
     validatePredictions(predictions, expected, o.dataset.id_column, protocol);
@@ -360,7 +382,10 @@ export async function runExperiment(o: {
         timeout_ms: o.remaining(),
       });
       if (!scored.score) throw new Error(scored.error ?? "Invalid score");
-      e.score = scored.score;
+      e.score = {
+        ...scored.score,
+        ...(o.evaluation ? { evaluation_id: o.evaluation.evaluation_id } : {}),
+      };
     }
     e.status = "completed";
     e.reason = "ok";

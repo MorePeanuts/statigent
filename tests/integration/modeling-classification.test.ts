@@ -62,7 +62,7 @@ for (const source of [binary, multiclass]) {
     expect(await validateSmoke(r.directory)).toMatchObject({
       source_experiment: expect.any(String),
     });
-    expect(view.manifest.schema_version).toBe(2);
+    expect(view.manifest.schema_version).toBe(3);
     const experiments = (view.manifest.experiments as unknown[]).map(obj);
     expect(experiments).toHaveLength(3);
     expect(r.best_experiment_id).toBe(String(experiments[1]?.id));

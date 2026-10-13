@@ -69,10 +69,14 @@ async function options(
             protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
             scoring_version: datasetProtocol(o.dataset).scoring_version,
             value: ++count,
+            evaluation_id: o.evaluation?.evaluation_id,
           },
       fit: null,
       predict: null,
       final: o.final ?? false,
+      phase: o.evaluation?.phase,
+      evaluation: o.evaluation,
+      source_search_experiment_id: o.sourceSearchExperimentId ?? null,
     }),
     analysis: async (o) => {
       const result = {
@@ -767,3 +771,155 @@ test("training can use earlier valid evidence after a newer analysis", async () 
     2,
   );
 }, 30000);
+
+for (const method of [
+  "no_eda",
+  "initial_eda",
+  "adaptive_eda",
+  "collaborative",
+] as const)
+  test(`${method} shares training capability and enforces its tool boundary`, async () => {
+    const o = await options((body, i) =>
+      reply(i === 0 ? [trainCall()] : [finishCall(body)]),
+    );
+    o.task = { ...obj(o.task), method };
+    const r = await runModeling(o);
+    expect(r.status, r.reason).toBe("completed");
+    const view = await inspectModeling(r.directory);
+    expect(view.manifest.usage).toMatchObject({
+      eda_calls: method === "initial_eda" ? 1 : 0,
+      training_attempts: 2,
+    });
+    const first = obj((o.client as ScriptClient).bodies[0]);
+    const names = (first.tools as { function: { name: string } }[]).map(
+      (t) => t.function.name,
+    );
+    expect(names.includes("analyze")).toBe(
+      method === "adaptive_eda" || method === "collaborative",
+    );
+    expect(view.knowledge_control).toEqual(
+      method === "collaborative"
+        ? {
+            version: 1,
+            history: [],
+            applied_sequence: Number(
+              obj(view.manifest.candidate_control).applied_sequence,
+            ),
+          }
+        : "disabled",
+    );
+  }, 30000);
+
+test("initial analysis known failure is not repeated and modeling can still finish", async () => {
+  const o = await options((body, i) =>
+    reply(i === 0 ? [trainCall()] : [finishCall(body)]),
+  );
+  o.task = { ...obj(o.task), method: "initial_eda" };
+  let analyses = 0;
+  o.analysis = async (args) => {
+    analyses++;
+    return {
+      id: args.id,
+      run_id: args.runId,
+      directory: null,
+      dispatch: "not_started",
+      effective_budget: args.budget,
+      deadline: args.deadline,
+      source_experiment: null,
+      dataset_hash: args.dataset.files[0]?.sha256 ?? "",
+      split_hash: args.dataset.split.sha256,
+      protocol_sha256: datasetProtocol(args.dataset).protocol_sha256,
+      prediction_sha256: null,
+      status: "failed",
+      reason: "known preparation failure",
+      analysis: null,
+      cost: emptyLedger(),
+      role_usage: { planner: emptyLedger(), executor: emptyLedger() },
+      executions: 0,
+      request: args.request,
+    };
+  };
+  const r = await runModeling(o);
+  expect(r.status, r.reason).toBe("completed");
+  expect(analyses).toBe(1);
+  expect((await inspectModeling(r.directory)).manifest.analyses).toHaveLength(
+    1,
+  );
+}, 30000);
+
+for (const fault of ["unknown", "cancel", "timeout", "record"] as const)
+  test(`closing ${fault} never selects partial confirmation or resumes the model`, async () => {
+    const controller = new AbortController();
+    const o = await options((body, i) =>
+      reply([i === 0 ? trainCall() : finishCall(body)]),
+    );
+    o.signal = controller.signal;
+    o.task = {
+      ...obj(o.task),
+      confirmation: { mode: "terminal_repeated_holdout" },
+      budget: {
+        training_attempts: 6,
+        task_timeout_ms: 1200000,
+        final_reserve_ms: 750000,
+      },
+    };
+    const execute = o.experiment;
+    if (!execute) throw Error("fixture");
+    let confirmations = 0,
+      finals = 0;
+    o.experiment = async (input) => {
+      if (input.final) finals++;
+      if (input.evaluation?.phase === "confirmation") {
+        confirmations++;
+        if (fault === "unknown") throw Error("unconfirmed runtime");
+        if (fault === "cancel") controller.abort();
+        if (fault === "timeout")
+          return {
+            ...(await execute(input)),
+            status: "failed",
+            score: null,
+            reason: "timeout:closing deadline",
+          };
+      }
+      return execute(input);
+    };
+    if (fault === "record")
+      o.createRecord = async (...args) => {
+        const r = await ModelingRecord.create(...args),
+          event = r.event.bind(r);
+        r.event = async (type, fields, payload) => {
+          if (type === "experiment_intent" && fields?.phase === "confirmation")
+            throw Error("record_failure:closing intent");
+          return event(type, fields, payload);
+        };
+        return r;
+      };
+    const r = await runModeling(o);
+    expect(r.status).not.toBe("completed");
+    expect((o.client as ScriptClient).bodies).toHaveLength(2);
+    expect(finals).toBe(0);
+    expect(confirmations).toBeLessThanOrEqual(1);
+    const view = await inspectModeling(r.directory);
+    expect(view.manifest.selected_experiment_id).toBeNull();
+    expect(obj(view.manifest.confirmation).status).toBe("incomplete");
+    if (fault === "unknown")
+      expect(view.unconfirmed_experiments).toHaveLength(1);
+    if (fault === "record") expect(r.record_error).toBe(true);
+  });
+
+test("deferring the best candidate at finish does not remove its successful pipeline", async () => {
+  const o = await options((body, i) =>
+    reply([
+      i === 0
+        ? trainCall()
+        : finishCall(body, [updateCandidate("baseline", [], "defer")]),
+    ]),
+  );
+  const r = await runModeling(o);
+  expect(r.status, r.reason).toBe("completed");
+  const m = (await inspectModeling(r.directory)).manifest;
+  expect(m.selected_experiment_id).toBe(m.search_best_experiment_id);
+  expect(obj(m.candidate_control).candidates).toMatchObject([
+    { id: "baseline", status: "deferred" },
+  ]);
+});

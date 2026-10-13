@@ -22,6 +22,7 @@ import {
 } from "./data";
 import { type Experiment, stageBytes } from "./experiments";
 import { validatePredictions } from "./predictions";
+import { assertEvaluation, evaluation } from "./validation";
 export interface AnalysisRecord {
   id: string;
   source_experiment: string | null;
@@ -78,8 +79,22 @@ export async function prepareAnalysisInput(
   )
     throw new Error("Invalid analysis sources");
   const sources: Record<string, unknown>[] = [];
+  if (
+    experiments.some(
+      (e) => Boolean(e.evaluation) !== Boolean(experiments[0]?.evaluation),
+    )
+  )
+    throw new Error("Mixed analysis evaluation identities");
   for (const experiment of experiments) {
     identifier(experiment.id);
+    if (experiment.evaluation) {
+      if (experiment.phase !== "search")
+        throw new Error("Analysis requires search evaluation");
+      assertEvaluation(
+        experiment.evaluation,
+        evaluation(dataset, "search", dataset.split, dataset.seed),
+      );
+    }
     let predictionHash: string | null = null;
     let fields: {
       prediction: string;
@@ -145,6 +160,9 @@ export async function prepareAnalysisInput(
       prediction_sha256: predictionHash,
       fields,
       path: inputs.at(-1),
+      evaluation_id: experiment.evaluation?.evaluation_id ?? null,
+      model_seed: experiment.evaluation?.model_seed ?? dataset.seed,
+      split_sha256: dataset.split.sha256,
     });
   }
   await writeFile(

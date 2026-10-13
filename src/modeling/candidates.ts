@@ -40,6 +40,7 @@ export interface CandidateState {
   knowledge_refs?: KnowledgeRef[];
 }
 export interface CandidateExperiment {
+  phase?: "search" | "confirmation" | "final";
   id: string;
   candidate_id: string;
   status: string;

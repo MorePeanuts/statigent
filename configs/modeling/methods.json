@@ -1,0 +1,7 @@
+{
+  "shared_resource": "configs/modeling/resources/collaboration-dev-v1.json",
+  "shared_confirmation": "terminal_repeated_holdout",
+  "methods": ["no_eda", "initial_eda", "adaptive_eda", "collaborative"],
+  "development_tasks": ["s3e9", "binary", "multiclass"],
+  "seed": 42
+}

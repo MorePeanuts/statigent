@@ -3,7 +3,11 @@ import {
   applyKnowledgeUpdates,
   type KnowledgeRevision,
 } from "../../src/modeling/knowledge";
-import { analysisContext, knowledgeView } from "../../src/modeling/prompt";
+import {
+  analysisContext,
+  boundedState,
+  knowledgeView,
+} from "../../src/modeling/prompt";
 
 const scope = {
   run_id: "r",
@@ -55,4 +59,11 @@ test("oversized required references are rejected rather than silently omitted", 
     ),
   ).toThrow("context limit");
   expect(knowledgeView(h).omitted.length).toBeGreaterThan(0);
+});
+
+test("oversized common modeling state stops instead of silently truncating facts", () => {
+  expect(() =>
+    boundedState({ candidates: [{ reason: "x".repeat(262144) }] }),
+  ).toThrow("state context limit");
+  expect(boundedState({ candidates: [] })).toEqual({ candidates: [] });
 });

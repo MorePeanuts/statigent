@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { action } from "../../src/modeling/legacy-actions";
 import {
   applyCandidateUpdates,
   attachExperiment,
@@ -11,6 +10,7 @@ import {
   validateCandidateState,
   validateRepair,
 } from "../../src/modeling/candidates";
+import { action } from "../../src/modeling/legacy-actions";
 
 function create(id: string, priority = 1): CandidateUpdate {
   return {

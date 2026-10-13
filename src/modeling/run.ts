@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { modelCaller } from "../agent/model-call";
 import { Stop } from "../agent/stop";
 import { ChatClient, type Message, type ModelClient } from "../models/client";
@@ -26,10 +28,12 @@ import {
   validateRepair,
 } from "./candidates";
 import { validateModelingTask } from "./config";
+import { type ConfirmationResult, shortlist } from "./confirmation";
 import { datasetProtocol, loadDataset } from "./data";
 import { deliver } from "./delivery";
 import { type AnalysisRecord, analyze, validateEvidence } from "./eda";
 import { type Experiment, runExperiment } from "./experiments";
+import { finalizeModeling } from "./finalize";
 import {
   applyKnowledgeUpdates,
   type KnowledgeRevision,
@@ -39,15 +43,18 @@ import {
   validateKnowledgeLinks,
   validateKnowledgeSources,
 } from "./knowledge-sources";
+import { initialAnalysis } from "./methods";
 import { createBasicProfile } from "./profile";
 import {
   analysisContext,
+  boundedState,
   CONTEXT_LIMITS,
   contextIdentity,
   knowledgeView,
 } from "./prompt";
 import { better, validateScore } from "./protocol";
 import { ModelingRecord } from "./records";
+import { assertEvaluation, createValidationPlan } from "./validation";
 export interface ModelingOptions {
   task: unknown;
   profile: ModelProfile;
@@ -71,6 +78,11 @@ export async function runModeling(o: ModelingOptions) {
     throw new Error("Profile/task mismatch");
   const data = await loadDataset(task.dataset_root);
   const protocol = datasetProtocol(data.dataset);
+  const validationPlan = createValidationPlan(
+    data.dataset,
+    data.train,
+    task.confirmation.mode,
+  );
   const prompt = modelingPrompt(task.method);
   const remaining = () =>
     Math.max(
@@ -90,7 +102,11 @@ export async function runModeling(o: ModelingOptions) {
     clearTimeout(timer);
     throw new Error("Client profile mismatch");
   }
-  const budget = new Budget(task.budget, remaining);
+  const budget = new Budget(
+    task.budget,
+    remaining,
+    task.confirmation.mode === "none" ? 0 : 4,
+  );
   const model: ModelMetadata = {
     profile: profileSnapshot(profile),
     returned_models: [],
@@ -105,8 +121,13 @@ export async function runModeling(o: ModelingOptions) {
         task,
         dataset: data.dataset,
         protocol,
+        validation_plan: validationPlan,
+        validation_plan_sha256: contextIdentity(validationPlan).sha256,
         model: profileSnapshot(profile),
         eda_model: profileSnapshot(edaProfile),
+        tools: modelingTools(protocol, task.method).map(
+          (tool) => tool.function.name,
+        ),
         prompt: {
           context_limits: CONTEXT_LIMITS,
           version: MODELING_PROMPT_VERSION,
@@ -121,6 +142,8 @@ export async function runModeling(o: ModelingOptions) {
   }
   const experiments: Experiment[] = [],
     analyses: AnalysisRecord[] = [];
+  let selectedExperiment: Experiment | undefined;
+  let confirmation: ConfirmationResult | null = null;
   let best: Experiment | undefined,
     status = "running",
     reason = "",
@@ -129,6 +152,7 @@ export async function runModeling(o: ModelingOptions) {
     corrections = 0,
     repairs = 0;
   let knowledge: KnowledgeRevision[] = [];
+  let initialPending = task.method === "initial_eda";
   let candidates: CandidateState[] = [];
   let basicProfile: Awaited<ReturnType<typeof createBasicProfile>> | null =
     null;
@@ -197,22 +221,23 @@ export async function runModeling(o: ModelingOptions) {
       }),
     },
   ];
-  const view = () => ({
-    best_experiment_id: best?.id ?? null,
-    best_validation_score: best?.score ?? null,
-    budget: budget.snapshot(),
-    candidates: candidateSummary(candidates, experiments),
-    ...(task.method === "collaborative"
-      ? {
-          knowledge: knowledgeView(
-            knowledge,
-            [],
-            candidates,
-            best?.candidate_id,
-          ),
-        }
-      : {}),
-  });
+  const view = () =>
+    boundedState({
+      best_experiment_id: best?.id ?? null,
+      best_validation_score: best?.score ?? null,
+      budget: budget.snapshot(),
+      candidates: candidateSummary(candidates, experiments),
+      ...(task.method === "collaborative"
+        ? {
+            knowledge: knowledgeView(
+              knowledge,
+              [],
+              candidates,
+              best?.candidate_id,
+            ),
+          }
+        : {}),
+    });
   const state = () => ({
     status,
     reason,
@@ -223,6 +248,9 @@ export async function runModeling(o: ModelingOptions) {
     analyses,
     best_experiment_id: best?.id ?? null,
     delivery,
+    search_best_experiment_id: best?.id ?? null,
+    selected_experiment_id: selectedExperiment?.id ?? null,
+    confirmation,
     wall_ms: performance.now() - start,
     basic_profile: basicProfile,
     preparation: { profile_elapsed_ms: profileElapsed },
@@ -243,8 +271,32 @@ export async function runModeling(o: ModelingOptions) {
       throw new Error("Invalid source experiment");
     return e;
   };
+  const recordExperiment = async (e: Experiment) => {
+    experiments.push(e);
+    for (const stage of [e.fit, e.predict])
+      if (stage)
+        await record.event("child_result", {
+          child_id: stage.run_id,
+          experiment_id: e.id,
+          status: stage.status,
+        });
+    await record.event("experiment_result", {
+      experiment_id: e.id,
+      status: e.status,
+      score: e.score,
+      reason: e.reason,
+      evaluation: e.evaluation,
+      phase: e.phase,
+      source_search_experiment_id: e.source_search_experiment_id ?? null,
+    });
+  };
   try {
     await record.event("run_started");
+    await writeFile(
+      join(record.directory, "validation-plan.json"),
+      JSON.stringify(validationPlan),
+      { flag: "wx", mode: 0o444 },
+    );
     await record.save(state());
     const profileStarted = performance.now();
     try {
@@ -273,18 +325,44 @@ export async function runModeling(o: ModelingOptions) {
     while (true) {
       check();
       update();
-      await record.event(
-        "model_context",
-        { version: 1, method: task.method, ...contextIdentity(messages) },
-        messages,
-      );
-      const response = await call(
-        messages,
-        modelingTools(protocol, task.method),
-        model,
-      );
-      messages.push(response.response.message);
-      const calls = response.response.message.tool_calls ?? [];
+      const hostInitial = initialPending;
+      initialPending = false;
+      let calls: NonNullable<
+        Extract<Message, { role: "assistant" }>["tool_calls"]
+      >;
+      let attemptId: string;
+      if (hostInitial) {
+        attemptId = "host-initial-eda-v1";
+        await record.event(
+          "initial_analysis_scheduled",
+          { version: 1 },
+          initialAnalysis(data.dataset),
+        );
+        calls = [
+          {
+            id: randomUUID(),
+            type: "function",
+            function: {
+              name: "analyze",
+              arguments: JSON.stringify(initialAnalysis(data.dataset)),
+            },
+          },
+        ];
+      } else {
+        await record.event(
+          "model_context",
+          { version: 1, method: task.method, ...contextIdentity(messages) },
+          messages,
+        );
+        const response = await call(
+          messages,
+          modelingTools(protocol, task.method),
+          model,
+        );
+        messages.push(response.response.message);
+        calls = response.response.message.tool_calls ?? [];
+        attemptId = response.attemptId;
+      }
       let selected: ModelingAction;
       let nextCandidates: CandidateState[];
       let nextKnowledge: KnowledgeRevision[];
@@ -297,7 +375,7 @@ export async function runModeling(o: ModelingOptions) {
           calls[0].function.arguments,
           task.limits.max_code_bytes,
           task.budget.max_candidates,
-          task.method,
+          hostInitial ? "adaptive_eda" : task.method,
         );
         for (const change of selected.candidate_updates)
           validateEvidence(
@@ -396,8 +474,9 @@ export async function runModeling(o: ModelingOptions) {
           throw new Stop("failed", "action_corrections");
         for (const c of calls)
           messages.push({
-            role: "tool",
-            tool_call_id: c.id,
+            ...(hostInitial
+              ? { role: "user" as const }
+              : { role: "tool" as const, tool_call_id: c.id }),
             content: JSON.stringify({ error: String(e), ...view() }),
           });
         if (!calls.length)
@@ -421,15 +500,19 @@ export async function runModeling(o: ModelingOptions) {
           selected,
         );
         messages.push({
-          role: "tool",
-          tool_call_id: tool.id,
+          ...(hostInitial
+            ? { role: "user" as const }
+            : { role: "tool" as const, tool_call_id: tool.id }),
           content: JSON.stringify({ error: String(e), ...view() }),
         });
         continue;
       }
       const operationId = randomUUID(),
         childId = randomUUID();
-      const final = selected.kind === "finish";
+      const frozenCandidates =
+        selected.kind === "finish"
+          ? shortlist(experiments, protocol, validationPlan)
+          : [];
       const candidateId =
         selected.kind === "train" ? selected.candidate_id : best?.candidate_id;
       const repair =
@@ -450,19 +533,32 @@ export async function runModeling(o: ModelingOptions) {
                 allocatedAt + (allocation?.effective.task_timeout_ms ?? 0),
               ).toISOString(),
             }
-          : {
-              kind: "experiment",
-              experiment_id: operationId,
-              candidate_id: candidateId,
-              final,
-              repair_of_experiment: repair,
-            };
+          : selected.kind === "finish"
+            ? {
+                kind: "finish",
+                experiment_id: operationId,
+                search_best_experiment_id: best?.id,
+                shortlist: frozenCandidates.map((e) => ({
+                  experiment_id: e.id,
+                  code_sha256: e.code_sha256,
+                })),
+              }
+            : {
+                kind: "experiment",
+                experiment_id: operationId,
+                candidate_id: candidateId,
+                final: false,
+                phase: "search",
+                evaluation: validationPlan.search,
+                repair_of_experiment: repair,
+              };
       seenCalls.add(tool.id);
       const acceptedSequence = await record.event(
         "action_accepted",
         {
           protocol_version: 3,
-          attempt_id: response.attemptId,
+          attempt_id: attemptId,
+          origin: hostInitial ? "host_initial" : "model",
           tool_id: tool.id,
           intent,
         },
@@ -470,13 +566,83 @@ export async function runModeling(o: ModelingOptions) {
       );
       candidates = nextCandidates;
       knowledge = nextKnowledge;
-      if (selected.kind !== "analyze") {
+      if (selected.kind === "train") {
         if (!candidateId) throw new Error("Missing accepted candidate");
         candidates = attachExperiment(candidates, candidateId, operationId);
       }
       appliedSequence = acceptedSequence;
       await record.save(state());
       check();
+      if (selected.kind === "finish") {
+        const result = await finalizeModeling({
+          task,
+          ...data,
+          root: record.directory,
+          signal,
+          remaining,
+          check,
+          budget,
+          plan: validationPlan,
+          candidates: frozenCandidates,
+          finalId: operationId,
+          execute: o.experiment,
+          onConfirmation: async (value) => {
+            confirmation = value;
+            selectedExperiment = frozenCandidates.find(
+              (e) => e.id === value.selected_experiment_id,
+            );
+            await record.event("confirmation_result", {}, value);
+            await record.save(state());
+          },
+          onIntent: async (id, candidate, evaluation, retry) => {
+            const sequence = await record.event("experiment_intent", {
+              experiment_id: id,
+              candidate_id: candidate.candidate_id,
+              final: evaluation.phase === "final",
+              phase: evaluation.phase,
+              evaluation,
+              source_search_experiment_id: candidate.id,
+              accepted_sequence: acceptedSequence,
+              repair_of_experiment: null,
+              retry,
+            });
+            candidates = attachExperiment(
+              candidates,
+              candidate.candidate_id,
+              id,
+            );
+            appliedSequence = sequence;
+            await record.save(state());
+          },
+          onStage: async (child, experiment) => {
+            await record.event("child_intent", {
+              child_id: child,
+              experiment_id: experiment,
+            });
+          },
+          onResult: async (e) => {
+            await recordExperiment(e);
+            await record.save(state());
+          },
+        });
+        selectedExperiment = result.selected;
+        delivery = await (o.delivery ?? deliver)(
+          record.directory,
+          task,
+          result.selected,
+          result.final,
+          data.dataset,
+          {
+            searchBest: best ?? result.selected,
+            confirmation: result.confirmation,
+            plan: validationPlan,
+          },
+        );
+        check();
+        status = "completed";
+        reason = "delivery_validated";
+        break;
+      }
       let feedback: unknown;
       if (selected.kind === "analyze") {
         if (!allocation || deadline === null)
@@ -541,108 +707,58 @@ export async function runModeling(o: ModelingOptions) {
           allocation,
         };
       } else {
-        budget.train(final);
-        const code = selected.kind === "train" ? selected.code : best?.code;
-        if (!code) throw new Error("Missing candidate code");
-        let e: Experiment;
-        let id = operationId;
-        let retry = false;
-        while (true) {
-          if (!candidateId) throw new Error("Missing accepted candidate");
-          const sequence = await record.event("experiment_intent", {
-            experiment_id: id,
-            candidate_id: candidateId,
-            final,
-            accepted_sequence: acceptedSequence,
-            repair_of_experiment: repair,
-            retry,
-          });
-          if (retry) {
-            candidates = attachExperiment(candidates, candidateId, id);
-            appliedSequence = sequence;
-            await record.save(state());
-          }
-          e = await (o.experiment ?? runExperiment)({
-            task,
-            ...data,
-            code,
-            candidateId,
-            root: record.directory,
-            signal,
-            remaining: final
-              ? remaining
-              : () => Math.min(remaining(), budget.explorationMs()),
-            final,
-            id,
-            onStage: async (childId) => {
-              await record.event("child_intent", {
-                child_id: childId,
-                experiment_id: id,
-              });
-            },
-          });
-          if (e.status === "completed" && !e.final)
-            validateScore(e.score, protocol);
-          else if (e.score !== null)
-            throw new Error("Unexpected experiment score");
-          experiments.push(e);
-          for (const s of [e.fit, e.predict])
-            if (s)
-              await record.event("child_result", {
-                child_id: s.run_id,
-                experiment_id: id,
-                status: s.status,
-              });
-          await record.event("experiment_result", {
-            experiment_id: id,
-            status: e.status,
-            score: e.score,
-            reason: e.reason,
-          });
-          // A confirmed score remains selectable even if the following clock check stops exploration.
-          if (
-            !e.final &&
-            e.status === "completed" &&
-            e.score &&
-            better(e.score, best?.score ?? null)
+        budget.train(false);
+        const id = operationId;
+        await record.event("experiment_intent", {
+          experiment_id: id,
+          candidate_id: selected.candidate_id,
+          final: false,
+          phase: "search",
+          evaluation: validationPlan.search,
+          accepted_sequence: acceptedSequence,
+          repair_of_experiment: repair,
+          retry: false,
+        });
+        const e = await (o.experiment ?? runExperiment)({
+          task,
+          ...data,
+          code: selected.code,
+          candidateId: selected.candidate_id,
+          root: record.directory,
+          signal,
+          remaining: () => Math.min(remaining(), budget.explorationMs()),
+          final: false,
+          evaluation: validationPlan.search,
+          id,
+          onStage: async (child) => {
+            await record.event("child_intent", {
+              child_id: child,
+              experiment_id: id,
+            });
+          },
+        });
+        if (!e.evaluation || e.phase !== "search" || e.final)
+          throw new Error("Missing search experiment evaluation");
+        assertEvaluation(e.evaluation, validationPlan.search);
+        if (e.status === "completed")
+          validateScore(e.score, protocol, validationPlan.search.evaluation_id);
+        else if (e.score !== null)
+          throw new Error("Unexpected experiment score");
+        await recordExperiment(e);
+        if (
+          e.status === "completed" &&
+          e.score &&
+          better(e.score, best?.score ?? null)
+        )
+          best = e;
+        check();
+        if (
+          e.status !== "completed" &&
+          /^(kernel_lost|protocol_error|cleanup|scoring_failure):|record persistence|record_failure|incomplete execution/.test(
+            e.reason,
           )
-            best = e;
-          check();
-          if (
-            e.status !== "completed" &&
-            /^(kernel_lost|protocol_error|cleanup|scoring_failure):|record persistence|record_failure|incomplete execution/.test(
-              e.reason,
-            )
-          )
-            throw new Stop("failed", e.reason);
-          if (
-            final &&
-            e.status !== "completed" &&
-            e.reason.startsWith("error:") &&
-            budget.finalTraining < task.budget.final_training_attempts
-          ) {
-            budget.train(true);
-            id = randomUUID();
-            retry = true;
-            continue;
-          }
-          break;
-        }
-        if (final) {
-          if (e.status !== "completed" || !best)
-            throw new Stop("failed", `finalization_failed:${e.reason}`);
-          delivery = await (o.delivery ?? deliver)(
-            record.directory,
-            task,
-            best,
-            e,
-            data.dataset,
-          );
-          check();
-          status = "completed";
-          reason = "delivery_validated";
-          break;
-        }
+        )
+          throw new Stop("failed", e.reason);
         if (e.status !== "completed" && ++repairs > task.budget.code_repairs)
           throw new Stop("failed", "training_repairs");
         feedback = {
@@ -653,8 +769,9 @@ export async function runModeling(o: ModelingOptions) {
         };
       }
       messages.push({
-        role: "tool",
-        tool_call_id: tool.id,
+        ...(hostInitial
+          ? { role: "user" as const }
+          : { role: "tool" as const, tool_call_id: tool.id }),
         content: JSON.stringify({ ...view(), result: feedback }),
       });
       await record.save(state());

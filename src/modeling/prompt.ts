@@ -91,3 +91,8 @@ export function contextIdentity(value: unknown) {
   const bytes = Buffer.from(JSON.stringify(value));
   return { sha256: sha256(bytes), bytes: bytes.length };
 }
+export function boundedState<T>(value: T): T {
+  if (contextIdentity(value).bytes > CONTEXT_LIMITS.state_bytes)
+    throw new Error("Modeling state context limit");
+  return value;
+}

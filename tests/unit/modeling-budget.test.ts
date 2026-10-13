@@ -216,3 +216,31 @@ test("host allocation records no model request and recomputes remaining caps wit
   remaining = MODELING_BUDGET.final_reserve_ms;
   expect(() => budget.hostChildBudget()).toThrow();
 });
+
+test("search cannot spend confirmation reserve and confirmation charges each fit identity once", () => {
+  let remaining = 1200000;
+  const b = new Budget(
+    {
+      ...MODELING_BUDGET,
+      training_attempts: 8,
+      task_timeout_ms: 1200000,
+      final_reserve_ms: 750000,
+    },
+    () => remaining,
+    4,
+  );
+  for (let i = 0; i < 3; i++) b.train(false);
+  expect(() => b.train(false)).toThrow();
+  b.confirm("first");
+  expect(() => b.confirm("first")).toThrow("already charged");
+  for (const id of ["second", "third", "fourth"]) b.confirm(id);
+  expect(b.snapshot()).toMatchObject({
+    training_attempts: 7,
+    confirmation_training_attempts: 4,
+  });
+  expect(() => b.confirm("fifth")).toThrow();
+  b.train(true);
+  expect(b.training).toBe(8);
+  remaining = 150000;
+  expect(b.confirmationMs()).toBe(0);
+});

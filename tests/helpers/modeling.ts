@@ -1,4 +1,3 @@
-import type { RequestedBudget } from "../../src/modeling/budget";
 import { obj } from "../../src/models/validation";
 import { call, lastFeedback, reply } from "./agent";
 import { returned } from "./collaboration";
@@ -66,7 +65,6 @@ export function analyzeCall(
   options: {
     candidates?: string[];
     candidateUpdates?: unknown[];
-    requestedBudget?: RequestedBudget;
   } = {},
 ) {
   return call("analyze", {
@@ -88,18 +86,14 @@ export function finishCall(
     reason: "Use lowest observed RMSE",
   });
 }
-export function modelingScript(
-  worse = false,
-  repair = false,
-  requestedBudget?: RequestedBudget,
-) {
+export function modelingScript(worse = false, repair = false) {
   let source = "";
   let evidence: unknown[] = [];
   return (body: Record<string, unknown>, i: number) => {
     if (i === 0) return reply([trainCall()]);
     if (i === 1) {
       source = String(obj(lastFeedback(body).result).experiment_id);
-      return reply([analyzeCall(source, { requestedBudget })]);
+      return reply([analyzeCall(source)]);
     }
     if (i === 2) {
       const a = obj(lastFeedback(body).result),

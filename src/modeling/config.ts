@@ -148,7 +148,7 @@ export function validateModelingTask(value: unknown) {
     ...task,
     schema_version: 2 as const,
     method: method as ModelingMethod,
-    confirmation: { mode },
+    confirmation: { mode: mode as "none" | "terminal_repeated_holdout" },
     resource_version: str(resource_version, "resource_version"),
   };
 }

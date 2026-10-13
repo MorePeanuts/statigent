@@ -6,6 +6,7 @@ import { regular, verifyFiles } from "../evaluation/files";
 import { selectProfile } from "../models/config";
 import { obj, str } from "../models/validation";
 import { readManifest } from "../records/store";
+import { auditCollaborationV3 } from "./audit-v3";
 import { requestedBudget, validateAllocation } from "./budget";
 import { loadDataset } from "./data";
 import { reproduce, scoreDelivery } from "./delivery";
@@ -17,6 +18,8 @@ export function auditCollaboration(
   events: Record<string, unknown>[],
   actions: Record<string, unknown>[],
 ) {
+  if (manifest.schema_version === 3)
+    return auditCollaborationV3(manifest, events, actions);
   if (
     manifest.status !== "completed" ||
     !Array.isArray(manifest.experiments) ||
@@ -210,8 +213,10 @@ export async function validateSmoke(directory: string) {
   const evidence = auditCollaboration(view.manifest, view.events, actions);
   const analyses = view.manifest.analyses;
   if (!Array.isArray(analyses)) throw new Error("Missing analyses");
-  for (const raw of analyses.filter(
-    (a) => obj(a).id === evidence.analysis_id,
+  for (const raw of analyses.filter((a) =>
+    "analysis_ids" in evidence
+      ? evidence.analysis_ids.includes(String(obj(a).id))
+      : obj(a).id === evidence.analysis_id,
   )) {
     const a = obj(raw),
       native = await readManifest(str(a.directory, "EDA directory"));

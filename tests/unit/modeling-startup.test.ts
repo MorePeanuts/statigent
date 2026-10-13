@@ -4,8 +4,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import source from "../../configs/modeling/synthetic-prepare.json";
 import { MODELING_METHODS } from "../../src/modeling/config";
-import { prepareDataset } from "../../src/modeling/data";
+import { datasetProtocol, prepareDataset } from "../../src/modeling/data";
 import { runModeling } from "../../src/modeling/run";
+import { emptyLedger } from "../../src/records/agent-metadata";
 import { profile, ScriptClient } from "../helpers/agent";
 
 async function setup() {
@@ -39,6 +40,26 @@ test("four methods receive identical basic statistics before their first decisio
       runRoot: f.root,
       client,
       signal: controller.signal,
+      analysis: async (o) => ({
+        id: o.id,
+        run_id: o.runId,
+        directory: null,
+        dispatch: "not_started",
+        status: "failed",
+        reason: "synthetic initial failure",
+        source_experiment: null,
+        dataset_hash: o.dataset.files[0]?.sha256 ?? "",
+        split_hash: o.dataset.split.sha256,
+        protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
+        prediction_sha256: null,
+        analysis: null,
+        effective_budget: o.budget,
+        deadline: o.deadline,
+        cost: emptyLedger(),
+        role_usage: { planner: emptyLedger(), executor: emptyLedger() },
+        executions: 0,
+        request: o.request,
+      }),
     });
     expect(client.bodies).toHaveLength(1);
     const messages = client.bodies[0]?.messages as { content: string }[];

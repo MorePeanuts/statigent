@@ -53,12 +53,16 @@ async function options(
             metric: o.dataset.metric,
             direction: o.dataset.direction,
             value: 2,
+            evaluation_id: o.evaluation?.evaluation_id,
             protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
             scoring_version: datasetProtocol(o.dataset).scoring_version,
           },
       fit: null,
       predict: null,
       final: o.final ?? false,
+      phase: o.evaluation?.phase,
+      evaluation: o.evaluation,
+      source_search_experiment_id: o.sourceSearchExperimentId ?? null,
     }),
     delivery: async () => {
       throw new Error("stop after final experiment for audit probe");
@@ -244,5 +248,110 @@ test("resource refusal and acceptance persistence failure leave knowledge and ca
     expect(m.candidate_control.candidates).toEqual([]);
     expect(m.experiments).toEqual([]);
     expect(m.analyses).toEqual([]);
+  }
+}, 30000);
+
+for (const fail of [false, true])
+  test(`terminal confirmation freezes model calls and ${fail ? "fails without fallback" : "selects the second search pipeline"}`, async () => {
+    const { linearCode } = await import("../helpers/modeling");
+    const o = await options((body, i) =>
+      reply(
+        i === 0
+          ? [trainCall()]
+          : i === 1
+            ? [trainCall(linearCode, [], null, { candidateId: "second" })]
+            : [
+                call("finish_modeling", {
+                  candidate_updates: [],
+                  experiment_id: lastFeedback(body).best_experiment_id,
+                  reason: "Freeze search",
+                }),
+              ],
+      ),
+    );
+    o.task = {
+      ...obj(o.task),
+      confirmation: { mode: "terminal_repeated_holdout" },
+      budget: {
+        training_attempts: 8,
+        final_reserve_ms: 750000,
+        task_timeout_ms: 1200000,
+      },
+    };
+    const base = o.experiment;
+    if (!base) throw new Error("fixture");
+    o.experiment = async (args) => {
+      const e = await base(args);
+      if (args.evaluation?.phase === "confirmation" && fail)
+        return {
+          ...e,
+          status: "failed",
+          score: null,
+          reason: "planned timeout",
+        };
+      if (e.score)
+        e.score = {
+          ...e.score,
+          value:
+            args.evaluation?.phase === "confirmation"
+              ? args.candidateId === "second"
+                ? 1
+                : 10
+              : args.candidateId === "second"
+                ? 2
+                : 1,
+        };
+      return e;
+    };
+    const result = await runModeling(o),
+      view = await inspectModeling(result.directory);
+    expect((o.client as ScriptClient).bodies).toHaveLength(3);
+    expect(obj(view.manifest.confirmation).status).toBe(
+      fail ? "incomplete" : "complete",
+    );
+    if (fail) {
+      expect(view.manifest.selected_experiment_id).toBeNull();
+      expect(
+        (view.manifest.experiments as { final: boolean }[]).some(
+          (e) => e.final,
+        ),
+      ).toBe(false);
+    } else {
+      expect(view.manifest.selected_experiment_id).not.toBe(
+        view.manifest.search_best_experiment_id,
+      );
+      const final = (
+        view.manifest.experiments as { final: boolean; code: string }[]
+      ).find((e) => e.final);
+      expect(final?.code).toBe(linearCode);
+    }
+  }, 30000);
+
+test("audit rejects a changed model seed or a confirmation identity reported as search", async () => {
+  const o = await options((body, i) =>
+    reply(
+      i === 0
+        ? [trainCall()]
+        : [
+            call("finish_modeling", {
+              candidate_updates: [],
+              experiment_id: lastFeedback(body).best_experiment_id,
+              reason: "done",
+            }),
+          ],
+    ),
+  );
+  const result = await runModeling(o),
+    path = join(result.directory, "modeling.json"),
+    text = await readFile(path, "utf8");
+  for (const field of ["model_seed", "evaluation_id"]) {
+    const m = obj(JSON.parse(text)),
+      first = obj((m.experiments as unknown[])[0]),
+      evaluation = obj(first.evaluation);
+    evaluation[field] = field === "model_seed" ? 999 : "f".repeat(64);
+    await writeFile(path, JSON.stringify(m));
+    await expect(inspectModeling(result.directory)).rejects.toThrow(
+      "evaluation",
+    );
   }
 }, 30000);

@@ -181,3 +181,33 @@ test("training timeout, artifact limit and cancellation cannot yield successful 
       ]),
     ).toBe("");
 }, 180000);
+
+test("confirmation refits on each frozen membership with its model seed and independent containers", async () => {
+  const { createValidationPlan } = await import(
+    "../../src/modeling/validation"
+  );
+  const o = await setup(),
+    plan = createValidationPlan(
+      o.dataset,
+      o.train,
+      "terminal_repeated_holdout",
+    );
+  const sessions = new Set<string>();
+  for (const evaluation of plan.confirmation) {
+    const probe = `from sklearn.dummy import DummyRegressor\nimport pandas as pd\ndef build_pipeline(seed):\n    assert seed == ${evaluation.model_seed}\n    df = pd.read_csv('/input/data.csv', dtype={'id':str})\n    assert set(df['id']) == set(${JSON.stringify(evaluation.split.train)})\n    assert 'prior_fit' not in globals()\n    globals()['prior_fit'] = True\n    return DummyRegressor()\n`;
+    const result = await runExperiment({
+      ...o,
+      code: probe,
+      evaluation,
+      sourceSearchExperimentId: "source",
+    });
+    expect(result.status, result.reason).toBe("completed");
+    expect(result.score?.evaluation_id).toBe(evaluation.evaluation_id);
+    expect(result.phase).toBe("confirmation");
+    for (const stage of [result.fit, result.predict]) {
+      if (!stage) throw new Error("Missing stage");
+      expect(sessions.has(stage.run_id)).toBe(false);
+      sessions.add(stage.run_id);
+    }
+  }
+}, 180000);

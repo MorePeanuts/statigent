@@ -57,7 +57,7 @@ test("invalid modes, resource versions and infeasible confirmation fail before e
   expect(
     validateModelingTask({ ...current, confirmation, budget }).confirmation
       .mode,
-  ).toBe(confirmation.mode);
+  ).toBe("terminal_repeated_holdout");
   for (const patch of [{ training_attempts: 5 }, { final_reserve_ms: 749999 }])
     expect(() =>
       validateModelingTask({

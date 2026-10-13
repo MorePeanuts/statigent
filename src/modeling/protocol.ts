@@ -143,8 +143,13 @@ export interface Score {
   value: number;
   protocol_sha256: string;
   scoring_version: string;
+  evaluation_id?: string;
 }
-export function validateScore(value: unknown, p: Protocol): Score {
+export function validateScore(
+  value: unknown,
+  p: Protocol,
+  evaluationId?: string,
+): Score {
   const x = obj(value);
   keys(x, [
     "metric",
@@ -152,6 +157,7 @@ export function validateScore(value: unknown, p: Protocol): Score {
     "value",
     "protocol_sha256",
     "scoring_version",
+    "evaluation_id",
   ]);
   if (
     x.metric !== p.metric ||
@@ -164,12 +170,22 @@ export function validateScore(value: unknown, p: Protocol): Score {
     ((p.metric === "accuracy" || p.metric === "roc_auc") && x.value > 1)
   )
     throw new Error("Invalid score protocol or value");
+  if (
+    (evaluationId !== undefined && x.evaluation_id !== evaluationId) ||
+    (x.evaluation_id !== undefined &&
+      (typeof x.evaluation_id !== "string" ||
+        !/^[a-f0-9]{64}$/.test(x.evaluation_id)))
+  )
+    throw new Error("Invalid score evaluation identity");
   return {
     metric: p.metric,
     direction: p.direction,
     value: x.value,
     protocol_sha256: p.protocol_sha256,
     scoring_version: p.scoring_version,
+    ...(x.evaluation_id === undefined
+      ? {}
+      : { evaluation_id: str(x.evaluation_id, "evaluation ID") }),
   };
 }
 export function better(score: Score, best: Score | null): boolean {
@@ -178,7 +194,8 @@ export function better(score: Score, best: Score | null): boolean {
     (score.protocol_sha256 !== best.protocol_sha256 ||
       score.metric !== best.metric ||
       score.direction !== best.direction ||
-      score.scoring_version !== best.scoring_version)
+      score.scoring_version !== best.scoring_version ||
+      score.evaluation_id !== best.evaluation_id)
   )
     throw new Error("Incomparable scores");
   return (

@@ -4,7 +4,7 @@ import { isDeepStrictEqual } from "node:util";
 import { validateAnalysis } from "../agent/actions";
 import { regular, verifyFiles } from "../evaluation/files";
 import { integer, keys, obj, str, strings } from "../models/validation";
-import { sha256 } from "../records/store";
+import { readManifest, sha256 } from "../records/store";
 import { action } from "./actions";
 import { applyCandidateUpdates, type CandidateState } from "./candidates";
 import { validateModelingTask } from "./config";
@@ -128,7 +128,12 @@ export async function inspectKnowledge(
           id: str(e.id, "experiment ID"),
           scope,
           status,
-          phase: e.final ? "final" : "search",
+          phase:
+            e.phase === "confirmation"
+              ? "confirmation"
+              : e.final
+                ? "final"
+                : "search",
           reason: str(e.reason, "reason"),
           score: e.score === null ? null : validateScore(e.score, protocol),
           prediction_sha256:
@@ -151,6 +156,27 @@ export async function inspectKnowledge(
       );
       const bytes = await readFile(await regular(directory, sourcePath));
       same(sha256(bytes), a.source_sha256);
+      const context = await readFile(
+        await regular(
+          directory,
+          join(`${str(a.id, "analysis ID")}-input`, "context.json"),
+        ),
+      );
+      same(sha256(context), a.context_sha256);
+      const childRoot = str(a.directory, "analysis directory"),
+        child = await readManifest(childRoot);
+      if (!child.agent || child.agent === "not_applicable")
+        throw new Error("Missing native analysis result");
+      const nativeResult = await readFile(
+        await regular(
+          childRoot,
+          str(child.agent.final_result, "analysis result path"),
+        ),
+        "utf8",
+      );
+      const { run_id, ...nativeAnalysis } = obj(JSON.parse(nativeResult));
+      same(run_id, a.run_id);
+      same(nativeAnalysis, a.analysis);
       const source = obj(JSON.parse(bytes.toString()));
       same(source.protocol, protocol);
       same(source.data, dataset.files[0]);
