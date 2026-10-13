@@ -63,7 +63,10 @@ export async function modelingPreflight(value: unknown, seed?: number) {
       confirmation_attempts: closing - task.budget.final_training_attempts,
       final_attempts: task.budget.final_training_attempts,
       closing_ms: task.budget.final_reserve_ms,
-      search_attempts: task.budget.training_attempts - closing,
+      search_attempts:
+        task.budget.training_attempts === null
+          ? null
+          : task.budget.training_attempts - closing,
     },
     research_status: "development_only; no performance claim",
   };

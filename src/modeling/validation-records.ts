@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 import { regular, verifyFiles } from "../evaluation/files";
 import { obj, str } from "../models/validation";
 import { sha256 } from "../records/store";
-import { validateModelingTask } from "./config";
+import { validateRecordedModelingTask } from "./config";
 import {
   type ConfirmationResult,
   confirmationResult,
@@ -51,7 +51,7 @@ export class ValidationAudit {
   }
   static async create(directory: string, manifest: Record<string, unknown>) {
     const config = obj(manifest.config),
-      task = validateModelingTask(config.task),
+      task = validateRecordedModelingTask(config.task),
       dataset = validateDataset(config.dataset);
     const trainFile = dataset.files[0];
     if (!trainFile) throw new Error("Missing training identity");
@@ -143,7 +143,7 @@ export class ValidationAudit {
         [...this.intentions.values()].filter(
           (e) => e.evaluation.phase === "final",
         ).length >=
-        validateModelingTask(obj(this.manifest.config).task).budget
+        validateRecordedModelingTask(obj(this.manifest.config).task).budget
           .final_training_attempts
       )
         throw new Error("Final attempt limit");

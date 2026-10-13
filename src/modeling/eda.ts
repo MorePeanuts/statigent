@@ -8,7 +8,12 @@ import type { ModelClient } from "../models/client";
 import type { ModelProfile } from "../models/config";
 import { emptyLedger } from "../records/agent-metadata";
 import { readManifest, sha256 } from "../records/store";
-import type { EvidenceUse, ModelingAction } from "./actions";
+import type { EvidenceUse, ModelingAction as V3Action } from "./actions-v3";
+import { validateScore } from "./protocol";
+import type { CoreAction } from "./workflow";
+
+type ModelingAction = V3Action | CoreAction;
+
 import { type EffectiveBudget, ledger, roleLedgers } from "./budget";
 import { identifier } from "./candidates";
 import type { ModelingTask } from "./config";
@@ -47,6 +52,7 @@ export interface AnalysisRecord {
     executor: ReturnType<typeof ledger>;
   };
   executions: number;
+  execution_confirmed?: boolean;
   request: Extract<ModelingAction, { kind: "analyze" }>;
 }
 export async function prepareAnalysisInput(
@@ -155,11 +161,87 @@ export async function prepareAnalysisInput(
           : `validation-${experiment.id}.csv`,
       );
     }
+    const validationPath = inputs.at(-1);
+    let training: Record<string, unknown> = {
+      status: "unavailable",
+      reason: experiment.training_diagnostic?.reason ?? "not_recorded",
+    };
+    const diagnostic = experiment.training_diagnostic;
+    if (diagnostic?.status === "available") {
+      if (
+        !diagnostic.prediction ||
+        diagnostic.model_sha256 !== experiment.fit?.output?.sha256 ||
+        diagnostic.members_sha256 !==
+          sha256(Buffer.from(JSON.stringify(dataset.split.train)))
+      )
+        throw new Error("Training diagnostic provenance mismatch");
+      validateScore(
+        diagnostic.score,
+        protocol,
+        sha256(
+          Buffer.from(
+            JSON.stringify({
+              partition: "train",
+              search_evaluation_id: experiment.evaluation?.evaluation_id,
+              members_sha256: diagnostic.members_sha256,
+            }),
+          ),
+        ),
+      );
+      const bytes = await stageBytes(diagnostic.prediction);
+      const values = validatePredictions(
+        parseCsv(bytes.toString()),
+        dataset.split.train,
+        dataset.id_column,
+        protocol,
+      );
+      const table = select(train, dataset.split.train, dataset.id_column);
+      let prediction = "__prediction";
+      while (table.columns.includes(prediction)) prediction += "_";
+      const columns = [...table.columns, prediction];
+      const probabilities = values.probabilities
+        ? protocol.classes.map((label, i) => {
+            let column = `__probability_${i}`;
+            while (columns.includes(column)) column += "_";
+            columns.push(column);
+            return { column, label };
+          })
+        : [];
+      const path =
+        experiments.length === 1
+          ? "training-diagnostics.csv"
+          : `training-diagnostics-${experiment.id}.csv`;
+      await writeFile(
+        join(root, path),
+        csv({
+          columns,
+          rows: table.rows.map((r, i) => [
+            ...r,
+            String(values.values[i]),
+            ...(values.probabilities?.[i]?.map(String) ?? []),
+          ]),
+        }),
+        { flag: "wx", mode: 0o444 },
+      );
+      inputs.push(path);
+      training = {
+        status: "available",
+        partition: "train",
+        path,
+        fields: { prediction, probabilities },
+        prediction_sha256: sha256(bytes),
+        model_sha256: diagnostic.model_sha256,
+        members_sha256: diagnostic.members_sha256,
+        score: diagnostic.score,
+      };
+    }
     sources.push({
       experiment_id: experiment.id,
       prediction_sha256: predictionHash,
       fields,
-      path: inputs.at(-1),
+      path: validationPath,
+      partition: "validation",
+      training,
       evaluation_id: experiment.evaluation?.evaluation_id ?? null,
       model_seed: experiment.evaluation?.model_seed ?? dataset.seed,
       split_sha256: dataset.split.sha256,
@@ -203,7 +285,7 @@ export async function analyze(o: {
   experiments?: Experiment[];
   context?: unknown;
   request: Extract<ModelingAction, { kind: "analyze" }>;
-  resolvedCandidates: {
+  resolvedCandidates?: {
     id: string;
     hypothesis: string;
     change: string;
@@ -234,6 +316,7 @@ export async function analyze(o: {
     run_id: o.runId,
     directory: null,
     dispatch: "not_started",
+    execution_confirmed: true,
     effective_budget: o.budget,
     deadline: o.deadline,
     cost: emptyLedger(),
@@ -285,7 +368,7 @@ export async function analyze(o: {
       completion_policy: "modeling-diagnostic-v1",
       goal: JSON.stringify({ ...o.request, candidates: o.resolvedCandidates }),
       constraints: [
-        "Investigate the requested exploration, model diagnosis or comparison. context.json contains historical knowledge with original provenance, not new execution evidence. This is internal validation, never external test evaluation.",
+        "Investigate the requested exploration, model diagnosis or comparison. context.json contains optional historical notes with original provenance, not new execution evidence. This is internal validation, never external test evaluation.",
         "Return concise evidence and methods. Do not write a Markdown report or train candidate models. source.json identifies data, target and prediction provenance.",
         "Focus on the requested question: inspect existing predictions, residual groups and data statistics first. Do not refit models, run feature searches or tune hyperparameters here; return those proposals to the modeling agent for controlled experiments. Return once the question has useful evidence; list new questions as limitations instead of expanding the task. Keep findings concise (at most 6), with exact valid evidence IDs. When the host announces closing, return supported findings and explicitly state anything unresolved; the planner must preserve those limitations in finish_analysis.",
       ],
@@ -358,6 +441,7 @@ export async function analyze(o: {
     run_id: result.run_id,
     directory: result.directory,
     dispatch: "started",
+    execution_confirmed: m.workspace_collection.status === "complete",
     effective_budget: o.budget,
     deadline: o.deadline,
     cost,

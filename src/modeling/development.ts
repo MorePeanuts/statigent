@@ -1,15 +1,15 @@
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { obj } from "../models/validation";
+import { regular } from "../evaluation/files";
+import { obj, str } from "../models/validation";
 import { reproduce } from "./delivery";
 import type { modelingPreflight } from "./preflight";
 import { inspectModeling } from "./records";
 import type { runModeling } from "./run";
-import { validateSmoke, writeSmokeReport } from "./smoke";
-export function developmentGoal(goal: string, method: string) {
-  return method === "collaborative"
-    ? `${goal}\nThis is an explicitly selected development acceptance run: begin with focused data exploration to generate a candidate, train an initial pipeline, use its feedback for a second targeted analysis, revise sourced knowledge and test a follow-up pipeline. Transfer exact prior knowledge revisions into the later analysis. You may defer or reject a suggestion. Predictive improvement is not a passing criterion. Finish explicitly so the host can confirm and deliver.`
-    : goal;
+import { writeSmokeReport } from "./smoke";
+import { workflowTrajectory } from "./trajectory";
+export function developmentGoal(goal: string, _method: string) {
+  return goal;
 }
 export async function developmentReport(
   result: Awaited<ReturnType<typeof runModeling>>,
@@ -21,22 +21,29 @@ export async function developmentReport(
     { flag: "wx" },
   );
   let reproduction: unknown = null,
-    evidence: unknown = null;
+    trajectory: unknown = null,
+    usage: unknown = null;
   try {
+    const view = await inspectModeling(result.directory),
+      actions: Record<string, unknown>[] = [];
+    for (const e of view.events.filter((e) => e.type === "action_accepted"))
+      actions.push(
+        obj(
+          JSON.parse(
+            await readFile(
+              await regular(
+                result.directory,
+                str(obj(e.content_ref).path, "payload"),
+              ),
+              "utf8",
+            ),
+          ),
+        ),
+      );
+    trajectory = workflowTrajectory(view.manifest, view.events, actions);
+    usage = view.manifest.usage;
     if (result.status !== "completed")
       throw new Error(`Run did not complete: ${result.reason}`);
-    const view = await inspectModeling(result.directory);
-    if (["collaborative", "adaptive_eda"].includes(preflight.task.method))
-      evidence = await validateSmoke(result.directory);
-    else if (preflight.task.method === "initial_eda") {
-      const analyses = view.manifest.analyses;
-      if (
-        !Array.isArray(analyses) ||
-        analyses.length !== 1 ||
-        obj(analyses[0]).status !== "completed"
-      )
-        throw new Error("Initial analysis acceptance failed");
-    }
     reproduction = await reproduce(
       result.directory,
       resolve("runs/modeling-reproductions"),
@@ -48,9 +55,9 @@ export async function developmentReport(
       run: result,
       method: preflight.task.method,
       resource_version: preflight.task.resource_version,
-      evidence,
+      trajectory,
       reproduction,
-      usage: view.manifest.usage,
+      usage,
       confirmation: view.manifest.confirmation,
       search_best: view.manifest.search_best_experiment_id,
       selected: view.manifest.selected_experiment_id,
@@ -66,8 +73,9 @@ export async function developmentReport(
       reason: String(error),
       method: preflight.task.method,
       resource_version: preflight.task.resource_version,
-      evidence,
+      trajectory,
       reproduction,
+      usage,
       research_status: "development failure retained; no automatic retry",
     };
     await writeSmokeReport(result.directory, report);

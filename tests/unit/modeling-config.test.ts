@@ -13,7 +13,7 @@ const legacy = {
 };
 const current = {
   ...legacy,
-  schema_version: 2,
+  schema_version: 3,
   method: "collaborative",
   confirmation: { mode: "none" },
   resource_version: "smoke-v1",

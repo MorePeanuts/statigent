@@ -1,10 +1,16 @@
 import { expect, test } from "bun:test";
-import { mkdtemp, realpath } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  realpath,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import source from "../../configs/modeling/synthetic-prepare.json";
 import { DEFAULT_BUDGET } from "../../src/agent/config";
-import { action } from "../../src/modeling/actions";
+import { action } from "../../src/modeling/actions-v3";
 import { datasetProtocol, prepareDataset } from "../../src/modeling/data";
 import { validateEvidence } from "../../src/modeling/eda";
 import { inspectModeling, ModelingRecord } from "../../src/modeling/records";
@@ -24,7 +30,6 @@ import { collaborationMetadata } from "../helpers/collaboration";
 import {
   analyzeCall,
   baselineCode,
-  createCandidate,
   finishCall,
   modelingScript,
   trainCall,
@@ -40,7 +45,7 @@ async function options(
   let count = 0;
   return {
     task: {
-      schema_version: 2,
+      schema_version: 3,
       method: "adaptive_eda",
       confirmation: { mode: "none" },
       resource_version: "smoke-v1",
@@ -72,7 +77,15 @@ async function options(
             evaluation_id: o.evaluation?.evaluation_id,
           },
       fit: null,
-      predict: null,
+      predict: {
+        run_id: `predict-${o.id}`,
+        directory: o.root,
+        status: "completed",
+        reason: "ok",
+        output: { path: "predictions.csv", sha256: "d".repeat(64), bytes: 1 },
+        image: { id: "fixture", platform: "test" },
+        elapsed_ms: 0,
+      },
       final: o.final ?? false,
       phase: o.evaluation?.phase,
       evaluation: o.evaluation,
@@ -84,6 +97,7 @@ async function options(
         run_id: o.runId,
         directory: join(o.root, "eda", o.runId),
         dispatch: "started" as const,
+        execution_confirmed: true,
         effective_budget: o.budget,
         deadline: o.deadline,
         source_experiment: o.request.source_experiments[0] ?? null,
@@ -164,11 +178,45 @@ async function options(
           },
         },
       });
+      child.manifest.workspace_collection = {
+        status: "complete",
+        reason: null,
+      };
+      if (!child.manifest.agent || child.manifest.agent === "not_applicable")
+        throw Error("fixture agent");
+      child.manifest.agent.final_result = "analysis.json";
+      await writeFile(
+        join(child.directory, "analysis.json"),
+        JSON.stringify({ run_id: o.runId, ...result.analysis }),
+      );
+      const input = join(o.root, `${o.id}-input`);
+      await mkdir(input);
+      const sources = (o.experiments ?? []).map((e) => ({
+        experiment_id: e.id,
+        prediction_sha256: e.predict?.output?.sha256,
+      }));
+      const sourceBytes = JSON.stringify({
+        protocol: datasetProtocol(o.dataset),
+        data: o.dataset.files[0],
+        split_sha256: o.dataset.split.sha256,
+        sources,
+      });
+      const contextBytes = JSON.stringify(o.context ?? {});
+      await writeFile(join(input, "source.json"), sourceBytes);
+      await writeFile(join(input, "context.json"), contextBytes);
       await child.finish("completed");
-      return result;
+      return {
+        ...result,
+        source_sha256: sha256(Buffer.from(sourceBytes)),
+        context_sha256: sha256(Buffer.from(contextBytes)),
+        source_experiments: sources.map((x) => ({
+          experiment_id: x.experiment_id,
+          prediction_sha256: String(x.prediction_sha256),
+        })),
+      };
     },
     delivery: async (_root, task, selected, final, dataset) => ({
-      schema_version: 2,
+      schema_version: 4,
       stage_version: 3,
       protocol: datasetProtocol(dataset),
       source_experiment: selected.id,
@@ -338,8 +386,15 @@ test("known analysis failure is diagnostic, unknown child cost terminates, and c
     };
   };
   const failed = await runModeling(o);
-  expect(failed.status).toBe("failed");
-  expect(failed.reason).toContain("accounting_incomplete");
+  expect(failed.status).toBe("completed");
+  const protectedManifest = JSON.parse(
+    await readFile(join(failed.directory, "modeling.json"), "utf8"),
+  );
+  expect(protectedManifest.search_end).toEqual({
+    kind: "protected",
+    reason: "accounting_incomplete",
+  });
+  expect(protectedManifest.usage.tokens.status).toBe("unknown");
   const controller = new AbortController();
   const c = await options(modelingScript());
   c.signal = controller.signal;
@@ -479,113 +534,34 @@ test.each([
   },
 );
 
-test("candidate batches and budget rejection are atomic while model costs remain charged", async () => {
-  for (const mode of ["batch", "budget", "evidence"] as const) {
-    const o = await options((body, i) => {
-      if (i === 0) {
-        const updates = [createCandidate("ghost")];
-        const tool =
-          mode === "budget"
-            ? analyzeCall(null, {
-                candidates: ["ghost"],
-                candidateUpdates: updates,
-              })
-            : trainCall(baselineCode, [], null, {
-                candidateId: "ghost",
-                candidateUpdates: [
-                  ...updates,
-                  mode === "batch"
-                    ? updateCandidate("missing")
-                    : {
-                        ...createCandidate("other"),
-                        evidence: [
-                          {
-                            analysis_id: "missing",
-                            source_experiment: null,
-                            refs: ["r"],
-                            applicability: "invalid",
-                          },
-                        ],
-                      },
-                ],
-              });
-        return reply([tool]);
-      }
-      if (i === 1) {
-        expect(lastFeedback(body).candidates).toEqual([]);
-        return reply([trainCall()]);
-      }
-      return reply([finishCall(body)]);
-    });
-    if (mode === "budget")
-      o.task = { ...obj(o.task), budget: { eda_calls: 0 } };
-    const r = await runModeling(o);
-    expect(r.status, r.reason).toBe("completed");
-    const inspected = await inspectModeling(r.directory);
-    expect(obj(inspected.manifest.candidate_control).candidates).toMatchObject([
-      { id: "baseline" },
-    ]);
-    expect(
-      obj(inspected.manifest.candidate_control).candidates as unknown[],
-    ).toHaveLength(1);
-    expect(inspected.manifest.usage).toMatchObject({
-      tokens: { attempts: 3, total_tokens: 45 },
-      training_attempts: 2,
-      eda_calls: 0,
-    });
-  }
-});
-
-test("deferred candidates require explicit resume and priority does not force scheduling", async () => {
-  const o = await options((body, i) => {
+test("invalid optional sources execute and a refused search does not create a phantom candidate at finish", async () => {
+  const o = await options((_body, i) => {
     if (i === 0)
       return reply([
-        trainCall(baselineCode, [], null, {
-          candidateUpdates: [
-            createCandidate("baseline", 2),
-            createCandidate("alternative", 1),
-          ],
+        call("run_experiment", {
+          code: baselineCode,
+          change: "initial",
+          reason: "baseline",
+          sources: [{ source_id: "analysis:invented:0" }],
         }),
       ]);
-    if (i === 1)
-      return reply([
-        trainCall(baselineCode, [], null, {
-          candidateUpdates: [updateCandidate("baseline", [], "defer")],
-        }),
-      ]);
-    if (i === 2) {
-      expect(
-        (
-          lastFeedback(body).candidates as { id: string; status: string }[]
-        ).find((c) => c.id === "baseline")?.status,
-      ).toBe("tried");
-      return reply([
-        trainCall(baselineCode, [], null, {
-          candidateId: "alternative",
-          candidateUpdates: [updateCandidate("baseline", [], "defer")],
-        }),
-      ]);
-    }
-    if (i === 3)
-      return reply([
-        trainCall(baselineCode, [], null, {
-          candidateUpdates: [updateCandidate("baseline", [], "resume", 3)],
-        }),
-      ]);
+    if (i === 1) return reply([trainCall()]);
     return reply([
-      finishCall(body, [updateCandidate("alternative", [], "defer")]),
+      call("finish_modeling", { reason: "deliver existing best" }),
     ]);
   });
-  const r = await runModeling(o);
-  expect(r.status, r.reason).toBe("completed");
-  const m = (await inspectModeling(r.directory)).manifest;
-  expect(obj(m.candidate_control).candidates).toMatchObject([
-    { id: "baseline", priority: 3, status: "tried", revision: 6 },
-    { id: "alternative", priority: 1, status: "deferred", revision: 3 },
-  ]);
+  o.task = { ...obj(o.task), budget: { training_attempts: 2 } };
+  const result = await runModeling(o);
+  expect(result.status, result.reason).toBe("completed");
+  const view = await inspectModeling(result.directory);
+  expect(view.manifest.candidate_control).toBeUndefined();
+  expect(view.events.filter((e) => e.type === "action_rejected")).toHaveLength(
+    1,
+  );
   expect(
-    (m.experiments as { candidate_id: string }[]).map((e) => e.candidate_id),
-  ).toEqual(["baseline", "alternative", "baseline", "baseline"]);
+    "workflow_control" in view && obj(view.workflow_control).warnings,
+  ).toHaveLength(1);
+  expect(view.manifest.experiments).toHaveLength(2);
 });
 
 test("failed acceptance persistence dispatches nothing and leaves only the prior snapshot", async () => {
@@ -610,7 +586,7 @@ test("failed acceptance persistence dispatches nothing and leaves only the prior
   expect(r.record_error).toBe(true);
   expect(calls).toBe(0);
   const m = (await inspectModeling(r.directory)).manifest;
-  expect(obj(m.candidate_control).candidates).toEqual([]);
+  expect(m.candidate_control).toBeUndefined();
   expect(m.usage).toMatchObject({
     tokens: { attempts: 1, total_tokens: 15 },
     training_attempts: 0,
@@ -630,7 +606,7 @@ test("accepted decision survives interruption without inventing execution and un
         const r = await ModelingRecord.create(...args);
         const save = r.save.bind(r);
         r.save = async (state) => {
-          if (obj(state.candidate_control).applied_sequence !== 0)
+          if (r.nextSequence > 7)
             throw Error("record_failure:injected snapshot failure");
           return save(state);
         };
@@ -641,9 +617,7 @@ test("accepted decision survives interruption without inventing execution and un
     expect(calls).toBe(stage === "snapshot" ? 0 : 1);
     const inspected = await inspectModeling(r.directory);
     expect(inspected.unconfirmed_experiments).toHaveLength(1);
-    expect(obj(inspected.candidate_control).candidates).toMatchObject([
-      { id: "baseline", status: "tried" },
-    ]);
+    expect(inspected.candidate_control).toBe("disabled");
   }
 });
 
@@ -726,7 +700,7 @@ test("scoring failure terminates the parent without dispatching another experime
   ).toBeNull();
 });
 
-test("new modeling run preserves a legacy regression dataset and records a v3 parent with the original metric protocol", async () => {
+test("new modeling run preserves a legacy regression dataset and records a v4 parent with the original metric protocol", async () => {
   const o = await options((body, i) =>
     reply([i === 0 ? trainCall() : finishCall(body)]),
   );
@@ -740,7 +714,7 @@ test("new modeling run preserves a legacy regression dataset and records a v3 pa
   const result = await runModeling(o);
   expect(result.status, result.reason).toBe("completed");
   const view = await inspectModeling(result.directory);
-  expect(view.manifest.schema_version).toBe(3);
+  expect(view.manifest.schema_version).toBe(4);
   expect(obj(view.manifest.config).dataset).toMatchObject({
     schema_version: 1,
   });
@@ -766,8 +740,7 @@ test("two explorations may precede candidate creation and the agent may decline 
   expect(r.status, r.reason).toBe("completed");
   const { manifest } = await inspectModeling(r.directory);
   expect(manifest.analyses).toHaveLength(2);
-  const candidates = obj(manifest.candidate_control).candidates as unknown[];
-  expect(candidates).toHaveLength(1);
+  expect(manifest.candidate_control).toBeUndefined();
   expect(manifest.usage).toMatchObject({ eda_calls: 2, training_attempts: 2 });
 }, 30000);
 
@@ -826,16 +799,8 @@ for (const method of [
     expect(names.includes("analyze")).toBe(
       method === "adaptive_eda" || method === "collaborative",
     );
-    expect(view.knowledge_control).toEqual(
-      method === "collaborative"
-        ? {
-            version: 1,
-            history: [],
-            applied_sequence: Number(
-              obj(view.manifest.candidate_control).applied_sequence,
-            ),
-          }
-        : "disabled",
+    expect(view.manifest.notes_control).toEqual(
+      method === "collaborative" ? { version: 1, history: [] } : "disabled",
     );
   }, 30000);
 
@@ -852,6 +817,7 @@ test("initial analysis known failure is not repeated and modeling can still fini
       run_id: args.runId,
       directory: null,
       dispatch: "not_started",
+      execution_confirmed: true,
       effective_budget: args.budget,
       deadline: args.deadline,
       source_experiment: null,
@@ -948,7 +914,105 @@ test("deferring the best candidate at finish does not remove its successful pipe
   expect(r.status, r.reason).toBe("completed");
   const m = (await inspectModeling(r.directory)).manifest;
   expect(m.selected_experiment_id).toBe(m.search_best_experiment_id);
-  expect(obj(m.candidate_control).candidates).toMatchObject([
-    { id: "baseline", status: "deferred" },
-  ]);
+  expect(m.candidate_control).toBeUndefined();
+});
+
+for (const failure of [
+  "cleanup_failed",
+  "record_failure:lost journal",
+  "scoring_failure:bad identity",
+]) {
+  test(`existing best cannot authorize closing after ${failure}`, async () => {
+    const o = await options(() => reply([trainCall()])),
+      original = o.experiment;
+    if (!original) throw Error("fixture");
+    let calls = 0;
+    o.experiment = async (input) => {
+      calls++;
+      const e = await original(input);
+      return calls === 1
+        ? e
+        : { ...e, status: "failed", score: null, reason: failure };
+    };
+    const result = await runModeling(o);
+    expect(result.status).toBe("failed");
+    expect(calls).toBe(2);
+    const manifest = await Bun.file(
+      join(result.directory, "modeling.json"),
+    ).json();
+    expect(manifest.best_experiment_id).not.toBeNull();
+    expect(manifest.delivery.status).toBe("not_started");
+    expect(manifest.experiments.some((e: { final: boolean }) => e.final)).toBe(
+      false,
+    );
+  });
+}
+
+test("known best does not permit final fits after an unconfirmed EDA execution", async () => {
+  const o = await options(modelingScript()),
+    original = o.analysis;
+  if (!original) throw Error("fixture");
+  o.analysis = async (input) => ({
+    ...(await original(input)),
+    execution_confirmed: false,
+  });
+  const result = await runModeling(o);
+  expect(result.status).toBe("failed");
+  expect(result.reason).toContain("unconfirmed_eda");
+  const m = await Bun.file(join(result.directory, "modeling.json")).json();
+  expect(m.experiments).toHaveLength(1);
+  expect(m.delivery.status).toBe("not_started");
+});
+
+test("protection audit rejects a fabricated limit reason even when snapshot and freeze agree", async () => {
+  const o = await options(() => reply([trainCall()]));
+  o.task = { ...obj(o.task), budget: { model_attempts: 1 } };
+  const result = await runModeling(o);
+  expect(result.status, result.reason).toBe("completed");
+  await inspectModeling(result.directory);
+  const path = join(result.directory, "modeling.json"),
+    eventsPath = join(result.directory, "events.jsonl"),
+    manifest = await Bun.file(path).json(),
+    events = (await Bun.file(eventsPath).text())
+      .trim()
+      .split("\n")
+      .map((line) => obj(JSON.parse(line)));
+  manifest.search_end = { kind: "protected", reason: "token_threshold" };
+  const freeze = events.find((e) => e.type === "search_frozen");
+  if (!freeze) throw Error("missing freeze");
+  freeze.search_end = manifest.search_end;
+  await Bun.write(path, JSON.stringify(manifest));
+  await Bun.write(
+    eventsPath,
+    `${events.map((e) => JSON.stringify(e)).join("\n")}\n`,
+  );
+  await expect(inspectModeling(result.directory)).rejects.toThrow(
+    "Unsubstantiated protection",
+  );
+});
+
+test("partial usage remains unknown while known token components and safe delivery are auditable", async () => {
+  const o = await options((_body, i) =>
+    i === 0
+      ? reply([trainCall()])
+      : reply([call("finish_modeling", { reason: "done" })], {
+          usage: { prompt_tokens: 10 },
+        }),
+  );
+  const result = await runModeling(o);
+  expect(result.status, result.reason).toBe("completed");
+  const view = await inspectModeling(result.directory);
+  expect(view.manifest.search_end).toEqual({
+    kind: "protected",
+    reason: "accounting_incomplete",
+  });
+  expect(view.manifest.usage).toMatchObject({
+    tokens: {
+      status: "unknown",
+      input_tokens: 20,
+      output_tokens: 5,
+      total_tokens: 25,
+      unknown_attempts: 1,
+    },
+  });
 });

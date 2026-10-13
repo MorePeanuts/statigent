@@ -230,7 +230,10 @@ export class Budget {
     ] as const)
       this.total[k] += l[k];
     if (l.status === "unknown") this.total.status = "unknown";
-    this.check();
+    this.checkExecution();
+  }
+  checkExecution() {
+    if (this.remaining() <= 0) throw new Stop("timed_out", "task_deadline");
   }
   check() {
     if (this.total.status === "unknown")
@@ -243,9 +246,10 @@ export class Budget {
     return Math.max(0, this.remaining() - this.config.final_reserve_ms);
   }
   canTrain(final: boolean) {
-    this.check();
+    if (final) this.checkExecution();
+    else this.check();
     const cap =
-      this.config.training_attempts -
+      (this.config.training_attempts ?? Number.POSITIVE_INFINITY) -
       (final
         ? 0
         : this.config.final_training_attempts + this.confirmationReserve);
@@ -270,13 +274,14 @@ export class Budget {
     );
   }
   confirm(id: string) {
-    this.check();
+    this.checkExecution();
     if (this.confirmationIds.has(id))
       throw new Error("Confirmation already charged");
     if (
       this.confirmationTraining >= this.confirmationReserve ||
       this.training >=
-        this.config.training_attempts - this.config.final_training_attempts ||
+        (this.config.training_attempts ?? Number.POSITIVE_INFINITY) -
+          this.config.final_training_attempts ||
       this.confirmationMs() <= 0
     )
       throw new Error("Confirmation budget exhausted");

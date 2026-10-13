@@ -52,7 +52,7 @@ export function classificationEdaScript() {
     if (i === 1)
       return reply([
         call("execute_python", {
-          code: "import csv,json\nfrom pathlib import Path\nassert sorted(p.name for p in Path('/input').iterdir()) == ['context.json','source.json','split.json','train.csv','validation.csv']\ns=json.loads(Path('/input/source.json').read_text())\nassert s['protocol']['kind'] in ['binary','multiclass']\nassert s['prediction_sha256']\nrows=list(csv.DictReader(open('/input/validation.csv')))\nassert all(r['target'] in s['protocol']['classes'] for r in rows)\nprint([(r['x'],r['target'],r[s['fields']['prediction']]) for r in rows])\nprint(s['fields'])",
+          code: "import csv,json\nfrom pathlib import Path\nassert sorted(p.name for p in Path('/input').iterdir()) == ['context.json','source.json','split.json','train.csv','training-diagnostics.csv','validation.csv']\ns=json.loads(Path('/input/source.json').read_text())\nassert s['protocol']['kind'] in ['binary','multiclass']\nassert s['prediction_sha256']\nrows=list(csv.DictReader(open('/input/validation.csv')))\nassert all(r['target'] in s['protocol']['classes'] for r in rows)\nprint([(r['x'],r['target'],r[s['fields']['prediction']]) for r in rows])\nprint(s['fields'])",
         }),
       ]);
     if (i === 2) {

@@ -41,7 +41,7 @@ for (const source of [binary, multiclass]) {
       edaClient = new ScriptClient(classificationEdaScript());
     const r = await runModeling({
       task: {
-        schema_version: 2,
+        schema_version: 3,
         method: "adaptive_eda",
         confirmation: { mode: "none" },
         resource_version: "smoke-v1",
@@ -60,11 +60,21 @@ for (const source of [binary, multiclass]) {
     expect(r.status, r.reason).toBe("completed");
     const view = await inspectModeling(r.directory);
     expect(await validateSmoke(r.directory)).toMatchObject({
-      source_experiment: expect.any(String),
+      collaboration: "covered",
     });
-    expect(view.manifest.schema_version).toBe(3);
+    expect(view.manifest.schema_version).toBe(4);
     const experiments = (view.manifest.experiments as unknown[]).map(obj);
     expect(experiments).toHaveLength(3);
+    for (const e of experiments.filter((e) => e.phase === "search")) {
+      expect(e.training_diagnostic).toMatchObject({
+        partition: "train",
+        status: "available",
+        model_sha256: obj(e.fit).output && obj(obj(e.fit).output).sha256,
+      });
+      expect(obj(obj(e.training_diagnostic).score).protocol_sha256).toBe(
+        obj(e.score).protocol_sha256,
+      );
+    }
     expect(r.best_experiment_id).toBe(String(experiments[1]?.id));
     expect(experiments[2]?.score).toBeNull();
     expect(view.manifest.usage).toMatchObject({
@@ -134,7 +144,7 @@ for (const source of [binary, multiclass]) {
     await mkdir(root, { recursive: true });
     await prepareDataset({ ...source, metric: "accuracy" }, join(root, "data"));
     const task = validateModelingTask({
-      schema_version: 2,
+      schema_version: 3,
       method: "adaptive_eda",
       confirmation: { mode: "none" },
       resource_version: "smoke-v1",
@@ -164,7 +174,7 @@ test("illegal probabilities fail before scoring or evidence; scoring timeout and
   await mkdir(root, { recursive: true });
   await prepareDataset(binary, join(root, "data"));
   const task = validateModelingTask({
-    schema_version: 2,
+    schema_version: 3,
     method: "adaptive_eda",
     confirmation: { mode: "none" },
     resource_version: "smoke-v1",

@@ -47,7 +47,7 @@ test("parent child budgets settle once, reserve final work and fail on unknown c
       { ...emptyLedger(), attempts: 1, unknown_attempts: 1, status: "unknown" },
       0,
     ),
-  ).toThrow("accounting_incomplete");
+  ).not.toThrow();
 });
 test("EDA allocation clips each constraint without charging requested resources or changing training", () => {
   let remaining = 800000.7;
@@ -150,9 +150,10 @@ test("child settlement checks roles and execution identity, never truncating ove
     b.settleChild("x", total, 1, { planner, executor: planner }),
   ).toThrow("role accounting");
   expect(b.children.size).toBe(0);
-  expect(() => b.settleChild("x", total, 1, { planner, executor })).toThrow(
-    "token_threshold",
-  );
+  expect(() =>
+    b.settleChild("x", total, 1, { planner, executor }),
+  ).not.toThrow();
+  expect(() => b.check()).toThrow("token_threshold");
   expect(b.total.total_tokens).toBe(110);
   b.settleChild("x", total, 1, { planner, executor });
   expect(b.total.total_tokens).toBe(110);
@@ -243,4 +244,27 @@ test("search cannot spend confirmation reserve and confirmation charges each fit
   expect(b.training).toBe(8);
   remaining = 150000;
   expect(b.confirmationMs()).toBe(0);
+});
+
+test("explicitly unbounded fits allow an eighth search while preserving time and closing limits", () => {
+  let remaining = 2700000;
+  const b = new Budget(
+    {
+      ...MODELING_BUDGET,
+      training_attempts: null,
+      task_timeout_ms: 2700000,
+      final_reserve_ms: 750000,
+    },
+    () => remaining,
+    4,
+  );
+  for (let i = 0; i < 8; i++) b.train(false);
+  expect(b.training).toBe(8);
+  b.total.status = "unknown";
+  b.total.unknown_attempts = 1;
+  expect(() => b.check()).toThrow("accounting_incomplete");
+  expect(() => b.confirm("a")).not.toThrow();
+  expect(() => b.train(true)).not.toThrow();
+  remaining = 0;
+  expect(() => b.confirm("b")).toThrow("task_deadline");
 });

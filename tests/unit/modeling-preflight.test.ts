@@ -16,7 +16,7 @@ import { obj } from "../../src/models/validation";
 test("four development methods share data, confirmation and resources; preflight does no training or model calls", async () => {
   const root = await mkdtemp(join(await realpath(tmpdir()), "preflight-"));
   await prepareDataset(source, join(root, "data"));
-  const resource = "configs/modeling/resources/collaboration-dev-v1.json";
+  const resource = "configs/modeling/resources/workflow-dev-v1.json";
   const views = [];
   for (const method of MODELING_METHODS) {
     const configured = await taskWithResource(
@@ -39,7 +39,7 @@ test("four development methods share data, confirmation and resources; preflight
     expect(view.calls).toEqual({ models: 0, training: 0 });
     expect(view.reserve).toMatchObject({
       training_attempts: 5,
-      search_attempts: 7,
+      search_attempts: null,
       confirmation_attempts: 4,
     });
     expect(view.tools).toHaveLength(

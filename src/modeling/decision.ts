@@ -1,5 +1,5 @@
 import { keys, obj, str, strings } from "../models/validation";
-import { modelingTools } from "./actions";
+import { modelingTools } from "./actions-v3";
 import { identifier, short } from "./candidates";
 import type { ModelingMethod } from "./config";
 import type { AnalysisRecord } from "./eda";

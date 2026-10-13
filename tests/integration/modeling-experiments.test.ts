@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import source from "../../configs/modeling/synthetic-prepare.json";
 import { dockerCommand } from "../../src/execution/docker";
@@ -15,6 +15,7 @@ import {
 } from "../../src/modeling/experiments";
 import { inspectModeling } from "../../src/modeling/records";
 import { runModeling } from "../../src/modeling/run";
+import { createValidationPlan } from "../../src/modeling/validation";
 import { obj } from "../../src/models/validation";
 import { readManifest } from "../../src/records/store";
 import { lastFeedback, profile, reply, ScriptClient } from "../helpers/agent";
@@ -37,7 +38,7 @@ test("a tree ensemble above the old 16 MiB limit is saved, collected on close an
   );
   await prepareDataset({ ...source, input_root: input }, join(root, "data"));
   const task = validateModelingTask({
-    schema_version: 2,
+    schema_version: 3,
     method: "adaptive_eda",
     confirmation: { mode: "none" },
     resource_version: "smoke-v1",
@@ -83,7 +84,7 @@ async function setup() {
   await prepareDataset(source, join(root, "dataset"));
   const loaded = await loadDataset(join(root, "dataset"));
   const task = validateModelingTask({
-    schema_version: 2,
+    schema_version: 3,
     method: "adaptive_eda",
     confirmation: { mode: "none" },
     resource_version: "smoke-v1",
@@ -160,9 +161,36 @@ test("compressed artifact rejection can be repaired and delivered without losing
 }, 180000);
 test("isolated regression trains, predicts and records trusted RMSE without validation labels in either stage", async () => {
   const options = await setup();
-  const e = await runExperiment(options);
+  const e = await runExperiment({
+    ...options,
+    evaluation: createValidationPlan(options.dataset, options.train, "none")
+      .search,
+  });
   expect(e.status, e.reason).toBe("completed");
   expect(e.score?.value).toBeLessThan(1e-8);
+  expect(e.training_diagnostic).toMatchObject({
+    partition: "train",
+    status: "available",
+    model_sha256: e.fit?.output?.sha256,
+  });
+  expect(e.training_diagnostic?.score?.value).toBeLessThan(1e-8);
+  const training = e.training_diagnostic?.prediction;
+  if (!training) throw new Error("Missing training predictions");
+  const diagnostic = await readManifest(training.directory);
+  expect(diagnostic.inputs.map((i) => i.path)).toEqual([
+    "candidate.py",
+    "data.csv",
+    "stage.json",
+    "model.joblib",
+  ]);
+  const diagnosticData = await readFile(
+    join(options.root, "inputs", training.run_id, "data.csv"),
+    "utf8",
+  );
+  expect(diagnosticData.split("\n")[0]).not.toContain("target");
+  expect(diagnosticData.trim().split("\n")).toHaveLength(
+    options.dataset.split.train.length + 1,
+  );
   expect(e.fit?.run_id).not.toBe(e.predict?.run_id);
   const fit = await readManifest(e.fit?.directory ?? ""),
     predict = await readManifest(e.predict?.directory ?? "");
@@ -283,3 +311,29 @@ test("confirmation refits on each frozen membership with its model seed and inde
     }
   }
 }, 180000);
+
+test("ordinary training-diagnostic prediction failure retains validation eligibility without another fit", async () => {
+  const o = await setup();
+  const code =
+    "import pandas as pd\nfrom sklearn.dummy import DummyRegressor\nclass DiagnosticFailure(DummyRegressor):\n    def predict(self,X):\n        if len(X)>4: raise ValueError('auxiliary prediction failed')\n        return super().predict(X)\ndef build_pipeline(seed):\n    return DiagnosticFailure()\n";
+  const stages: string[] = [];
+  const e = await runExperiment({
+    ...o,
+    code,
+    evaluation: createValidationPlan(o.dataset, o.train, "none").search,
+    onStage: async (id) => {
+      stages.push(id);
+    },
+  });
+  expect(e.status, e.reason).toBe("completed");
+  expect(e.score).not.toBeNull();
+  expect(e.training_diagnostic).toMatchObject({
+    status: "unavailable",
+    score: null,
+  });
+  expect(e.training_diagnostic?.reason).toContain(
+    "auxiliary prediction failed",
+  );
+  expect(e.execution_confirmed).not.toBe(false);
+  expect(stages).toHaveLength(3);
+}, 90000);

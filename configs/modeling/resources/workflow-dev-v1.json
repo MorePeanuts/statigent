@@ -1,0 +1,21 @@
+{
+  "resource_version": "workflow-dev-v1",
+  "confirmation": {
+    "mode": "terminal_repeated_holdout"
+  },
+  "budget": {
+    "model_attempts": 80,
+    "total_tokens": 1200000,
+    "task_timeout_ms": 2700000,
+    "training_attempts": null,
+    "final_training_attempts": 1,
+    "final_reserve_ms": 750000,
+    "fit_timeout_ms": 120000,
+    "predict_timeout_ms": 30000,
+    "eda_calls": 3,
+    "eda_executions": 30,
+    "eda_model_attempts": 20,
+    "eda_tokens": 400000,
+    "eda_timeout_ms": 300000
+  }
+}

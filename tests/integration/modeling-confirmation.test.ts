@@ -57,7 +57,7 @@ for (const source of [regression, binary])
     );
     const result = await runModeling({
       task: {
-        schema_version: 2,
+        schema_version: 3,
         method: "no_eda",
         confirmation: { mode: "terminal_repeated_holdout" },
         resource_version: "confirmation-test-v1",
@@ -79,11 +79,11 @@ for (const source of [regression, binary])
     expect(result.status, result.reason).toBe("completed");
     const view = await inspectModeling(result.directory),
       m = view.manifest,
-      delivery = obj(m.delivery);
+      delivery = obj(obj(m.delivery).artifact);
     expect(client.bodies).toHaveLength(3);
     expect(obj(m.confirmation).status).toBe("complete");
     expect(m.search_best_experiment_id).not.toBe(m.selected_experiment_id);
-    expect(delivery.schema_version).toBe(3);
+    expect(delivery.schema_version).toBe(4);
     expect(delivery.source_experiment).toBe(m.selected_experiment_id);
     const experiments = (m.experiments as unknown[]).map(obj);
     expect(experiments.filter((e) => e.phase === "confirmation")).toHaveLength(
@@ -109,7 +109,7 @@ for (const source of [regression, binary])
       const parent = JSON.parse(parentBytes),
         delivery = JSON.parse(deliveryBytes);
       delete delivery[key];
-      parent.delivery = delivery;
+      parent.delivery.artifact = delivery;
       await Bun.write(parentPath, JSON.stringify(parent));
       await Bun.write(deliveryPath, JSON.stringify(delivery));
       await expect(

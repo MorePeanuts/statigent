@@ -24,6 +24,7 @@ import { ScoringFailure, scoreTables } from "./scoring";
 import type { Evaluation, ExperimentPhase } from "./validation";
 
 export interface StageResult {
+  execution_confirmed?: boolean;
   stage_version?: 1 | 2 | 3;
   run_id: string;
   directory: string;
@@ -183,6 +184,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     !session.closeResult.cleanup_error
   )
     failure = `model_artifact_limit:${result.error.evalue}`;
+  let artifactsConfirmed = true;
   let output: StageResult["output"] = null;
   let metadata: StageResult["metadata"];
   if (!failure) {
@@ -213,12 +215,21 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
         bytes: data.length,
       };
     } catch (e) {
+      artifactsConfirmed = false;
       failure = String(e);
     }
   }
   await recorder.finish(failure ? "failed" : "completed");
   await exportNotebooks(recorder.directory);
   return {
+    execution_confirmed: Boolean(
+      result?.started &&
+        result.kernel_available &&
+        result.persistence_complete &&
+        artifactsConfirmed &&
+        session?.closeResult?.status === "ok" &&
+        !session.closeResult.cleanup_error,
+    ),
     stage_version: o.legacy ? 1 : (o.stageVersion ?? 3),
     run_id: runId,
     directory: recorder.directory,
@@ -281,6 +292,16 @@ export function rmse(predictions: number[], targets: number[]): number {
   if (!Number.isFinite(score)) throw new Error("Score overflow");
   return score;
 }
+export interface TrainingDiagnostic {
+  partition: "train";
+  status: "available" | "unavailable";
+  members_sha256: string;
+  model_sha256: string;
+  prediction: StageResult | null;
+  score: Score | null;
+  reason: string;
+  elapsed_ms: number;
+}
 export interface Experiment {
   id: string;
   candidate_id: string;
@@ -295,6 +316,8 @@ export interface Experiment {
   phase?: ExperimentPhase;
   evaluation?: Evaluation;
   source_search_experiment_id?: string | null;
+  training_diagnostic?: TrainingDiagnostic;
+  execution_confirmed?: boolean;
 }
 export async function runExperiment(o: {
   task: ModelingExecutionTask;
@@ -364,6 +387,7 @@ export async function runExperiment(o: {
     data: o.final ? o.train : select(o.train, split.train, o.dataset.id_column),
     remainingMs: o.remaining(),
   });
+  e.execution_confirmed = e.fit.execution_confirmed;
   if (e.fit.status !== "completed") {
     e.reason = e.fit.reason;
     return e;
@@ -385,6 +409,8 @@ export async function runExperiment(o: {
         ]),
     remainingMs: o.remaining(),
   });
+  e.execution_confirmed =
+    e.execution_confirmed !== false && e.predict.execution_confirmed !== false;
   if (e.predict.status !== "completed") {
     e.reason = e.predict.reason;
     return e;
@@ -430,6 +456,103 @@ export async function runExperiment(o: {
   } catch (error) {
     e.reason = String(error);
     if (error instanceof ScoringFailure) e.reason = error.message;
+  }
+  if (
+    e.status === "completed" &&
+    o.evaluation?.phase === "search" &&
+    "schema_version" in o.task &&
+    o.task.schema_version === 3
+  ) {
+    const began = performance.now();
+    const diagnostic: TrainingDiagnostic = {
+      partition: "train",
+      status: "unavailable",
+      members_sha256: sha256(Buffer.from(JSON.stringify(split.train))),
+      model_sha256: e.fit.output?.sha256 ?? "",
+      prediction: null,
+      score: null,
+      reason: "not_started",
+      elapsed_ms: 0,
+    };
+    e.training_diagnostic = diagnostic;
+    if (o.remaining() <= 0 && !o.signal.aborted) {
+      diagnostic.reason = "exploration_reserve";
+      return e;
+    }
+    try {
+      diagnostic.prediction = await runStage({
+        ...base,
+        task: { ...o.task, image: e.fit.image.id },
+        stage: "predict",
+        entrypoint: o.entrypoints?.predict,
+        model: await stageBytes(e.fit),
+        data: select(o.train, split.train, o.dataset.id_column, [
+          o.dataset.target,
+        ]),
+        remainingMs: o.remaining(),
+      });
+      if (diagnostic.prediction.status !== "completed")
+        throw new Error(diagnostic.prediction.reason);
+      const predictions = parseCsv(
+          (await stageBytes(diagnostic.prediction)).toString(),
+        ),
+        protocol = datasetProtocol(o.dataset);
+      validatePredictions(
+        predictions,
+        split.train,
+        o.dataset.id_column,
+        protocol,
+      );
+      const training = select(o.train, split.train, o.dataset.id_column);
+      const scored = await (o.score ?? scoreTables)({
+        root: o.root,
+        protocol,
+        id: o.dataset.id_column,
+        target: o.dataset.target,
+        labels: {
+          columns: [o.dataset.id_column, o.dataset.target],
+          rows: training.rows.map((r) => [
+            r[training.columns.indexOf(o.dataset.id_column)] ?? "",
+            r[training.columns.indexOf(o.dataset.target)] ?? "",
+          ]),
+        },
+        predictions,
+        signal: o.signal,
+        timeout_ms: o.remaining(),
+      });
+      if (!scored.score)
+        throw new Error(scored.error ?? "Invalid diagnostic score");
+      diagnostic.score = {
+        ...scored.score,
+        evaluation_id: sha256(
+          Buffer.from(
+            JSON.stringify({
+              partition: "train",
+              search_evaluation_id: o.evaluation.evaluation_id,
+              members_sha256: diagnostic.members_sha256,
+            }),
+          ),
+        ),
+      };
+      diagnostic.status = "available";
+      diagnostic.reason = "ok";
+    } catch (error) {
+      diagnostic.reason = String(error);
+      // A normal auxiliary prediction error does not erase the validation result.
+      // Unknown execution, damaged artifacts or failed cleanup cannot authorize more work.
+      if (
+        !diagnostic.prediction ||
+        diagnostic.prediction.execution_confirmed === false ||
+        /kernel_lost|protocol_error|cleanup|record|incomplete|integrity|hash|scoring_failure/.test(
+          diagnostic.reason,
+        )
+      ) {
+        e.execution_confirmed = false;
+        e.reason = `diagnostic_integrity_failure:${diagnostic.reason}`;
+      }
+    } finally {
+      diagnostic.elapsed_ms = performance.now() - began;
+    }
   }
   return e;
 }

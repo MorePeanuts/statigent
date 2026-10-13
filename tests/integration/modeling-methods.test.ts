@@ -56,7 +56,7 @@ test("initial EDA runs before the first decision in Docker and retains shared tr
   });
   const result = await runModeling({
     task: {
-      schema_version: 2,
+      schema_version: 3,
       method: "initial_eda",
       confirmation: { mode: "none" },
       resource_version: "smoke-v1",
