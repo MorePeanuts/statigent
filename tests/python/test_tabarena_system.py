@@ -3,6 +3,7 @@ import hashlib
 import json
 import threading
 import time
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -11,6 +12,50 @@ from statigent_modeling.data_v3 import file_descriptor
 from statigent_modeling.scoring_v2 import score_v2
 
 pytestmark = pytest.mark.upstream
+
+
+def test_real_system_verification_entry_on_prepared_fixture(tmp_path):
+    from statigent_benchmarks.tabarena_real_system import verify
+    from statigent_modeling.data_v3 import prepare_rows
+    from test_modeling_dataset_v3 import LIMITS
+
+    prepared = tmp_path / "prepared-source"
+    prepare_rows(
+        prepared,
+        kind="binary",
+        metric_id="roc-auc-v1",
+        id_column="sample_id",
+        targets=[dict(name="y", classes=["01", "1"], positive_class="1", levels=None)],
+        features=[
+            dict(name="x", kind="numeric", source_type="synthetic", categories=None)
+        ],
+        excluded_columns=[],
+        train=[
+            (f"train:{i}", i, dict(x=i % 2, y="1" if i % 2 else "01"))
+            for i in range(30)
+        ],
+        prediction=[(f"test:{i}", i, dict(x=i % 2)) for i in range(30, 40)],
+        labels=[(f"test:{i}", ["1" if i % 2 else "01"]) for i in range(30, 40)],
+        seed=17,
+        limits=LIMITS,
+        provenance=dict(
+            benchmark="tabarena-lite",
+            task_id="synthetic",
+            outer_split="openml-r0f0",
+            openml=dict(dataset_id="123", version=1, repeat=0, fold=0),
+            original_classes=[dict(canonical=c, value=c) for c in ["01", "1"]],
+        ),
+    )
+    root = Path(__file__).resolve().parents[2]
+    config = json.loads(
+        (root / "configs/modeling/tabarena-system-deterministic.json").read_text()
+    )
+    result = verify(prepared, config, tmp_path / "systems")
+    report = json.loads(Path(result["report"]).read_text())
+    assert result["status"] == "passed", report
+    assert report["official"]["status"] == "passed"
+    assert report["live_llm_calls"] == 0
+    assert len(report["prediction_records"]) == 2
 
 
 def system(root, kind, **options):
