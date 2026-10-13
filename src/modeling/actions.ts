@@ -1,12 +1,16 @@
 import type { ModelingMethod } from "./config";
 import { MODELING_PROMPT as LEGACY_PROMPT } from "./legacy-actions";
-import type { Protocol } from "./protocol";
+import { type ModelingProtocol, metricDirection } from "./versioned-score";
 
 export type { EvidenceUse } from "./candidates";
 export { identifier } from "./candidates";
 export type { CoreAction as ModelingAction } from "./workflow";
 export const MODELING_PROMPT_VERSION = "modeling-v7";
-export function modelingTools(protocol: Protocol, method: ModelingMethod) {
+export const MODELING_PROMPT_V2_VERSION = "modeling-v8";
+export function modelingTools(
+  protocol: ModelingProtocol,
+  method: ModelingMethod,
+) {
   const text = { type: "string", minLength: 1 };
   const sources = {
     type: "array",
@@ -85,7 +89,7 @@ export function modelingTools(protocol: Protocol, method: ModelingMethod) {
     type: "function",
     function: {
       name: d.name,
-      description: `${d.description} ${protocol.kind}: ${protocol.direction} ${protocol.metric}, output ${protocol.output}.`,
+      description: `${d.description} ${protocol.kind}: ${metricDirection(protocol)} ${protocol.version === 2 ? protocol.metric.id : protocol.metric}, output ${protocol.output}.`,
       parameters: {
         type: "object",
         properties: d.properties,
@@ -96,8 +100,16 @@ export function modelingTools(protocol: Protocol, method: ModelingMethod) {
   }));
 }
 const runnerContract = LEGACY_PROMPT.split("\n").slice(0, 2).join("\n");
-export function modelingPrompt(method: ModelingMethod) {
-  return `${runnerContract}
+export function modelingPrompt(
+  method: ModelingMethod,
+  protocolVersion: 1 | 2 = 1,
+) {
+  const contract =
+    protocolVersion === 1
+      ? runnerContract
+      : `Write Python defining build_pipeline(seed), returning an estimator with fit(X,y), predict(X), and predict_proba(X) when required by the frozen protocol. The runner fits preprocessing only on the allowed training members. X is a pandas DataFrame containing every whitelisted feature in frozen order, decoded using the full feature schema; summaries may omit display columns without removing data.
+Regression y is a one-dimensional numeric array. Single-target classification and ordinal y contain encoded class indices in the frozen per-target class order; ordinal original levels are metadata, not an assumption of consecutive numeric targets. Multilabel y is a DataFrame containing ALL target names in frozen order, each independently encoded as 0/1; expose a classes_ list and predict_proba list in that same target order. Each target's probabilities sum to one independently. For ranked-labels output provide predict_proba; the runner aligns classes and creates up to three distinct labels with frozen-class-order tie breaking. The host validates and scores canonical predictions. Do not read test data or labels during search, confirmation or final fitting.`;
+  return `${contract}
 Autonomously build an effective, reliable predictive model. Use the task, data profile, experiment feedback and available analysis to choose the next useful action. Establish a competitive initial pipeline when the available understanding supports it. Analyze a focused uncertainty when its answer can change a modeling decision; otherwise train directly. Use actual validation feedback to retain or revise your explanations and test promising changes. No prescribed model family, EDA count or action order. Stop when no worthwhile supported direction remains.
 Tools express the next action only: analyze(question, optional source_experiments), run_experiment(code, change, reason, optional source_experiment/repair_of_experiment), finish_modeling(reason). The host owns experiment IDs, source binding, ranking and resource protection. A repair references an actually failed search experiment. You do not manage candidate lists or select the best ID at finish.
 Optional sources use published source_id handles: profile:/rows, analysis:<id>:<finding index>, experiment:<id>:score/failure/train_diagnostic. Explain applicability when useful; do not relabel historical diagnostics as measurements of a different model. Invalid optional notes/references are reported as warnings and ignored; valid core actions still run. Core errors must be corrected. Never fabricate sources or scores.

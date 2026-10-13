@@ -5,42 +5,53 @@ import type { ModelingTask } from "./config";
 import { type ConfirmationResult, confirmationResult } from "./confirmation";
 import { type Dataset, datasetProtocol, type Table } from "./data";
 import { type Experiment, runExperiment } from "./experiments";
-import { validateScore } from "./protocol";
+import type { Score } from "./protocol";
 import {
   assertEvaluation,
   type Evaluation,
   type ValidationPlan,
 } from "./validation";
-export async function finalizeModeling(o: {
+import {
+  type ModelingProtocol,
+  type ModelingScore,
+  validateEvaluationScore,
+} from "./versioned-score";
+export interface FinalizationOptions<S extends ModelingScore> {
   task: ModelingTask;
-  dataset: Dataset;
-  train: Table;
-  test: Table;
+  protocol: ModelingProtocol;
   root: string;
   signal: AbortSignal;
   remaining: () => number;
   check: () => void;
   budget: Budget;
   plan: ValidationPlan;
-  candidates: Experiment[];
+  candidates: Experiment<S>[];
   finalId: string;
-  execute?: typeof runExperiment;
+  executeExperiment: (
+    candidate: Experiment<S>,
+    evaluation: Evaluation,
+    id: string,
+    remaining: () => number,
+  ) => Promise<Experiment<S>>;
   onConfirmation: (result: ConfirmationResult) => Promise<void>;
   onIntent: (
     id: string,
-    candidate: Experiment,
+    candidate: Experiment<S>,
     evaluation: Evaluation,
     retry: boolean,
   ) => Promise<void>;
   onStage: (id: string, experiment: string) => Promise<void>;
-  onResult: (experiment: Experiment) => Promise<void>;
-}) {
-  const protocol = datasetProtocol(o.dataset),
-    trials: Experiment[] = [];
+  onResult: (experiment: Experiment<S>) => Promise<void>;
+}
+export async function finalizeExperiments<S extends ModelingScore>(
+  o: FinalizationOptions<S>,
+) {
+  const protocol = o.protocol,
+    trials: Experiment<S>[] = [];
   let confirmation = confirmationResult(o.candidates, trials, protocol, o.plan);
   await o.onConfirmation(confirmation);
   const execute = async (
-    candidate: Experiment,
+    candidate: Experiment<S>,
     evaluation: Evaluation,
     id: string,
     retry = false,
@@ -49,25 +60,14 @@ export async function finalizeModeling(o: {
     await o.onIntent(id, candidate, evaluation, retry);
     if (evaluation.phase === "confirmation") o.budget.confirm(id);
     else o.budget.train(true);
-    const result = await (o.execute ?? runExperiment)({
-      task: o.task,
-      dataset: o.dataset,
-      train: o.train,
-      test: o.test,
-      root: o.root,
-      code: candidate.code,
-      candidateId: candidate.candidate_id,
-      signal: o.signal,
-      remaining:
-        evaluation.phase === "confirmation"
-          ? () => Math.min(o.remaining(), o.budget.confirmationMs())
-          : o.remaining,
-      final: evaluation.phase === "final",
+    const result = await o.executeExperiment(
+      candidate,
       evaluation,
-      sourceSearchExperimentId: candidate.id,
       id,
-      onStage: (child) => o.onStage(child, id),
-    });
+      evaluation.phase === "confirmation"
+        ? () => Math.min(o.remaining(), o.budget.confirmationMs())
+        : o.remaining,
+    );
     if (
       result.id !== id ||
       result.candidate_id !== candidate.candidate_id ||
@@ -81,7 +81,7 @@ export async function finalizeModeling(o: {
       throw new Error("Unconfirmed finalization experiment identity");
     assertEvaluation(result.evaluation, evaluation);
     if (result.status === "completed" && evaluation.phase !== "final")
-      validateScore(result.score, protocol, evaluation.evaluation_id);
+      validateEvaluationScore(result.score, protocol, evaluation);
     else if (result.score !== null)
       throw new Error("Unexpected finalization score");
     await o.onResult(result);
@@ -137,4 +137,35 @@ export async function finalizeModeling(o: {
     retry = true;
     id = randomUUID();
   }
+}
+
+export async function finalizeModeling(
+  o: Omit<FinalizationOptions<Score>, "protocol" | "executeExperiment"> & {
+    dataset: Dataset;
+    train: Table;
+    test: Table;
+    execute?: typeof runExperiment;
+  },
+) {
+  return finalizeExperiments({
+    ...o,
+    protocol: datasetProtocol(o.dataset),
+    executeExperiment: (candidate, evaluation, id, remaining) =>
+      (o.execute ?? runExperiment)({
+        task: o.task,
+        dataset: o.dataset,
+        train: o.train,
+        test: o.test,
+        root: o.root,
+        code: candidate.code,
+        candidateId: candidate.candidate_id,
+        signal: o.signal,
+        remaining,
+        final: evaluation.phase === "final",
+        evaluation,
+        sourceSearchExperimentId: candidate.id,
+        id,
+        onStage: (child) => o.onStage(child, id),
+      }),
+  });
 }

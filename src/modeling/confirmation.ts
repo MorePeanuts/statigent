@@ -1,6 +1,11 @@
 import type { Experiment } from "./experiments";
-import { type Protocol, validateScore } from "./protocol";
 import { assertEvaluation, type ValidationPlan } from "./validation";
+import {
+  type ModelingProtocol,
+  type ModelingScore,
+  metricDirection,
+  validateEvaluationScore,
+} from "./versioned-score";
 export interface ConfirmationResult {
   mode: ValidationPlan["mode"];
   status: "disabled" | "pending" | "complete" | "incomplete";
@@ -16,9 +21,9 @@ export interface ConfirmationResult {
   selected_experiment_id: string | null;
   reason: string;
 }
-export function shortlist(
-  experiments: readonly Experiment[],
-  protocol: Protocol,
+export function shortlist<S extends ModelingScore>(
+  experiments: readonly Experiment<S>[],
+  protocol: ModelingProtocol,
   plan: ValidationPlan,
 ) {
   const successful = experiments.filter(
@@ -27,11 +32,11 @@ export function shortlist(
   for (const e of successful) {
     if (!e.evaluation) throw new Error("Missing search evaluation");
     assertEvaluation(e.evaluation, plan.search);
-    validateScore(e.score, protocol, plan.search.evaluation_id);
+    validateEvaluationScore(e.score, protocol, plan.search);
   }
   const sorted = [...successful].sort((a, b) => {
     const difference = (a.score?.value ?? 0) - (b.score?.value ?? 0);
-    return protocol.direction === "minimize" ? difference : -difference;
+    return metricDirection(protocol) === "minimize" ? difference : -difference;
   });
   const hashes = new Set<string>();
   return sorted
@@ -42,10 +47,10 @@ export function shortlist(
     })
     .slice(0, 2);
 }
-export function confirmationResult(
-  candidates: readonly Experiment[],
-  trials: readonly Experiment[],
-  protocol: Protocol,
+export function confirmationResult<S extends ModelingScore>(
+  candidates: readonly Experiment<S>[],
+  trials: readonly Experiment<S>[],
+  protocol: ModelingProtocol,
   plan: ValidationPlan,
 ): ConfirmationResult {
   if (!candidates.length) throw new Error("No successful search pipeline");
@@ -95,7 +100,7 @@ export function confirmationResult(
     pairs.add(pair);
     assertEvaluation(trial.evaluation, evaluation);
     if (trial.status !== "completed") failed = true;
-    else validateScore(trial.score, protocol, evaluation.evaluation_id);
+    else validateEvaluationScore(trial.score, protocol, evaluation);
   }
   if (failed)
     return {
@@ -123,7 +128,9 @@ export function confirmationResult(
       return { experiment_id: candidate.id, scores, mean, range };
     })
     .sort((a, b) =>
-      protocol.direction === "minimize" ? a.mean - b.mean : b.mean - a.mean,
+      metricDirection(protocol) === "minimize"
+        ? a.mean - b.mean
+        : b.mean - a.mean,
     );
   return {
     ...result,

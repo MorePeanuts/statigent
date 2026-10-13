@@ -10,6 +10,7 @@ import { emptyLedger } from "../records/agent-metadata";
 import { readManifest, sha256 } from "../records/store";
 import type { EvidenceUse, ModelingAction as V3Action } from "./actions-v3";
 import { validateScore } from "./protocol";
+import type { ModelingScore } from "./versioned-score";
 import type { CoreAction } from "./workflow";
 
 type ModelingAction = V3Action | CoreAction;
@@ -274,15 +275,13 @@ export async function prepareAnalysisInput(
   inputs.push("context.json");
   return inputs;
 }
-export async function analyze(o: {
+export interface AnalysisOptions {
   id: string;
   runId: string;
   root: string;
   task: ModelingTask;
-  dataset: Dataset;
-  train: Table;
-  experiment: Experiment | null;
-  experiments?: Experiment[];
+  experiment: Experiment<ModelingScore> | null;
+  experiments?: Experiment<ModelingScore>[];
   context?: unknown;
   request: Extract<ModelingAction, { kind: "analyze" }>;
   resolvedCandidates?: {
@@ -297,18 +296,28 @@ export async function analyze(o: {
   /** Monotonic deadline fixed when the parent accepts this delegation. */
   deadline: number;
   now?: () => number;
-  prepare?: typeof prepareAnalysisInput;
   client?: ModelClient;
   run?: typeof runAgent;
-}): Promise<AnalysisRecord> {
+}
+export async function analyzeWithInput(
+  o: AnalysisOptions & {
+    identity: {
+      dataset_hash: string;
+      split_hash: string;
+      protocol_sha256: string;
+      seed: number;
+    };
+    prepareInput: (root: string) => Promise<string[]>;
+  },
+): Promise<AnalysisRecord> {
   const now = o.now ?? (() => performance.now());
   if (!Number.isFinite(o.deadline)) throw new Error("Invalid EDA deadline");
   const notStarted = (status: string, reason: string): AnalysisRecord => ({
     id: o.id,
     source_experiment: o.request.source_experiments[0] ?? null,
-    dataset_hash: o.dataset.files[0]?.sha256 ?? "",
-    split_hash: o.dataset.split.sha256,
-    protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
+    dataset_hash: o.identity.dataset_hash,
+    split_hash: o.identity.split_hash,
+    protocol_sha256: o.identity.protocol_sha256,
     prediction_sha256: o.experiment?.predict?.output?.sha256 ?? null,
     status,
     reason,
@@ -335,13 +344,7 @@ export async function analyze(o: {
   const input = join(o.root, `${o.id}-input`);
   let inputs: string[];
   try {
-    inputs = await (o.prepare ?? prepareAnalysisInput)(
-      input,
-      o.dataset,
-      o.train,
-      o.experiments ?? o.experiment,
-      o.context ?? {},
-    );
+    inputs = await o.prepareInput(input);
   } catch (error) {
     return (
       stopped() ??
@@ -377,7 +380,7 @@ export async function analyze(o: {
         image: o.task.image,
         input_root: input,
         inputs,
-        seed: o.dataset.seed,
+        seed: o.identity.seed,
         limits: o.task.limits,
       },
       budget: {
@@ -420,9 +423,9 @@ export async function analyze(o: {
   return {
     id: o.id,
     source_experiment: o.request.source_experiments[0] ?? null,
-    dataset_hash: o.dataset.files[0]?.sha256 ?? "",
-    split_hash: o.dataset.split.sha256,
-    protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
+    dataset_hash: o.identity.dataset_hash,
+    split_hash: o.identity.split_hash,
+    protocol_sha256: o.identity.protocol_sha256,
     prediction_sha256: o.experiment?.predict?.output?.sha256 ?? null,
     source_sha256: sourceFile.sha256,
     context_sha256: contextFile.sha256,
@@ -501,4 +504,32 @@ export function validateEvidence(
     if (use.refs.some((r) => !refs.has(r)))
       throw new Error("Unknown evidence reference");
   }
+}
+
+export async function analyze(
+  o: Omit<AnalysisOptions, "experiment" | "experiments"> & {
+    dataset: Dataset;
+    train: Table;
+    experiment: Experiment | null;
+    experiments?: Experiment[];
+    prepare?: typeof prepareAnalysisInput;
+  },
+): Promise<AnalysisRecord> {
+  return analyzeWithInput({
+    ...o,
+    identity: {
+      dataset_hash: o.dataset.files[0]?.sha256 ?? "",
+      split_hash: o.dataset.split.sha256,
+      protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
+      seed: o.dataset.seed,
+    },
+    prepareInput: (input) =>
+      (o.prepare ?? prepareAnalysisInput)(
+        input,
+        o.dataset,
+        o.train,
+        o.experiments ?? o.experiment,
+        o.context ?? {},
+      ),
+  });
 }
