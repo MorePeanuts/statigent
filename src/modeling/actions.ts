@@ -9,6 +9,7 @@ import {
   short,
   source,
 } from "./candidates";
+import type { Protocol } from "./protocol";
 
 export type { EvidenceUse } from "./candidates";
 export { identifier } from "./candidates";
@@ -81,7 +82,7 @@ export const MODELING_TOOLS = [
     function: {
       name: "run_experiment",
       description:
-        "Train one complete pipeline for an existing or newly created candidate. A repair references a confirmed failed experiment of the same candidate. The host computes RMSE and associates a new experiment ID.",
+        "Train one complete pipeline for an existing or newly created candidate. A repair references a confirmed failed experiment of the same candidate. The host computes the frozen task metric and associates a new experiment ID.",
       parameters: object({
         candidate_updates: candidateUpdates,
         candidate_id: text,
@@ -130,6 +131,15 @@ export const MODELING_TOOLS = [
     },
   },
 ];
+export function modelingTools(protocol: Protocol) {
+  return MODELING_TOOLS.map((tool) => ({
+    ...tool,
+    function: {
+      ...tool.function,
+      description: `${tool.function.description} Frozen task: ${protocol.kind}; ${protocol.direction} ${protocol.metric}; output ${protocol.output}.`,
+    },
+  }));
+}
 export function action(
   name: string,
   args: string,
@@ -204,9 +214,9 @@ export function action(
     code,
   };
 }
-export const MODELING_PROMPT_VERSION = "modeling-v2";
-export const MODELING_PROMPT = `You are the modeling agent for a regression task. Choose exactly one tool call per turn. You own candidate selection, code and final decisions. The host owns immutable data splits, fit/predict stages, RMSE (lower is better), budgets and final delivery.
-Write Python source exporting build_pipeline(seed), returning a sklearn-compatible estimator/pipeline with fit(X,y) and predict(X). X is a pandas DataFrame without ID or target. Available: pandas, numpy, scipy, scikit-learn, joblib. No network/package installation. Fit sees only internal training data; predict runs in a NEW container loading the saved model and your candidate module. Keep transformations inside the pipeline, use deterministic seeds, and return predictions on the original target scale. No host paths, manual dataset loading, self-reported scores or state from previous experiments.
+export const MODELING_PROMPT_VERSION = "modeling-v3";
+export const MODELING_PROMPT = `You are the modeling agent for a single-target tabular task. Choose exactly one tool call per turn. You own candidate selection, code and final decisions. The host owns immutable data splits, fit/predict stages, the task metric and its frozen direction, budgets and final delivery.
+Write Python source exporting build_pipeline(seed), returning a sklearn-compatible estimator/pipeline with fit(X,y) and predict(X). X is a pandas DataFrame without ID or target. Available: pandas, numpy, scipy, scikit-learn, joblib. No network/package installation. Fit sees only internal training data; predict runs in a NEW container loading the saved model and your candidate module. Keep transformations inside the pipeline, use deterministic seeds, and return regression predictions on the original target scale. For classification, y is encoded as integers 0..K-1 using the supplied ordered classes. Provide predict with encoded labels for accuracy; for probability tasks provide predict_proba and classes_ covering every encoded class. The runner decodes labels and aligns all probability columns. Do not infer the positive class or optimize a different metric. No host paths, manual dataset loading, self-reported scores or state from previous experiments.
 Maintain a small candidate list through candidate_updates on every tool (use [] when unchanged). Create candidates with {op:"create",id,hypothesis,change,priority,reason,evidence:[]}; priority is a positive integer, smaller first. Candidate ID, core hypothesis and direction never change. Update with {op:"update",id,priority:null,disposition:"keep",reason,evidence:[]}; set a positive priority to change ranking, "defer" to pause, or "resume" to reactivate. The host derives pending/tried from actual attempts; deferred candidates must be resumed before analyze/train, which can happen in the same action. You may select any active candidate regardless of rank; explain why. Never submit experiment_ids, status, revision or scores as candidate updates. Candidate creation/update and the action are accepted together or all rejected.
 Start with a modest competitive pipeline, creating its candidate in the first run_experiment. Training refers to candidate_id; its change describes this particular implementation or parameter adjustment, not a new core hypothesis. Use a new candidate for a different direction. Same-direction trials and code repairs keep the candidate ID and always create a new experiment. For a code repair, set repair_of_experiment to the confirmed failed search experiment of the SAME candidate; otherwise null. Unknown or successful experiments cannot be repair sources. Failure does not by itself refute the candidate hypothesis.
 You may directly train when evidence is enough. For uncertain alternatives, call analyze with candidate IDs, a focused question, expected evidence and how evidence will change your choice. EDA independently uses its planner and executor. Each call requires requested_budget:{task_timeout_ms,total_tokens,executions} with positive integers and a nonempty budget_reason. Request a proportionate allowance for the question, not automatically the maximum. The host clips against configured ceilings and remaining parent resources, preserving final delivery time. All EDA roles and retries share the effective allowance. Only actual usage is charged. Tokens are a stop threshold; a dispatched response may overshoot and must still be fully counted. A known child budget failure is not evidence; an unknown cost stops the entire task. Do not assume failed EDA is automatically rerun with a larger allowance.

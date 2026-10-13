@@ -17,6 +17,13 @@ import {
   validateCandidateState,
   validateRepair,
 } from "./candidates";
+import { datasetProtocol, validateDataset } from "./data";
+import {
+  better,
+  type Score,
+  validateProtocol,
+  validateScore,
+} from "./protocol";
 export class ModelingRecord {
   private failed = false;
   private bytes = 0;
@@ -40,7 +47,7 @@ export class ModelingRecord {
     const commit = Bun.spawnSync(["git", "rev-parse", "HEAD"]),
       dirty = Bun.spawnSync(["git", "status", "--porcelain"]);
     const header = {
-      schema_version: 1,
+      schema_version: config.protocol === undefined ? 1 : 2,
       kind: "modeling",
       run_id: id,
       started_at: new Date().toISOString(),
@@ -125,8 +132,25 @@ export async function inspectModeling(directory: string) {
   if ((await stat(path)).size > 32 * 1024 ** 2)
     throw new Error("Manifest too large");
   const manifest = obj(JSON.parse(await readFile(path, "utf8")));
-  if (manifest.schema_version !== 1 || manifest.kind !== "modeling")
+  if (
+    (manifest.schema_version !== 1 && manifest.schema_version !== 2) ||
+    manifest.kind !== "modeling"
+  )
     throw new Error("Unsupported modeling record");
+  if (
+    manifest.schema_version === 1 &&
+    obj(manifest.config).protocol !== undefined
+  )
+    throw new Error("Legacy record cannot contain a v2 task protocol");
+  if (manifest.schema_version === 2) {
+    const config = obj(manifest.config),
+      data = validateDataset(config.dataset),
+      protocol = validateProtocol(config.protocol, data.id_column);
+    if (protocol.protocol_sha256 !== datasetProtocol(data).protocol_sha256)
+      throw new Error("Record task protocol mismatch");
+    if (manifest.candidate_control === undefined)
+      throw new Error("Missing candidate control");
+  }
   str(manifest.run_id, "run ID");
   str(manifest.status, "status");
   const eventPath = await regular(directory, "events.jsonl");
@@ -243,6 +267,40 @@ async function inspectControl(
       throw new Error("Missing candidate control extension");
     return none;
   }
+  const config = obj(manifest.config);
+  const protocol =
+    manifest.schema_version === 2
+      ? validateProtocol(
+          config.protocol,
+          validateDataset(config.dataset).id_column,
+        )
+      : null;
+  const scoreOf = (e: CandidateExperiment): Score | null =>
+    protocol
+      ? e.score
+        ? validateScore(e.score, protocol)
+        : null
+      : e.rmse === null || e.rmse === undefined
+        ? null
+        : {
+            metric: "rmse",
+            direction: "minimize",
+            value: e.rmse,
+            protocol_sha256: "legacy",
+            scoring_version: "legacy",
+          };
+  const bestResult = () => {
+    let best: CandidateExperiment | undefined;
+    let score: Score | null = null;
+    for (const e of results.values()) {
+      const s = scoreOf(e);
+      if (e.status === "completed" && !e.final && s && better(s, score)) {
+        best = e;
+        score = s;
+      }
+    }
+    return best;
+  };
   const extension = obj(manifest.candidate_control);
   keys(extension, ["version", "candidates", "applied_sequence"]);
   if (extension.version !== 1)
@@ -419,11 +477,7 @@ async function inspectControl(
             selected.repair_of_experiment,
           );
         } else {
-          const best = [...results.values()]
-            .filter(
-              (x) => x.status === "completed" && !x.final && x.rmse !== null,
-            )
-            .sort((a, b) => (a.rmse ?? Infinity) - (b.rmse ?? Infinity))[0];
+          const best = bestResult();
           if (
             !best ||
             selected.experiment_id !== best.id ||
@@ -505,10 +559,18 @@ async function inspectControl(
       const status = str(e.status, "experiment status");
       if (
         typeof intent.final !== "boolean" ||
-        (e.rmse !== null &&
-          (typeof e.rmse !== "number" ||
-            !Number.isFinite(e.rmse) ||
-            e.rmse < 0))
+        (status !== "completed" && status !== "failed")
+      )
+        throw new Error("Invalid experiment result");
+      let score: Score | null = null;
+      if (protocol) {
+        if (status === "completed" && !intent.final)
+          score = validateScore(e.score, protocol);
+        else if (e.score !== null)
+          throw new Error("Unexpected validation score");
+      } else if (
+        e.rmse !== null &&
+        (typeof e.rmse !== "number" || !Number.isFinite(e.rmse) || e.rmse < 0)
       )
         throw new Error("Invalid experiment result");
       results.set(id, {
@@ -516,7 +578,7 @@ async function inspectControl(
         candidate_id: str(intent.candidate_id, "candidate ID"),
         final: intent.final,
         status,
-        rmse: e.rmse as number | null,
+        ...(protocol ? { score } : { rmse: e.rmse as number | null }),
         reason: str(e.reason, "experiment reason"),
       });
     } else if (e.type === "child_result" && e.analysis_id !== undefined) {
@@ -568,6 +630,26 @@ async function inspectControl(
       analyses.length !== confirmedAnalyses.size)
   )
     throw new Error("Completed manifest omits confirmed results");
+  if (protocol) {
+    same(
+      manifest.best_experiment_id,
+      bestResult()?.id ?? null,
+      "Best experiment",
+    );
+    for (const a of analyses) {
+      same(a.protocol_sha256, protocol.protocol_sha256, "Analysis protocol");
+      const origin =
+        a.source_experiment === null
+          ? null
+          : experiments.find((e) => e.id === a.source_experiment);
+      if (a.source_experiment !== null && !origin)
+        throw new Error("Unknown analysis experiment");
+      const hash = origin?.predict
+        ? obj(obj(origin.predict).output).sha256
+        : null;
+      same(a.prediction_sha256, hash, "Analysis prediction");
+    }
+  }
   const budgetView = await inspectAllocations(
     directory,
     manifest,

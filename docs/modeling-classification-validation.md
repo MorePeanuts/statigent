@@ -1,0 +1,57 @@
+# 表格分类能力验收
+
+本记录对应 `add-tabular-modeling-classification`。验收对象是第二章统一建模系统的工程闭环，不是论文性能实验或 Benchmark 成绩。合成任务没有按外层测试成绩选择。
+
+## 软件与隔离执行
+
+已完成以下专项检查：
+
+- 二/多分类标签身份、类别顺序、分层划分、支持矩阵和 v1 数据读取。
+- runner 编码/解码、classes_ 反序、非法类别/形状、概率行和/范围、缺失接口；Python 检查均经 uv。
+- RMSE、accuracy、显式正类 ROC AUC、log-loss 的公式样例与锁定 sklearn 对照；原始预测不被评分改写。
+- 分类主循环、最大化/最小化/平局、协议篡改、证据来源、EDA 字段冲突、失败修复与共享预算。
+- 真实 Docker：二分类 ROC AUC、多分类 log-loss 各完成初始训练→双角色 EDA→证据关联训练→最终交付→predict/refit 复现→独立评分；二/多分类 accuracy 另有真实训练预测测试。
+- 跨层失败：非法概率没有分数；评分进程超时和父取消终止派发，保留失败产物并清理容器。
+- 既有回归 Docker 专项 5 项通过，包括超过 16 MiB 的模型、阶段超时、取消、EDA 预算和独立复现。
+
+所有上述模型决策均为可控响应；没有调用付费模型。运行产物保留于忽略目录 `runs/integration-classification/`、`runs/integration-classification-failure/` 和 `runs/integration-modeling-loop/`。
+
+## 旧版只读兼容
+
+实际使用原 v1 运行 `713a98e3-a341-4eb5-9fa1-24f2001d14b3`，保留原镜像 `sha256:67fc94fdc41f49a67075631f1e249db9506630497db06a2c9e6a42235b44ed76`。inspect、原三字段 stage 的 predict/refit 与独立 RMSE 评分均通过，逐文件核对原运行及数据共 128 个文件，哈希未改变。
+
+独立验收报告：`runs/classification-legacy-check/e5149125-58f3-4989-9e63-a48e91c8814e/verification.json`。首次哈希核对脚本受目录遍历顺序影响报告失败，改为按路径排序后重新执行通过；没有改写源记录。
+
+## 真实模型冒烟入口
+
+`configs/modeling/binary-selection.json` 和 `multiclass-selection.json` 冻结合成源文件哈希、生成规则、60 行训练/6 行预测及精确 48/12 内部分层划分。每个任务只使用一个显式指标：binary 为 ROC AUC（正类 `01`），multiclass 为 log-loss（类别 `NA`、`blue`、`红色`）。这不是覆盖所有分类数据分布的实验。
+
+如准备目录尚不存在，先执行：
+
+```sh
+bun run modeling prepare --config configs/modeling/binary-prepare.json --out runs/modeling-binary-data
+bun run modeling prepare --config configs/modeling/multiclass-prepare.json --out runs/modeling-multiclass-data
+```
+
+以下预检已实际执行；不启动模型或 Docker：
+
+```sh
+bun run test:smoke:classification --kind binary --preflight
+bun run test:smoke:classification --kind multiclass --preflight
+```
+
+真实调用使用配置中的模型，需显式单独运行一项：
+
+```sh
+bun run test:smoke:classification --kind binary
+# 或另一次单独选择 multiclass；命令不自动加跑另一项
+bun run test:smoke:classification --kind multiclass
+```
+
+每次上限为 900 秒、40 次总模型尝试、600,000 token、3 次搜索拟合和 1 次最终拟合；最终阶段预留 180 秒。EDA 最多 1 次，子用量计入父预算。若两项分别运行，配置合计上限为 1,800 秒、80 次尝试和 1,200,000 token 停止阈值。独立预测复现耗时另列。每次使用新目录，失败报告不被后续尝试覆盖；协作验收要求真实双角色分析和有证据关联的后续训练，不要求成绩提升。
+
+**真实分类模型冒烟：未执行。** 入口与可控响应测试通过不能替代真实模型验收。正式实验、Benchmark 适配和消融仍属于后续变更。
+
+## 全量交付检查
+
+全量 `bun run check`、`bun run test:integration` 和 OpenSpec 严格校验将在最终交付前记录实际结果。

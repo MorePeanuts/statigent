@@ -5,7 +5,7 @@ import { join } from "node:path";
 import source from "../../configs/modeling/synthetic-prepare.json";
 import { DEFAULT_BUDGET } from "../../src/agent/config";
 import { action } from "../../src/modeling/actions";
-import { prepareDataset } from "../../src/modeling/data";
+import { datasetProtocol, prepareDataset } from "../../src/modeling/data";
 import { validateEvidence } from "../../src/modeling/eda";
 import { inspectModeling, ModelingRecord } from "../../src/modeling/records";
 import { type ModelingOptions, runModeling } from "../../src/modeling/run";
@@ -33,9 +33,10 @@ import {
 
 async function options(
   script: ConstructorParameters<typeof ScriptClient>[0],
+  prepare: unknown = source,
 ): Promise<ModelingOptions> {
   const root = await mkdtemp(join(await realpath(tmpdir()), "modeling-loop-"));
-  await prepareDataset(source, join(root, "data"));
+  await prepareDataset(prepare, join(root, "data"));
   let count = 0;
   return {
     task: {
@@ -55,7 +56,15 @@ async function options(
       code_sha256: sha256(Buffer.from(o.code)),
       status: "completed",
       reason: "ok",
-      rmse: o.final ? null : ++count,
+      score: o.final
+        ? null
+        : {
+            metric: o.dataset.metric,
+            direction: datasetProtocol(o.dataset).direction,
+            protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
+            scoring_version: datasetProtocol(o.dataset).scoring_version,
+            value: ++count,
+          },
       fit: null,
       predict: null,
       final: o.final ?? false,
@@ -71,6 +80,8 @@ async function options(
         source_experiment: o.request.source_experiment,
         dataset_hash: o.dataset.files[0]?.sha256 ?? "",
         split_hash: o.dataset.split.sha256,
+        protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
+        prediction_sha256: o.experiment?.predict?.output?.sha256 ?? null,
         status: "completed",
         reason: "ok",
         analysis: {
@@ -148,12 +159,13 @@ async function options(
       return result;
     },
     delivery: async (_root, task, selected, final, dataset) => ({
-      schema_version: 1,
+      schema_version: 2,
+      protocol: datasetProtocol(dataset),
       source_experiment: selected.id,
       dataset,
       model_environment: {},
       code_version: { commit: null, dirty: null },
-      validation_rmse: selected.rmse,
+      validation_score: selected.score,
       final_experiment: final.id,
       task,
       image: { id: "test", platform: "test" },
@@ -418,7 +430,7 @@ test("a failed training attempt can be explicitly referenced by its bounded repa
   o.experiment = async (input) => {
     const e = await ex(input);
     return attempts++ === 0
-      ? { ...e, status: "failed", reason: "error:bad candidate", rmse: null }
+      ? { ...e, status: "failed", reason: "error:bad candidate", score: null }
       : e;
   };
   const r = await runModeling(o);
@@ -616,4 +628,59 @@ test("cancellation after request persistence charges no unstarted attempt", asyn
     tokens: { attempts: 0 },
     modeling: { attempts: 0 },
   });
+});
+
+test("classification loops honor maximize/minimize, keep earlier ties and reject altered records", async () => {
+  const binary = await Bun.file("configs/modeling/binary-prepare.json").json();
+  for (const metric of ["accuracy", "log_loss"]) {
+    const o = await options(modelingScript(true), { ...binary, metric });
+    const execute = o.experiment;
+    if (!execute) throw Error("fixture");
+    let count = 0;
+    o.experiment = async (args) => {
+      const e = await execute(args);
+      if (e.score) e.score.value = metric === "accuracy" ? 0.8 : 0.2;
+      if (!args.final) count++;
+      return e;
+    };
+    const r = await runModeling(o);
+    expect(r.status, r.reason).toBe("completed");
+    expect(count).toBe(2);
+    const view = await inspectModeling(r.directory),
+      experiments = (view.manifest.experiments as unknown[]).map(obj);
+    expect(r.best_experiment_id).toBe(String(experiments[0]?.id));
+    const first = JSON.stringify((o.client as ScriptClient).bodies[0]);
+    expect(first).toContain(metric);
+    expect(first).toContain(metric === "accuracy" ? "maximize" : "minimize");
+    const path = join(r.directory, "modeling.json"),
+      original = await Bun.file(path).text(),
+      m = JSON.parse(original);
+    m.config.protocol.direction =
+      metric === "accuracy" ? "minimize" : "maximize";
+    await Bun.write(path, JSON.stringify(m));
+    await expect(inspectModeling(r.directory)).rejects.toThrow();
+    await Bun.write(path, original);
+  }
+});
+test("scoring failure terminates the parent without dispatching another experiment", async () => {
+  const o = await options(() => reply([trainCall()])),
+    execute = o.experiment;
+  if (!execute) throw Error("fixture");
+  let dispatched = 0;
+  o.experiment = async (args) => {
+    dispatched++;
+    return {
+      ...(await execute(args)),
+      status: "failed",
+      reason: "scoring_failure:timeout",
+      score: null,
+    };
+  };
+  const r = await runModeling(o);
+  expect(r.status).toBe("failed");
+  expect(dispatched).toBe(1);
+  expect((o.client as ScriptClient).bodies).toHaveLength(1);
+  expect(
+    (await inspectModeling(r.directory)).manifest.best_experiment_id,
+  ).toBeNull();
 });

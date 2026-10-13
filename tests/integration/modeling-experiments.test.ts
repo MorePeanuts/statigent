@@ -46,7 +46,7 @@ test("a tree ensemble above the old 16 MiB limit is saved, collected on close an
   });
   expect(result.status, result.reason).toBe("completed");
   expect(result.fit?.output?.bytes).toBeGreaterThan(16 * 1024 ** 2);
-  expect(result.rmse).not.toBeNull();
+  expect(result.score?.value).not.toBeNull();
   const fit = await readManifest(result.fit?.directory ?? "");
   expect(fit.workspace_collection.status).toBe("complete");
   const snapshots = fit.artifacts.filter(
@@ -89,7 +89,7 @@ test("isolated regression trains, predicts and records trusted RMSE without vali
   const options = await setup();
   const e = await runExperiment(options);
   expect(e.status, e.reason).toBe("completed");
-  expect(e.rmse).toBeLessThan(1e-8);
+  expect(e.score?.value).toBeLessThan(1e-8);
   expect(e.fit?.run_id).not.toBe(e.predict?.run_id);
   const fit = await readManifest(e.fit?.directory ?? ""),
     predict = await readManifest(e.predict?.directory ?? "");
