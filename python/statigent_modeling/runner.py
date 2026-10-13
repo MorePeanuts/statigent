@@ -38,6 +38,10 @@ def run(stage: str, root: str = "/input", output: str = "."):
     base, destination = Path(root), Path(output)
     config = json.loads((base / "stage.json").read_text())
     version = config.get("schema_version", 1)
+    if version == 4:
+        from .runner_v4 import run_v4
+
+        return run_v4(stage, base, destination, config)
     if version not in (1, 2, 3):
         raise ValueError("Unsupported stage version")
     p = (

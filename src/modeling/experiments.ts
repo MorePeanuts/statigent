@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { constants } from "node:fs";
+import { chmod, copyFile, mkdir, writeFile } from "node:fs/promises";
+import { basename, dirname, join, resolve } from "node:path";
 import { describeFile, verifyFiles } from "../evaluation/files";
 import type { ExecutionResult, SessionConfig } from "../execution/protocol";
 import { DockerSession } from "../execution/session";
-import { obj } from "../models/validation";
+import { keys, obj } from "../models/validation";
 import { exportNotebooks } from "../records/notebook";
 import { RunRecorder, readArtifact, sha256 } from "../records/store";
 import type { ModelingExecutionTask } from "./config";
@@ -18,14 +19,18 @@ import {
   select,
   type Table,
 } from "./data";
+import { parseDataLimits } from "./data-limits";
+import type { DatasetV3 } from "./dataset-v3";
 import { validatePredictions } from "./predictions";
 import { type Score, validateModelMetadata } from "./protocol";
+import { validateProtocolV2 } from "./protocol-v2";
 import { ScoringFailure, scoreTables } from "./scoring";
+import type { ScoringFileV2 } from "./scoring-v2";
 import type { Evaluation, ExperimentPhase } from "./validation";
 
 export interface StageResult {
   execution_confirmed?: boolean;
-  stage_version?: 1 | 2 | 3;
+  stage_version?: 1 | 2 | 3 | 4;
   run_id: string;
   directory: string;
   status: string;
@@ -35,23 +40,30 @@ export interface StageResult {
   image: { id: string; platform: string };
   elapsed_ms: number;
 }
-export interface StageOptions {
+interface SharedStageOptions {
   task: ModelingExecutionTask;
-  dataset: Dataset;
   root: string;
   runId?: string;
   stage: "fit" | "predict";
   code: string;
-  data: Table;
   entrypoint?: string;
-  legacy?: boolean;
-  stageVersion?: 2 | 3;
   modelSeed?: number;
   model?: Buffer;
   signal: AbortSignal;
   remainingMs: number;
   onIntent?: (runId: string) => Promise<void>;
 }
+export type StageOptions = SharedStageOptions &
+  (
+    | { dataset: Dataset; data: Table; legacy?: boolean; stageVersion?: 2 | 3 }
+    | {
+        dataset: DatasetV3;
+        data: ScoringFileV2;
+        featureSchema: ScoringFileV2;
+        legacy?: false;
+        stageVersion: 4;
+      }
+  );
 export async function runStage(o: StageOptions): Promise<StageResult> {
   const began = performance.now(),
     runId = o.runId ?? randomUUID();
@@ -61,32 +73,67 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
   await mkdir(inputs, { recursive: true });
   const values: Record<string, string | Buffer> = {
     "candidate.py": o.code,
-    "data.csv": csv(o.data),
+    ...(o.stageVersion === 4 ? {} : { "data.csv": csv(o.data) }),
     "stage.json": JSON.stringify({
-      ...(!o.legacy
+      ...(o.stageVersion === 4
         ? {
-            schema_version: o.stageVersion ?? 3,
-            protocol: datasetProtocol(o.dataset),
-            ...(o.stageVersion !== 2
+            schema_version: 4,
+            protocol: validateProtocolV2(o.dataset.protocol),
+            seed: o.modelSeed ?? o.dataset.seed,
+            limits: parseDataLimits(o.dataset.limits),
+            model_artifact: {
+              compression: "zlib-3",
+              max_bytes: o.task.limits.max_artifact_bytes,
+            },
+            data: { ...o.data, path: "data.csv" },
+            feature_schema: { ...o.featureSchema, path: "features.json" },
+          }
+        : {
+            ...(!o.legacy
               ? {
-                  model_artifact: {
-                    compression: "zlib-3",
-                    max_bytes: o.task.limits.max_artifact_bytes,
-                  },
+                  schema_version: o.stageVersion ?? 3,
+                  protocol: datasetProtocol(o.dataset),
+                  ...(o.stageVersion !== 2
+                    ? {
+                        model_artifact: {
+                          compression: "zlib-3",
+                          max_bytes: o.task.limits.max_artifact_bytes,
+                        },
+                      }
+                    : {}),
                 }
               : {}),
-          }
-        : {}),
-      target: o.dataset.target,
-      id_column: o.dataset.id_column,
-      seed: o.modelSeed ?? o.dataset.seed,
+            target: o.dataset.target,
+            id_column: o.dataset.id_column,
+            seed: o.modelSeed ?? o.dataset.seed,
+          }),
     }),
   };
   if (o.model) values["model.joblib"] = o.model;
   for (const [path, value] of Object.entries(values))
     await writeFile(join(inputs, path), value, { flag: "wx", mode: 0o444 });
+  const inputNames = Object.keys(values);
+  if (o.stageVersion === 4) {
+    for (const [name, source] of [
+      ["data.csv", o.data],
+      ["features.json", o.featureSchema],
+    ] as const) {
+      if (source.bytes > o.dataset.limits.max_file_bytes)
+        throw new Error("Stage input file limit exceeded");
+      const verified = await describeFile(
+        dirname(source.path),
+        basename(source.path),
+      );
+      if (verified.sha256 !== source.sha256 || verified.bytes !== source.bytes)
+        throw new Error("Stage source mismatch");
+      await copyFile(source.path, join(inputs, name), constants.COPYFILE_EXCL);
+      await chmod(join(inputs, name), 0o444);
+      await verifyFiles(inputs, [{ ...source, path: name }]);
+      inputNames.push(name);
+    }
+  }
   const identities = await Promise.all(
-    Object.keys(values).map((p) => describeFile(inputs, p)),
+    inputNames.map((p) => describeFile(inputs, p)),
   );
   const timeout = Math.max(
     1,
@@ -96,7 +143,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     run_id: runId,
     image: o.task.image,
     input_root: inputs,
-    inputs: Object.keys(values),
+    inputs: inputNames,
     staging_root: resolve(o.root, ".staging"),
     seed: o.modelSeed ?? o.dataset.seed,
     limits: {
@@ -202,7 +249,16 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
         if (!a) throw new Error("Missing model metadata");
         const bytes = await readArtifact(recorder.directory, a),
           m = obj(JSON.parse(bytes.toString()));
-        if (
+        if (o.stageVersion === 4) {
+          keys(m, ["schema_version", "protocol", "feature_schema_sha256"]);
+          if (
+            m.schema_version !== 2 ||
+            validateProtocolV2(m.protocol).protocol_sha256 !==
+              o.dataset.protocol.protocol_sha256 ||
+            m.feature_schema_sha256 !== o.featureSchema.sha256
+          )
+            throw new Error("Model metadata mismatch");
+        } else if (
           validateModelMetadata(m, o.dataset.id_column).protocol_sha256 !==
           datasetProtocol(o.dataset).protocol_sha256
         )
