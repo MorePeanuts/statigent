@@ -21,7 +21,11 @@ export function auditCollaboration(
 ) {
   if (manifest.schema_version === 4) {
     const result = workflowTrajectory(manifest, events, actions);
-    if (manifest.status !== "completed" || result.collaboration !== "covered")
+    if (
+      manifest.status !== "completed" ||
+      result.collaboration !== "covered" ||
+      !result.analysis_experiment_links.length
+    )
       throw new Error("Controlled collaboration chain not covered");
     return result;
   }

@@ -48,3 +48,29 @@ test("natural development has no prescribed analysis sequence and separates deli
     ),
   ).toMatchObject({ completion: "incomplete", delivery_status: "failed" });
 });
+
+test("natural collaboration coverage records observed order separately from optional declared sources", () => {
+  const m = {
+    schema_version: 4,
+    status: "completed",
+    search_end: { kind: "agent_finished", reason: "done" },
+    delivery: { status: "completed", artifact: {} },
+    usage: { tokens: { status: "known" } },
+    analyses: [{ id: "a", status: "completed" }],
+    experiments: [{ id: "e", phase: "search", status: "completed" }],
+  };
+  const view = workflowTrajectory(
+    m,
+    [
+      { sequence: 1, type: "child_result", analysis_id: "a" },
+      { sequence: 2, type: "action_accepted", intent: { experiment_id: "e" } },
+    ],
+    [{ accepted: { core: { kind: "train" }, sources: [], warnings: [] } }],
+  );
+  expect(view).toMatchObject({
+    collaboration: "covered",
+    analysis_calls: 1,
+    analysis_followups: [{ analysis_id: "a", experiment_id: "e" }],
+    analysis_experiment_links: [],
+  });
+});

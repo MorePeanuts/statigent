@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, spyOn, test } from "bun:test";
 import {
   mkdir,
   mkdtemp,
@@ -1015,4 +1015,67 @@ test("partial usage remains unknown while known token components and safe delive
       unknown_attempts: 1,
     },
   });
+});
+
+test("fatal auxiliary execution retains the validated best fact but starts no closing work", async () => {
+  const o = await options(() => reply([trainCall()])),
+    original = o.experiment;
+  if (!original) throw Error("fixture");
+  o.experiment = async (input) => ({
+    ...(await original(input)),
+    execution_confirmed: false,
+    reason: "diagnostic_integrity_failure:scoring_failure",
+  });
+  const result = await runModeling(o);
+  expect(result.status).toBe("failed");
+  expect(result.best_experiment_id).not.toBeNull();
+  const view = await inspectModeling(result.directory);
+  expect(view.manifest.experiments).toHaveLength(1);
+  expect(view.manifest.delivery).toMatchObject({ status: "not_started" });
+});
+
+test("crossing the exploration time boundary still closes two pipelines within the remaining hard deadline", async () => {
+  const o = await options((_body, i) =>
+      reply([trainCall(baselineCode + "\n".repeat(i))]),
+    ),
+    original = o.experiment;
+  if (!original) throw Error("fixture");
+  o.task = {
+    ...obj(o.task),
+    confirmation: { mode: "terminal_repeated_holdout" },
+    budget: {
+      training_attempts: 7,
+      task_timeout_ms: 1200000,
+      final_reserve_ms: 750000,
+    },
+  };
+  const now = performance.now.bind(performance);
+  let offset = 0,
+    searches = 0;
+  const start = now();
+  const clock = spyOn(performance, "now").mockImplementation(
+    () => now() + offset,
+  );
+  o.experiment = async (input) => {
+    const e = await original(input);
+    if (input.evaluation?.phase === "search" && ++searches === 2)
+      offset = 450001 - (now() - start);
+    return e;
+  };
+  try {
+    const result = await runModeling(o);
+    expect(result.status, result.reason).toBe("completed");
+    expect(searches).toBe(2);
+    const view = await inspectModeling(result.directory);
+    expect(view.manifest.search_end).toEqual({
+      kind: "protected",
+      reason: "exploration_reserve",
+    });
+    expect(view.manifest.usage).toMatchObject({
+      training_attempts: 7,
+      confirmation_training_attempts: 4,
+    });
+  } finally {
+    clock.mockRestore();
+  }
 });

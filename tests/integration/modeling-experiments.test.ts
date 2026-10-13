@@ -337,3 +337,32 @@ test("ordinary training-diagnostic prediction failure retains validation eligibi
   expect(e.execution_confirmed).not.toBe(false);
   expect(stages).toHaveLength(3);
 }, 90000);
+
+test("untrusted auxiliary scorer stops further execution while retaining the confirmed validation result", async () => {
+  const o = await setup();
+  const { scoreTables, ScoringFailure } = await import(
+    "../../src/modeling/scoring"
+  );
+  let scores = 0;
+  const e = await runExperiment({
+    ...o,
+    evaluation: createValidationPlan(o.dataset, o.train, "none").search,
+    score: async (input) => {
+      scores++;
+      if (scores === 2)
+        throw new ScoringFailure(
+          "scoring_failure:diagnostic protocol mismatch",
+        );
+      return scoreTables(input);
+    },
+  });
+  expect(scores).toBe(2);
+  expect(e.score).not.toBeNull();
+  expect(e.status).toBe("completed");
+  expect(e.execution_confirmed).toBe(false);
+  expect(e.training_diagnostic).toMatchObject({
+    status: "unavailable",
+    score: null,
+  });
+  expect(e.reason).toContain("diagnostic_integrity_failure");
+}, 90000);

@@ -49,6 +49,31 @@ export function workflowTrajectory(
         : [];
     });
   });
+  const followups = analyses
+    .filter((a) => a.status === "completed")
+    .flatMap((a) => {
+      const returned = events.find(
+        (e) => e.type === "child_result" && e.analysis_id === a.id,
+      );
+      const next = actions.find(
+        ({ event, accepted }) =>
+          obj(accepted.core).kind === "train" &&
+          Number(event.sequence) > Number(returned?.sequence) &&
+          experiments.some(
+            (e) =>
+              e.id === obj(event.intent).experiment_id &&
+              e.status === "completed",
+          ),
+      );
+      return next
+        ? [
+            {
+              analysis_id: a.id,
+              experiment_id: obj(next.event.intent).experiment_id,
+            },
+          ]
+        : [];
+    });
   return {
     search_end: search,
     delivery_status: delivery.status,
@@ -59,7 +84,12 @@ export function workflowTrajectory(
           : "protected"
         : "incomplete",
     accounting: obj(obj(manifest.usage).tokens).status,
-    collaboration: links.length ? "covered" : "not_covered",
+    collaboration: followups.length ? "covered" : "not_covered",
+    analysis_calls: analyses.length,
+    successful_analyses: analyses.filter((a) => a.status === "completed")
+      .length,
+    // Order shows that the loop ran; explicit references separately show declared provenance.
+    analysis_followups: followups,
     analysis_experiment_links: links,
     analysis_ids: [...new Set(links.map((l) => String(l.analysis_id)))],
     core_rejections: events

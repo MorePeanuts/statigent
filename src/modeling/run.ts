@@ -314,9 +314,11 @@ export async function runModeling(o: ModelingOptions) {
         ? 0
         : candidates.length * validationPlan.confirmation.length) +
       task.budget.final_training_attempts;
+    // Exploration already protects the reserve. Requiring its full nominal
+    // duration again would reject the time trigger after ordinary bookkeeping.
+    // Confirmation still protects final fitting; each stage uses the hard clock.
     if (
-      remaining() <
-        count * (task.budget.fit_timeout_ms + task.budget.predict_timeout_ms) ||
+      (validationPlan.mode !== "none" && budget.confirmationMs() <= 0) ||
       (task.budget.training_attempts !== null &&
         budget.training + count > task.budget.training_attempts)
     )
@@ -705,6 +707,13 @@ export async function runModeling(o: ModelingOptions) {
         else if (e.score !== null)
           throw new Error("Unexpected experiment score");
         await recordExperiment(e);
+        // Preserve the validated result even when auxiliary execution prevents further work.
+        if (
+          e.status === "completed" &&
+          e.score &&
+          better(e.score, best?.score ?? null)
+        )
+          best = e;
         executionConfirmed =
           e.execution_confirmed !== false &&
           !/kernel_lost|protocol_error|cleanup|scoring_failure|record persistence|record_failure|incomplete execution/.test(
@@ -713,7 +722,6 @@ export async function runModeling(o: ModelingOptions) {
         if (!executionConfirmed) throw new Stop("failed", e.reason);
         if (e.status === "completed") {
           corrections = 0;
-          if (e.score && better(e.score, best?.score ?? null)) best = e;
         } else corrections++;
         feedback = {
           experiment_id: e.id,
