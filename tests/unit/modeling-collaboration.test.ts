@@ -96,6 +96,87 @@ function initial(body: Record<string, unknown>) {
     knowledge_refs: [{ id: "o", revision: 1 }],
   };
 }
+test("successful training ends a correction episode; later mistakes do not exhaust a task-wide lifetime allowance", async () => {
+  const o = await options((body, i) => {
+    if (i < 3) {
+      const args = initial(body);
+      const first = args.knowledge_updates[0];
+      if (!first) throw new Error("Missing fixture update");
+      if (i < 2) first.kind = "hypothesis";
+      return reply([call("run_experiment", args)]);
+    }
+    if (i === 3) {
+      expect(obj(lastFeedback(body).recovery).consecutive_rejections).toBe(0);
+      expect(obj(obj(lastFeedback(body).result).comparison)).toEqual({
+        previous_best: null,
+        improved: null,
+      });
+    }
+    return reply([
+      call("finish_modeling", {
+        candidate_updates: [],
+        experiment_id:
+          i === 3 ? "nonexistent" : lastFeedback(body).best_experiment_id,
+        reason: "No further promising changes",
+      }),
+    ]);
+  });
+  const result = await runModeling(o);
+  expect(result.reason).toContain("audit probe");
+  expect((o.client as ScriptClient).bodies).toHaveLength(5);
+  expect(
+    (await inspectModeling(result.directory)).manifest.experiments,
+  ).toHaveLength(2);
+});
+
+test("accepting a failed training attempt does not reset consecutive rejection protection", async () => {
+  const o = await options((body, i) => {
+    if (i === 1) return reply([call("run_experiment", initial(body))]);
+    return reply([
+      call("finish_modeling", {
+        candidate_updates: [],
+        experiment_id: "missing",
+        reason: "invalid",
+      }),
+    ]);
+  });
+  const base = o.experiment;
+  if (!base) throw new Error("Missing experiment fixture");
+  o.experiment = async (args) => ({
+    ...(await base(args)),
+    status: "failed",
+    reason: "synthetic_code_failure",
+    score: null,
+  });
+  const result = await runModeling(o);
+  expect(result.reason).toBe("action_corrections");
+  expect((o.client as ScriptClient).bodies).toHaveLength(4);
+  expect(
+    (await inspectModeling(result.directory)).manifest.experiments,
+  ).toHaveLength(1);
+});
+
+test("repeating an unavailable resource request consumes bounded no-progress corrections", async () => {
+  const o = await options(() =>
+    reply([
+      call("analyze", {
+        candidate_updates: [],
+        purpose: "explore",
+        candidates: [],
+        source_experiments: [],
+        question: "Inspect data",
+        expected_evidence: "Statistics",
+      }),
+    ]),
+  );
+  o.task = { ...obj(o.task), budget: { eda_calls: 0, model_attempts: 10 } };
+  const result = await runModeling(o);
+  expect(result.reason).toBe("action_corrections");
+  expect((o.client as ScriptClient).bodies).toHaveLength(3);
+  expect((await inspectModeling(result.directory)).manifest.analyses).toEqual(
+    [],
+  );
+});
 test.each(["pointer", "missing-source", "hypothesis-status"])(
   "knowledge format rejection gives actionable feedback and permits atomic correction: %s",
   async (mode) => {

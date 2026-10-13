@@ -111,3 +111,19 @@ bun run modeling develop --task binary --method collaborative --seed 42 --resour
 后续非付费修复：认识工具 schema 增加按类型的合法状态组合和观察来源下限，明确 JSON pointer 语法；错误提示给出条目、允许状态及 finding 的有效 refs，成功分析提供精确来源模板。提示升级为 modeling-v5；来源、原子提交、纠正上限不放宽。新增回归覆盖三类错误修正、schema/宿主状态一致性以及跨 finding 引用拒绝。此修复需要另行真实验收，不能回填上述失败为成功；尚未追加付费运行。
 
 接口修复验证：`bun run check` 通过（300 个 TypeScript 单测、64 个 Python 测试，以及格式/lint/类型检查），日志 `/private/tmp/statigent-knowledge-guidance-check-final.log`。真实 Docker 可控两轮协同使用来源模板完成修订、确认、交付与独立复现，1 项通过（89.7 秒），日志 `/private/tmp/statigent-knowledge-guidance-integration.log`。首次快速检查暴露四组启动夹具比较了整个消息而非基础统计；现分别核对四组相同统计/哈希和完整组的引用语法，复测通过。严格 Spec 校验与 diff 检查通过，任务 8.3 保留未完成，真实验收未通过；未推送、合并或归档。
+
+## 从智能体决策职责出发的修复
+
+用户随后要求从“用智能体做自动机器学习建模”的目标重新审视设计。问题不仅是 schema 说明不够：模型要在一次建模决定中手工维护记录版本、哈希、finding/执行证据的关联，任一记录错误阻止实际实验；任务生命周期累计纠错又会使成功分析后的新错误耗尽早先余额。这些机制增加了与预测决策无关的负担。已有 EDA 聚焦/收尾、压缩产物与明确失败恢复继续保留。
+
+本轮实现 `modeling-decision-v1` 和 `modeling-v6`。模型表达认识、选择来源及提出实验，宿主将简短 source_id 和认识 ID 编译为完整协议 3，绑定真实来源、当前修订与接受记录。新认识的默认状态只表示初始观察或待验证判断；改变既有判断仍由模型决定。代码不会替模型选择算法、宣布改进、改写假设状态或补造证据。所有来源、版本、候选和动作仍联合校验，原始响应及完整接受动作都保留。
+
+`consecutive-unproductive-v1` 将纠正次数用于成功进展之间的连续拒绝：成功分析/有效训练后重置，失败执行、资源拒绝和仅接受动作不重置；资源拒绝也计数。父总模型调用、token、拟合、时限和代码修复额度均未调整。提示与反馈强调有效初始流水线、具体问题、可检验改动及与已有最佳成绩比较；首次建立基线没有前一成绩，comparison.improved 为 null，不能算作已证实改进。
+
+实际验证（全部未调用付费模型）：
+
+- 针对性单元回归 20 项通过，覆盖简短决策的来源/版本绑定、历史引用、未知或失败来源拒绝、显式陈旧版本拒绝、状态不被静默纠正、成功进展后恢复和持续无进展停止。日志 `/private/tmp/statigent-decision-unit.log`。
+- `bun run check` 通过：308 个 TypeScript 测试、64 个 Python 测试，以及格式、lint、类型检查。日志 `/private/tmp/statigent-decision-check.log`。随后修正首次基线比较的展示语义，再执行 lint/typecheck 和相关 13 项回归，均通过，日志 `/private/tmp/statigent-decision-final-unit.log`。
+- Docker 合成完整协同 1 项通过（89.4 秒）。在首次 EDA 前注入两次格式错误，成功 EDA 后再次注入错误，拒绝计数确认为 `[1,2,1]`；此后通过简短接口修订认识，完成两轮隔离 EDA、两次搜索、四次确认、最终拟合、交付和独立预测复现，原来源/context 篡改仍拒绝。父运行 `runs/integration-collaboration/098d116d-ef86-433f-94de-8c7c8e689869/b3831ea2-1b46-4c6c-96e0-2eae32311b44`，日志 `/private/tmp/statigent-decision-integration.log`。这是可控模型响应和真实执行环境，不是真实 LLM 验收。
+
+本轮没有追加 s3e9 付费运行或外层评分，没有改变冻结的 collaboration-dev-v1 文件或覆盖两份失败记录。先前准备但未执行的 v5 预检不代表当前 v6 源码已冻结；后续真实运行需按授权重新保存对应源码/接口/配置快照。任务 8.3 仍未完成，当前真实完整链路验收仍未通过；完整基准、四组效果比较及研究收益结论仍待后续实验。

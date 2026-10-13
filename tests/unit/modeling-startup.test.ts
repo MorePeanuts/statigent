@@ -78,9 +78,7 @@ test("four methods receive identical basic statistics before their first decisio
     if (method === "collaborative")
       expect(visible.profile_source_examples).toEqual(
         ["/rows", "/column_count", "/columns"].map((path) => ({
-          kind: "profile",
-          profile_sha256: visible.basic_profile_sha256,
-          path,
+          source_id: `profile:${path}`,
         })),
       );
     else expect(visible.profile_source_examples).toBeUndefined();

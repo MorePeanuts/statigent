@@ -16,7 +16,6 @@ import {
   MODELING_PROMPT_VERSION,
   type ModelingAction,
   modelingPrompt,
-  modelingTools,
 } from "./actions";
 import { Budget } from "./budget";
 import {
@@ -30,6 +29,13 @@ import {
 import { validateModelingTask } from "./config";
 import { type ConfirmationResult, shortlist } from "./confirmation";
 import { datasetProtocol, loadDataset } from "./data";
+import {
+  CORRECTION_POLICY,
+  compileDecision,
+  DECISION_INTERFACE,
+  decisionTools,
+  findingSources,
+} from "./decision";
 import { deliver } from "./delivery";
 import { type AnalysisRecord, analyze, validateEvidence } from "./eda";
 import { type Experiment, runExperiment } from "./experiments";
@@ -40,7 +46,6 @@ import {
   requireKnowledge,
 } from "./knowledge";
 import {
-  analysisSourceHints,
   validateKnowledgeLinks,
   validateKnowledgeSources,
 } from "./knowledge-sources";
@@ -126,10 +131,12 @@ export async function runModeling(o: ModelingOptions) {
         validation_plan_sha256: contextIdentity(validationPlan).sha256,
         model: profileSnapshot(profile),
         eda_model: profileSnapshot(edaProfile),
-        tools: modelingTools(protocol, task.method).map(
+        tools: decisionTools(protocol, task.method).map(
           (tool) => tool.function.name,
         ),
         prompt: {
+          decision_interface: DECISION_INTERFACE,
+          correction_policy: CORRECTION_POLICY,
           context_limits: CONTEXT_LIMITS,
           version: MODELING_PROMPT_VERSION,
           sha256: sha256(Buffer.from(prompt)),
@@ -227,6 +234,14 @@ export async function runModeling(o: ModelingOptions) {
       best_experiment_id: best?.id ?? null,
       best_validation_score: best?.score ?? null,
       budget: budget.snapshot(),
+      recovery: {
+        policy: CORRECTION_POLICY,
+        consecutive_rejections: corrections,
+        corrections_remaining: Math.max(
+          0,
+          task.budget.action_corrections - corrections,
+        ),
+      },
       candidates: candidateSummary(candidates, experiments),
       ...(task.method === "collaborative"
         ? {
@@ -327,11 +342,7 @@ export async function runModeling(o: ModelingOptions) {
                 "/rows",
                 "/column_count",
                 "/columns",
-              ].map((path) => ({
-                kind: "profile",
-                profile_sha256: profileSha,
-                path,
-              })),
+              ].map((path) => ({ source_id: `profile:${path}` })),
             }
           : {}),
       }),
@@ -371,7 +382,7 @@ export async function runModeling(o: ModelingOptions) {
         );
         const response = await call(
           messages,
-          modelingTools(protocol, task.method),
+          decisionTools(protocol, task.method),
           model,
         );
         messages.push(response.response.message);
@@ -387,7 +398,13 @@ export async function runModeling(o: ModelingOptions) {
           throw new Error("Exactly one new tool call is required");
         selected = action(
           calls[0].function.name,
-          calls[0].function.arguments,
+          task.method === "collaborative" && !hostInitial
+            ? compileDecision(calls[0].function.arguments, {
+                profile_sha256: profileSha,
+                knowledge,
+                analyses,
+              })
+            : calls[0].function.arguments,
           task.limits.max_code_bytes,
           task.budget.max_candidates,
           hostInitial ? "adaptive_eda" : task.method,
@@ -484,15 +501,25 @@ export async function runModeling(o: ModelingOptions) {
         }
       } catch (e) {
         if (e instanceof Stop) throw e;
-        await record.event("action_rejected", { reason: String(e) });
-        if (++corrections > task.budget.action_corrections)
+        corrections++;
+        await record.event("action_rejected", {
+          reason: String(e),
+          correction_policy: CORRECTION_POLICY,
+          consecutive_rejections: corrections,
+        });
+        if (corrections > task.budget.action_corrections)
           throw new Stop("failed", "action_corrections");
         for (const c of calls)
           messages.push({
             ...(hostInitial
               ? { role: "user" as const }
               : { role: "tool" as const, tool_call_id: c.id }),
-            content: JSON.stringify({ error: String(e), ...view() }),
+            content: JSON.stringify({
+              error: String(e),
+              recovery_hint:
+                "Nothing was committed or executed. Correct the indicated field and resubmit; retain the modeling plan. Omit optional knowledge changes only if they are not needed for this decision; never fabricate evidence.",
+              ...view(),
+            }),
           });
         if (!calls.length)
           messages.push({
@@ -511,14 +538,27 @@ export async function runModeling(o: ModelingOptions) {
         if (e instanceof Stop) throw e;
         await record.event(
           "action_rejected",
-          { reason: String(e), tool_id: tool.id },
+          {
+            reason: String(e),
+            tool_id: tool.id,
+            correction_policy: CORRECTION_POLICY,
+            consecutive_rejections: ++corrections,
+          },
           selected,
         );
+        if (corrections > task.budget.action_corrections)
+          throw new Stop("failed", "action_corrections");
         messages.push({
           ...(hostInitial
             ? { role: "user" as const }
             : { role: "tool" as const, tool_call_id: tool.id }),
-          content: JSON.stringify({ error: String(e), ...view() }),
+          content: JSON.stringify({
+            error: String(e),
+            recovery_hint: best
+              ? "Choose another feasible action or finish_modeling with best_experiment_id; repeating the refused action cannot progress."
+              : "Choose a feasible training/analysis action; repeating the refused action cannot progress.",
+            ...view(),
+          }),
         });
         continue;
       }
@@ -711,6 +751,7 @@ export async function runModeling(o: ModelingOptions) {
         if (/cleanup|record_failure/.test(a.reason))
           throw new Stop("failed", a.reason);
         check();
+        if (a.status === "completed") corrections = 0;
         feedback = {
           analysis_id: id,
           status: a.status,
@@ -720,7 +761,7 @@ export async function runModeling(o: ModelingOptions) {
           source_sha256: a.source_sha256,
           analysis: a.analysis,
           ...(task.method === "collaborative"
-            ? { knowledge_source_hints: analysisSourceHints(a) }
+            ? { knowledge_sources: findingSources(a) }
             : {}),
           allocation,
         };
@@ -762,7 +803,9 @@ export async function runModeling(o: ModelingOptions) {
           validateScore(e.score, protocol, validationPlan.search.evaluation_id);
         else if (e.score !== null)
           throw new Error("Unexpected experiment score");
+        const previousBest = best?.score ?? null;
         await recordExperiment(e);
+        if (e.status === "completed") corrections = 0;
         if (
           e.status === "completed" &&
           e.score &&
@@ -784,6 +827,20 @@ export async function runModeling(o: ModelingOptions) {
           status: e.status,
           score: e.score,
           diagnostic: e.reason,
+          comparison: {
+            previous_best: previousBest,
+            improved:
+              e.score && previousBest ? better(e.score, previousBest) : null,
+          },
+          ...(task.method === "collaborative"
+            ? {
+                knowledge_sources: [
+                  {
+                    source_id: `experiment:${e.id}:${e.status === "completed" ? "score" : "failure"}`,
+                  },
+                ],
+              }
+            : {}),
         };
       }
       messages.push({

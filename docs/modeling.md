@@ -6,7 +6,7 @@
 
 第二章采用“分析与建模协同驱动的自主机器学习方法”，以独立测试预测效果为主，同时关注可靠性与实际效率。三项核心机制、研究假设和消融以 [研究大纲](overview.md#第二核心章节面向预测性数据建模的智能体研究) 为准，评价口径见 [Benchmark 协议](benchmark.md#第二章预测性建模)。预算管理在研究中承担运行保护与公平控制的作用。
 
-新版实现包含任务内认识、自主分析交接、终局确认及四种方法权限。任务 schema 2、动作协议 3、提示词 modeling-v5、父记录与交付 schema 3 配套使用。固定原始数据与搜索划分继续保留。软件检查、真实模型验收和研究效果分别报告，见 [本轮开发验收](modeling-collaboration-validation.md)。
+新版实现包含任务内认识、自主分析交接、终局确认及四种方法权限。任务 schema 2、模型侧接口 modeling-decision-v1、内部动作协议 3、提示词 modeling-v6、父记录与交付 schema 3 配套使用。固定原始数据与搜索划分继续保留。软件检查、真实模型验收和研究效果分别报告，见 [本轮开发验收](modeling-collaboration-validation.md)。
 
 当前默认一次 EDA、三次搜索拟合和一次最终拟合用于开发验证，不代表正式实验的协同深度或资源条件。历史验收记录保留其当时配置与结论；功能链路通过不等于上述方法具有稳定的预测收益。
 
@@ -43,11 +43,11 @@ bun run modeling prepare --config configs/modeling/synthetic-prepare.json --out 
 
 ## 认识状态与原子决策 v3
 
-完整协同模式可随任一动作提交 `knowledge_updates` 和 `knowledge_refs`，允许空更新；普通模式不提供这两个字段。认识记录分为 observation（active/withdrawn）、hypothesis（open/supported/challenged/withdrawn）、question（open/resolved/withdrawn）。`create` 的 `base_revision` 为 null；`revise` 必须指向当前修订，保存新版本和旧版本，宿主分配修订号、任务作用域及接受序号。
+完整协同模式可随任一动作提交 `knowledge_updates` 和 `knowledge_refs`，没有变化时可以省略；普通模式不提供这两个字段。模型只需给出认识的 `id/kind/statement/reason`，同 ID 表示更新当前认识。宿主填入内部 `create/revise` 及准确基版本，保存新旧修订、任务作用域和接受序号。状态可省略：新 observation 默认 active，新 hypothesis/question 默认 open；修订默认保留原判断。显式合法状态分别为 observation（active/withdrawn）、hypothesis（open/supported/challenged/withdrawn）、question（open/resolved/withdrawn），宿主不会自行宣布假设获得支持或问题已解决。
 
-例如观察可引用 `{kind:"profile", profile_sha256:"启动上下文中的哈希", path:"/columns/1/missing"}`；假设获得实验支持时引用 `{kind:"experiment", experiment_id:"真实搜索实验ID", fact:"score"}`。模型不能在来源中提交成绩数值，宿主从实验结果读取；`fact:"failure"` 只表示真实执行故障，不自动否定统计假设。EDA finding 来源包括原 analysis_id、从 0 开始的 finding 序号、执行 evidence_refs、source_sha256 和 applicability，不能把历史预测换成另一模型来源。
+模型选择简短来源，例如 `{source_id:"profile:/columns/1/missing"}`，或者 `{source_id:"experiment:真实搜索实验ID:score"}`。成功 EDA 的 `knowledge_sources` 提供逐 finding 的 `source_id` 和陈述，引用时增加 `applicability` 说明。宿主补齐真实哈希、finding 序号和原始执行证据，再执行完整来源校验；模型不能自填可信分数、伪造来源或将历史预测换成另一模型。实验 failure 仅表示真实执行故障，不自动否定统计假设。
 
-工具 schema 按认识类型限制合法状态：observation 为 active/withdrawn，hypothesis 为 open/supported/challenged/withdrawn，question 为 open/resolved/withdrawn。观察必须有来源；尚无证据时可省略可选更新，不伪造来源。profile path 是相对于 basic_profile 对象的 JSON pointer，不能写成 `basic_profile` 或带此前缀；完整组初始上下文提供来源示例。成功 EDA 返回 `knowledge_source_hints`，逐 finding 绑定真实 ID、原始哈希和可引用证据；不同 finding 的 refs 不能混入同一个来源。错误提示包含条目、合法状态或当前 finding 的有效 refs，纠正上限和来源校验不变。
+`knowledge_refs:["认识ID"]` 绑定本动作更新后的修订，未更新则绑定当前修订；需要使用历史版本时仍可传 `{id,revision}`。观察必须提供来源，supported 假设必须引用成功实验分数。简短接口与内部协议分离，程序调用的显式协议 3 字段仍可严格校验，错误状态和陈旧版本不会被静默修正。完整组初始上下文提供 `profile:/rows` 等示例，未知路径或未完成 finding 仍拒绝。原始模型响应和编译后的接受动作分别保存。
 
 认识、候选、动作引用及资源一起预检；宿主持久化一次 `action_accepted` 后才更新状态和派发。任何非法来源、陈旧修订、额度拒绝或接受记录故障均不留下部分状态。检查入口重演接受事件，核对 `knowledge_control` 修订快照、基本概览哈希与实验事实；普通方法显示 disabled，旧记录显示 not_recorded。文字中的“supported”是模型判断，不改变可信指标排名。
 
@@ -76,6 +76,8 @@ bun run modeling prepare --config configs/modeling/synthetic-prepare.json --out 
 父运行保存 modeling.json、追加 events.jsonl 和有界 payloads，关联每次训练阶段及 EDA 子运行。使用 `bun run modeling inspect --run RUN_DIRECTORY` 检查父运行和未确认子调用。原 EDA 的 manifest.json 与 Notebook 读取方式不变。
 
 总模型尝试及 token 包含建模智能体和 EDA 全部角色/重试；EDA 子额度从父剩余量分配，结果按调用身份只结算一次。默认最多 3 次搜索拟合、1 次最终拟合，最终拟合/预测预留 180 秒；预留属于总任务 900 秒的一部分。未知模型用量导致全任务停止。总墙钟和阶段耗时分列，不能再次相加。
+
+新运行记录纠错策略 `consecutive-unproductive-v1`：`action_corrections` 限制两次成功进展之间的拒绝次数，成功 EDA 或合法搜索分数使该计数清零；只有动作被接受、执行失败或资源被拒绝均不清零。资源拒绝同样计数，避免反复申请不可用动作。总调用、token、时间、拟合上限和代码修复额度不重置。错误反馈说明本次未提交、可修正原因和剩余纠正次数；训练反馈同时给出先前最佳成绩及本次是否改善。模型仍自主决定分析、建模方向和完成，历史累计纠错策略的失败记录不改写。
 
 ## 建模与定向 EDA
 

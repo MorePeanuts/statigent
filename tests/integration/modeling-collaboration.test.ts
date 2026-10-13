@@ -27,10 +27,8 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
     baseline = "",
     ref = "";
   const question = (revision: number, sources: unknown[], status = "open") => ({
-    op: revision === 1 ? "create" : "revise",
     id: "q",
     kind: "question",
-    base_revision: revision === 1 ? null : revision - 1,
     statement:
       revision === 1
         ? "What patterns could guide modeling?"
@@ -40,13 +38,38 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
     sources,
     candidate_ids: revision === 1 ? [] : ["baseline"],
   });
-  const client = new ScriptClient((body, i) => {
+  const client = new ScriptClient((body, requestIndex) => {
+    // Reproduce two initial formatting mistakes, a real successful EDA, then a
+    // new mistake before first training. Progress must permit recovery here.
+    if ([0, 1, 3].includes(requestIndex)) {
+      if (requestIndex === 3) firstAnalysis = obj(lastFeedback(body).result);
+      return reply([
+        call("analyze", {
+          candidate_updates: [],
+          knowledge_updates: [
+            {
+              id: "bad",
+              kind: "hypothesis",
+              status: "active",
+              statement: "Try linear modeling",
+              reason: "Test",
+            },
+          ],
+          purpose: "explore",
+          candidates: [],
+          source_experiments: [],
+          question: "Describe x and target",
+          expected_evidence: "Numerical pattern",
+        }),
+      ]);
+    }
+    const i = requestIndex === 2 ? 0 : requestIndex - 3;
     if (i === 0)
       return reply([
         call("analyze", {
           candidate_updates: [],
           knowledge_updates: [question(1, [])],
-          knowledge_refs: [{ id: "q", revision: 1 }],
+          knowledge_refs: ["q"],
           purpose: "explore",
           candidates: [],
           source_experiments: [],
@@ -55,30 +78,23 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
         }),
       ]);
     if (i === 1) {
-      firstAnalysis = obj(lastFeedback(body).result);
+      expect(lastFeedback(body).error).toContain("Invalid knowledge status");
       const t = trainCall();
       return reply([
         call("run_experiment", {
           ...obj(JSON.parse(t.function.arguments)),
-          knowledge_refs: [{ id: "q", revision: 1 }],
+          knowledge_refs: ["q"],
           knowledge_updates: [],
         }),
       ]);
     }
     if (i === 2) {
       baseline = String(obj(lastFeedback(body).result).experiment_id);
-      const finding = obj(
-        (obj(firstAnalysis.analysis).findings as unknown[])[0],
-      );
-      if (!Array.isArray(firstAnalysis.knowledge_source_hints))
+      if (!Array.isArray(firstAnalysis.knowledge_sources))
         throw Error("Missing accepted source hints");
-      const hint = obj(firstAnalysis.knowledge_source_hints[0]);
+      const hint = obj(firstAnalysis.knowledge_sources[0]);
       expect(hint).toMatchObject({
-        kind: "analysis",
-        analysis_id: firstAnalysis.analysis_id,
-        finding: 0,
-        evidence_refs: finding.evidence_refs,
-        source_sha256: firstAnalysis.source_sha256,
+        source_id: `analysis:${firstAnalysis.analysis_id}:0`,
       });
       return reply([
         call("analyze", {
@@ -86,13 +102,13 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
           knowledge_updates: [
             question(2, [
               {
-                ...hint,
+                source_id: hint.source_id,
                 applicability: "Original data-only exploration",
               },
-              { kind: "experiment", experiment_id: baseline, fact: "score" },
+              { source_id: `experiment:${baseline}:score` },
             ]),
           ],
-          knowledge_refs: [{ id: "q", revision: 2 }],
+          knowledge_refs: ["q"],
           purpose: "diagnose",
           candidates: ["baseline"],
           source_experiments: [baseline],
@@ -109,7 +125,7 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
           reason:
             "Defer the latest diagnostic suggestion and directly test the earlier linear direction",
           knowledge_updates: [],
-          knowledge_refs: [{ id: "q", revision: 2 }],
+          knowledge_refs: ["q"],
         }),
       ]);
     }
@@ -123,15 +139,13 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
             3,
             [
               {
-                kind: "experiment",
-                experiment_id: lastFeedback(body).best_experiment_id,
-                fact: "score",
+                source_id: `experiment:${lastFeedback(body).best_experiment_id}:score`,
               },
             ],
             "resolved",
           ),
         ],
-        knowledge_refs: [{ id: "q", revision: 3 }],
+        knowledge_refs: ["q"],
       }),
     ]);
   });
@@ -194,6 +208,18 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
     edaClient,
   });
   expect(result.status, result.reason).toBe("completed");
+  expect(client.bodies).toHaveLength(8);
+  const journal = (
+    await readFile(join(result.directory, "events.jsonl"), "utf8")
+  )
+    .trim()
+    .split("\n")
+    .map((line) => obj(JSON.parse(line)));
+  expect(
+    journal
+      .filter((event) => event.type === "action_rejected")
+      .map((event) => event.consecutive_rejections),
+  ).toEqual([1, 2, 1]);
   const view = await inspectModeling(result.directory),
     analyses = (view.manifest.analyses as unknown[]).map(obj);
   expect(analyses).toHaveLength(2);
