@@ -13,6 +13,16 @@ pytest.importorskip("arff", reason="Explicit data group: uv sync --group data")
 pa = pytest.importorskip("pyarrow", reason="Explicit data group: uv sync --group data")
 
 
+def test_nominal_declaration_missing_marker_is_not_a_category(tmp_path):
+    path = tmp_path / "nominal.arff"
+    path.write_text(
+        "@RELATION missing\n@ATTRIBUTE token {?, '?', '01'}\n@DATA\n?\n'?'\n'01'\n"
+    )
+    with decoded_source(path, LIMITS) as (columns, rows):
+        assert columns[0]["categories"] == ["?", "01"]
+        assert [row["token"] for _, row in rows] == [None, "?", "01"]
+
+
 def source(tmp_path, format):
     root = tmp_path / "source"
     root.mkdir()

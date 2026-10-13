@@ -86,7 +86,13 @@ def decoded_source(path, limits):
                         "source_type": "ARFF/NOMINAL"
                         if nominal
                         else f"ARFF/{source_type.upper()}",
-                        "categories": source_type if nominal else None,
+                        # liac-arff 将声明中的未加引号 '?' 解为 None；它是缺失标记，
+                        # 不能伪造为名义类别。加引号的 '?' 仍是原始字符串。
+                        "categories": [
+                            value for value in source_type if value is not None
+                        ]
+                        if nominal
+                        else None,
                     }
                 )
             check_columns(columns)

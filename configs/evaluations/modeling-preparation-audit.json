@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "catalog": "benchmarks/metadata/modeling-task-catalog.json",
+  "data_root": "benchmarks",
+  "seed": 17,
+  "limits": { "max_file_bytes": 67108864, "max_rows": 1000000, "max_columns": 4096, "max_field_bytes": 65536, "max_memory_bytes": 1073741824 },
+  "timeout_ms": 120000,
+  "batch_timeout_ms": 1800000,
+  "max_output_bytes": 4294967296,
+  "minimum_free_bytes": 4294967296
+}

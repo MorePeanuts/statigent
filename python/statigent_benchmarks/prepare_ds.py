@@ -37,13 +37,10 @@ def csv_rows(path, limits):
         with path.open(encoding="utf-8-sig", newline="") as stream:
             reader = csv.DictReader(stream)
             columns = reader.fieldnames
-            if (
-                not columns
-                or "" in columns
-                or len(set(columns)) != len(columns)
-                or len(columns) > limits["max_columns"]
-            ):
+            if not columns or "" in columns or len(set(columns)) != len(columns):
                 raise ValueError("Invalid source CSV columns")
+            if len(columns) > limits["max_columns"]:
+                raise ValueError("Source CSV column limit exceeded")
             for index, row in enumerate(reader):
                 if index >= limits["max_rows"] or None in row or None in row.values():
                     raise ValueError("Source CSV row/shape limit exceeded")

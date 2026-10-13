@@ -34,6 +34,10 @@
 
 ## 数据规模检查
 
+开发集合已在真实成绩产生前固定为 7 个 DSBench 与 3 个 TabArena 任务，覆盖回归、二/多分类、等级、前三候选、双/七目标，见 `benchmarks/metadata/modeling-development.json`。四方法使用相同来源、seed=17、一次重复、模型配置、镜像及确认/资源额度；全部 8 份真实方法配置（40 单元）和 2 份确定性配置（10 单元）只读 plan 通过，索引 `runs/modeling-development-preview-v1/index.json`。4 个新旧开发配置测试通过，71 项断言；未进行付费模型调用。
+
+首轮全候选受限准备：`bun run evaluate audit-prepare --config configs/evaluations/modeling-preparation-audit.json --out runs/modeling-candidate-preparation-v1` 退出 0，103 项全部留有结果，耗时 307.838 秒，产物 1,149,801,794 bytes。83 通过、18 资源阻塞、2 失败；零训练、零 LLM。单文件 64 MiB、列数 4,096、工作集 1 GiB、单项 120 秒、批次 30 分钟、产物 4 GiB 并保留磁盘 4 GiB。`santander-value-prediction-challenge` 的失败经只读核查为 4,993 个唯一非空列超过上限；`363630` 的 ARFF 声明含未加引号缺失标记，解码器已修复为从名义类别集合排除 None、保留加引号 '?'，20 项准备回归通过。单项修复验证另行记录，首轮失败不覆写。
+
 命令：`bun run test:modeling:scale`。此次直接运行等价的
 `uv run --no-sync pytest -s -m scale tests/python/test_modeling_data_scale.py`，退出 0。
 机器本地报告为 `runs/modeling-benchmarks-validation/data-scale.json`（忽略 Git）。

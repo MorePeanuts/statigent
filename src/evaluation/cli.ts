@@ -1,5 +1,6 @@
 import { join, resolve } from "node:path";
 import { auditModeling } from "./benchmarks/modeling/audit";
+import { auditPreparations } from "./benchmarks/modeling/preparation-audit";
 import { PREPARE_HELP, prepareModeling } from "./benchmarks/modeling/prepare";
 import { cleanupEvaluation } from "./cleanup";
 import { exportComparison } from "./comparison";
@@ -85,12 +86,17 @@ export async function main(
   dependencies: Pick<RescoreOptions, "judgeFactory"> = {},
 ): Promise<unknown> {
   if (args[0] === "audit") return auditModeling(args.slice(1));
-  if (args[0] === "prepare") {
+  if (args[0] === "prepare" || args[0] === "audit-prepare") {
     const controller = new AbortController();
     const cancel = () => controller.abort();
     process.on("SIGINT", cancel);
     process.on("SIGTERM", cancel);
     try {
+      if (args[0] === "audit-prepare")
+        return await auditPreparations(args.slice(1), {
+          signal: controller.signal,
+          progress: (value) => console.error(JSON.stringify(value)),
+        });
       return await prepareModeling(args.slice(1), {
         signal: controller.signal,
       });

@@ -1,0 +1,75 @@
+{
+  "schema_version": 3,
+  "cache_policy": "disabled",
+  "purpose": "development",
+  "development_overlap": "固定公开类型/规模覆盖；全部属于开发暴露，s3e9 有既有真实运行；不作为未见正式任务。DSBench 与其原始竞赛/同源数据的重叠及 TabArena 来源关系需在正式集合前审核。",
+  "repetitions": 1,
+  "seed": 17,
+  "benchmark": {
+    "adapter": "dsbench-modeling",
+    "version": "1196d6553ec200e1262841efc89cda5954ffe89f",
+    "options": {
+      "prepared_root": "runs/modeling-candidate-preparation-v1/datasets",
+      "datasets": {
+        "playground-series-s3e9": "dsbench-modeling/playground-series-s3e9",
+        "titanic": "dsbench-modeling/titanic",
+        "playground-series-s4e2": "dsbench-modeling/playground-series-s4e2",
+        "playground-series-s3e5": "dsbench-modeling/playground-series-s3e5",
+        "playground-series-s3e13": "dsbench-modeling/playground-series-s3e13",
+        "playground-series-s3e18": "dsbench-modeling/playground-series-s3e18",
+        "playground-series-s4e3": "dsbench-modeling/playground-series-s4e3"
+      },
+      "data_root": "benchmarks"
+    },
+    "task_ids": [
+      "playground-series-s3e9",
+      "titanic",
+      "playground-series-s4e2",
+      "playground-series-s3e5",
+      "playground-series-s3e13",
+      "playground-series-s3e18",
+      "playground-series-s4e3"
+    ]
+  },
+  "agents": [
+    {
+      "id": "collaborative",
+      "adapter": "statigent-modeling",
+      "options": {
+        "image": "sha256:74e2d6be21f7f304fe7a0fd14a8e102b35de2de10a79aef12bcec6c778273de3",
+        "confirmation": {
+          "mode": "terminal_repeated_holdout"
+        },
+        "resource_version": "modeling-development-v1",
+        "budget": {
+          "training_attempts": 12,
+          "final_training_attempts": 1,
+          "final_reserve_ms": 450000,
+          "fit_timeout_ms": 60000,
+          "predict_timeout_ms": 30000,
+          "eda_calls": 2,
+          "eda_model_attempts": 20,
+          "eda_tokens": 200000,
+          "eda_timeout_ms": 300000
+        },
+        "limits": {
+          "memory_bytes": 2147483648,
+          "cpus": 1
+        },
+        "method": "collaborative"
+      },
+      "model_profile": "deepseek-flash",
+      "require_seed": true
+    }
+  ],
+  "task_budget": {
+    "timeout_ms": 900000,
+    "model_attempts": 30,
+    "total_tokens": 300000
+  },
+  "batch_budget": {
+    "timeout_ms": 6300000,
+    "model_attempts": 210,
+    "total_tokens": 2100000
+  }
+}
