@@ -1,5 +1,7 @@
 # 表格分类能力验收
 
+验收日期：2026-10-13。
+
 本记录对应 `add-tabular-modeling-classification`。验收对象是第二章统一建模系统的工程闭环，不是论文性能实验或 Benchmark 成绩。合成任务没有按外层测试成绩选择。
 
 ## 软件与隔离执行
@@ -13,6 +15,8 @@
 - 真实 Docker：二分类 ROC AUC、多分类 log-loss 各完成初始训练→双角色 EDA→证据关联训练→最终交付→predict/refit 复现→独立评分；二/多分类 accuracy 另有真实训练预测测试。
 - 跨层失败：非法概率没有分数；评分进程超时和父取消终止派发，保留失败产物并清理容器。
 - 既有回归 Docker 专项 5 项通过，包括超过 16 MiB 的模型、阶段超时、取消、EDA 预算和独立复现。
+
+最终开发镜像为 `sha256:fc2347116d2ac2459584d81ab50f73ae3aa2917281c8b5618fcc4a3049618d0d`。最终分类专项的完整父运行分别为 binary `50b03277-a2b0-495c-8dab-54b0130fc468` 和 multiclass `55dc66e3-4788-4cc6-8ee0-7ccac5bae2d6`。
 
 所有上述模型决策均为可控响应；没有调用付费模型。运行产物保留于忽略目录 `runs/integration-classification/`、`runs/integration-classification-failure/` 和 `runs/integration-modeling-loop/`。
 
@@ -54,4 +58,19 @@ bun run test:smoke:classification --kind multiclass
 
 ## 全量交付检查
 
-全量 `bun run check`、`bun run test:integration` 和 OpenSpec 严格校验将在最终交付前记录实际结果。
+以下命令已实际运行并通过：
+
+| 检查 | 实际结果 |
+| --- | --- |
+| bun run check | Biome、Ruff、tsc 通过；TypeScript 单元测试 209 项，Python 快速测试 47 项通过 |
+| bun run test:integration | TypeScript 集成测试 33 项，Python 真实内核集成测试 6 项通过 |
+| 最终代码的分类专项复核 | 5 项 Docker 测试、79 项断言全部通过 |
+| 旧回归原镜像验收 | inspect、predict、refit、离线评分通过；128 个源文件哈希不变 |
+| 两项 classification --preflight | 冻结文件、划分、类别、主指标与预算预检通过 |
+| openspec validate add-tabular-modeling-classification --strict | 通过 |
+
+标签保真和元信息版本边界的自审修复，另由完整快速检查、相关回归用例及最终分类 Docker 专项再次验证。还覆盖了以旧 dataset schema 1 启动新 schema 2 父运行，原数据清单字节未变。
+
+本机沙箱内 uv 曾因 macOS 系统配置访问限制崩溃；检查最终在允许访问本机 uv/Docker 的执行环境中完成。没有用模拟结果替代未执行检查，也没有安装新依赖或调用付费 API。上游数据测试与真实模型冒烟不属于默认检查，本轮未执行。
+
+实现位于短期分支 feat/tabular-modeling-classification，已按阶段本地提交；未推送、合并或归档。实验适配继续后置。

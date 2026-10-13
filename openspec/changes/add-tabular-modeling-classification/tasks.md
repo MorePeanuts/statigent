@@ -44,8 +44,8 @@
 
 ## 7. 全链兼容与交付检查
 
-- [ ] 7.1 运行 `bun run check` 和 `bun run test:integration`，覆盖新增分类链路及既有回归/EDA；记录实际结果，若环境阻塞则如实记录未运行项，不写预期通过。
-- [ ] 7.2 运行 `openspec validate add-tabular-modeling-classification --strict`，核对实现、三份规格、示例和使用说明一致；检查最终 diff 只包含本变更相关文件，确认没有基准数据、运行产物或凭据进入提交。
+- [x] 7.1 运行 `bun run check` 和 `bun run test:integration`，覆盖新增分类链路及既有回归/EDA；记录实际结果，若环境阻塞则如实记录未运行项，不写预期通过。
+- [x] 7.2 运行 `openspec validate add-tabular-modeling-classification --strict`，核对实现、三份规格、示例和使用说明一致；检查最终 diff 只包含本变更相关文件，确认没有基准数据、运行产物或凭据进入提交。
 
 ## Workflow follow-up
 

@@ -684,3 +684,28 @@ test("scoring failure terminates the parent without dispatching another experime
     (await inspectModeling(r.directory)).manifest.best_experiment_id,
   ).toBeNull();
 });
+
+test("new modeling run preserves a legacy regression dataset and records an explicit v2 protocol", async () => {
+  const o = await options((body, i) =>
+    reply([i === 0 ? trainCall() : finishCall(body)]),
+  );
+  const path = join(String(obj(o.task).dataset_root), "dataset.json");
+  const dataset = obj(await Bun.file(path).json());
+  dataset.schema_version = 1;
+  delete dataset.protocol;
+  delete dataset.split_method;
+  const original = JSON.stringify(dataset);
+  await Bun.write(path, original);
+  const result = await runModeling(o);
+  expect(result.status, result.reason).toBe("completed");
+  const view = await inspectModeling(result.directory);
+  expect(view.manifest.schema_version).toBe(2);
+  expect(obj(view.manifest.config).dataset).toMatchObject({
+    schema_version: 1,
+  });
+  expect(obj(view.manifest.config).protocol).toMatchObject({
+    kind: "regression",
+    metric: "rmse",
+  });
+  expect(await Bun.file(path).text()).toBe(original);
+});
