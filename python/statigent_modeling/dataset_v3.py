@@ -51,6 +51,7 @@ def load_dataset(root: Path, limits_override=None):
             "prediction",
             "evaluator",
             "feature_schema",
+            "public_context",
             "split",
             "rows",
             "provenance",
@@ -99,6 +100,15 @@ def load_dataset(root: Path, limits_override=None):
     schema_path = checked_file(
         root, manifest["feature_schema"], "search/features.json", limits
     )
+    context_paths = set()
+    for context in manifest["public_context"]:
+        if (
+            context["path"] not in ("search/task.txt", "search/adaptation.json")
+            or context["path"] in context_paths
+        ):
+            raise ValueError("Invalid public context file")
+        checked_file(root, context, context["path"], limits)
+        context_paths.add(context["path"])
     schema = read_json(schema_path, metadata_limit)
     fields(schema, ["version", "encoding", "missing_token", "escape_prefix", "columns"])
     if (

@@ -156,23 +156,28 @@ def quadratic_kappa(target, actual, predicted):
     return finite_result(1 - (weight * observed).sum() / denominator)
 
 
-def classification_metric(
-    identity, target, actual, predicted=None, proba=None, ranked=None
+def validate_classification_predictions(
+    target, rows, predicted=None, proba=None, ranked=None
 ):
-    y, predicted_indices = class_vectors(target, actual, predicted)
+    """只校验公开预测契约，不读取或伪造评价标签。"""
     classes = target["classes"]
+    predicted_indices = None
+    if predicted is not None:
+        if len(predicted) != rows or any(v not in classes for v in predicted):
+            raise InvalidPredictions("Invalid predicted labels")
+        predicted_indices = np.array([classes.index(v) for v in predicted])
     probability = None
     if proba is not None:
         try:
-            probability = probabilities(proba, len(y), len(classes))
+            probability = probabilities(proba, rows, len(classes))
         except (ValueError, TypeError) as error:
             raise InvalidPredictions(str(error)) from error
         if predicted_indices is not None and not np.array_equal(
             predicted_indices, np.argmax(probability, axis=1)
         ):
             raise InvalidPredictions("Probability label mismatch")
-    if identity == "top3-hit-ds-v1":
-        if not isinstance(ranked, list) or len(ranked) != len(y):
+    if ranked is not None:
+        if not isinstance(ranked, list) or len(ranked) != rows:
             raise InvalidPredictions("Invalid ranked predictions")
         for i, candidates in enumerate(ranked):
             if (
@@ -193,6 +198,20 @@ def classification_metric(
                     raise InvalidPredictions(
                         "Ranked labels disagree with probabilities"
                     )
+    return predicted_indices, probability
+
+
+def classification_metric(
+    identity, target, actual, predicted=None, proba=None, ranked=None
+):
+    y, _ = class_vectors(target, actual)
+    predicted_indices, probability = validate_classification_predictions(
+        target, len(y), predicted, proba, ranked
+    )
+    classes = target["classes"]
+    if identity == "top3-hit-ds-v1":
+        if ranked is None:
+            raise InvalidPredictions("Invalid ranked predictions")
         return sum(
             label in candidates
             for label, candidates in zip(actual, ranked, strict=True)

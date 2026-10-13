@@ -154,6 +154,7 @@ def prepare_rows(
     provenance: dict,
     export_id_column: str | None = None,
     explicit_split=None,
+    public_context: dict[str, bytes] | None = None,
 ) -> dict:
     """输入迭代器是可信解码后的允许成员；源行号不可由数据内容猜测。"""
     started = time.monotonic()
@@ -357,6 +358,15 @@ def prepare_rows(
                     [identity, *by_id[identity]] for identity in prediction_ids
                 )
             labels_file = file_descriptor(root, "evaluator/labels.csv", limits)
+        context_files = []
+        for name, content in (public_context or {}).items():
+            if name not in ("task.txt", "adaptation.json") or not isinstance(
+                content, bytes
+            ):
+                raise ValueError("Invalid public context")
+            with (root / "search" / name).open("xb") as stream:
+                stream.write(content)
+            context_files.append(file_descriptor(root, f"search/{name}", limits))
         manifest = {
             "schema_version": 3,
             "protocol": protocol,
@@ -372,6 +382,7 @@ def prepare_rows(
                 ),
             },
             "feature_schema": schema_file,
+            "public_context": context_files,
             "split": {
                 "file": split_file,
                 "method": split["method"],
