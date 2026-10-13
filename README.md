@@ -41,6 +41,8 @@ bun run evaluate plan --config configs/evaluations/infiagent-smoke.json
 
 ## 预测建模
 
+第二章研究“分析与建模协同驱动的自主机器学习方法”：通过数据理解生成方案、模型反馈引导诊断、实验验证更新认识，重点提升最终预测效果与可靠性，并评价实际效率。资源上限用于运行保护与公平比较。方法设计见 [课题概览](docs/overview.md#第二核心章节面向预测性数据建模的智能体研究)；新机制仍需落实到软件规格与实现。
+
 回归、二分类和多分类共用独立建模入口、固定划分、定向 EDA、模型交付与预测复现，见 [建模说明](docs/modeling.md)。准备数据不调用模型；`modeling run` 与 `test:smoke:modeling` 为显式真实模型入口。分类冒烟使用 `test:smoke:classification --kind binary|multiclass`，加 `--preflight` 仅校验冻结任务。当前覆盖小型开发闭环，真实分类模型验收状态见 [分类验收记录](docs/modeling-classification-validation.md)，不代表完整建模基准或正式研究实验。
 
 第一章现支持 `single` / `planner-executor` 与 `persistent-kernel` / `fresh-script` 独立组合。脚本后端每次执行新进程，保留任务文件和智能体历史；默认仍是现有持久内核。无模型示例：`bun run runtime demo runs statigent-runtime:fresh-script fresh-script`。镜像构建与脚本导出/重放见 [执行环境](docs/execution-runtime.md)，四组开发计划见 [评测说明](docs/evaluation.md)。
