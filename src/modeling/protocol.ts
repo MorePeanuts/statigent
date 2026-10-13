@@ -130,6 +130,13 @@ export function validateProtocol(value: unknown, id: string): Protocol {
       throw new Error(`Invalid protocol ${k}`);
   return p;
 }
+export function validateModelMetadata(value: unknown, id: string): Protocol {
+  const x = obj(value);
+  keys(x, ["schema_version", "protocol"]);
+  if (x.schema_version !== 1)
+    throw new Error("Unsupported model metadata version");
+  return validateProtocol(x.protocol, id);
+}
 export interface Score {
   metric: Metric;
   direction: "minimize" | "maximize";

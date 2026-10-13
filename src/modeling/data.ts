@@ -25,9 +25,14 @@ export function parseCsv(text: string): Table {
   let field = "";
   let quoted = false;
   let closed = false;
-  const input = text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+  const input = text.replace(/^\uFEFF/, "");
   for (let i = 0; i < input.length; i++) {
-    const c = input[i];
+    let c = input[i];
+    // Normalize record separators, but preserve CRLF inside quoted label values.
+    if (!quoted && c === "\r" && input[i + 1] === "\n") {
+      c = "\n";
+      i++;
+    }
     if (quoted) {
       if (c === '"' && input[i + 1] === '"') {
         field += '"';

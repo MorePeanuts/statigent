@@ -19,7 +19,7 @@ import {
   type Table,
 } from "./data";
 import { validatePredictions } from "./predictions";
-import { type Score, validateProtocol } from "./protocol";
+import { type Score, validateModelMetadata } from "./protocol";
 import { ScoringFailure, scoreTables } from "./scoring";
 
 export interface StageResult {
@@ -164,9 +164,8 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
         const bytes = await readArtifact(recorder.directory, a),
           m = obj(JSON.parse(bytes.toString()));
         if (
-          m.schema_version !== 1 ||
-          validateProtocol(m.protocol, o.dataset.id_column).protocol_sha256 !==
-            datasetProtocol(o.dataset).protocol_sha256
+          validateModelMetadata(m, o.dataset.id_column).protocol_sha256 !==
+          datasetProtocol(o.dataset).protocol_sha256
         )
           throw new Error("Model metadata mismatch");
         metadata = { path: a.path, sha256: a.sha256, bytes: bytes.length };

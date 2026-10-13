@@ -26,7 +26,11 @@ import {
   stageEntrypoint,
 } from "./experiments";
 import { samePredictions, validatePredictions } from "./predictions";
-import { validateProtocol, validateScore } from "./protocol";
+import {
+  validateModelMetadata,
+  validateProtocol,
+  validateScore,
+} from "./protocol";
 import { scoreTables } from "./scoring";
 export async function deliver(
   root: string,
@@ -51,10 +55,8 @@ export async function deliver(
   );
   await verifyFiles(final.fit.directory, [final.fit.metadata]);
   if (
-    validateProtocol(
-      obj(JSON.parse(metadata.toString())).protocol,
-      dataset.id_column,
-    ).protocol_sha256 !== protocol.protocol_sha256
+    validateModelMetadata(JSON.parse(metadata.toString()), dataset.id_column)
+      .protocol_sha256 !== protocol.protocol_sha256
   )
     throw new Error("Model metadata mismatch");
   const dir = join(root, "delivery");
@@ -161,15 +163,13 @@ async function frozen(root: string) {
       throw new Error("Delivery protocol mismatch");
     validateScore(manifest.validation_score, protocol);
     if (
-      validateProtocol(
-        obj(
-          JSON.parse(
-            await readFile(
-              await regular(directory, "model-metadata.json"),
-              "utf8",
-            ),
+      validateModelMetadata(
+        JSON.parse(
+          await readFile(
+            await regular(directory, "model-metadata.json"),
+            "utf8",
           ),
-        ).protocol,
+        ),
         dataset.id_column,
       ).protocol_sha256 !== protocol.protocol_sha256
     )

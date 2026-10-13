@@ -79,9 +79,20 @@ test("delivery rejects missing metadata, mismatched protocol, changed bytes and 
     "tamper",
     "tolerance",
     "version",
+    "metadata",
   ]) {
     const o = await fixture();
     const before = await readFile(join(o.directory, "modeling.json"), "utf8");
+    if (mode === "metadata") {
+      await writeFile(
+        join(o.delivery, "model-metadata.json"),
+        JSON.stringify({ schema_version: 99, protocol: o.manifest.protocol }),
+      );
+      o.manifest.files = await Promise.all(
+        o.manifest.files.map((f) => describeFile(o.delivery, f.path)),
+      );
+      await o.save();
+    }
     if (mode === "missing")
       await unlink(join(o.delivery, "model-metadata.json"));
     if (mode === "protocol") {
