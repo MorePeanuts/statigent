@@ -1,6 +1,6 @@
 # 建模基准接入验收记录
 
-本记录随 `add-modeling-benchmarks` 实施更新。软件模块、真实数据准备、真实智能体验收和正式实验分列；未完成接线不等于已可运行完整基准。
+本记录随 `add-modeling-benchmarks` 实施更新。软件模块、真实数据准备、真实智能体验收和正式实验分列；全指标软件覆盖不等于完整基准已完成真实实验。
 
 ## 当前证据（2026-10-14）
 
@@ -19,9 +19,9 @@
 | 共用实验生命周期 | 新版等级、前三候选、七目标的搜索、诊断、两次确认及最终 fit-only 共 3 个 Docker 用例通过；同次 7 个旧实验回归通过（共 10 例，159 项断言） | 实际移走测试特征目录后仍完成内部阶段；零付费调用 |
 | 宽表概览与 EDA 元信息 | 四方法真实 Docker 父循环通过（150 特征、双目标、30 项断言、135.50 秒），摘要完全相同；实际覆盖 explore/diagnose/compare 和 schema 5 检查 | 使用受控模型响应，零付费 API；并非真实智能体效果实验 |
 | 冻结与延迟预测 | 原生 fit-only / fit→predict 两例、48 项断言通过（90.50 秒）；两次预测同一模型、坏输入、取消、超时及源哈希不变；预测 CLI 实际通过 | 无测试文件且开启两次确认的父级补充验收通过（26 项断言，65.39 秒）；零真实 LLM |
-| 旧控制与交付兼容 | 49 个控制/确认/EDA 用例及 15 个交付、预检、概览、分类诊断与划分用例通过 | 完整 `bun run check` 和所有历史记录版本最终回归尚未执行 |
+| 旧控制与交付兼容 | 49 个控制/确认/EDA 用例及 15 个交付、预检、概览、分类诊断与划分用例通过 | 最终 `bun run check` 与历史 schema 1–4 只读检查均通过，详见下文 |
 | 独立复现与外层评分 | 等级、前三候选、七目标三个 Docker 父运行均完成 predict/refit 和无模型目录重评（36 项断言、158.05 秒）；七目标记录篡改补充用例通过（14 项断言、54.62 秒） | 固定容差逐字段比较；Python 同分异预测、候选顺序及完整性检查通过；零真实 LLM |
-| 历史只读审计 | 实际 schema 1–4 各一份记录 inspect 通过，递归源文件摘要前后相同；8 项评分/旧记录快速回归通过（46 项断言） | 索引 `runs/modeling-history-v1-v4-check.json`；最终全仓检查待执行 |
+| 历史只读审计 | 实际 schema 1–4 各一份记录 inspect 通过，递归源文件摘要前后相同；8 项评分/旧记录快速回归通过（46 项断言） | 索引 `runs/modeling-history-v1-v4-check.json`；最终全仓检查通过；补充索引 `runs/modeling-history-final-v1-v4-check.json` |
 | 评测 v3 契约与旧分析兼容 | 36 项契约、文件限额、批次、记录、CLI、容器命令和旧重评测试通过（219 项断言）；9 MiB 预测按新限额通过、原报告上限仍拒绝 | 阶段发布、原生适配及两套基准批次均已接入，后续行列出验证 |
 | 阶段输入发布与 Docker 隔离 | 初始 EDA、搜索、两次确认、最终拟合与延迟发布预测完整通过（23 项断言、58.81 秒）；测试特征提前访问、私有标签、仓库及宿主哨兵环境均不可见，来源哈希不变 | 21 个数据加载用例、18 个评测回归同时通过；运行索引 `runs/evaluation-modeling-isolation/7ec3745d-801a-496c-8869-754cd4d7e742`，零真实 LLM |
 | 原生评测预算及重复种子 | 9 个适配/批次回归通过（82 项断言）；3 个 Python 派生划分检查通过 | 四方法共用父预算，子 EDA 不重复结算；未知用量停止后续派发，预留不足零模型调用；派生种子保持外层成员/特征/标签身份，记录独立准备开销；基准注册与交付冻结已完成，见后续行 |
@@ -74,3 +74,19 @@ TS 只传文件描述符；Python 流式准备和验证特征表。排名评分�
 ## 真实模型入口
 
 独立 `test:smoke:modeling-benchmarks` 的默认帮助、只读预检、显式授权门槛、范围漂移拒绝、失败保留和已有目录拒绝通过；与 schema 5 轨迹回归合计 4 例、22 项断言，退出 0。固定四单元 scope 的真实数据预检退出 0，48 次调用、640,000 token、2,400 秒为两批合计阈值，预检实际模型/训练调用均为零。预检不检查外部凭据或启动镜像。配置位于 `configs/evaluations/modeling-smoke/`，执行方式与限制见 [评测说明](evaluation.md)。实际付费验收尚未运行，等待任务 9.2 要求的范围确认；入口完成不等于真实验收通过。
+
+## 最终集成检查与范围自审
+
+`UV_CACHE_DIR=/private/tmp/statigent-uv-cache bun run check` 退出 0：Biome、Ruff、类型检查通过，Bun 363 例、2,666 项断言通过（85.42 秒），Python 216 例通过、153 项显式集成/上游/规模项未选（3.48 秒）。未调用真实 API。补充 CLI 帮助变更回归 4 例、35 项断言通过，Biome 通过。
+
+`UV_CACHE_DIR=/private/tmp/statigent-uv-cache bun run test:modeling:upstream` 退出 0：110 例通过、20 项非 upstream 用例未选（94.25 秒）。覆盖 52 个 DSBench 逐题固定调用口径及边界、参考材料与三种 TabArena 冻结预测的实际官方环境差分。可选环境与主环境各自锁定，没有升级上游。
+
+实际 schema 1–4 各一份历史建模记录再次 `inspectModeling` 通过，逐文件递归摘要前后相同；本轮摘要算法及结果保存在 `runs/modeling-history-final-v1-v4-check.json`，历史状态（成功或失败）未改写。旧分析协议的计划、受控评分和冻结重评兼容包含在全仓检查中，并有前述 20 项专项回归。完整旧付费批次没有重跑。
+
+自审核对七份 delta spec 的协议、阶段隔离、目标/指标、预算、记录兼容、官方接口及分层验收场景，证据分别对应 `tests/unit/evaluation-*`、`tests/unit/modeling-*`、`tests/python/test_modeling_*`、`tests/python/test_tabarena_*` 和本页 Docker/真实任务索引。仅跟踪代码、配置、锁文件、合成夹具和汇总索引；真实数据、模型、答案、完整轨迹及本机缓存均未纳入提交。主规格尚未同步、变更尚未归档；任务 9.2 实际付费验收保持未完成，正式研究实验未启动。
+
+另对本地既有 InfiAgent v1、synthetic-sum v1、DSBench-Analysis v2、DAComp-DA v2 四份批次执行只读 inspect，均通过且目录摘要前后相同。v1 只在内存解释为兼容结构，原清单仍为 v1；没有调用评委或改写评分。索引 `runs/evaluation-history-final-v1-v2-check.json` 分列原始版本与解码版本。
+
+最终 Docker 命令 `MODELING_TEST_IMAGE=statigent-runtime:modeling-benchmarks UV_CACHE_DIR=/private/tmp/statigent-uv-cache bun test tests/integration/evaluation-modeling-batch.test.ts tests/integration/evaluation-modeling-isolation.test.ts tests/integration/modeling-frozen-v2.test.ts` 退出 0，4 例、101 项断言通过（242.52 秒）：覆盖五阶段隔离、两种交付模式、确认、独立冻结预测、取消/超时、两基准批次、移走模型后的重评及篡改拒绝，全部使用受控决策、零付费 API。此前额外目标/多方法/复现的 Docker 证据保留在本页，不把本次 4 例冒充所有集成测试的重新运行。
+
+`openspec validate add-modeling-benchmarks --strict`、`git diff --check` 均退出 0。最终命令、退出码、日志哈希及新旧历史索引见 [检查汇总](../benchmarks/metadata/modeling-final-checks.json)。软件接入和约定的零 LLM 验收完成；真实付费验收保持未运行，正式研究集合与实验不在本轮执行范围。

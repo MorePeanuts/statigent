@@ -2,7 +2,7 @@
 
 支持表格回归、二分类、多分类、有序类别、多目标二分类与前三候选输出，复用实验历史、定向双角色 EDA、预算及隔离执行。历史配置与新版基准配置按版本区分。
 
-建模基准使用 v2 通用目标协议与全指标计算，详见 [指标、预测语义和差分记录](modeling-metrics.md)。逐目标类别/正类、等级坐标、指标范围及未定义边界由共享定义冻结。新版原生训练、EDA 交接、冻结、预测、独立复现、测试评分及官方 system wrapper 已有合成 Docker 验收；统一基准批次仍在接入，状态见 [建模基准验收记录](modeling-benchmarks-validation.md)。
+建模基准使用 v2 通用目标协议与全指标计算，详见 [指标、预测语义和差分记录](modeling-metrics.md)。逐目标类别/正类、等级坐标、指标范围及未定义边界由共享定义冻结。新版原生训练、EDA 交接、冻结、预测、独立复现、测试评分及官方 system wrapper 已有合成 Docker 验收；统一基准批次已接入并完成 10 项真实数据确定性闭环及独立预测复现，状态见 [建模基准验收记录](modeling-benchmarks-validation.md)。
 
 以下入口只校验合成协议，不读模型配置、不启动训练或调用 API；输出 `scope=protocol-only`，不能代替数据/执行预检：
 
@@ -52,7 +52,7 @@ bun run modeling score --run PARENT_RUN --labels-root runs/modeling-benchmarks/t
 
 `score` 只核对冻结身份、公开预测输入、预测字节和指定标签，不打开模型文件或训练阶段目录；测试分区拥有独立 evaluation_id，不参与搜索排名。多目标分数保留按协议排序的每目标 ROC AUC 和均值，错误目标、错误聚合或协议身份会被拒绝。序数类别、前三候选和七目标的实际 Docker 测试见 `tests/integration/modeling-reproduction-v2.test.ts`。inspect 继续只读支持父记录 schema 1–4；schema 5 额外检查原生阶段、冻结及预测事件和身份，不向历史记录补造新字段。
 
-TabArena 使用同一 fit-only 与冻结预测接口，薄 Python wrapper 通过有界 Bun 桥接调用原生父循环。官方 CPU/内存/训练时限映射到任务限制，预测拥有独立时限；standalone 仍由一个父预算覆盖 fit→predict。安装、零 LLM 示例、类别顺序和 cleanup 语义见 [官方 system 兼容环境](../environments/tabarena/README.md)。合成官方调用已通过，小型真实 r0f0 及付费智能体验收仍分别记录为待执行。
+TabArena 使用同一 fit-only 与冻结预测接口，薄 Python wrapper 通过有界 Bun 桥接调用原生父循环。官方 CPU/内存/训练时限映射到任务限制，预测拥有独立时限；standalone 仍由一个父预算覆盖 fit→predict。安装、零 LLM 示例、类别顺序和 cleanup 语义见 [官方 system 兼容环境](../environments/tabarena/README.md)。合成官方调用及 3 项真实 r0f0 验证均已通过；付费智能体验收尚未执行。
 
 ## 研究方向与当前实现
 

@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "source_commit": "ceb265a",
+  "source_note": "check/upstream/integration started on a working tree subsequently committed as ceb265a; CLI help was independently checked afterwards. Later edits only update evidence and documentation.",
+  "paid_model_calls": 0,
+  "checks": [
+    {
+      "command": "UV_CACHE_DIR=/private/tmp/statigent-uv-cache bun run check",
+      "exit_code": 0,
+      "details": {
+        "typescript_tests": 363,
+        "assertions": 2666,
+        "typescript_seconds": 85.42,
+        "python_tests": 216,
+        "python_deselected": 153,
+        "python_seconds": 3.48
+      },
+      "log": {
+        "path": "runs/modeling-benchmarks-validation/final-checks/check.log",
+        "sha256": "1f69576528574c9d8be6e68452fcb3f8eea4cda31e245bcf7cddd3b7f795ead3"
+      }
+    },
+    {
+      "command": "UV_CACHE_DIR=/private/tmp/statigent-uv-cache bun run test:modeling:upstream",
+      "exit_code": 0,
+      "details": {
+        "passed": 110,
+        "deselected": 20,
+        "seconds": 94.25
+      },
+      "log": {
+        "path": "runs/modeling-benchmarks-validation/final-checks/upstream.log",
+        "sha256": "498fa9e203b2c57381e002b3bfbad6eff625f7cee404d4565e5cf1810c62dcaa"
+      }
+    },
+    {
+      "command": "MODELING_TEST_IMAGE=statigent-runtime:modeling-benchmarks UV_CACHE_DIR=/private/tmp/statigent-uv-cache bun test tests/integration/evaluation-modeling-batch.test.ts tests/integration/evaluation-modeling-isolation.test.ts tests/integration/modeling-frozen-v2.test.ts",
+      "exit_code": 0,
+      "details": {
+        "passed": 4,
+        "assertions": 101,
+        "seconds": 242.52
+      },
+      "log": {
+        "path": "runs/modeling-benchmarks-validation/final-checks/integration.log",
+        "sha256": "99e7a7705d41016a88be1dbfd08e9f55de1d2470ae5e56c3bc607f6c887c681c"
+      }
+    }
+  ],
+  "additional_checks": [
+    {
+      "command": "bun test tests/unit/evaluation-cli.test.ts",
+      "exit_code": 0,
+      "passed": 4,
+      "assertions": 35
+    },
+    {
+      "command": "openspec validate add-modeling-benchmarks --strict",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "modeling_history": [
+    {
+      "schema": 1,
+      "root": "runs/modeling-smoke/9d882127-8732-4f29-92b6-75c1fbb4c4c5",
+      "status": "completed",
+      "source_sha256": "8983e98497a583d8790e7bd03ac1acb6181427ff219b7f7e19c4d984d48bd4d7",
+      "unchanged": true
+    },
+    {
+      "schema": 2,
+      "root": "runs/integration-classification-failure/53b2fd9c-efea-4846-a53d-070f89f731c2/68cf363a-ab75-4f69-8f20-66bf75ffd71e",
+      "status": "failed",
+      "source_sha256": "32bacd1fab7af9d93e5fcb6f1ae1f86a984333603021508c8aa0c10174bcab2f",
+      "unchanged": true
+    },
+    {
+      "schema": 3,
+      "root": "runs/modeling-collaboration-smoke/0031d15a-f872-4eff-88ed-a2db110a15ce",
+      "status": "failed",
+      "source_sha256": "468e33587b74b7f80feb650af076e806e500cebc26c3f0a131ef6b2f8929514a",
+      "unchanged": true
+    },
+    {
+      "schema": 4,
+      "root": "runs/integration-classification-failure/e312b552-4f41-49f2-947e-8d5fd7d6cfbd/30b38cf0-9d44-4921-9329-349903932c6f",
+      "status": "failed",
+      "source_sha256": "6814cf02ecff6215081e39fc419b4cc58ab39159804d602822f3eb72dc78102d",
+      "unchanged": true
+    }
+  ],
+  "analysis_history": [
+    {
+      "root": "runs/evaluations/d094e1bc-96ca-4d58-9208-389b741e91c3",
+      "benchmark": "dsbench-analysis",
+      "status": "completed",
+      "units": 2,
+      "source_sha256": "7b989763091cc73fa8af7434d64cf5ac8c7f98620c8d9670fec1899466cbf2b6",
+      "unchanged": true,
+      "source_schema": 2,
+      "decoded_schema": 2
+    },
+    {
+      "root": "runs/evaluations/ff53e5a2-2b11-4c11-b260-99a07bec14c8",
+      "benchmark": "infiagent-dabench",
+      "status": "completed",
+      "units": 3,
+      "source_sha256": "057cbf3ce3b0a9c6e86694dc36e756cc8c2c44e6e3396a230ad07037ef2de122",
+      "unchanged": true,
+      "source_schema": 1,
+      "decoded_schema": 2
+    },
+    {
+      "root": "runs/evaluations/4af20a46-2cbc-49e8-a77e-5e858b159566",
+      "benchmark": "synthetic-sum",
+      "status": "completed",
+      "units": 1,
+      "source_sha256": "bfbdd109d68192d15ad70adb78a4b34a7436e7c32b0bf305204102ef88d75960",
+      "unchanged": true,
+      "source_schema": 1,
+      "decoded_schema": 2
+    },
+    {
+      "root": "runs/evaluations/c3452489-2a09-4762-ba6b-c7826730ec8a",
+      "benchmark": "dacomp-da",
+      "status": "completed",
+      "units": 2,
+      "source_sha256": "fdae43e990062ba4960eb9d1726de2390fb3dad83833e39ca29e15c0b0ff43c3",
+      "unchanged": true,
+      "source_schema": 2,
+      "decoded_schema": 2
+    }
+  ],
+  "not_run": [
+    "Paid four-unit modeling smoke: task 9.2 awaits separately authorized scope.",
+    "Full benchmark training and formal research experiments."
+  ],
+  "limitations": [
+    "Targeted final Docker rerun covers phase isolation, frozen predictions and both registered batches; earlier additional target/confirmation/reproduction coverage is indexed in the validation document.",
+    "Currency cost for local hardware is not computed."
+  ]
+}
