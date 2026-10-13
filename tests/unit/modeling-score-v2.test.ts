@@ -2,7 +2,12 @@ import { expect, test } from "bun:test";
 import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { validateProtocolV2 } from "../../src/modeling/protocol-v2";
+import { csv } from "../../src/modeling/data";
+import { validatePredictionFilesV2 } from "../../src/modeling/predictions-v2";
+import {
+  predictionColumnsV2,
+  validateProtocolV2,
+} from "../../src/modeling/protocol-v2";
 import { betterV2, validateScoreV2 } from "../../src/modeling/score-v2";
 import {
   DEFAULT_DATA_LIMITS,
@@ -58,6 +63,66 @@ test("V2 ranking keeps directions, ties and evaluation partitions distinct", () 
       evaluation,
     ),
   ).toThrow();
+});
+test("external ranked files validate with public IDs and no model artifacts", async () => {
+  const root = await realpath(
+    await mkdtemp(join(tmpdir(), "external-ranked-")),
+  );
+  try {
+    const p = protocol("top3-hit-ds-v1");
+    const ref = async (name: string, text: string) => {
+      const path = join(root, name);
+      await writeFile(path, text);
+      return {
+        path,
+        bytes: Buffer.byteLength(text),
+        sha256: sha256(Buffer.from(text)),
+      };
+    };
+    const expected = await ref("ids.csv", "id\na\nb\n");
+    const classes = p.targets[0]?.classes;
+    if (!classes) throw new Error("Missing fixture classes");
+    const predictions = await ref(
+      "ranked.csv",
+      csv({
+        columns: predictionColumnsV2(p, false),
+        rows: [
+          ["b", JSON.stringify(classes.slice(0, 2))],
+          ["a", JSON.stringify(classes.slice(0, 3))],
+        ],
+      }),
+    );
+    const result = await validatePredictionFilesV2({
+      root,
+      protocol: p,
+      expected,
+      predictions,
+      limits: DEFAULT_DATA_LIMITS,
+    });
+    expect(result.rows).toBe(2);
+    expect(result.predictions_sha256).toBe(predictions.sha256);
+    const bad = await ref(
+      "bad.csv",
+      csv({
+        columns: predictionColumnsV2(p, false),
+        rows: [
+          ["a", JSON.stringify([classes[0], classes[0]])],
+          ["b", JSON.stringify(classes.slice(0, 2))],
+        ],
+      }),
+    );
+    await expect(
+      validatePredictionFilesV2({
+        root,
+        protocol: p,
+        expected,
+        predictions: bad,
+        limits: DEFAULT_DATA_LIMITS,
+      }),
+    ).rejects.toThrow("duplicate");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 test("trusted V2 bridge reads file references and returns the frozen metric", async () => {
   const root = await realpath(
