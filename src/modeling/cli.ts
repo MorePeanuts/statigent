@@ -9,6 +9,7 @@ import {
   modelingPreflight,
   taskWithResource,
 } from "./preflight";
+import { createProtocolV2 } from "./protocol-v2";
 import { inspectModeling } from "./records";
 import { runModeling } from "./run";
 export function flags(
@@ -33,6 +34,17 @@ export function flags(
 }
 export async function modelingMain(args: string[]): Promise<unknown> {
   const command = args[0];
+  if (command === "protocol") {
+    const f = flags(args.slice(1), ["--config"]);
+    if (!f["--config"]) throw new Error("protocol requires --config");
+    return {
+      status: "passed",
+      scope: "protocol-only",
+      protocol: createProtocolV2(await Bun.file(resolve(f["--config"])).json()),
+      execution: "not_checked",
+      llm_calls: 0,
+    };
+  }
   if (command === "prepare") {
     const f = flags(args.slice(1), ["--config", "--out"]);
     if (!f["--config"] || !f["--out"])
@@ -87,7 +99,7 @@ export async function modelingMain(args: string[]): Promise<unknown> {
     );
   }
   if (command !== "run" && command !== "develop")
-    throw new Error("Expected prepare/run/inspect/reproduce/score");
+    throw new Error("Expected protocol/prepare/run/inspect/reproduce/score");
   const preflight = args.includes("--preflight");
   if (args.filter((arg) => arg === "--preflight").length > 1)
     throw new Error("Duplicate preflight option");
