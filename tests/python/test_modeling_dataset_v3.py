@@ -1,5 +1,6 @@
 import csv
 import json
+from pathlib import Path
 
 import pytest
 from statigent_modeling.data_v3 import (
@@ -8,9 +9,10 @@ from statigent_modeling.data_v3 import (
     decode_cell,
     encode_cell,
     prepare_rows,
+    split_rows,
 )
 from statigent_modeling.dataset_v3 import load_dataset
-from statigent_modeling.protocol_v2 import digest
+from statigent_modeling.protocol_v2 import create_protocol_v2, digest
 
 LIMITS = {
     "max_file_bytes": 32 * 1024 * 1024,
@@ -211,3 +213,22 @@ def test_internal_split_tamper_and_mapping_tamper(tmp_path):
                 ("test:1", 0, {"signal": 2, "token": "?"}),
             ],
         )
+
+
+def test_shared_ts_python_fixed_split_members():
+    cases = json.loads(
+        (
+            Path(__file__).resolve().parents[1] / "fixtures/modeling-splits-v2.json"
+        ).read_text()
+    )
+    for case in cases:
+        protocol = create_protocol_v2(case["input"])
+        for rows in (case["labels"]["rows"], case["labels"]["rows"][::-1]):
+            values = {
+                target["name"]: [row[index + 1] for row in rows]
+                for index, target in enumerate(protocol["targets"])
+            }
+            actual = split_rows([r[0] for r in rows], values, protocol, case["seed"])
+            assert {
+                key: actual[key] for key in ("train", "validation", "sha256")
+            } == case["expected"]

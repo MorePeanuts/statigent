@@ -1,5 +1,6 @@
 import { sha256 } from "../records/store";
 import { type Dataset, datasetProtocol, rowIds, type Table } from "./data";
+import type { DatasetV3 } from "./dataset-v3";
 import { byteOrder } from "./protocol";
 export type ExperimentPhase = "search" | "confirmation" | "final";
 export interface Evaluation {
@@ -35,7 +36,7 @@ export function derivedSeed(
   );
 }
 export function evaluation(
-  dataset: Dataset,
+  dataset: Dataset | DatasetV3,
   phase: ExperimentPhase,
   members: { train: string[]; validation: string[] },
   model_seed: number,
@@ -60,13 +61,26 @@ export function evaluation(
       phase === "final"
         ? "all-training-v1"
         : phase === "search"
-          ? (dataset.split_method ?? "hash-v1")
-          : dataset.kind === "regression"
+          ? dataset.schema_version === 3
+            ? dataset.split.method
+            : (dataset.split_method ?? "hash-v1")
+          : (dataset.schema_version === 3
+                ? dataset.protocol.kind
+                : dataset.kind) === "regression"
             ? "hash-v1"
-            : "stratified-hash-v1",
+            : dataset.schema_version === 3 &&
+                dataset.protocol.kind === "multilabel"
+              ? "multilabel-hash-v1"
+              : "stratified-hash-v1",
     split_sha256: split.sha256,
-    protocol_sha256: datasetProtocol(dataset).protocol_sha256,
-    train_sha256: dataset.files[0]?.sha256 ?? "",
+    protocol_sha256:
+      dataset.schema_version === 3
+        ? dataset.protocol.protocol_sha256
+        : datasetProtocol(dataset).protocol_sha256,
+    train_sha256:
+      dataset.schema_version === 3
+        ? dataset.training.sha256
+        : (dataset.files[0]?.sha256 ?? ""),
   };
   return {
     evaluation_id: sha256(Buffer.from(JSON.stringify(identity))),
