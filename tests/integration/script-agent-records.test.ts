@@ -118,7 +118,7 @@ test("fresh repaired failures remain exported and strict replay is unsupported",
   expect((await replayRun(result.directory, root)).status).toBe("unsupported");
 }, 120000);
 
-test("old image capability mismatch prevents the first model request", async () => {
+test("image capability mismatch prevents the first model request", async () => {
   const client = new ScriptClient(() => {
     throw Error("model must not be called");
   });
@@ -127,7 +127,12 @@ test("old image capability mismatch prevents the first model request", async () 
     task: {
       ...task,
       backend: "fresh-script",
-      execution: { ...task.execution, image: "statigent-runtime:dev" },
+      // The mutable dev runtime now supports fresh-script. This suite's data
+      // fixture declares no script support and must fail before any call.
+      execution: {
+        ...task.execution,
+        image: "statigent-evaluation-fixture:dev",
+      },
     },
     profile,
     client,
