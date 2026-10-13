@@ -1,0 +1,11 @@
+{
+  "input_root": "tests/fixtures/modeling/binary",
+  "train": "train.csv",
+  "test": "test.csv",
+  "target": "target",
+  "id_column": "id",
+  "kind": "binary",
+  "metric": "roc_auc",
+  "seed": 42,
+  "positive_class": "01"
+}

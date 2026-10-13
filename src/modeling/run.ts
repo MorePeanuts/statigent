@@ -13,8 +13,8 @@ import {
   action,
   MODELING_PROMPT,
   MODELING_PROMPT_VERSION,
-  MODELING_TOOLS,
   type ModelingAction,
+  modelingTools,
 } from "./actions";
 import { Budget } from "./budget";
 import {
@@ -26,10 +26,11 @@ import {
   validateRepair,
 } from "./candidates";
 import { validateModelingTask } from "./config";
-import { loadDataset } from "./data";
+import { datasetProtocol, loadDataset } from "./data";
 import { deliver } from "./delivery";
 import { type AnalysisRecord, analyze, validateEvidence } from "./eda";
 import { type Experiment, runExperiment } from "./experiments";
+import { better, validateScore } from "./protocol";
 import { ModelingRecord } from "./records";
 export interface ModelingOptions {
   task: unknown;
@@ -52,6 +53,7 @@ export async function runModeling(o: ModelingOptions) {
   if (profile.id !== task.model_profile || edaProfile.id !== task.eda_profile)
     throw new Error("Profile/task mismatch");
   const data = await loadDataset(task.dataset_root);
+  const protocol = datasetProtocol(data.dataset);
   const remaining = () =>
     Math.max(
       0,
@@ -84,6 +86,7 @@ export async function runModeling(o: ModelingOptions) {
       {
         task,
         dataset: data.dataset,
+        protocol,
         model: profileSnapshot(profile),
         eda_model: profileSnapshot(edaProfile),
         prompt: {
@@ -156,9 +159,7 @@ export async function runModeling(o: ModelingOptions) {
       content: JSON.stringify({
         goal: task.goal,
         protocol: {
-          kind: data.dataset.kind,
-          metric: data.dataset.metric,
-          direction: data.dataset.direction,
+          ...protocol,
           features: data.dataset.features,
           target: data.dataset.target,
           training_rows: data.dataset.split.train.length,
@@ -176,7 +177,7 @@ export async function runModeling(o: ModelingOptions) {
   ];
   const view = () => ({
     best_experiment_id: best?.id ?? null,
-    best_validation_rmse: best?.rmse ?? null,
+    best_validation_score: best?.score ?? null,
     budget: budget.snapshot(),
     candidates: candidateSummary(candidates, experiments),
   });
@@ -210,7 +211,7 @@ export async function runModeling(o: ModelingOptions) {
     while (true) {
       check();
       update();
-      const response = await call(messages, MODELING_TOOLS, model);
+      const response = await call(messages, modelingTools(protocol), model);
       messages.push(response.response.message);
       const calls = response.response.message.tool_calls ?? [];
       let selected: ModelingAction;
@@ -225,7 +226,12 @@ export async function runModeling(o: ModelingOptions) {
           task.budget.max_candidates,
         );
         for (const change of selected.candidate_updates)
-          validateEvidence(change.evidence, analyses, data.dataset);
+          validateEvidence(
+            change.evidence,
+            analyses,
+            data.dataset,
+            experiments,
+          );
         nextCandidates = applyCandidateUpdates(
           candidates,
           selected.candidate_updates,
@@ -247,7 +253,12 @@ export async function runModeling(o: ModelingOptions) {
               selected.candidate_id,
               selected.repair_of_experiment,
             );
-            validateEvidence(selected.evidence, analyses, data.dataset);
+            validateEvidence(
+              selected.evidence,
+              analyses,
+              data.dataset,
+              experiments,
+            );
             if (
               pendingAnalysis &&
               !selected.evidence.some((e) => e.analysis_id === pendingAnalysis)
@@ -445,6 +456,10 @@ export async function runModeling(o: ModelingOptions) {
               });
             },
           });
+          if (e.status === "completed" && !e.final)
+            validateScore(e.score, protocol);
+          else if (e.score !== null)
+            throw new Error("Unexpected experiment score");
           experiments.push(e);
           if (!final) pendingAnalysis = null;
           for (const s of [e.fit, e.predict])
@@ -457,13 +472,21 @@ export async function runModeling(o: ModelingOptions) {
           await record.event("experiment_result", {
             experiment_id: id,
             status: e.status,
-            rmse: e.rmse,
+            score: e.score,
             reason: e.reason,
           });
+          // A confirmed score remains selectable even if the following clock check stops exploration.
+          if (
+            !e.final &&
+            e.status === "completed" &&
+            e.score &&
+            better(e.score, best?.score ?? null)
+          )
+            best = e;
           check();
           if (
             e.status !== "completed" &&
-            /^(kernel_lost|protocol_error|cleanup):|record persistence|record_failure|incomplete execution/.test(
+            /^(kernel_lost|protocol_error|cleanup|scoring_failure):|record persistence|record_failure|incomplete execution/.test(
               e.reason,
             )
           )
@@ -496,18 +519,12 @@ export async function runModeling(o: ModelingOptions) {
           reason = "delivery_validated";
           break;
         }
-        if (
-          e.status === "completed" &&
-          e.rmse !== null &&
-          (!best || e.rmse < (best.rmse ?? Infinity))
-        )
-          best = e;
         if (e.status !== "completed" && ++repairs > task.budget.code_repairs)
           throw new Stop("failed", "training_repairs");
         feedback = {
           experiment_id: e.id,
           status: e.status,
-          rmse: e.rmse,
+          score: e.score,
           diagnostic: e.reason,
         };
       }

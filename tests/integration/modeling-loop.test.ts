@@ -79,7 +79,9 @@ test("modeling keeps candidate identity through EDA, failed code and repair, the
   expect(repaired?.candidate_id).toBe(failed?.candidate_id);
   expect(repaired?.id).not.toBe(failed?.id);
   expect(final?.candidate_id).toBe("linear");
-  expect(Number(repaired?.rmse)).toBeLessThan(Number(baseline?.rmse));
+  expect(Number(obj(repaired?.score).value)).toBeLessThan(
+    Number(obj(baseline?.score).value),
+  );
   expect(
     view.events.find(
       (e) => e.type === "experiment_intent" && e.experiment_id === repaired?.id,
@@ -120,7 +122,7 @@ test("modeling keeps candidate identity through EDA, failed code and repair, the
         "labels.csv",
         join(root, "scores"),
       )
-    ).value,
+    ).score?.value,
   ).toBeLessThan(1e-8);
   expect(await snapshot(result.directory)).toEqual(before);
   const datasetPath = join(root, "data", "dataset.json");
@@ -133,9 +135,14 @@ test("modeling keeps candidate identity through EDA, failed code and repair, the
   ).rejects.toThrow("Frozen input identity mismatch");
   await writeFile(datasetPath, original);
   await writeFile(join(labels, "bad.csv"), "id,target\n13,26\n15,28\n");
-  await expect(
-    scoreDelivery(result.directory, labels, "bad.csv", join(root, "scores")),
-  ).rejects.toThrow("membership");
+  expect(
+    await scoreDelivery(
+      result.directory,
+      labels,
+      "bad.csv",
+      join(root, "scores"),
+    ),
+  ).toMatchObject({ status: "failed", score: null });
   console.log(JSON.stringify({ kind: "modeling_integration", ...result }));
 }, 240000);
 

@@ -41,4 +41,4 @@ bun run evaluate plan --config configs/evaluations/infiagent-smoke.json
 
 ## 预测建模
 
-回归/RMSE 的独立建模入口、固定划分、定向 EDA、模型交付与预测复现见 [建模说明](docs/modeling.md)。准备数据不调用模型；`modeling run` 与 `test:smoke:modeling` 为显式真实模型入口。当前仅覆盖小型开发闭环，不代表完整建模基准或正式研究实验。
+回归、二分类和多分类共用独立建模入口、固定划分、定向 EDA、模型交付与预测复现，见 [建模说明](docs/modeling.md)。准备数据不调用模型；`modeling run` 与 `test:smoke:modeling` 为显式真实模型入口。分类冒烟使用 `test:smoke:classification --kind binary|multiclass`，加 `--preflight` 仅校验冻结任务。当前覆盖小型开发闭环，真实分类模型验收状态见 [分类验收记录](docs/modeling-classification-validation.md)，不代表完整建模基准或正式研究实验。

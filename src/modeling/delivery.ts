@@ -8,6 +8,7 @@ import { readManifest, writeJson } from "../records/store";
 import { type ModelingTask, validateModelingTask } from "./config";
 import {
   type Dataset,
+  datasetProtocol,
   finite,
   loadDataset,
   parseCsv,
@@ -24,6 +25,13 @@ import {
   stageBytes,
   stageEntrypoint,
 } from "./experiments";
+import { samePredictions, validatePredictions } from "./predictions";
+import {
+  validateModelMetadata,
+  validateProtocol,
+  validateScore,
+} from "./protocol";
+import { scoreTables } from "./scoring";
 export async function deliver(
   root: string,
   task: ModelingTask,
@@ -39,6 +47,18 @@ export async function deliver(
     final.code_sha256 !== selected.code_sha256
   )
     throw new Error("Invalid final delivery");
+  const protocol = datasetProtocol(dataset);
+  validateScore(selected.score, protocol);
+  if (!final.fit.metadata) throw new Error("Missing model metadata");
+  const metadata = await readFile(
+    await regular(final.fit.directory, final.fit.metadata.path),
+  );
+  await verifyFiles(final.fit.directory, [final.fit.metadata]);
+  if (
+    validateModelMetadata(JSON.parse(metadata.toString()), dataset.id_column)
+      .protocol_sha256 !== protocol.protocol_sha256
+  )
+    throw new Error("Model metadata mismatch");
   const dir = join(root, "delivery");
   await mkdir(dir);
   const values: Record<string, string | Buffer> = {
@@ -47,6 +67,7 @@ export async function deliver(
     "predictions.csv": await stageBytes(final.predict),
     "train.py": stageEntrypoint("fit"),
     "predict.py": stageEntrypoint("predict"),
+    "model-metadata.json": metadata,
     "README.md":
       "# Model delivery\n\nUse the recorded container image and `bun run modeling reproduce --run PARENT_RUN` for prediction. `--mode refit` re-executes the frozen pipeline on the allowed training data; it does not replay the agent search. train.py/predict.py run via uv inside this image with stage-specific inputs at /input. Do not load model.joblib on the host.\n",
   };
@@ -54,12 +75,13 @@ export async function deliver(
     await writeFile(join(dir, p), v, { flag: "wx", mode: 0o444 });
   const native = await readManifest(final.fit.directory);
   const manifest = {
-    schema_version: 1,
+    schema_version: 2,
+    protocol,
     source_experiment: selected.id,
     dataset,
     model_environment: native.environment,
     code_version: native.code,
-    validation_rmse: selected.rmse,
+    validation_score: selected.score,
     final_experiment: final.id,
     task,
     image: final.fit.image,
@@ -77,7 +99,7 @@ async function frozen(root: string) {
     JSON.parse(await readFile(await regular(root, "modeling.json"), "utf8")),
   );
   if (
-    parent.schema_version !== 1 ||
+    (parent.schema_version !== 1 && parent.schema_version !== 2) ||
     parent.kind !== "modeling" ||
     parent.status !== "completed"
   )
@@ -89,7 +111,7 @@ async function frozen(root: string) {
     ),
   );
   if (
-    manifest.schema_version !== 1 ||
+    manifest.schema_version !== parent.schema_version ||
     JSON.stringify(parent.delivery) !== JSON.stringify(manifest)
   )
     throw new Error("Delivery manifest mismatch");
@@ -114,16 +136,53 @@ async function frozen(root: string) {
       "predictions.csv",
       "train.py",
       "predict.py",
+      ...(manifest.schema_version === 2 ? ["model-metadata.json"] : []),
       "README.md",
     ])
   )
     throw new Error("Invalid delivery allowlist");
   await verifyFiles(directory, files);
+  const dataset = validateDataset(obj(parent.config).dataset);
+  if (
+    manifest.schema_version === 1 &&
+    obj(parent.config).protocol !== undefined
+  )
+    throw new Error("Legacy delivery cannot contain a v2 task protocol");
+  if (
+    (manifest.schema_version === 2 || manifest.dataset !== undefined) &&
+    JSON.stringify(manifest.dataset) !== JSON.stringify(dataset)
+  )
+    throw new Error("Delivery dataset mismatch");
+  if (manifest.schema_version === 2) {
+    const protocol = validateProtocol(manifest.protocol, dataset.id_column);
+    if (
+      protocol.protocol_sha256 !== datasetProtocol(dataset).protocol_sha256 ||
+      validateProtocol(obj(parent.config).protocol, dataset.id_column)
+        .protocol_sha256 !== protocol.protocol_sha256
+    )
+      throw new Error("Delivery protocol mismatch");
+    validateScore(manifest.validation_score, protocol);
+    if (
+      validateModelMetadata(
+        JSON.parse(
+          await readFile(
+            await regular(directory, "model-metadata.json"),
+            "utf8",
+          ),
+        ),
+        dataset.id_column,
+      ).protocol_sha256 !== protocol.protocol_sha256
+    )
+      throw new Error("Delivery model metadata mismatch");
+  }
+  const tolerance = obj(manifest.prediction_tolerance);
+  if (tolerance.atol !== 1e-8 || tolerance.rtol !== 1e-6)
+    throw new Error("Invalid prediction tolerance");
   return {
     directory,
     manifest,
     task: validateModelingTask(manifest.task),
-    dataset: validateDataset(obj(parent.config).dataset),
+    dataset,
     files,
   };
 }
@@ -168,6 +227,7 @@ export async function reproduce(
           dataset: data.dataset,
           root: dir,
           stage: "predict",
+          legacy: f.manifest.schema_version === 1,
           entrypoint: entrypoints.predict,
           code,
           data: data.test,
@@ -184,6 +244,7 @@ export async function reproduce(
           remaining,
           candidateId: "reproduce",
           final: true,
+          legacy: f.manifest.schema_version === 1,
           entrypoints,
         });
   const stage = "final" in result ? result.predict : result;
@@ -191,21 +252,20 @@ export async function reproduce(
     reason = result.reason;
   if (result.status === "completed" && stage) {
     const ids = rowIds(data.test, data.dataset.id_column);
-    const expected = predictionValues(
-        await tableFile(f.directory, "predictions.csv"),
-        ids,
-        data.dataset.id_column,
-      ),
-      actual = predictionValues(
-        parseCsv((await stageBytes(stage)).toString()),
-        ids,
-        data.dataset.id_column,
-      );
-    passed = actual.every(
-      (v, i) =>
-        Math.abs(v - (expected[i] ?? NaN)) <=
-        1e-8 + 1e-6 * Math.abs(expected[i] ?? NaN),
+    const protocol = datasetProtocol(data.dataset);
+    const expected = validatePredictions(
+      await tableFile(f.directory, "predictions.csv"),
+      ids,
+      data.dataset.id_column,
+      protocol,
     );
+    const actual = validatePredictions(
+      parseCsv((await stageBytes(stage)).toString()),
+      ids,
+      data.dataset.id_column,
+      protocol,
+    );
+    passed = samePredictions(expected, actual, 1e-8, 1e-6);
     reason = passed ? "within_fixed_tolerance" : "prediction_mismatch";
   }
   await verifyFiles(f.directory, f.files);
@@ -240,6 +300,36 @@ export async function scoreDelivery(
   if (JSON.stringify(labels.columns) !== JSON.stringify([id, target]))
     throw new Error("Expected private ID/target label columns");
   const ids = rowIds(data.test, id);
+  if (f.manifest.schema_version === 2) {
+    const dir = resolve(outRoot, randomUUID());
+    await mkdir(dir, { recursive: true });
+    const protocol = datasetProtocol(data.dataset);
+    const predictions = await tableFile(f.directory, "predictions.csv");
+    validatePredictions(predictions, ids, id, protocol);
+    const scored = await scoreTables({
+      root: dir,
+      protocol,
+      id,
+      target,
+      labels,
+      predictions,
+    });
+    const report = {
+      schema_version: 2,
+      source_run: root,
+      kind: "frozen_test_score",
+      status: scored.score ? "completed" : "failed",
+      protocol,
+      score: scored.score,
+      error: scored.error,
+      labels: await describeFile(labelsRoot, labelsFile),
+      prediction: f.files.find((x) => x.path === "predictions.csv"),
+      tokens: "not_applicable",
+    };
+    await verifyFiles(f.directory, f.files);
+    await writeJson(join(dir, "score.json"), report);
+    return { directory: dir, ...report };
+  }
   const predicted = predictionValues(
     await tableFile(f.directory, "predictions.csv"),
     ids,
@@ -259,6 +349,7 @@ export async function scoreDelivery(
     metric: "rmse",
     direction: "minimize",
     value: rmse(predicted, targets),
+    score: undefined,
     labels: await describeFile(labelsRoot, labelsFile),
     prediction: f.files.find((x) => x.path === "predictions.csv"),
     tokens: "not_applicable",

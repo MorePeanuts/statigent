@@ -1,24 +1,24 @@
 # 建模智能体
 
-当前变更分阶段实现回归/RMSE 闭环。分类和其他指标在预检时拒绝。
+支持单目标表格回归、二分类与多分类，复用候选管理、定向双角色 EDA、预算、隔离执行与交付链路。支持矩阵见下文；不含多标签、阈值搜索、概率校准或 Benchmark 适配。
 
 ## 准备数据
 
-输入为一个带目标的训练 CSV 和一个不含目标的预测 CSV，必须有不重叠的唯一稳定 ID、相同特征及有限数值目标。ID 不作为训练特征。准备过程不读取测试标签、不调用模型、不修改源数据。
+输入为一个带目标的训练 CSV 和一个不含目标的预测 CSV，必须有不重叠的唯一稳定 ID、相同特征；回归目标为有限数值，分类目标为原始非空字符串。ID 不作为训练特征。准备过程不读取测试标签、不调用模型、不修改源数据。
 
 ```sh
 bun run modeling prepare --config configs/modeling/synthetic-prepare.json --out runs/modeling-synthetic-data
 ```
 
-输出目录必须尚不存在，父目录必须存在。生成只读 train.csv/test.csv 和 dataset.json，后者保存文件哈希、目标、种子、指标方向及精确内部划分。默认按 seed 与行 ID 哈希排序生成 80/20 留出；可显式给出完整且不相交的 split.train/split.validation ID 清单。搜索不能重新划分。
+输出目录必须尚不存在，父目录必须存在。生成只读 train.csv/test.csv 和 dataset.json，后者保存文件哈希、目标、种子、指标方向及精确内部划分。回归默认按 seed 与行 ID 哈希排序生成 80/20 留出，分类按类别分层生成；可显式给出完整且不相交的 split.train/split.validation ID 清单。搜索不能重新划分。
 
-源配置使用 input_root/train/test/target/id_column/kind/metric/seed；只接受 regression/rmse。原始数据和准备产物不提交 Git。每次加载校验哈希、列结构和划分成员，输入变化须重新准备并保留新版本。
+源配置使用 input_root/train/test/target/id_column/kind/metric/seed；类型/指标按下方支持矩阵校验；二分类另需 positive_class。原始数据和准备产物不提交 Git。每次加载校验哈希、列结构和划分成员，输入变化须重新准备并保留新版本。
 
 ## 实验执行
 
-生成代码导出 `build_pipeline(seed)`，返回支持 `fit(X, y)`/`predict(X)` 的 scikit-learn 兼容回归流水线。预处理放入流水线；目标变换须在 predict 时逆变换。X 不含 ID 和目标列。运行镜像锁定 scikit-learn 1.7.2、scipy 1.16.2、joblib 1.5.2，不能运行时安装库。
+生成代码导出 `build_pipeline(seed)`，返回支持 `fit(X, y)` 的 scikit-learn 兼容流水线。预处理放入流水线；目标变换须在 predict 时逆变换。X 不含 ID 和目标列。运行镜像锁定 scikit-learn 1.7.2、scipy 1.16.2、joblib 1.5.2，不能运行时安装库。
 
-每个实验分别启动新的拟合和预测容器，前者只发布内部训练数据，后者只发布模型、代码和无标签验证特征。模型仅在容器反序列化；宿主校验预测的 ID、列和有限值，再独立计算原尺度 RMSE。代码自报成绩不参与比较。每阶段保存原生事件、实际代码、Notebook、输入/镜像身份和产物快照。失败尝试保留，不复用其状态。
+每个实验分别启动新的拟合和预测容器，前者只发布内部训练数据，后者只发布模型、代码和无标签验证特征。模型仅在容器反序列化；宿主独立校验预测的 ID、类别和概率，再经可信 Python 入口计算冻结主指标。代码自报成绩不参与比较。每阶段保存原生事件、实际代码、Notebook、输入/镜像身份和产物快照。失败尝试保留，不复用其状态。
 
 默认拟合上限 120 秒、预测 30 秒；建模默认内存上限 4 GiB、工作区 512 MiB、单产物 256 MiB、每执行会话累计产物 1 GiB，清理/中断宽限 15 秒。超时、取消、不完整收集或超限均不产生成功实验。累计额包含执行结束和关闭时的独立快照；传输帧默认按 base64 膨胀自动推导，显式配置保留。建模智能体会收到有效资源上限。实测依据、适用范围及覆盖方式见 [建模资源限制](modeling-resource-limits.md)。
 
@@ -48,7 +48,7 @@ bun run modeling score --run RUN_DIRECTORY --labels-root PRIVATE_DIRECTORY --lab
 
 reproduce 默认在新容器恢复已保存模型，以 `atol=1e-8, rtol=1e-6` 比对预测；refit 则重新执行冻结流水线的全训练数据拟合及预测。两者均无 LLM 调用，独立保存到 runs/modeling-reproductions，不覆盖原运行。它们不重演分析与实验决策。输入或镜像身份不匹配时拒绝同条件复现。
 
-score 只接受已完成且交付冻结的运行，私有标签 CSV 必须恰为 ID 列和目标列，样本与预测一一对应。结果保存在独立 runs/modeling-scores，搜索不会接收它。内层 RMSE 与外层 RMSE 分列，不用内层自适应分数证明泛化收益。
+score 只接受已完成且交付冻结的运行，私有标签 CSV 必须恰为 ID 列和目标列，样本与预测一一对应。结果保存在独立 runs/modeling-scores，搜索不会接收它。内层验证指标与外层测试指标分列，不用内层自适应分数证明泛化收益。
 
 ## 固定开发任务
 
@@ -128,3 +128,41 @@ bun run test:smoke:modeling
 现有任务配置无需迁移；旧模型工具参数不能直接用于新的运行。旧父记录没有扩展时输出 `candidate_control: "not_recorded"`，不从自然语言补造状态、不改写原文件，仍支持既有交付复现。原生 EDA schema 不变。
 
 本轮真实验收仅在上文固定开发任务执行 **一次**，保持 900 秒/40 次总尝试/600,000 token 阈值、3 次搜索+1 次最终拟合、180 秒预留，以及一次 EDA 的 20 次尝试/400,000 token/300 秒/10 次执行上限。任务明确要求候选清单、显式 EDA 额度申请、证据关联更新和后续训练。不同额度裁剪与故障修复由可控测试保证，真实模型不强求触发故障或改进成绩。首次报告不可覆盖；失败不自动加跑，若只修验收器则单独保存同一记录的离线复核。结果和实际成本见 `docs/modeling-candidate-budget-validation.md`。
+
+## 表格任务协议与分类数据准备
+
+新准备产物使用 dataset schema 2；schema 1 回归数据继续只读加载，保留原划分。支持矩阵为 regression/rmse、binary/accuracy/roc_auc/log_loss、multiclass/accuracy/log_loss。二分类必须显式提供 `positive_class`，多分类至少三类且不接受该字段。
+
+分类目标按 CSV 原始字符串保留（例如 `01` 与 `1` 不同，`NA` 是合法标签），拒绝空白目标。类别按 UTF-8 字节排序映射到整数。默认分类划分在每类内按种子与 ID 哈希排序，验证样本数为 `min(n-1,max(1,floor(0.2*n)))`；少于两条的类别拒绝。显式划分也必须完整且两侧覆盖全部类别。小样本时实际比例不一定为 20%，精确成员写入清单。
+
+```sh
+bun run modeling prepare --config configs/modeling/binary-prepare.json --out runs/modeling-binary-data
+bun run modeling prepare --config configs/modeling/multiclass-prepare.json --out runs/modeling-multiclass-data
+```
+
+这些命令只准备合成数据，不调用模型；输出目录必须尚不存在。各示例有 60 条训练来源记录，冻结为 48 条内部训练和 12 条验证。数据与协议校验值在每次加载时核对。
+
+## 分类接口与可信评分
+
+分类训练时 y 已按冻结 classes 顺序编码为整数 0..K-1。accuracy 需要 predict 返回这些整数；ROC AUC/log-loss 需要 predict_proba 和 classes_，后者恰好覆盖所有整数类别，顺序可以不同。runner 对齐概率列并解码标签。概率型输出包含 ID、prediction 和 probability_0..K-1；accuracy 只有 ID 和预测标签。列名与 ID 冲突时按协议追加下划线，以 dataset.protocol.prediction 为准。模型与 model-metadata.json 都保存协议，宿主验证元信息并纳入交付文件哈希。
+
+概率必须有限、位于 [0,1]，行和误差不超过 1e-6；类别取 argmax，并列选冻结顺序中第一类。非法概率不能进入最佳实验或 EDA。宿主按稳定 ID 重排预测，拒绝重复、缺失、多余 ID、未知类别及标签/概率不一致。
+
+评分版本为 tabular-metrics-v1：
+
+- RMSE：原尺度平方误差均值的平方根，越小越好。
+- accuracy：标签字符串完全相等的比例，越大越好。
+- ROC AUC：显式正类的概率，排序并列取平均秩，越大越好；仅适用于二分类，评分样本必须包含两类。
+- log-loss：合法 float64 概率的工作副本先按行归一化，再裁剪到 [1e-15,1-1e-15] 后重新归一化，取真实类别负对数均值，越小越好。这个固定数值规则不修改原概率文件。
+
+评分经 uv run --offline --frozen 调用固定 Python 模块，不导入候选、不加载模型、不传入模型密钥。请求/回复各限 1 MiB，stderr 限 64 KiB；单次默认 30 秒，上限裁剪至父探索剩余时间，取消/超时终止且不重试。无效预测记为实验失败；评分进程或协议故障终止父运行并保存诊断。独立 score 的错误留在单独评分目录。
+
+## 分类诊断与版本兼容
+
+EDA 的 source.json 描述冻结协议、真实标签字段、预测字段、实际可用概率列及对应类别，并绑定预测产物哈希。validation.csv 以稳定 ID 连接原标签与预测，新增字段遇原特征同名时追加下划线。accuracy 不补算概率；纯数据分析的预测来源为 null。可按需诊断混淆、类别分布或置信度，返回证据后由建模智能体决定下一项实验。普通 run 不强制调用 EDA，也不强制后续成绩提升。
+
+新 dataset、父 modeling.json 和 delivery.json 使用 schema 2，内部实验使用包含指标/方向/协议哈希的 score，失败和最终拟合 score 为 null。平局保留先完成者。inspect 与在线选择使用同一规则，并检查分析证据的协议和预测来源。提示词为 modeling-v3，动作协议仍为 2，候选控制扩展仍为 1。
+
+旧 schema 1 回归数据与父记录只读兼容，新运行可读取旧数据而不重写划分。旧交付复现使用原镜像和原三字段 stage.json；新交付使用版本化 stage 与模型元信息。预测复现对类别逐项精确比较，对概率/回归数值使用交付冻结的 atol=1e-8、rtol=1e-6。refit 重训冻结流水线，不重新搜索。旧程序不能读取 v2；回退时保留新记录，以原代码和镜像继续读取 v1。
+
+分类功能检查、镜像身份与真实模型状态见 [分类验收记录](modeling-classification-validation.md)。

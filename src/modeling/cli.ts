@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import { selectProfile } from "../models/config";
 import { obj } from "../models/validation";
 import { validateModelingTask } from "./config";
-import { prepareDataset } from "./data";
+import { datasetProtocol, prepareDataset } from "./data";
 import { reproduce, scoreDelivery } from "./delivery";
 import { inspectModeling } from "./records";
 import { runModeling } from "./run";
@@ -39,6 +39,7 @@ export async function modelingMain(args: string[]): Promise<unknown> {
     return {
       directory: resolve(f["--out"]),
       metric: dataset.metric,
+      protocol: datasetProtocol(dataset),
       training_rows: dataset.split.train.length,
       validation_rows: dataset.split.validation.length,
       split_sha256: dataset.split.sha256,

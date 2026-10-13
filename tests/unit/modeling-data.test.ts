@@ -98,3 +98,12 @@ test("CSV round trip and malformed identity/target checks", async () => {
     ).rejects.toThrow();
   }
 });
+
+test("quoted classification labels preserve CRLF and commas while record separators normalize", () => {
+  const table = parseCsv('id,target\r\na,"A\r\nB"\r\nb,"C,D"\r\n');
+  expect(table.rows).toEqual([
+    ["a", "A\r\nB"],
+    ["b", "C,D"],
+  ]);
+  expect(parseCsv(csv(table))).toEqual(table);
+});

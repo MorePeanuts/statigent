@@ -1,0 +1,22 @@
+{
+  "goal": "Build a binary classification pipeline using the frozen metric and class mapping. This development smoke checks collaboration: train a first model, ask one focused model-directed EDA question, update a candidate using returned evidence, train a follow-up, then deliver the best validated pipeline. Improvement is not required. Keep preprocessing within the pipeline and preserve finalization reserve.",
+  "dataset_root": "runs/modeling-binary-data",
+  "model_profile": "deepseek-flash",
+  "eda_profile": "deepseek-flash",
+  "image": "statigent-runtime:dev",
+  "budget": {
+    "model_attempts": 40,
+    "total_tokens": 600000,
+    "task_timeout_ms": 900000,
+    "training_attempts": 4,
+    "final_training_attempts": 1,
+    "final_reserve_ms": 180000,
+    "fit_timeout_ms": 120000,
+    "predict_timeout_ms": 30000,
+    "eda_calls": 1,
+    "eda_executions": 10,
+    "eda_model_attempts": 20,
+    "eda_tokens": 400000,
+    "eda_timeout_ms": 300000
+  }
+}

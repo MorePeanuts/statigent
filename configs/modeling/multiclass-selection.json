@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "kind": "multiclass",
+  "selection_reason": "Small deterministic synthetic classification system acceptance; not selected by model or test score",
+  "generation": {
+    "seed": 42,
+    "training_rows": 60,
+    "prediction_rows": 6,
+    "x": "training row index modulo number of classes",
+    "z": "training row index times 7 modulo 13",
+    "label": "class indexed by x; binary [01,1], multiclass [NA,blue,红色]"
+  },
+  "source_root": "tests/fixtures/modeling/multiclass",
+  "sources": [
+    {
+      "path": "train.csv",
+      "bytes": 737,
+      "sha256": "4e1f92ac4b589f563dc4993828af7e4d17cc08505a9f38d73aa28cafef2d77c0"
+    },
+    {
+      "path": "test.csv",
+      "bytes": 55,
+      "sha256": "bd145061e997ea4659c7fa55d6cc49b4c0c7201317d2eef9f6854a337db8c32b"
+    }
+  ],
+  "dataset": {
+    "schema_version": 2,
+    "kind": "multiclass",
+    "metric": "log_loss",
+    "direction": "minimize",
+    "protocol": {
+      "version": 1,
+      "kind": "multiclass",
+      "metric": "log_loss",
+      "direction": "minimize",
+      "output": "probabilities",
+      "classes": [
+        "NA",
+        "blue",
+        "红色"
+      ],
+      "positive_class": null,
+      "prediction": {
+        "column": "prediction",
+        "probability_columns": [
+          "probability_0",
+          "probability_1",
+          "probability_2"
+        ]
+      },
+      "scoring_version": "tabular-metrics-v1",
+      "protocol_sha256": "f3e2a1e3347191ee9b2d1b385a9fa583bdacb26c0628c636836ccbe1bcd31a07"
+    },
+    "split_method": "stratified-hash-v1",
+    "target": "target",
+    "id_column": "id",
+    "seed": 42,
+    "files": [
+      {
+        "path": "train.csv",
+        "sha256": "4e1f92ac4b589f563dc4993828af7e4d17cc08505a9f38d73aa28cafef2d77c0",
+        "bytes": 737
+      },
+      {
+        "path": "test.csv",
+        "sha256": "bd145061e997ea4659c7fa55d6cc49b4c0c7201317d2eef9f6854a337db8c32b",
+        "bytes": 55
+      }
+    ],
+    "split": {
+      "train": [
+        "36",
+        "42",
+        "0",
+        "6",
+        "12",
+        "9",
+        "57",
+        "3",
+        "33",
+        "15",
+        "48",
+        "30",
+        "27",
+        "51",
+        "24",
+        "18",
+        "52",
+        "25",
+        "40",
+        "22",
+        "4",
+        "7",
+        "46",
+        "49",
+        "43",
+        "34",
+        "16",
+        "19",
+        "31",
+        "55",
+        "28",
+        "10",
+        "44",
+        "47",
+        "11",
+        "17",
+        "14",
+        "5",
+        "56",
+        "8",
+        "26",
+        "35",
+        "23",
+        "32",
+        "2",
+        "38",
+        "50",
+        "59"
+      ],
+      "validation": [
+        "45",
+        "54",
+        "39",
+        "21",
+        "1",
+        "13",
+        "37",
+        "58",
+        "53",
+        "41",
+        "29",
+        "20"
+      ],
+      "sha256": "4654200a6096608150aa22f49e07a26aa9af6a12cd723171d37a0ab8e6399b66"
+    },
+    "features": [
+      "x",
+      "z"
+    ]
+  }
+}

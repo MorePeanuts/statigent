@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "kind": "binary",
+  "selection_reason": "Small deterministic synthetic classification system acceptance; not selected by model or test score",
+  "generation": {
+    "seed": 42,
+    "training_rows": 60,
+    "prediction_rows": 6,
+    "x": "training row index modulo number of classes",
+    "z": "training row index times 7 modulo 13",
+    "label": "class indexed by x; binary [01,1], multiclass [NA,blue,红色]"
+  },
+  "source_root": "tests/fixtures/modeling/binary",
+  "sources": [
+    {
+      "path": "train.csv",
+      "bytes": 587,
+      "sha256": "7a9cfec719ad27e491e09aacecf8a12f455cd6c37b73670165808d5e37bea734"
+    },
+    {
+      "path": "test.csv",
+      "bytes": 55,
+      "sha256": "bd145061e997ea4659c7fa55d6cc49b4c0c7201317d2eef9f6854a337db8c32b"
+    }
+  ],
+  "dataset": {
+    "schema_version": 2,
+    "kind": "binary",
+    "metric": "roc_auc",
+    "direction": "maximize",
+    "protocol": {
+      "version": 1,
+      "kind": "binary",
+      "metric": "roc_auc",
+      "direction": "maximize",
+      "output": "probabilities",
+      "classes": [
+        "01",
+        "1"
+      ],
+      "positive_class": "01",
+      "prediction": {
+        "column": "prediction",
+        "probability_columns": [
+          "probability_0",
+          "probability_1"
+        ]
+      },
+      "scoring_version": "tabular-metrics-v1",
+      "protocol_sha256": "c87eeb41e79e4e3a41b869726c54341461f50fc2932cfa2d508c03e933caef5d"
+    },
+    "split_method": "stratified-hash-v1",
+    "target": "target",
+    "id_column": "id",
+    "seed": 42,
+    "files": [
+      {
+        "path": "train.csv",
+        "sha256": "7a9cfec719ad27e491e09aacecf8a12f455cd6c37b73670165808d5e37bea734",
+        "bytes": 587
+      },
+      {
+        "path": "test.csv",
+        "sha256": "bd145061e997ea4659c7fa55d6cc49b4c0c7201317d2eef9f6854a337db8c32b",
+        "bytes": 55
+      }
+    ],
+    "split": {
+      "train": [
+        "6",
+        "58",
+        "52",
+        "14",
+        "40",
+        "22",
+        "4",
+        "12",
+        "56",
+        "8",
+        "46",
+        "26",
+        "48",
+        "34",
+        "16",
+        "32",
+        "2",
+        "30",
+        "38",
+        "50",
+        "24",
+        "18",
+        "28",
+        "10",
+        "39",
+        "21",
+        "37",
+        "47",
+        "11",
+        "17",
+        "25",
+        "7",
+        "9",
+        "5",
+        "57",
+        "3",
+        "33",
+        "49",
+        "15",
+        "43",
+        "35",
+        "23",
+        "27",
+        "19",
+        "31",
+        "51",
+        "55",
+        "59"
+      ],
+      "validation": [
+        "54",
+        "20",
+        "44",
+        "36",
+        "42",
+        "0",
+        "1",
+        "45",
+        "53",
+        "41",
+        "13",
+        "29"
+      ],
+      "sha256": "2191d6a9e7362a86b5caf44b6b9331f1add6724f7b88115c509a50769859869e"
+    },
+    "features": [
+      "x",
+      "z"
+    ]
+  }
+}

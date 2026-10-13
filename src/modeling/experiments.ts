@@ -4,18 +4,23 @@ import { join, resolve } from "node:path";
 import { describeFile, verifyFiles } from "../evaluation/files";
 import type { ExecutionResult, SessionConfig } from "../execution/protocol";
 import { DockerSession } from "../execution/session";
+import { obj } from "../models/validation";
 import { exportNotebooks } from "../records/notebook";
 import { RunRecorder, readArtifact, sha256 } from "../records/store";
 import type { ModelingTask } from "./config";
 import {
   csv,
   type Dataset,
+  datasetProtocol,
   finite,
   parseCsv,
   rowIds,
   select,
   type Table,
 } from "./data";
+import { validatePredictions } from "./predictions";
+import { type Score, validateModelMetadata } from "./protocol";
+import { ScoringFailure, scoreTables } from "./scoring";
 
 export interface StageResult {
   run_id: string;
@@ -23,6 +28,7 @@ export interface StageResult {
   status: string;
   reason: string;
   output: { path: string; sha256: string; bytes: number } | null;
+  metadata?: { path: string; sha256: string; bytes: number };
   image: { id: string; platform: string };
   elapsed_ms: number;
 }
@@ -35,6 +41,7 @@ export interface StageOptions {
   code: string;
   data: Table;
   entrypoint?: string;
+  legacy?: boolean;
   model?: Buffer;
   signal: AbortSignal;
   remainingMs: number;
@@ -51,6 +58,9 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     "candidate.py": o.code,
     "data.csv": csv(o.data),
     "stage.json": JSON.stringify({
+      ...(!o.legacy
+        ? { schema_version: 2, protocol: datasetProtocol(o.dataset) }
+        : {}),
       target: o.dataset.target,
       id_column: o.dataset.id_column,
       seed: o.dataset.seed,
@@ -137,6 +147,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
   }
   if (o.signal.aborted) failure = "cancelled";
   let output: StageResult["output"] = null;
+  let metadata: StageResult["metadata"];
   if (!failure) {
     try {
       const name = o.stage === "fit" ? "model.joblib" : "predictions.csv";
@@ -145,6 +156,20 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
       );
       if (!artifact) throw new Error(`Missing complete ${name}`);
       const data = await readArtifact(recorder.directory, artifact);
+      if (o.stage === "fit" && !o.legacy) {
+        const a = recorder.manifest.artifacts.find(
+          (a) => a.source_path === "model-metadata.json" && a.complete,
+        );
+        if (!a) throw new Error("Missing model metadata");
+        const bytes = await readArtifact(recorder.directory, a),
+          m = obj(JSON.parse(bytes.toString()));
+        if (
+          validateModelMetadata(m, o.dataset.id_column).protocol_sha256 !==
+          datasetProtocol(o.dataset).protocol_sha256
+        )
+          throw new Error("Model metadata mismatch");
+        metadata = { path: a.path, sha256: a.sha256, bytes: bytes.length };
+      }
       output = {
         path: artifact.path,
         sha256: sha256(data),
@@ -162,6 +187,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     status: failure ? "failed" : "completed",
     reason: failure ?? "ok",
     output,
+    ...(metadata ? { metadata } : {}),
     image: recorder.manifest.image,
     elapsed_ms: performance.now() - began,
   };
@@ -224,7 +250,7 @@ export interface Experiment {
   code_sha256: string;
   status: "completed" | "failed";
   reason: string;
-  rmse: number | null;
+  score: Score | null;
   fit: StageResult | null;
   predict: StageResult | null;
   final: boolean;
@@ -243,6 +269,8 @@ export async function runExperiment(o: {
   id?: string;
   onStage?: (id: string) => Promise<void>;
   entrypoints?: { fit: string; predict: string };
+  legacy?: boolean;
+  score?: typeof scoreTables;
 }): Promise<Experiment> {
   const e: Experiment = {
     id: o.id ?? randomUUID(),
@@ -251,7 +279,7 @@ export async function runExperiment(o: {
     code_sha256: sha256(Buffer.from(o.code)),
     status: "failed",
     reason: "not_started",
-    rmse: null,
+    score: null,
     fit: null,
     predict: null,
     final: o.final ?? false,
@@ -265,6 +293,7 @@ export async function runExperiment(o: {
     code: o.code,
     signal: o.signal,
     onIntent: o.onStage,
+    legacy: o.legacy,
   };
   e.fit = await runStage({
     ...base,
@@ -304,23 +333,40 @@ export async function runExperiment(o: {
     const expected = o.final
       ? rowIds(o.test, o.dataset.id_column)
       : o.dataset.split.validation;
-    const values = predictionValues(
-      parseCsv((await stageBytes(e.predict)).toString()),
-      expected,
-      o.dataset.id_column,
-    );
+    const predictions = parseCsv((await stageBytes(e.predict)).toString());
+    const protocol = datasetProtocol(o.dataset);
+    validatePredictions(predictions, expected, o.dataset.id_column, protocol);
     if (!o.final) {
-      const target = select(o.train, expected, o.dataset.id_column);
-      const index = target.columns.indexOf(o.dataset.target);
-      e.rmse = rmse(
-        values,
-        target.rows.map((r) => finite(r[index] ?? "")),
+      const labels = select(
+        o.train,
+        expected,
+        o.dataset.id_column,
+        o.dataset.features,
       );
+      const scored = await (o.score ?? scoreTables)({
+        root: o.root,
+        protocol,
+        id: o.dataset.id_column,
+        target: o.dataset.target,
+        labels: {
+          columns: [o.dataset.id_column, o.dataset.target],
+          rows: labels.rows.map((r) => [
+            r[labels.columns.indexOf(o.dataset.id_column)] ?? "",
+            r[labels.columns.indexOf(o.dataset.target)] ?? "",
+          ]),
+        },
+        predictions,
+        signal: o.signal,
+        timeout_ms: o.remaining(),
+      });
+      if (!scored.score) throw new Error(scored.error ?? "Invalid score");
+      e.score = scored.score;
     }
     e.status = "completed";
     e.reason = "ok";
   } catch (error) {
     e.reason = String(error);
+    if (error instanceof ScoringFailure) e.reason = error.message;
   }
   return e;
 }

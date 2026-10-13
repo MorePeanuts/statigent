@@ -1,4 +1,5 @@
 import { integer, keys, obj, str, strings } from "../models/validation";
+import type { Score } from "./protocol";
 
 export interface EvidenceUse {
   analysis_id: string;
@@ -40,7 +41,8 @@ export interface CandidateExperiment {
   candidate_id: string;
   status: string;
   reason: string;
-  rmse: number | null;
+  rmse?: number | null;
+  score?: Score | null;
   final: boolean;
 }
 export function short(value: unknown, name: string): string {
@@ -251,7 +253,9 @@ export function candidateSummary(
                   ? `${experiment.reason.slice(0, 1024)} [truncated; see experiment record]`
                   : experiment.reason
                 : "Execution result not confirmed",
-              rmse: experiment?.rmse ?? null,
+              ...(experiment && "score" in experiment
+                ? { score: experiment.score }
+                : { rmse: experiment?.rmse ?? null }),
               final: experiment?.final ?? null,
             }
           : null,
