@@ -55,7 +55,7 @@ def main() -> int:
         # This shell only supplies explicit display(), never evaluates user code
         # and dies with this process. No notebook expression transformation occurs.
         InteractiveShell.instance().display_pub = Publisher()
-        emit("started")
+        emit("started", pid=os.getpid())
         runpy.run_path(script, run_name="__main__")
         emit("complete", status="ok")
         return 0

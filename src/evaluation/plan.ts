@@ -293,6 +293,8 @@ export async function buildPlan(
   profiles: unknown = [],
 ): Promise<Plan> {
   const config = validateConfig(value, registry, profiles);
+  for (const agent of config.agents)
+    await registry.getAgent(agent.adapter).preview?.(agent);
   const adapter = registry.getBenchmark(config.benchmark.adapter);
   const catalog = await adapter.catalog(config.benchmark.options);
   if (catalog.provenance.version !== config.benchmark.version)

@@ -838,8 +838,13 @@ export async function readManifest(directory: string): Promise<Manifest> {
       executionMetadata(object(value.config).backend).backend
     )
       throw Error("Backend/config mismatch");
-  } else if (value.execution !== undefined)
-    throw Error("Execution metadata requires v4");
+  } else {
+    if (value.execution !== undefined)
+      throw Error("Execution metadata requires v4");
+    const backend = object(value.config).backend;
+    if (backend !== undefined && backend !== "persistent-kernel")
+      throw Error("Legacy records require persistent backend");
+  }
   validateAgentFields(value);
   return value as unknown as Manifest;
 }

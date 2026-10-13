@@ -109,3 +109,62 @@ test("timeout cleanup, task-wide output budget and cross-session isolation", asy
   );
   expect(isolated.status).toBe("ok");
 }, 120000);
+
+test("script artifacts are bounded across attempts and reject symlinks", async () => {
+  const { session } = await create({
+    max_artifact_bytes: 2048,
+    max_artifacts_bytes: 3000,
+  });
+  expect(
+    (await session.execute("open('data.txt','w').write('x'*1500)")).status,
+  ).toBe("ok");
+  expect(
+    (await session.execute("print('same file collected again')")).status,
+  ).toBe("output_limit_exceeded");
+  const bad = await create();
+  const rejected = await bad.session.execute(
+    "import os\nos.symlink('/etc/passwd','escape.txt')",
+  );
+  expect(rejected.persistence_complete).toBe(false);
+  expect(rejected.status).not.toBe("ok");
+  const large = await create({ max_artifact_bytes: 1024 });
+  const exceeded = await large.session.execute(
+    "open('big.txt','w').write('x'*1025)",
+  );
+  expect(exceeded.status).toBe("output_limit_exceeded");
+}, 120000);
+test("task time budget spans multiple fresh processes and cleanup", async () => {
+  const { session } = await create({
+    task_timeout_ms: 4500,
+    cell_timeout_ms: 10000,
+  });
+  const first = await session.execute(
+    "import time,os\nprint(os.getpid())\ntime.sleep(.4)",
+  );
+  expect(first.status).toBe("ok");
+  expect(first.process?.pid).toBe(Number(first.preview.trim()));
+  const active = session.execute("import time\ntime.sleep(20)");
+  const queued = session.execute("print('never')");
+  expect((await active).status).toBe("timed_out");
+  expect((await queued).started).toBe(false);
+  await session.close();
+  expect(session.closeResult?.status).toBe("task_timeout");
+}, 120000);
+test("flood, early interpreter exit and ignored termination never become successful scripts", async () => {
+  const flood = await create({ max_output_bytes: 10000 });
+  expect(
+    (await flood.session.execute("while True: print('x'*1024)")).status,
+  ).toBe("output_limit_exceeded");
+  const early = await create();
+  const exited = await early.session.execute("import os\nos._exit(0)");
+  expect(exited.status).toBe("protocol_error");
+  expect(exited.session_available).toBe(false);
+  const ignore = await create({
+    cell_timeout_ms: 1500,
+    interrupt_grace_ms: 500,
+  });
+  const stopped = await ignore.session.execute(
+    "import signal,time\nsignal.signal(signal.SIGTERM,signal.SIG_IGN)\nwhile True: time.sleep(.1)",
+  );
+  expect(stopped.status).toBe("timed_out");
+}, 120000);

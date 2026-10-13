@@ -1,0 +1,32 @@
+{
+  "goal": "分析 synthetic.csv，计算各组均值（findings.value 保存 group_means）。先在一份完整脚本中将分组均值显式保存为 middle.csv，再在后续独立脚本用 pandas.read_csv 读取该文件，核对数值并绘制分组均值图。不得将这两步合并成一次执行。最后提交含图表的 Markdown 报告，说明小样本局限。双角色模式应通过两次依赖前序结果的委派完成这条文件链。",
+  "constraints": [
+    "每次执行使用新 Python 进程；允许工作目录文件复用，禁止后台进程跨轮存活。",
+    "本次是固定合成冒烟；必须显式使用 middle.csv，不扩展任务或自动追加整项运行。"
+  ],
+  "model_profile": "deepseek-flash",
+  "execution": {
+    "image": "statigent-runtime:fresh-script",
+    "input_root": "tests/fixtures",
+    "inputs": [
+      "synthetic.csv"
+    ],
+    "seed": 42
+  },
+  "budget": {
+    "model_attempts": 20,
+    "executions": 10,
+    "total_tokens": 400000,
+    "task_timeout_ms": 600000
+  },
+  "report": {
+    "image_types": [
+      "png",
+      "jpeg"
+    ],
+    "max_images": 3,
+    "max_image_bytes": 524288,
+    "max_report_bytes": 131072
+  },
+  "backend": "fresh-script"
+}

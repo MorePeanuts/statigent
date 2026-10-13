@@ -36,6 +36,7 @@ def parse_request(line, limit):
     x = json.loads(line)
     if (
         not isinstance(x, dict)
+        or type(x.get("protocol_version")) is not int
         or x.get("protocol_version") != 2
         or x.get("backend") != "fresh-script"
     ):
@@ -273,10 +274,6 @@ class Bridge:
                     start_new_session=True,
                     cwd=self.workspace,
                 )
-                process_identity = {
-                    "instance_id": str(uuid.uuid4()),
-                    "pid": self.process.pid,
-                }
                 os.close(fd_write)
                 fd_write = -1
                 reader = asyncio.StreamReader(limit=self.limits["max_frame_bytes"])
@@ -290,7 +287,7 @@ class Bridge:
                 fd_read = -1
 
                 async def events():
-                    nonlocal started_at, completion, error
+                    nonlocal started_at, completion, error, process_identity
                     while line := await reader.readline():
                         value = json.loads(line)
                         if not isinstance(value, dict):
@@ -299,6 +296,12 @@ class Bridge:
                         if completion is not None:
                             raise ProtocolError("runner output after completion")
                         if kind == "started" and started_at is None:
+                            if type(value.get("pid")) is not int or value["pid"] <= 0:
+                                raise ProtocolError("invalid runner PID")
+                            process_identity = {
+                                "instance_id": str(uuid.uuid4()),
+                                "pid": value["pid"],
+                            }
                             started_at = time.monotonic()
                             timing["process_startup_ms"] = (started_at - began) * 1000
                         elif kind == "display" and started_at is not None:
@@ -351,7 +354,7 @@ class Bridge:
                     if completion == "ok" and code == 0 and started_at is not None
                     else "protocol_error"
                 )
-                if completion is None and self.reason is None:
+                if status == "protocol_error":
                     complete = False
                     self.available = False
                 if error:

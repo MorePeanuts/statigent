@@ -134,3 +134,44 @@ test("script trajectory uses execution identities, preserves failures and scrubs
   expect(trajectory).toContain("[host]/secret");
   expect((trajectory.match(/## Step/g) ?? []).length).toBe(1);
 });
+
+test("script replay prerequisites reject changed initialization, image, inputs and source", async () => {
+  const { recorder, session } = await fixture();
+  await session.execute("print(42)");
+  await session.close();
+  await recorder.finish("completed");
+  await exportNotebooks(recorder.directory);
+  const m = await readManifest(recorder.directory);
+  const { verifyScriptExport } = await import("../../src/records/scripts");
+  const { checkReplayInputs } = await import("../../src/records/replay");
+  for (const modified of [
+    { ...m, image: { ...m.image, id: "wrong" } },
+    { ...m, seed: 99 },
+    {
+      ...m,
+      inputs: [
+        { path: "unexpected.csv", sha256: "0".repeat(64), size_bytes: 1 },
+      ],
+    },
+  ])
+    await expect(
+      verifyScriptExport(recorder.directory, modified),
+    ).rejects.toThrow("environment mismatch");
+  await expect(
+    checkReplayInputs(
+      {
+        ...m,
+        inputs: [
+          { path: "unexpected.csv", sha256: "0".repeat(64), size_bytes: 1 },
+        ],
+      },
+      recorder.directory,
+    ),
+  ).rejects.toThrow("Input list mismatch");
+  const source = m.export.paths.find((p) => p.endsWith(".py"));
+  if (!source) throw Error();
+  await writeFile(join(recorder.directory, source), "changed");
+  await expect(verifyScriptExport(recorder.directory, m)).rejects.toThrow(
+    "checksum",
+  );
+});

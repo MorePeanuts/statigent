@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { buildScripts } from "./script-journal";
 import {
@@ -70,9 +70,20 @@ export async function verifyScriptExport(
     throw Error("Script export missing");
   const path = manifest.export.paths.find((p) => p.endsWith("/manifest.json"));
   if (!path) throw Error("Script list missing");
-  const list = object(
-    JSON.parse(await readFile(join(directory, safeRelativePath(path)), "utf8")),
-  );
+  const readSource = async (path: string) => {
+    safeRelativePath(path);
+    if (!path.startsWith("scripts/")) throw Error("Script outside export area");
+    let cursor = directory;
+    for (const part of path.split("/")) {
+      cursor = join(cursor, part);
+      if ((await lstat(cursor)).isSymbolicLink())
+        throw Error("Symlink script export refused");
+    }
+    if (!(await lstat(cursor)).isFile())
+      throw Error("Script must be a regular file");
+    return readFile(cursor);
+  };
+  const list = object(JSON.parse((await readSource(path)).toString("utf8")));
   if (
     list.version !== 1 ||
     list.run_id !== manifest.run_id ||
@@ -102,7 +113,7 @@ export async function verifyScriptExport(
     const relative = safeRelativePath(String(script.path));
     if (!manifest.export.paths.includes(relative))
       throw Error("Unlisted script");
-    const bytes = await readFile(join(directory, relative));
+    const bytes = await readSource(relative);
     if (sha256(bytes) !== entry.sha256)
       throw Error("Script source checksum mismatch");
   }
