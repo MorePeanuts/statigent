@@ -1,6 +1,6 @@
 import { constants } from "node:fs";
 import { copyFile, mkdir, readFile, stat } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, sep } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import {
   type DatasetV3,
@@ -122,20 +122,25 @@ export async function nativeModelingPublication(i: Invocation) {
   return {
     root,
     dataset,
-    async publishPrediction() {
+    async publishPrediction(destinationRoot = root) {
       if (published || !dataset.prediction)
         throw new Error(
           "Prediction inputs may only be published once after freezing",
         );
       published = true;
+      if (
+        destinationRoot !== root &&
+        !resolve(destinationRoot).startsWith(`${resolve(i.run_root)}${sep}`)
+      )
+        throw new Error("Prediction publication outside owned run");
       const path = prefix
         ? `${prefix}/${dataset.prediction.path}`
         : dataset.prediction.path;
       const source = await regular(predictionRoot, path),
-        target = join(root, dataset.prediction.path);
+        target = join(destinationRoot, dataset.prediction.path);
       await mkdir(dirname(target), { recursive: true });
       await copyFile(source, target, constants.COPYFILE_EXCL);
-      await verifyFiles(root, [dataset.prediction]);
+      await verifyFiles(destinationRoot, [dataset.prediction]);
     },
   };
 }

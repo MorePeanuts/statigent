@@ -288,6 +288,19 @@ export async function runEvaluation(
           typeof pinned === "string"
             ? { ...config, options: { ...config.options, image: pinned } }
             : config;
+        if (task.output.kind === "predictions") {
+          budget.timeout_ms = Math.max(
+            0,
+            budget.timeout_ms - (Date.now() - started),
+          );
+          record.effective_budget = { ...budget };
+          record.budget_status = "reduced";
+          await store.unit(record);
+          await store.event("effective_parent_budget", {
+            unit_id: unit.id,
+            budget,
+          });
+        }
         submission = validateSubmission(
           await adapter.run(
             {
