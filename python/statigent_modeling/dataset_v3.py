@@ -6,8 +6,8 @@ import json
 from pathlib import Path
 
 from .data_v3 import ESCAPE_PREFIX, MISSING_TOKEN, split_rows, validate_features
+from .limits import validate_limits
 from .protocol_v2 import digest, fields, validate_protocol_v2
-from .scoring_v2 import validate_limits
 
 
 def read_json(path, limit):
@@ -267,5 +267,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("root", type=Path)
+    parser.add_argument("--limits", type=json.loads)
     args = parser.parse_args()
-    print(json.dumps(load_dataset(args.root), ensure_ascii=False))
+    print(json.dumps(load_dataset(args.root, args.limits), ensure_ascii=False))

@@ -9,8 +9,8 @@ from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 
+from .limits import validate_limits
 from .protocol_v2 import canonical_json, create_protocol_v2, digest, fields
-from .scoring_v2 import validate_limits
 
 MISSING_TOKEN = "__statigent_null_v1__"
 ESCAPE_PREFIX = "__statigent_escaped_v1__"

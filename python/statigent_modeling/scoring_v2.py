@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
+from .limits import validate_limits
 from .metrics_v2 import (
     InvalidPredictions,
     MetricUndefined,
@@ -25,22 +26,6 @@ PARTITIONS = (
     "confirmation-training",
     "test",
 )
-LIMIT_KEYS = (
-    "max_file_bytes",
-    "max_rows",
-    "max_columns",
-    "max_field_bytes",
-    "max_memory_bytes",
-)
-
-
-def validate_limits(value):
-    fields(value, LIMIT_KEYS)
-    if any(type(v) is not int or not 1 <= v <= 2**53 - 1 for v in value.values()):
-        raise ValueError("Invalid scoring limits")
-    return value
-
-
 def read_table(ref, limits):
     fields(ref, ["path", "sha256", "bytes"])
     path = Path(ref["path"])

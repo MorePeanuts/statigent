@@ -17,6 +17,8 @@
     "test:smoke:judge": "bun src/evaluation/judge-smoke.ts",
     "test:evaluation:upstream": "uv run pytest -m upstream tests/python",
     "test:modeling:upstream": "uv run pytest -m upstream tests/python/test_modeling_metrics_upstream.py tests/python/test_modeling_references.py tests/python/test_tabarena_metrics_upstream.py",
+    "test:modeling:data": "uv run --group data pytest tests/python/test_modeling_dataset_v3.py tests/python/test_modeling_prepare_ds.py tests/python/test_modeling_prepare_tab.py",
+    "test:modeling:scale": "uv run pytest -m scale tests/python/test_modeling_data_scale.py",
     "evaluate": "bun src/evaluation/cli.ts",
     "test:evaluation:integration": "bun test tests/integration/evaluation-agents.test.ts",
     "modeling": "bun src/modeling/cli.ts",

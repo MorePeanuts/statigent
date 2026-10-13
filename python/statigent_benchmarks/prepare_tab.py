@@ -6,6 +6,7 @@ from pathlib import Path
 
 from statigent_modeling.data_v3 import prepare_rows
 from statigent_modeling.dataset_v3 import load_dataset
+from statigent_modeling.limits import validate_limits
 from statigent_modeling.protocol_v2 import canonical_json
 
 from .audit import check_split, source_path
@@ -37,6 +38,7 @@ def tab_sources(root, task):
 
 
 def prepare_tab(root: Path, task: dict, output: Path, *, seed, limits):
+    limits = validate_limits(limits)
     if (
         task["benchmark"] != "tabarena-lite"
         or task["openml"]["repeat"] != 0
@@ -70,6 +72,7 @@ def prepare_tab(root: Path, task: dict, output: Path, *, seed, limits):
     if metric is None:
         raise ValueError("Unmapped TabArena task metric")
     training_classes = {}
+    class_bytes = 0
     actual_count = 0
     with decoded_source(raw, limits) as (columns, rows):
         if target not in [c["name"] for c in columns] or len(columns) - 1 != int(
@@ -89,6 +92,10 @@ def prepare_tab(root: Path, task: dict, output: Path, *, seed, limits):
                     and training_classes[str(value)] != value
                 ):
                     raise ValueError("Ambiguous target serialization")
+                if str(value) not in training_classes:
+                    class_bytes += 256 + len(str(value).encode()) * 8
+                if class_bytes > limits["max_memory_bytes"] // 8:
+                    raise ValueError("Training class memory limit exceeded")
                 training_classes[str(value)] = value
     if actual_count != count:
         raise ValueError("Raw row count mismatch")

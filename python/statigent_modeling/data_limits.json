@@ -1,0 +1,7 @@
+{
+  "max_file_bytes": 33554432,
+  "max_rows": 1000000,
+  "max_columns": 4096,
+  "max_field_bytes": 65536,
+  "max_memory_bytes": 536870912
+}

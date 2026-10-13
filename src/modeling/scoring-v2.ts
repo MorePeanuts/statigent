@@ -2,36 +2,19 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { command, commandEnvironment } from "../evaluation/process";
-import { integer, keys, obj, str } from "../models/validation";
+import { keys, obj, str } from "../models/validation";
+import { type DataLimits, parseDataLimits } from "./data-limits";
+
+export {
+  type DataLimits,
+  DEFAULT_DATA_LIMITS,
+  parseDataLimits,
+} from "./data-limits";
+
 import { type ProtocolV2, validateProtocolV2 } from "./protocol-v2";
 import { type EvaluationPartition, validateScoreV2 } from "./score-v2";
 import { ScoringFailure } from "./scoring";
 
-export type DataLimits = {
-  max_file_bytes: number;
-  max_rows: number;
-  max_columns: number;
-  max_field_bytes: number;
-  max_memory_bytes: number;
-};
-export const DEFAULT_DATA_LIMITS: DataLimits = {
-  max_file_bytes: 32 * 1024 * 1024,
-  max_rows: 1000000,
-  max_columns: 4096,
-  max_field_bytes: 65536,
-  max_memory_bytes: 512 * 1024 * 1024,
-};
-export function parseDataLimits(value: unknown): DataLimits {
-  const raw = obj(value);
-  keys(raw, Object.keys(DEFAULT_DATA_LIMITS));
-  return {
-    max_file_bytes: integer(raw.max_file_bytes, "file limit"),
-    max_rows: integer(raw.max_rows, "row limit"),
-    max_columns: integer(raw.max_columns, "column limit"),
-    max_field_bytes: integer(raw.max_field_bytes, "field limit"),
-    max_memory_bytes: integer(raw.max_memory_bytes, "memory limit"),
-  };
-}
 export type ScoringFileV2 = { path: string; bytes: number; sha256: string };
 export async function scoreFilesV2(o: {
   root: string;

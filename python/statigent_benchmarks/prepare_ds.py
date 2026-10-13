@@ -7,6 +7,7 @@ from pathlib import Path
 
 from statigent_modeling.data_v3 import prepare_rows
 from statigent_modeling.dataset_v3 import load_dataset
+from statigent_modeling.limits import validate_limits
 from statigent_modeling.protocol_v2 import canonical_json
 
 from .audit import source_path
@@ -64,6 +65,7 @@ def positive_class(classes):
 
 
 def prepare_ds(root: Path, task: dict, output: Path, *, seed: int, limits: dict):
+    limits = validate_limits(limits)
     if task["benchmark"] != "dsbench-modeling" or task["task_id"] not in MAPPINGS:
         raise ValueError("Unknown DSBench task")
     mapping, declared = MAPPINGS[task["task_id"]], task["protocol"]
@@ -80,6 +82,7 @@ def prepare_ds(root: Path, task: dict, output: Path, *, seed: int, limits: dict)
     observed = {name: False for name in feature_names}
     classes = {name: set() for name in target_names}
     train_count = 0
+    class_bytes = 0
     for _, row in csv_rows(paths["training"], limits):
         train_count += 1
         for name in feature_names:
@@ -92,6 +95,10 @@ def prepare_ds(root: Path, task: dict, output: Path, *, seed: int, limits: dict)
                 numeric[name] = False
         if declared["kind"] != "regression":
             for name in target_names:
+                if row[name] not in classes[name]:
+                    class_bytes += 128 + len(row[name].encode()) * 4
+                if class_bytes > limits["max_memory_bytes"] // 8:
+                    raise ValueError("Training class memory limit exceeded")
                 classes[name].add(row[name])
     if not train_count:
         raise ValueError("Empty DSBench training")
