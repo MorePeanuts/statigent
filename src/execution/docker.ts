@@ -10,6 +10,7 @@ import {
   rm,
 } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { validateBackend } from "./backend";
 import { jsonLines } from "./frames";
 import {
   type BridgeMessage,
@@ -38,6 +39,33 @@ export interface SessionTransport {
   send(message: HostRequest): Promise<void>;
   stop(): Promise<void>;
   readonly containerName: string;
+}
+export function backendLaunch(backend: unknown) {
+  return validateBackend(backend) === "fresh-script"
+    ? {
+        options: ["--entrypoint", "uv"],
+        command: [
+          "run",
+          "--offline",
+          "--no-sync",
+          "--project",
+          "/opt/runtime",
+          "python",
+          "-m",
+          "statigent_runtime.script_bridge",
+        ],
+      }
+    : { options: [], command: [] };
+}
+export function validateImageBackend(backend: unknown, labels: unknown) {
+  if (
+    validateBackend(backend) === "fresh-script" &&
+    (!labels ||
+      typeof labels !== "object" ||
+      !("org.statigent.fresh-script" in labels) ||
+      labels["org.statigent.fresh-script"] !== "2")
+  )
+    throw new ProtocolError("Image does not support fresh-script protocol v2");
 }
 export async function dockerCommand(
   args: string[],
@@ -115,7 +143,14 @@ export async function stageInputs(config: SessionConfig, sessionId: string) {
     throw error;
   }
 }
-export class DockerTransport implements SessionTransport {
+export class FramedDockerTransport<Message, Request extends { type: string }> {
+  constructor(
+    private readonly parse: (
+      line: string,
+      maxBytes: number,
+      sessionId: string,
+    ) => Message,
+  ) {}
   containerName = "";
   private process?: ReturnType<typeof Bun.spawn>;
   private staging?: string;
@@ -126,7 +161,7 @@ export class DockerTransport implements SessionTransport {
   async start(
     config: SessionConfig,
     sessionId: string,
-    onMessage: (message: BridgeMessage) => Promise<void>,
+    onMessage: (message: Message) => Promise<void>,
     onFailure: (error: Error) => void,
   ): Promise<TransportMetadata> {
     this.config = config;
@@ -156,6 +191,7 @@ export class DockerTransport implements SessionTransport {
     const containerPlatform = `${inspected.Os}/${inspected.Architecture}`;
     if (config.platform && config.platform !== containerPlatform)
       throw new Error(`image platform mismatch: ${containerPlatform}`);
+    validateImageBackend(config.backend, inspected.Config?.Labels);
     const staged = await stageInputs(config, sessionId);
     this.staging = staged.staging;
     if (this.stopped) {
@@ -220,7 +256,8 @@ export class DockerTransport implements SessionTransport {
     }))
       args.push("--env", `${key}=${value}`);
     if (config.platform) args.push("--platform", config.platform);
-    args.push(inspected.Id);
+    const launch = backendLaunch(config.backend);
+    args.push(...launch.options, inspected.Id, ...launch.command);
     this.process = Bun.spawn(["docker", ...args], {
       stdin: "pipe",
       stdout: "pipe",
@@ -280,21 +317,21 @@ export class DockerTransport implements SessionTransport {
     stream: ReadableStream<Uint8Array>,
     config: SessionConfig,
     sessionId: string,
-    onMessage: (message: BridgeMessage) => Promise<void>,
+    onMessage: (message: Message) => Promise<void>,
   ) {
     for await (const frame of jsonLines(
       streamChunks(stream),
       config.limits.max_frame_bytes,
     ))
       await onMessage(
-        parseBridgeMessage(
+        this.parse(
           frame.toString("utf8"),
           config.limits.max_frame_bytes,
           sessionId,
         ),
       );
   }
-  async send(message: HostRequest) {
+  async send(message: Request) {
     if (
       this.stopped ||
       !this.process ||
@@ -340,6 +377,15 @@ export class DockerTransport implements SessionTransport {
     if (failure) throw failure;
   }
 }
+export class DockerTransport
+  extends FramedDockerTransport<BridgeMessage, HostRequest>
+  implements SessionTransport
+{
+  constructor() {
+    super(parseBridgeMessage);
+  }
+}
+
 export async function cleanupRun(runId: string) {
   if (!/^[-a-zA-Z0-9_.]{1,128}$/.test(runId))
     throw new ProtocolError("invalid run_id");

@@ -111,3 +111,11 @@ bun run runtime cleanup <run_id>
 入口只匹配 `org.statigent.runtime=1` 和指定 `org.statigent.run` 标签，不清理无关容器。清理错误明确返回，需要保留诊断。
 
 后续大量实验再把同一控制程序、Dockerfile 和锁文件部署到 Linux 服务器，按服务器架构重新构建镜像、设置路径与资源，重跑集成及小规模冒烟测试，再验证并发和长时间稳定性。这不属于首个变更验收条件。正式性能比较固定服务器硬件、平台和预算；本地验收记录不会被当成服务器运行结果。
+
+## 新脚本后端
+
+可信调用方使用 `createSession({...config, backend: "fresh-script"}, observer)`。不指定 backend 时仍使用持久内核。脚本后端与 Notebook 共用镜像、输入暂存和 Docker 隔离参数；运行每份完整脚本时固定 `/workspace`，通过 `uv run --offline --no-sync` 新建 Python 进程。每次重置 Python/NumPy 种子及环境，保留任务工作目录。智能体须在每轮重新 import、定义变量，或显式读取前轮保存的文件。失败可能留下部分文件，程序不回滚。
+
+普通脚本末尾表达式没有 Notebook 自动展示语义：文本使用 `print()`，表格使用 `IPython.display.display(df)`，图片使用 `savefig()` 保存 PNG/JPEG，或显式 `display(Image(...))` 输出 PNG。标准输出与协议管道分离，打印 JSON 不会变成控制指令；交互输入收到 EOF。输出和产物额度在任务内累计，新进程不重置额度。
+
+容器 supervisor 按顺序执行，结束或中断后终止并回收进程组及脱离进程组的后代，再清点 `/proc`。无法确认清理时丢弃整个会话；不支持跨轮后台作业。只有文件能显式延续，Python 变量、导入、环境修改不能延续。初始化、执行、收集和清理均计入任务总墙钟与单次执行超时。脚本 wire v2 字段及未知结果语义见 [runtime-protocol.md](runtime-protocol.md)。

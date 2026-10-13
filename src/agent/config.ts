@@ -1,5 +1,6 @@
 import { lstat } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { type ExecutionBackend, validateBackend } from "../execution/backend";
 import {
   DEFAULT_LIMITS,
   type SessionConfig,
@@ -30,6 +31,7 @@ export function validateOrganization(value: unknown): Organization {
   return value;
 }
 export interface AgentTask {
+  backend: ExecutionBackend;
   organization: Organization;
   goal: string;
   constraints: string[];
@@ -49,6 +51,7 @@ export function validateTask(value: unknown): AgentTask {
     "budget",
     "report",
     "organization",
+    "backend",
   ]);
   const b = obj(x.budget ?? {});
   keys(b, Object.keys(DEFAULT_BUDGET));
@@ -62,7 +65,20 @@ export function validateTask(value: unknown): AgentTask {
         : 1,
     );
   const e = obj(x.execution);
-  keys(e, ["image", "input_root", "inputs", "seed", "limits", "platform"]);
+  keys(e, [
+    "image",
+    "input_root",
+    "inputs",
+    "seed",
+    "limits",
+    "platform",
+    "backend",
+  ]);
+  const backend = validateBackend(
+    x.backend === undefined ? e.backend : x.backend,
+  );
+  if (e.backend !== undefined && validateBackend(e.backend) !== backend)
+    throw new Error("Conflicting execution backend");
   const limits = {
     ...DEFAULT_LIMITS,
     ...obj(e.limits ?? {}),
@@ -70,6 +86,7 @@ export function validateTask(value: unknown): AgentTask {
   };
   const config = validateConfig({
     ...e,
+    backend,
     run_id: "preflight",
     staging_root: "preflight",
     limits,
@@ -90,6 +107,7 @@ export function validateTask(value: unknown): AgentTask {
       config.limits.max_artifact_bytes,
     );
   return {
+    backend,
     organization,
     goal: str(x.goal, "goal"),
     constraints: strings(x.constraints ?? [], "constraints"),

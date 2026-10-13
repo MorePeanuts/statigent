@@ -55,3 +55,26 @@ stdout 每行一个 UTF-8 JSON 对象，没有 TTY；stderr 仅用于桥接诊�
 | `close` | 运行终态、清理耗时、总墙钟耗时及清理错误 |
 
 `onArtifact` 保存文件并返回宿主生成的 ID、路径、SHA-256、字节数、MIME 及完整度。长文本、HTML 和 PNG 输出也经过此接口。未配置产物接收器时不会生成虚假的持久引用；正式运行 CLI 使用宿主记录器。容器原路径只作为任务内相对名称，绝不能直接用于宿主任意读写。
+
+## 独立脚本协议 v2
+
+`SessionConfig.backend` 只接受 `persistent-kernel`（缺省）与 `fresh-script`。可信工厂 `createSession` 选择固定容器入口；模型仍只提交 `execute_python({code})`，不能指定命令。旧内核入口及 wire v1 不变。脚本要求镜像标签 `org.statigent.fresh-script=2`，不匹配在模型请求之前失败。
+
+脚本 JSONL 使用 `protocol_version=2, backend="fresh-script"`，共同身份为 `request_id/session_id`；执行、输出、结果再携带 `execution_id/execution_seq`，没有 `cell_id/kernel_epoch/kernel_available`。`init(seed,limits)` 返回 `ready(initialization="script-init-v1",dependencies,session_available)`；`execute(code,execution_id,execution_seq)` 每次启动独立进程。控制消息只有 `interrupt(target_request_id,reason)`、`collect`、`shutdown`，没有重启或恢复内存接口。
+
+结果字段语义：
+
+| 字段 | 含义 |
+| --- | --- |
+| `execution_id` | 宿主分配的尝试身份，未派发也存在 |
+| `execution_seq` | 实际派发顺序，排队取消不分配 |
+| `started` | 已确认完成初始化并进入脚本；通道丢失不能据此推断没有文件副作用 |
+| `process` | `{instance_id,pid}`，未创建或无法确认时为 null；PID 仅在容器内有意义 |
+| `session_available` | 已确认后代清理完成、允许下一轮；进程正常退出不等于会话丢失 |
+| `memory_preserved/files_policy` | 恒为 `false/task-workspace`；历史提示仍保留，文件允许显式读写 |
+| `persistence_complete` | 本轮输出与文件是否完整保存，未知或超限为 false |
+| `partial_state_possible` | 已派发的失败尝试可能留下部分文件，不承诺回滚 |
+| `timing` | `process_startup_ms/execution_ms/collection_ms/cleanup_ms`；未观察到的阶段为 null，不伪造为 0 |
+| `elapsed_ms/waiting_ms` | 整个尝试与派发前等待；阶段时间已经包含在尝试耗时中，不再次相加 |
+
+终态为 `ok/error/timed_out/cancelled/session_lost/output_limit_exceeded/protocol_error`。成功要求已开始、有进程身份、会话可用且保存完整。未开始取消返回 `started=false,process=null`；已派发但结果未知保留身份和已存产物，禁止自动重试。身份错位、未知版本、错误字段类型及迟到输出导致会话失败并清理容器。
