@@ -310,3 +310,18 @@ bun run evaluate plan --config configs/evaluations/dacomp-da-backend-ablation-de
 统一轨迹仍为 trajectory-v1，新增 fresh-script-single-v1 / fresh-script-planner-executor-v1 映射。脚本按实际顺序呈现 execution_id、代码、输出和失败，双角色标记执行者与子任务；不伪造 Notebook/kernel 字段。报告与图片交付不变，原生代码导出按后端选择。长轨迹仍明确标记截断，宿主路径与密钥在交付前脱敏。
 
 两组都保留模型历史，脚本组允许显式工作文件复用；不会强迫每轮从原始数据重算。脚本的 import/初始化、收集和清理开销计入任务总墙钟，阶段小计不再次累计。普通脚本无末尾表达式自动展示，使用 print、显式 display 和保存图片；这是实验解释中需披露的输出语法差异。开发任务已暴露，不能冒充冻结的正式评测；四组配置准备和预览不代表真实模型冒烟或研究预实验已完成。本次没有执行真实付费批次，下一步需先明确任务范围及预算。
+
+## 第二章建模基准真实冒烟
+
+独立入口使用版本化 scope，明确任务、方法、模型、种子和资源版本；默认运行只显示帮助，`--preflight` 只读取并验证准备数据和计划，即使环境有 API 密钥也不派发模型、不训练、不启动容器。实际执行仍会检查凭据和镜像；预检通过不等于这些外部资源可用。
+
+```bash
+bun run test:smoke:modeling-benchmarks
+bun run test:smoke:modeling-benchmarks --preflight --scope configs/evaluations/modeling-smoke/scope.json
+# 仅在实际付费范围得到确认后运行：
+bun run test:smoke:modeling-benchmarks --run --allow-model-calls --scope configs/evaluations/modeling-smoke/scope.json --out runs/modeling-live-smoke-v1
+```
+
+预置 scope 为 Titanic 与 TabArena 363612，各执行 no_eda/collaborative，deepseek-flash、seed=17、一次重复，共 4 单元。单元阈值为 12 次模型调用、160,000 token、600 秒；两批总阈值 48 次、640,000 token、2,400 秒，子 EDA 包含在父账中；1 CPU、2 GiB，拟合 60 秒、预测 30 秒，终局预留 150 秒。token 阈值是派发门槛，最后一次响应结算可能超过阈值，完整输出上限预留仍适用。关闭重复终局确认用于小型接口验收，不能把本配置当作四方法正式实验。独立预测复现另外计时，新增模型调用和拟合均为零。
+
+输出目录必须全新。入口保存 scope/计划哈希、代码快照、全部单元状态、配对报告、原生轨迹摘要与独立预测复现；首次失败保留，不自动重跑或换题。未知用量、未确认清理/记录或批次异常会阻止后续批次派发。验收通过要求完成交付与评分、复现通过、用量已知，并实际观察到 collaborative 的 EDA 返回后继续训练；no_eda 必须没有分析调用。只有声明协同而没有实际覆盖时，结果为 incomplete，CLI 退出非零。实际付费验收状态以 [验收记录](modeling-benchmarks-validation.md) 为准。

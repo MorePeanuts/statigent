@@ -70,3 +70,7 @@ TS 只传文件描述符；Python 流式准备和验证特征表。排名评分�
 固定官方可选环境对 363612、363621、363685 三个真实 r0f0 任务分别调用实际 `StatigentSystem`，每项 fit 一次、predict 两次：全部通过来源成员、DataFrame 索引、原始类别次序、冻结模型哈希、重复预测一致性及同预测官方指标比较。合计 6 次底层拟合和 6 次预测，零 LLM。复现入口为 `PYTHONPATH=python uv run --project environments/tabarena --frozen --offline python -m statigent_benchmarks.tabarena_real_system --prepared PREPARED_DIRECTORY --config CONFIG --runs NEW_ROOT`；配置与详细记录保存在 `runs/tabarena-system-real-v1`。
 
 可提交的逐项指标、代码/环境、成本、哈希和本地记录索引见 [真实数据验收汇总](../benchmarks/metadata/modeling-real-validation.json)。数据准备成本见独立准备汇总；已准备数据被显式复用，不能计作免费准备。上述任务均已开发暴露，只证明软件链路，不构成智能体效果或正式论文成绩。真实 LLM 验收尚未执行，正式任务资格、时间语义、来源重叠及正式预算仍需另行冻结。
+
+## 真实模型入口
+
+独立 `test:smoke:modeling-benchmarks` 的默认帮助、只读预检、显式授权门槛、范围漂移拒绝、失败保留和已有目录拒绝通过；与 schema 5 轨迹回归合计 4 例、22 项断言，退出 0。固定四单元 scope 的真实数据预检退出 0，48 次调用、640,000 token、2,400 秒为两批合计阈值，预检实际模型/训练调用均为零。预检不检查外部凭据或启动镜像。配置位于 `configs/evaluations/modeling-smoke/`，执行方式与限制见 [评测说明](evaluation.md)。实际付费验收尚未运行，等待任务 9.2 要求的范围确认；入口完成不等于真实验收通过。

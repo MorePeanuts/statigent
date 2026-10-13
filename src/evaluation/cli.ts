@@ -16,7 +16,7 @@ import {
 } from "./report";
 import { runEvaluation } from "./run";
 
-export const HELP = `bun run evaluate plan|run --config FILE [--models FILE] [--root RUN_ROOT]\nbun run evaluate inspect|cleanup EVALUATION_ID [--root RUN_ROOT]\nbun run evaluate score EVALUATION_ID [--root RUN_ROOT] [--allow-model-calls --judge-budget FILE]\nbun run evaluate compare EVALUATION_ID --score-id SCORE_ID [--root RUN_ROOT]\nbun run evaluate audit [--data-root benchmarks] [--catalog FILE] [--output NEW_FILE]\n${PREPARE_HELP}`;
+export const HELP = `bun run evaluate plan|run --config FILE [--models FILE] [--root RUN_ROOT]\nbun run evaluate inspect|cleanup EVALUATION_ID [--root RUN_ROOT]\nbun run evaluate score EVALUATION_ID [--root RUN_ROOT] [--allow-model-calls --judge-budget FILE]\nbun run evaluate compare EVALUATION_ID --score-id SCORE_ID [--root RUN_ROOT]\nbun run evaluate audit [--data-root benchmarks] [--catalog FILE] [--output NEW_FILE]\nbun run evaluate audit-prepare --config FILE --out NEW_DIRECTORY\n${PREPARE_HELP}`;
 export function parseArguments(args: string[]) {
   if (!args.length || args[0] === "--help") return null;
   const [operation, ...rest] = args;

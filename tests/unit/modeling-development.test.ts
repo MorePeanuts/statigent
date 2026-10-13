@@ -22,6 +22,9 @@ test("natural development has no prescribed analysis sequence and separates deli
     attachment_warnings: [],
   });
   expect(
+    workflowTrajectory({ ...manifest, schema_version: 5 }, [], []),
+  ).toEqual(workflowTrajectory(manifest, [], []));
+  expect(
     workflowTrajectory(
       {
         ...manifest,

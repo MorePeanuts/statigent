@@ -7,8 +7,8 @@ export function workflowTrajectory(
   events: Record<string, unknown>[],
   payloads: Record<string, unknown>[],
 ) {
-  if (manifest.schema_version !== 4)
-    throw new Error("Expected workflow record v4");
+  if (manifest.schema_version !== 4 && manifest.schema_version !== 5)
+    throw new Error("Expected workflow record v4/v5");
   const search = parseSearchEnd(manifest.search_end),
     delivery = parseDeliveryState(manifest.delivery);
   const decisions = events.filter((e) => e.type === "action_accepted");
