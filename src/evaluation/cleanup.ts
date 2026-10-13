@@ -14,7 +14,7 @@ export async function cleanupEvaluation(
   const header = obj(await readJson(directory, "manifest.json"));
   const evaluationId = id(header.evaluation_id);
   if (
-    (header.schema_version !== 1 && header.schema_version !== 2) ||
+    ![1, 2, 3].some((version) => version === header.schema_version) ||
     basename(resolve(directory)) !== evaluationId
   )
     throw new Error("Evaluation ownership mismatch");

@@ -12,7 +12,13 @@ import { join, relative, resolve } from "node:path";
 import { imageInfo } from "../models/images";
 import { imageReferences, resolveImageReference } from "../records/markdown";
 import { safeRelativePath } from "../records/store";
-import { type Deliverable, LIMITS, type OutputContract } from "./contracts";
+import {
+  type Deliverable,
+  deliveryLimits,
+  LIMITS,
+  type OutputContract,
+  validateDeliverables,
+} from "./contracts";
 
 const MAX_DEPTH = 4;
 async function hashFile(
@@ -61,16 +67,19 @@ async function walk(
   return files.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 }
 /** Hashes the unit's deliverables and makes them read-only. Throws on any violation. */
-export async function freezeDeliverables(root: string): Promise<Deliverable[]> {
+export async function freezeDeliverables(
+  root: string,
+  output?: OutputContract,
+): Promise<Deliverable[]> {
   const files = await walk(root);
   const result: Deliverable[] = [];
   let total = 0;
   for (const f of files) {
     const { sha256, bytes } = await hashFile(f.absolute);
-    if (bytes > LIMITS.deliverable)
+    if (bytes > deliveryLimits(output).file)
       throw new Error(`Deliverable too large: ${f.path}`);
     total += bytes;
-    if (total > LIMITS.deliverables)
+    if (total > deliveryLimits(output).total)
       throw new Error("Deliverables exceed total limit");
     await chmod(f.absolute, 0o444);
     result.push({ path: f.path, bytes, sha256 });
@@ -89,7 +98,9 @@ export async function quarantineDeliverables(root: string): Promise<void> {
 export async function verifyDeliverables(
   root: string,
   expected: Deliverable[],
+  output?: OutputContract,
 ): Promise<void> {
+  validateDeliverables(expected, output);
   const files = (await walk(root)).map((f) => f.path);
   const listed = expected.map((d) => d.path).sort();
   if (files.length !== listed.length || files.some((p, i) => p !== listed[i]))

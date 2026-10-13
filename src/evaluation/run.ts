@@ -59,7 +59,7 @@ async function finalizeDeliverables(
   try {
     if (submission.deliverables.length)
       throw new Error("Adapters must not list deliverables themselves");
-    submission.deliverables = await freezeDeliverables(root);
+    submission.deliverables = await freezeDeliverables(root, task.output);
     if (
       submission.trajectory !== null &&
       !submission.deliverables.some((d) => d.path === submission.trajectory)
@@ -286,7 +286,7 @@ export async function runEvaluation(
         submission = validateSubmission(
           await adapter.run(
             {
-              schema_version: 2,
+              schema_version: task.output.kind === "predictions" ? 3 : 2,
               evaluation_id: store.manifest.evaluation_id,
               unit_id: unit.id,
               task,
@@ -301,7 +301,7 @@ export async function runEvaluation(
             unitSignal,
           ),
           unit.id,
-          { frozen: false },
+          { frozen: false, output: task.output },
         );
         if (
           cap.model === "none"
@@ -316,7 +316,7 @@ export async function runEvaluation(
           throw new Error("Unverified measurement provenance");
       } catch (error) {
         submission = {
-          schema_version: 2,
+          schema_version: task.output.kind === "predictions" ? 3 : 2,
           unit_id: unit.id,
           status: signal.aborted
             ? options.signal?.aborted
@@ -369,7 +369,7 @@ export async function runEvaluation(
         stop = submission.cleanup_error
           ? "cleanup_failed"
           : "agent_record_failed";
-      record.submission_sha256 = await store.freeze(submission);
+      record.submission_sha256 = await store.freeze(submission, task.output);
       await store.unit(record);
       await store.event("unit_finished", {
         unit_id: unit.id,

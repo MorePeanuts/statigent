@@ -13,6 +13,7 @@ import {
   id,
   LIMITS,
   literal,
+  type OutputContract,
   type Score,
   type Submission,
   validateBudget,
@@ -48,7 +49,7 @@ export interface UnitRecord {
   score: Score | null;
 }
 export interface Manifest {
-  schema_version: 2;
+  schema_version: 2 | 3;
   evaluation_id: string;
   created_at: string;
   completed_at: string | null;
@@ -150,7 +151,7 @@ export class EvaluationStore {
     await mkdir(join(directory, "scores"));
     await mkdir(join(directory, "native"));
     const manifest: Manifest = {
-      schema_version: 2,
+      schema_version: 3,
       evaluation_id: evaluationId,
       created_at: new Date().toISOString(),
       completed_at: null,
@@ -213,10 +214,14 @@ export class EvaluationStore {
     await this.json(`units/${id(record.unit.id)}/record.json`, record);
   }
   /** Writes the submission once; its deliverables were already frozen in `units/<id>/deliverables`. */
-  async freeze(submission: Submission): Promise<string> {
+  async freeze(
+    submission: Submission,
+    output?: OutputContract,
+  ): Promise<string> {
     const s = validateSubmission(
       sanitize(submission, this.secrets),
       submission.unit_id,
+      { output },
     );
     const directory = join(this.directory, "units", s.unit_id);
     const file = await open(join(directory, "submission.json"), "wx", 0o400);
@@ -252,6 +257,7 @@ export interface StoredSubmission {
 export async function readSubmission(
   directory: string,
   record: UnitRecord,
+  taskOutput?: OutputContract,
 ): Promise<StoredSubmission | null> {
   if (record.submission_sha256 === null) return null;
   const path = `units/${id(record.unit.id)}/submission.json`,
@@ -259,7 +265,24 @@ export async function readSubmission(
   if (description.sha256 !== record.submission_sha256)
     throw new Error("Submission integrity mismatch");
   const raw = await readJson(directory, path);
-  const s = validateSubmission(raw, record.unit.id);
+  let output = taskOutput;
+  if (contractVersion(raw) === 3 && !output) {
+    const plan = obj(await readJson(directory, "plan.json"));
+    const manifest = obj(await readJson(directory, "manifest.json"));
+    const { sha256: checksum, ...body } = plan;
+    if (
+      checksum !== manifest.plan_sha256 ||
+      checksum !== sha256(Buffer.from(JSON.stringify(body))) ||
+      !Array.isArray(plan.tasks)
+    )
+      throw new Error("Prediction plan integrity mismatch");
+    const task = plan.tasks
+      .map(validateTask)
+      .find((t) => t.id === record.unit.task_id);
+    if (!task) throw new Error("Missing prediction task");
+    output = task.output;
+  }
+  const s = validateSubmission(raw, record.unit.id, { output });
   if (contractVersion(raw) === 1) {
     for (const d of s.deliverables) {
       const f = await describeFile(
@@ -279,7 +302,7 @@ export async function readSubmission(
     };
   }
   const root = join(resolve(directory), "units", s.unit_id, "deliverables");
-  await verifyDeliverables(root, s.deliverables);
+  await verifyDeliverables(root, s.deliverables, output);
   return { submission: s, deliverables_root: root };
 }
 export async function inspect(
@@ -297,7 +320,7 @@ export async function inspect(
       "environment",
       "preflight",
     ],
-    [1, 2],
+    [1, 2, 3],
   );
   if (typeof m.plan_sha256 !== "string") throw new Error("Invalid manifest");
   const rawPlan = await readJson(directory, "plan.json");
@@ -311,10 +334,10 @@ export async function inspect(
         "source_root",
         "provenance",
         "adapters",
-        ...(planVersion === 2 ? ["groups"] : []),
+        ...(planVersion !== 1 ? ["groups"] : []),
         "sha256",
       ],
-      [1, 2],
+      [1, 2, 3],
     ),
     { sha256: checksum, ...body } = planValue;
   if (
@@ -362,7 +385,7 @@ export async function inspect(
     Object.entries(obj(planValue.groups ?? {})).map(([k, v]) => [id(k), id(v)]),
   );
   const plan: Plan = {
-    schema_version: 2,
+    schema_version: planVersion === 3 ? 3 : 2,
     config,
     tasks,
     units,
@@ -373,7 +396,7 @@ export async function inspect(
     sha256: hash(checksum),
   };
   const manifest: Manifest = {
-    schema_version: 2,
+    schema_version: contractVersion(m) === 3 ? 3 : 2,
     evaluation_id: id(m.evaluation_id),
     created_at: str(m.created_at, "created_at"),
     completed_at:
@@ -483,7 +506,11 @@ export async function inspect(
         : !["pending", "not_scored"].includes(record.scoring_status)
     )
       throw new Error("Inconsistent scoring status");
-    await readSubmission(directory, record);
+    await readSubmission(
+      directory,
+      record,
+      tasks.find((t) => t.id === u.task_id)?.output,
+    );
     records.push({
       ...record,
       execution_status:
