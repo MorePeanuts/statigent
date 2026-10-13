@@ -12,7 +12,9 @@ import {
   freezeDeliverables,
   verifyDeliverables,
 } from "../../src/evaluation/deliverables";
+import { describeFile } from "../../src/evaluation/files";
 import { buildPlan } from "../../src/evaluation/plan";
+import { readPredictionManifest } from "../../src/evaluation/predictions";
 import { DEFAULT_DATA_LIMITS } from "../../src/modeling/data-limits";
 import { validateProtocolV2 } from "../../src/modeling/protocol-v2";
 import fixtures from "../fixtures/modeling-protocol-v2.json";
@@ -196,6 +198,82 @@ test("prediction file limits exceed report limits only under the frozen v3 contr
         predictionTask.output,
       ),
     ).rejects.toThrow("integrity");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("prediction manifest binds files, seed and large model identity without opening model storage", async () => {
+  const root = await realpath(
+    await mkdtemp(join(tmpdir(), "prediction-manifest-")),
+  );
+  try {
+    const task = { ...predictionTask, version: "a".repeat(64) };
+    await writeFile(
+      join(root, "predictions.csv"),
+      "sample_id,target\ntest:0,1\n",
+    );
+    await writeFile(join(root, "export.csv"), "Id,target\n0,1\n");
+    const manifest = {
+      schema_version: 1,
+      kind: "modeling-predictions",
+      task_id: task.id,
+      task_version: task.version,
+      protocol,
+      seed: 17,
+      dataset_sha256: task.version,
+      expected_features: {
+        path: "final-prediction/test.csv",
+        sha256: "a".repeat(64),
+        bytes: 10,
+      },
+      predictions: await describeFile(root, "predictions.csv"),
+      export: await describeFile(root, "export.csv"),
+      native_model: {
+        run_id: "absent-native",
+        frozen_id: "b".repeat(64),
+        sha256: "c".repeat(64),
+        bytes: 8 * 1024 ** 3,
+        delivery_sha256: "d".repeat(64),
+      },
+      execution_preparation: null,
+      workflow: {
+        search_end: { kind: "autonomous", reason: "finished" },
+        delivery_status: "completed",
+        prediction_status: "completed",
+        reproduction_status: "not_run",
+        search_best_experiment_id: "best",
+        selected_experiment_id: "selected",
+        confirmation: null,
+        usage: {},
+        wall_ms: 10,
+      },
+    };
+    const save = (value: unknown) =>
+      writeFile(join(root, "prediction-manifest.json"), JSON.stringify(value));
+    await save(manifest);
+    expect(
+      (await readPredictionManifest(root, task, { seed: 17 })).native_model
+        .bytes,
+    ).toBe(8 * 1024 ** 3);
+    await expect(
+      readPredictionManifest(root, task, { seed: 42 }),
+    ).rejects.toThrow("seed");
+    for (const patch of [
+      { predictions: { ...manifest.predictions, sha256: "f".repeat(64) } },
+      { predictions: { ...manifest.predictions, path: "other.csv" } },
+      { predictions: { ...manifest.predictions, bytes: 33 * 1024 ** 2 } },
+      {
+        native_model: {
+          ...manifest.native_model,
+          path: "/native/model.joblib",
+        },
+      },
+      { export: null },
+    ]) {
+      await save({ ...manifest, ...patch });
+      await expect(readPredictionManifest(root, task)).rejects.toThrow();
+    }
   } finally {
     await rm(root, { recursive: true, force: true });
   }

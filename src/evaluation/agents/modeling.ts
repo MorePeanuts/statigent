@@ -15,11 +15,13 @@ import {
   deterministicPipeline,
 } from "../../modeling/deterministic";
 import { prepareExecutionSeed } from "../../modeling/execution-seed";
+import { canonicalJson } from "../../modeling/protocol-v2";
 import { inspectModeling } from "../../modeling/records";
 import { type ModelingOptions, runModeling } from "../../modeling/run";
 import { stage4Image } from "../../modeling/run-v2";
 import { resolveCredential } from "../../models/config";
 import { keys, obj } from "../../models/validation";
+import { sha256 } from "../../records/store";
 import { nativeModelingPublication } from "../benchmarks/modeling/publication";
 import {
   type AgentAdapter,
@@ -172,6 +174,7 @@ export async function deliverModelingPredictions(
       frozen_id: source.frozen.frozen_id,
       sha256: source.frozen.model.sha256,
       bytes: source.frozen.model.bytes,
+      delivery_sha256: sha256(Buffer.from(canonicalJson(source.delivery))),
     },
     execution_preparation:
       actual.dataset_sha256 === i.task.version

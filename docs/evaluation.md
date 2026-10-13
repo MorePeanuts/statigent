@@ -9,7 +9,7 @@
 | statigent-eda | text、report | unified（trajectory-v1） | 现有 model profile | Python 执行，非模型采样保证 | Docker | 请求日志与模型返回用量 |
 | container-command | text、report | none | 无模型，首版不联网 | 由协议提供 | Docker | 无模型调用时不适用 |
 
-模型预算包含尝试次数、token 停止阈值；响应可能使 token 超出阈值，阈值不是账单硬上限。相同智能体可以注册多个配置分别比较。当前分析适配器接受 text/report；预测任务的适配接线进度见建模验收记录。
+模型预算包含尝试次数、token 停止阈值；响应可能使 token 超出阈值，阈值不是账单硬上限。相同智能体可以注册多个配置分别比较。分析适配器接受 text/report；`statigent-modeling` 与 `deterministic-modeling` 接受 predictions。
 
 ## v3 预测契约
 
@@ -17,13 +17,13 @@
 
 预测文件使用冻结任务声明的限额；普通报告继续使用原文件限额。读取和重评分从原冻结计划取得限额，不能靠提交文件自行放大允许值。v3 指标上下界可以为 null，例如 RMSE 无上界、R² 无下界，指标值仍必须有限；旧 v1/v2 分数继续要求有限上下界。
 
-调度器将五份白名单分别发布到单元的 `input/<phase>/`，优先使用写时复制并验证哈希；私有评分文件不发布。原生建模先以 training 访问模式核验训练分区，保留原清单身份且不打开测试特征或 evaluator。冻结模型后才把 prediction 阶段的指定特征追加到本次运行的预测输入，不能覆盖已有文件或再次发布。Docker 实际挂载仍限定到当前训练、EDA 或预测阶段需要的子集，阶段目录名本身不充当隔离措施。该链路已有实际 Docker 探测；统一建模 agent adapter 仍在接入。
+调度器将五份白名单分别发布到单元的 `input/<phase>/`，优先使用写时复制并验证哈希；私有评分文件不发布。原生建模先以 training 访问模式核验训练分区，保留原清单身份且不打开测试特征或 evaluator。冻结模型后才把 prediction 阶段的指定特征追加到本次运行的预测输入，不能覆盖已有文件或再次发布。Docker 实际挂载仍限定到当前训练、EDA 或预测阶段需要的子集，阶段目录名本身不充当隔离措施。两套基准的合成确定性批次已实际通过训练、预测、冻结及移走原生模型后的重评。
 
 ## 建模基准的显式数据准备
 
 `evaluate prepare` 独立于 plan/run。它不读取模型配置、不调用 LLM、不训练或下载；
-默认计划入口不会隐式生成准备目录。建模训练与评测 v3 的接线仍在实施中，
-准备通过只能作为数据层证据，进度见 [建模基准验收记录](modeling-benchmarks-validation.md)。
+默认计划入口不会隐式生成准备目录。`dsbench-modeling`、`tabarena-lite` 只接受已准备目录，
+准备通过只能作为数据层证据，实际训练范围见 [建模基准验收记录](modeling-benchmarks-validation.md)。
 
 ```bash
 uv sync --frozen --group data

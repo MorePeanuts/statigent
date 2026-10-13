@@ -21,6 +21,7 @@ import {
 import { publishTaskInputs } from "./files";
 import { JudgeBudgetExhausted, JudgeSession } from "./judge";
 import type { Plan, Registry } from "./plan";
+import { readPredictionManifest } from "./predictions";
 import { EvaluationStore, inspect, type UnitRecord } from "./records";
 
 export function effectiveBudget(
@@ -55,11 +56,33 @@ async function finalizeDeliverables(
   submission: Submission,
   task: PublicTask,
   root: string,
+  prepare?: () => Promise<void>,
+  seed?: number,
 ): Promise<void> {
   try {
     if (submission.deliverables.length)
       throw new Error("Adapters must not list deliverables themselves");
+    if (submission.status === "completed") {
+      await prepare?.();
+      if (task.output.kind === "predictions")
+        await readPredictionManifest(root, task, { seed });
+    }
     submission.deliverables = await freezeDeliverables(root, task.output);
+    if (
+      task.output.kind === "predictions" &&
+      submission.status === "completed"
+    ) {
+      const expected = [
+        task.output.prediction_file,
+        task.output.export_file,
+        task.output.manifest_file,
+      ].sort();
+      if (
+        JSON.stringify(submission.deliverables.map((f) => f.path).sort()) !==
+        JSON.stringify(expected)
+      )
+        throw new Error("Unexpected prediction deliverable set");
+    }
     if (
       submission.trajectory !== null &&
       !submission.deliverables.some((d) => d.path === submission.trajectory)
@@ -128,6 +151,7 @@ export async function scoreUnit(
         scoring: plan.config.scoring?.options ?? {},
         judge,
         signal,
+        seed: record.unit.seed,
       }),
       record.unit.id,
     );
@@ -365,7 +389,23 @@ export async function runEvaluation(
         submission.status = options.signal?.aborted ? "cancelled" : "timed_out";
         submission.answer_text = "";
       }
-      await finalizeDeliverables(submission, task, deliverablesRoot);
+      const prepareDelivery = benchmark.prepareDelivery;
+      await finalizeDeliverables(
+        submission,
+        task,
+        deliverablesRoot,
+        prepareDelivery
+          ? () =>
+              prepareDelivery(plan.config.benchmark.options, task, submission, {
+                deliverables_root: deliverablesRoot,
+                scoring: plan.config.scoring?.options ?? {},
+                judge: null,
+                seed: unit.seed,
+                signal,
+              })
+          : undefined,
+        unit.seed,
+      );
       record.elapsed_ms = Date.now() - started;
       record.ended_at = new Date().toISOString();
       record.execution_status = submission.status;

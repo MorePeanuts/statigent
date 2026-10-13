@@ -824,8 +824,16 @@ export interface ScoringContext {
   scoring: Record<string, unknown>;
   judge: JudgeClient | null;
   signal?: AbortSignal;
+  seed?: number;
 }
 export interface BenchmarkAdapter {
+  /** 受信基准导出在冻结前完成；此回调不会把私有数据提供给智能体。 */
+  prepareDelivery?(
+    options: Record<string, unknown>,
+    task: PublicTask,
+    submission: Submission,
+    context: ScoringContext,
+  ): Promise<void>;
   compatibility?(scores: Score[]): Promise<Record<string, unknown>>;
   id: string;
   version: string;
