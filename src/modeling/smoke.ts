@@ -1,15 +1,17 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import config from "../../configs/modeling/dsbench-s3e9.json";
 import selection from "../../configs/modeling/dsbench-s3e9-selection.json";
 import { regular, verifyFiles } from "../evaluation/files";
 import { selectProfile } from "../models/config";
 import { obj, str } from "../models/validation";
-import { readManifest, writeJson } from "../records/store";
+import { readManifest } from "../records/store";
+import { requestedBudget, validateAllocation } from "./budget";
 import { loadDataset } from "./data";
 import { reproduce, scoreDelivery } from "./delivery";
 import { inspectModeling } from "./records";
 import { runModeling } from "./run";
+/** inspectModeling validates the journal first; this adds functional smoke criteria. */
 export function auditCollaboration(
   manifest: Record<string, unknown>,
   events: Record<string, unknown>[],
@@ -21,6 +23,8 @@ export function auditCollaboration(
     !Array.isArray(manifest.analyses)
   )
     throw new Error("Modeling did not complete");
+  if (obj(manifest.candidate_control).version !== 1)
+    throw new Error("Missing candidate control");
   const experiments = manifest.experiments.map(obj),
     analyses = manifest.analyses.map(obj);
   const searches = experiments.filter(
@@ -31,58 +35,161 @@ export function auditCollaboration(
     !experiments.some((e) => e.final === true && e.status === "completed")
   )
     throw new Error("Missing successful initial/follow-up/final training");
-  const analysis = analyses.find(
+  const accepted = events.flatMap((event, index) =>
+    event.type === "action_accepted" ? [{ event, index }] : [],
+  );
+  if (accepted.length !== actions.length)
+    throw new Error("Missing accepted action payload");
+  const decisions = accepted.map(({ event, index }, i) => {
+    if (event.protocol_version !== 2)
+      throw new Error("Missing current action protocol");
+    return { event, index, action: obj(actions[i]), intent: obj(event.intent) };
+  });
+  const qualifyingAnalyses = analyses.filter(
     (a) =>
       a.status === "completed" &&
       searches.some((e) => e.id === a.source_experiment),
   );
-  if (!analysis) throw new Error("No completed model-directed EDA");
-  const linked = actions.find(
-    (a) =>
-      a.kind === "train" &&
-      Array.isArray(a.evidence) &&
-      a.evidence.some((v) => obj(v).analysis_id === analysis.id) &&
-      searches.some(
-        (e) =>
-          e.candidate_id === a.candidate_id &&
-          e.id !== analysis.source_experiment,
-      ),
-  );
-  if (
-    !linked ||
-    !searches.some(
-      (e) =>
-        e.candidate_id === linked.candidate_id &&
-        e.id !== analysis.source_experiment,
+  if (!qualifyingAnalyses.length)
+    throw new Error("No completed model-directed EDA");
+  for (const analysis of qualifyingAnalyses) {
+    const allocationDecision = decisions.find(
+      (d) =>
+        d.action.kind === "analyze" &&
+        d.intent.analysis_id === analysis.id &&
+        d.intent.child_id === analysis.run_id,
+    );
+    if (!allocationDecision) throw new Error("Missing EDA allocation decision");
+    const allocation = validateAllocation(allocationDecision.intent.allocation);
+    if (
+      JSON.stringify(
+        requestedBudget(allocationDecision.action.requested_budget),
+      ) !== JSON.stringify(allocation.requested)
     )
-  )
-    throw new Error("No evidence-linked follow-up training");
-  const initial = events.findIndex(
-    (e) =>
-      e.type === "experiment_result" &&
-      e.experiment_id === analysis.source_experiment &&
-      e.status === "completed",
+      throw new Error("EDA requested budget mismatch");
+    str(allocationDecision.action.budget_reason, "EDA budget reason");
+    const childBudget = obj(analysis.effective_budget);
+    for (const [key, value] of Object.entries(allocation.effective))
+      if (childBudget[key] !== value)
+        throw new Error("EDA effective budget was not applied");
+    if (analysis.dispatch !== "started")
+      throw new Error("EDA was not dispatched");
+    const initial = events.findIndex(
+      (e) =>
+        e.type === "experiment_result" &&
+        e.experiment_id === analysis.source_experiment &&
+        e.status === "completed",
+    );
+    const returned = events.findIndex(
+      (e) =>
+        e.type === "child_result" &&
+        e.analysis_id === analysis.id &&
+        e.status === "completed",
+    );
+    if (
+      initial < 0 ||
+      allocationDecision.index <= initial ||
+      returned <= allocationDecision.index
+    )
+      throw new Error("Invalid collaboration order");
+    const usesAnalysis = (evidence: unknown) =>
+      Array.isArray(evidence) &&
+      evidence.some((raw) => obj(raw).analysis_id === analysis.id);
+    for (const experiment of searches.filter(
+      (e) => e.id !== analysis.source_experiment,
+    )) {
+      const follow = decisions.find(
+        (d) =>
+          d.action.kind === "train" && d.intent.experiment_id === experiment.id,
+      );
+      if (
+        !follow ||
+        follow.index <= returned ||
+        follow.action.candidate_id !== experiment.candidate_id
+      )
+        continue;
+      const intentPosition = events.findIndex(
+        (e, i) =>
+          i > follow.index &&
+          e.type === "experiment_intent" &&
+          e.experiment_id === experiment.id &&
+          e.candidate_id === experiment.candidate_id &&
+          e.final === false,
+      );
+      const resultPosition = events.findIndex(
+        (e, i) =>
+          i > intentPosition &&
+          e.type === "experiment_result" &&
+          e.experiment_id === experiment.id &&
+          e.status === "completed",
+      );
+      if (intentPosition < 0 || resultPosition < 0) continue;
+      let current = follow;
+      const visited = new Set<unknown>();
+      let linked = false;
+      while (!visited.has(current.intent.experiment_id)) {
+        visited.add(current.intent.experiment_id);
+        if (usesAnalysis(current.action.evidence)) {
+          linked = true;
+          break;
+        }
+        const repaired = experiments.find(
+          (e) =>
+            e.id === current.action.repair_of_experiment &&
+            e.candidate_id === experiment.candidate_id &&
+            e.final === false &&
+            e.status === "failed",
+        );
+        const prior =
+          repaired &&
+          decisions.find(
+            (d) =>
+              d.intent.experiment_id === repaired.id &&
+              d.action.kind === "train" &&
+              d.action.candidate_id === experiment.candidate_id &&
+              d.index > returned &&
+              d.index < current.index,
+          );
+        if (!prior) break;
+        current = prior;
+      }
+      if (!linked) continue;
+      const updated = decisions.some(
+        (d) =>
+          d.index > returned &&
+          d.index <= follow.index &&
+          Array.isArray(d.action.candidate_updates) &&
+          d.action.candidate_updates.some((raw) => {
+            const update = obj(raw);
+            return (
+              (update.op === "create" || update.op === "update") &&
+              usesAnalysis(update.evidence)
+            );
+          }),
+      );
+      if (!updated) continue;
+      return {
+        analysis_id: analysis.id,
+        source_experiment: analysis.source_experiment,
+        followup_candidate: experiment.candidate_id,
+        followup_experiment: experiment.id,
+        evidence_experiment: current.intent.experiment_id,
+        allocation,
+        actual_cost: analysis.cost,
+      };
+    }
+  }
+  throw new Error(
+    "No evidence-linked follow-up training with accepted candidate updates and experiment order",
   );
-  const returned = events.findIndex(
-    (e) =>
-      e.type === "child_result" &&
-      e.analysis_id === analysis.id &&
-      e.status === "completed",
+}
+/** A later offline review must use a different report; never rewrite the first result. */
+export async function writeSmokeReport(directory: string, report: unknown) {
+  await writeFile(
+    join(directory, "smoke-result.json"),
+    `${JSON.stringify(report, null, 2)}\n`,
+    { flag: "wx" },
   );
-  const follow = events.findIndex(
-    (e, index) =>
-      index > returned &&
-      e.type === "experiment_intent" &&
-      e.candidate_id === linked.candidate_id &&
-      e.final === false,
-  );
-  if (initial < 0 || returned <= initial || follow <= returned)
-    throw new Error("Invalid collaboration order");
-  return {
-    analysis_id: analysis.id,
-    source_experiment: analysis.source_experiment,
-    followup_candidate: linked.candidate_id,
-  };
 }
 export async function validateSmoke(directory: string) {
   const view = await inspectModeling(directory),
@@ -103,7 +210,9 @@ export async function validateSmoke(directory: string) {
   const evidence = auditCollaboration(view.manifest, view.events, actions);
   const analyses = view.manifest.analyses;
   if (!Array.isArray(analyses)) throw new Error("Missing analyses");
-  for (const raw of analyses) {
+  for (const raw of analyses.filter(
+    (a) => obj(a).id === evidence.analysis_id,
+  )) {
     const a = obj(raw),
       native = await readManifest(str(a.directory, "EDA directory"));
     if (
@@ -163,11 +272,11 @@ export async function modelingSmoke() {
       reproduction: replay.directory,
       score,
     };
-    await writeJson(join(result.directory, "smoke-result.json"), report);
+    await writeSmokeReport(result.directory, report);
     return report;
   } catch (error) {
     const report = { status: "failed", run: result, reason: String(error) };
-    await writeJson(join(result.directory, "smoke-result.json"), report);
+    await writeSmokeReport(result.directory, report);
     return report;
   }
 }

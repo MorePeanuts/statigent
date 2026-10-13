@@ -5,9 +5,10 @@ import { DEFAULT_BUDGET } from "../agent/config";
 import { type RunOptions, runAgent } from "../agent/run";
 import type { ModelClient } from "../models/client";
 import type { ModelProfile } from "../models/config";
+import { emptyLedger } from "../records/agent-metadata";
 import { readManifest } from "../records/store";
 import type { EvidenceUse, ModelingAction } from "./actions";
-import { ledger } from "./budget";
+import { type EffectiveBudget, ledger, roleLedgers } from "./budget";
 import type { ModelingTask } from "./config";
 import { csv, type Dataset, parseCsv, select, type Table } from "./data";
 import { type Experiment, predictionValues, stageBytes } from "./experiments";
@@ -20,7 +21,10 @@ export interface AnalysisRecord {
   reason: string;
   analysis: Analysis | null;
   run_id: string;
-  directory: string;
+  directory: string | null;
+  dispatch?: "started" | "not_started";
+  effective_budget?: EffectiveBudget;
+  deadline?: number;
   cost: ReturnType<typeof ledger>;
   role_usage: {
     planner: ReturnType<typeof ledger>;
@@ -93,34 +97,81 @@ export async function analyze(o: {
   train: Table;
   experiment: Experiment | null;
   request: Extract<ModelingAction, { kind: "analyze" }>;
+  resolvedCandidates: {
+    id: string;
+    hypothesis: string;
+    change: string;
+    priority: number;
+  }[];
   profile: ModelProfile;
   signal: AbortSignal;
-  budget: {
-    model_attempts: number;
-    total_tokens: number;
-    executions: number;
-    task_timeout_ms: number;
-  };
+  budget: EffectiveBudget;
+  /** Monotonic deadline fixed when the parent accepts this delegation. */
+  deadline: number;
+  now?: () => number;
+  prepare?: typeof prepareAnalysisInput;
   client?: ModelClient;
   run?: typeof runAgent;
 }): Promise<AnalysisRecord> {
-  const input = join(o.root, `${o.id}-input`),
-    inputs = await prepareAnalysisInput(
+  const now = o.now ?? (() => performance.now());
+  if (!Number.isFinite(o.deadline)) throw new Error("Invalid EDA deadline");
+  const notStarted = (status: string, reason: string): AnalysisRecord => ({
+    id: o.id,
+    source_experiment: o.request.source_experiment,
+    dataset_hash: o.dataset.files[0]?.sha256 ?? "",
+    split_hash: o.dataset.split.sha256,
+    status,
+    reason,
+    analysis: null,
+    run_id: o.runId,
+    directory: null,
+    dispatch: "not_started",
+    effective_budget: o.budget,
+    deadline: o.deadline,
+    cost: emptyLedger(),
+    role_usage: { planner: emptyLedger(), executor: emptyLedger() },
+    executions: 0,
+    request: o.request,
+  });
+  const stopped = () =>
+    o.signal.aborted
+      ? notStarted("cancelled", "user_cancelled_before_eda_dispatch")
+      : now() >= o.deadline
+        ? notStarted("timed_out", "eda_deadline_before_dispatch")
+        : null;
+  const initialStop = stopped();
+  if (initialStop) return initialStop;
+  const input = join(o.root, `${o.id}-input`);
+  let inputs: string[];
+  try {
+    inputs = await (o.prepare ?? prepareAnalysisInput)(
       input,
       o.dataset,
       o.train,
       o.experiment,
     );
+  } catch (error) {
+    return (
+      stopped() ??
+      notStarted(
+        "failed",
+        `eda_input_preparation: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    );
+  }
+  const preparedStop = stopped();
+  if (preparedStop) return preparedStop;
   const b = o.task.budget;
   const options: RunOptions = {
     runId: o.runId,
+    deadline: o.deadline,
     runRoot: join(o.root, "eda"),
     profile: o.profile,
     signal: o.signal,
     client: o.client,
     task: {
       organization: "planner-executor",
-      goal: JSON.stringify(o.request),
+      goal: JSON.stringify({ ...o.request, candidates: o.resolvedCandidates }),
       constraints: [
         "Only investigate the current candidate uncertainty. This is internal validation, never external test evaluation.",
         "Return concise evidence and methods. Do not write a Markdown report or train candidate models. source.json identifies data, target and prediction provenance.",
@@ -157,6 +208,19 @@ export async function analyze(o: {
     !m.collaboration
   )
     throw new Error("Unconfirmed EDA record");
+  const cost = ledger(m.tokens),
+    roles = roleLedgers(cost, {
+      planner: m.collaboration.roles.planner.tokens,
+      executor: m.collaboration.roles.executor.tokens,
+    });
+  for (const dimension of [
+    "model_attempts",
+    "total_tokens",
+    "executions",
+    "task_timeout_ms",
+  ] as const)
+    if (m.agent.budget[dimension] !== o.budget[dimension])
+      throw new Error("Unconfirmed EDA budget configuration");
   return {
     id: o.id,
     source_experiment: o.request.source_experiment,
@@ -167,11 +231,11 @@ export async function analyze(o: {
     analysis: result.status === "completed" ? result.analysis : null,
     run_id: result.run_id,
     directory: result.directory,
-    cost: ledger(m.tokens),
-    role_usage: {
-      planner: ledger(m.collaboration.roles.planner.tokens),
-      executor: ledger(m.collaboration.roles.executor.tokens),
-    },
+    dispatch: "started",
+    effective_budget: o.budget,
+    deadline: o.deadline,
+    cost,
+    role_usage: roles,
     executions: m.agent.executions,
     request: o.request,
   };

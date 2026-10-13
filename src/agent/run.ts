@@ -71,6 +71,8 @@ export interface AgentSession {
 export interface RunOptions {
   /** Trusted caller identity, recorded before nested work is dispatched. */
   runId?: string;
+  /** Parent monotonic deadline includes preparation before this child starts. */
+  deadline?: number;
   task: unknown;
   profile: ModelProfile;
   runRoot: string;
@@ -102,7 +104,12 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
   )
     throw new Error("Client/profile mismatch");
   await preflightInputs(task);
-  const deadline = began + task.budget.task_timeout_ms;
+  if (options.deadline !== undefined && !Number.isFinite(options.deadline))
+    throw new Error("Invalid parent deadline");
+  const deadline = Math.min(
+    began + task.budget.task_timeout_ms,
+    options.deadline ?? Infinity,
+  );
   const controller = new AbortController();
   const signal = options.signal
     ? AbortSignal.any([options.signal, controller.signal])
