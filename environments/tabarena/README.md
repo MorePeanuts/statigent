@@ -34,4 +34,4 @@ system fit 的计时包含训练输入准备、内部搜索/EDA、确认、最�
 
 `cancel()` 将取消传给当前 Bun 父进程；`cleanup()` 等待本实例活动进程退出、禁止继续预测，保留模型、输入和记录供复核，不删除其他运行或执行全局 Docker 清理。超时先发取消信号，30 秒退出宽限后仍未退出才终止本进程组，并标明未确认清理。桥接请求/响应限 1 MiB、stderr 限 64 KiB，环境按运行时白名单及所选 profile 的凭据名注入；凭据不写入请求或训练容器。
 
-当前验收：固定安装和探针通过；真实官方 system 合成三类任务及资源拒绝共 7 项通过（117.38 秒、零 LLM）。r0f0 小型真实任务的官方调用尚未执行。完整模型和真实运行输出保留在忽略 Git 的运行目录，分层状态见 [验收记录](../../docs/modeling-benchmarks-validation.md)。
+当前验收：固定安装和探针通过；真实官方 system 合成三类任务及资源拒绝共 7 项通过（117.38 秒、零 LLM）；363612、363621、363685 三个真实 r0f0 任务均通过实际 fit、两次独立 predict、成员/类别检查和同预测官方评分差分。真实任务入口为 `PYTHONPATH=python uv run --project environments/tabarena --frozen --offline python -m statigent_benchmarks.tabarena_real_system --prepared PREPARED_DIRECTORY --config CONFIG --runs NEW_ROOT`，只接受 deterministic 配置，不自动重试。完整模型和真实运行输出保留在忽略 Git 的运行目录，分层状态与逐项索引见 [验收记录](../../docs/modeling-benchmarks-validation.md)。
