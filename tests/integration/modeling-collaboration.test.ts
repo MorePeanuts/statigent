@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, stat } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import source from "../../configs/modeling/synthetic-prepare.json";
 import { prepareDataset } from "../../src/modeling/data";
@@ -218,8 +218,15 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
     join(String(analyses[1]?.directory), "analysis.json"),
   ]) {
     const original = await Bun.file(path).text();
-    await Bun.write(path, "{}");
-    await expect(inspectModeling(result.directory)).rejects.toThrow();
-    await Bun.write(path, original);
+    const mode = (await stat(path)).mode & 0o777;
+    // Simulate host-side tampering of the otherwise read-only test artifact.
+    await chmod(path, 0o600);
+    try {
+      await Bun.write(path, "{}");
+      await expect(inspectModeling(result.directory)).rejects.toThrow();
+    } finally {
+      await Bun.write(path, original);
+      await chmod(path, mode);
+    }
   }
 }, 240000);

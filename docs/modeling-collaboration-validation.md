@@ -35,7 +35,7 @@ bun run modeling develop --task binary --method collaborative --seed 42 --resour
 | binary | 48 | defa0d359d25ca63c56c0816348fd170c791422444d27b2a036efaa4f2dd6f07 |
 | multiclass | 48 | 82f43e287c01aee8eb41f602e8e06dea805a37f9f6a72d33de4dfad8dee7d1b3 |
 
-源码提交及最终自审结果在相关检查结束后补记。真实调用必须使用冻结提交与上述配置；存在未提交源码变化时需记录差异。
+源码与预检冻结于 `b775afce8890ecf80ba4c48084ab8dd3761faf8c`，当时工作区干净。freeze.json 同时记录模型配置和资源文件哈希。运行镜像为 `sha256:fc2347116d2ac2459584d81ab50f73ae3aa2917281c8b5618fcc4a3049618d0d`（linux/arm64）。后续验收记录提交只改文档/任务状态；真实运行仍记录实际 commit/dirty，若源码变化必须重新冻结。
 
 ## 检查记录
 
@@ -44,10 +44,20 @@ bun run modeling develop --task binary --method collaborative --seed 42 --resour
 - 保存的协议 3 合成轨迹验收：2 项通过，允许早期失败及分数下降，缺少探索、修订、后续训练、跨轮上下文或确认则拒绝。
 - 完整 Docker 集成：以冻结代码重新执行中。首次发现旧测试仍断言 requested 额度、旧输入文件集合/schema，已按新协议更新。分类专项和初始 EDA Docker 复测 6 项全部通过。首次长进程与编辑并行导致其缓存旧模块而读取新断言，已停止该进程并确认无容器遗留；保留首次日志，不将其计为通过。
 - 历史 schema 1 回归、schema 2 回归/二分类/多分类：inspect、独立预测复现和 score 全部通过，所有源文件前后逐项哈希一致。详细记录在 runs/modeling-legacy-review/review.json（本地产物）；合成旧回归私有目录已清理，使用相同 2 行合成标签另存独立目录核验。
-- 严格 OpenSpec 校验及最终 diff 自审：待完成。
+- `openspec validate refactor-modeling-analysis-collaboration --strict` 已通过；diff 自审结论见下方，真实运行后再补齐最终状态。
 
 ## 真实运行记录模板
 
 每项记录 `task/method/seed/resource_version`、源码 commit/dirty、run_id、镜像、预检哈希、终止状态与诊断；列出认识修订、两轮 EDA 原始来源/上下文哈希、训练/确认/交付身份及独立预测复现目录。保留实际模型尝试/token/EDA/拟合次数、父墙钟及各阶段耗时。
 
 分别报告 search_best（搜索验证成绩）、selected（实际交付来源）、confirmation（额外两份划分成绩/均值/极差）；外层测试分数仅在独立评分后填写。确认失败为 incomplete，不填部分均值，不以搜索最佳替代确认结果。初次 smoke-result.json 不覆盖，失败不自动加跑；离线修验收器须另存复核报告。
+
+## 自审范围
+
+本次 diff 限于建模控制、跨阶段评价/交付、相关测试、配置和研究实现状态文档；未修改基准原始数据、私有评分材料或 Python runner 的任务语义。没有新增依赖、模型库或自动 Benchmark 批处理。认识的 supported 等状态仍是模型判断，排名仅来自宿主验证的成绩；确认数据没有外层测试标签，终局以后不调用模型。两份确认划分可能受前期分析影响，报告保留训练内自适应偏差说明。
+
+版本分派分别维护：新任务 2、动作 3、提示词 modeling-v4、分配 2、父记录/交付 3；旧任务配置与动作只用于冻结历史读取。已核对失败确认不交付、未知执行不伪造结果、未使用 EDA 不虚扣、所选模型可与搜索最佳不同，以及 source/context/交付元信息篡改的拒绝路径。
+
+工作分支为 feat/modeling-analysis-collaboration。本地提交不代表已经推送、合并、同步主规格或归档；这些后续动作未执行。正式效果实验与完整基准接入未执行。操作者已选择仅 s3e9 一次，使用 collaborative、seed=42、deepseek-flash、collaboration-dev-v1；等待完整集成核验结束后执行，不自动重跑。任务 7.4 暂保持未完成。
+
+完整协同篡改测试初次试写只读 context.json 触发 EACCES。测试现先临时调整自建夹具权限，再验证篡改拒绝，并在 finally 恢复字节和权限；应用实现未变。专项重跑 1 项通过（含两次 EDA、确认、复现和两类篡改）。Python 集成 6 项通过。
