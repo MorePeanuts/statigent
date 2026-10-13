@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { type NotebookOutput, validateOutput } from "../execution/protocol";
+import { exportScripts } from "./scripts";
 import {
   type Manifest,
   object,
@@ -258,6 +259,13 @@ export async function exportNotebooks(
   finalizingStatus?: string,
 ): Promise<Manifest["export"]> {
   const manifest = await readManifest(directory);
+  if (manifest.execution?.backend === "fresh-script")
+    return exportScripts(directory, finalizingStatus);
+  const outputDirectory =
+    manifest.schema_version === 4
+      ? directory
+      : `${directory}-export-${randomUUID()}`;
+  await mkdir(join(outputDirectory, "notebooks"), { recursive: true });
   try {
     const view = buildNotebooks(await readEvents(directory), manifest.run_id);
     if (!manifest.ended_at && !finalizingStatus)
@@ -271,27 +279,23 @@ export async function exportNotebooks(
       const path = `notebooks/epoch-${epoch}-${randomUUID()}.ipynb`;
       // Each export is a separate view; no previous artifact is overwritten.
       await writeFile(
-        join(directory, path),
+        join(outputDirectory, path),
         `${JSON.stringify(notebook, null, 2)}\n`,
         { flag: "wx", mode: 0o600 },
       );
       paths.push(path);
     }
-    manifest.export = { status: "exported", paths };
+    manifest.export = {
+      status: "exported",
+      paths,
+      ...(outputDirectory !== directory ? { directory: outputDirectory } : {}),
+    };
     manifest.replay = {
       ...manifest.replay,
       eligible: view.eligible,
       reasons: view.reasons,
     };
-    await writeJson(
-      join(
-        directory,
-        manifest.schema_version === 1
-          ? `export-${randomUUID()}.json`
-          : "manifest.json",
-      ),
-      manifest,
-    );
+    await writeJson(join(outputDirectory, "manifest.json"), manifest);
     return manifest.export;
   } catch (error) {
     manifest.export = {
@@ -299,15 +303,7 @@ export async function exportNotebooks(
       paths: [],
       error: error instanceof Error ? error.message : String(error),
     };
-    await writeJson(
-      join(
-        directory,
-        manifest.schema_version === 1
-          ? `export-${randomUUID()}.json`
-          : "manifest.json",
-      ),
-      manifest,
-    );
+    await writeJson(join(outputDirectory, "manifest.json"), manifest);
     throw error;
   }
 }

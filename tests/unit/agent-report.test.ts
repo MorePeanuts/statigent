@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { TOOLS, tools } from "../../src/agent/actions";
 import { PROMPT_VERSION, SYSTEM_PROMPT } from "../../src/agent/prompt";
 import { runAgent } from "../../src/agent/run";
+import { executionId } from "../../src/execution/script-protocol";
 import { exportNotebooks } from "../../src/records/notebook";
 import { readManifest, sha256 } from "../../src/records/store";
 import {
@@ -48,7 +49,7 @@ function workspaceRuntime() {
             size_bytes: data.length,
             mime_type: path.endsWith(".md") ? "text/markdown" : "image/png",
             complete: true,
-            cell_id: result.cell_id,
+            cell_id: executionId(result),
           });
           artifacts.push({ ...ref, path: ref.path });
         }

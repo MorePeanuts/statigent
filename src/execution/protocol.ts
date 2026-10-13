@@ -1,5 +1,8 @@
 /** Versioned JSONL contract. Container messages remain untrusted input. */
+
+import { type ExecutionBackend, validateBackend } from "./backend";
 import { validBase64 } from "./base64";
+import type { ScriptArtifact } from "./script-protocol";
 
 export const PROTOCOL_VERSION = 1 as const;
 export type TerminalStatus =
@@ -56,6 +59,7 @@ export const DEFAULT_LIMITS: Limits = {
   preview_chars: 4000,
 };
 export interface SessionConfig {
+  backend?: ExecutionBackend;
   run_id: string;
   session_id?: string;
   image: string;
@@ -185,7 +189,7 @@ export interface RuntimeEvent {
 export interface SessionObserver {
   onEvent(event: RuntimeEvent): Promise<void>;
   onArtifact?(
-    message: Extract<BridgeMessage, { type: "artifact" }>,
+    message: Extract<BridgeMessage, { type: "artifact" }> | ScriptArtifact,
   ): Promise<ArtifactRef>;
 }
 export class ProtocolError extends Error {
@@ -247,11 +251,13 @@ export function validateConfig(value: unknown): SessionConfig {
     "seed",
     "limits",
     "platform",
+    "backend",
   ]);
   for (const key of Object.keys(x))
     if (!allowed.has(key))
       throw new ProtocolError(`unknown config field: ${key}`);
   identifier(x.run_id, "run_id");
+  validateBackend(x.backend);
   if (x.session_id !== undefined) identifier(x.session_id, "session_id");
   for (const k of ["image", "input_root", "staging_root"]) {
     str(x[k], k);

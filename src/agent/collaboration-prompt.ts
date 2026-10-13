@@ -1,6 +1,7 @@
 import type { Message } from "../models/client";
 import type { AgentRole } from "../records/agent-metadata";
 import type { AgentTask } from "./config";
+import { SCRIPT_ROLE_PROMPTS } from "./script-prompt";
 
 export const ROLE_PROMPT_VERSIONS = {
   planner: "eda-planner-v2",
@@ -24,7 +25,13 @@ export function roleInitialMessages(
   role: AgentRole,
 ): Message[] {
   return [
-    { role: "system", content: ROLE_PROMPTS[role] },
+    {
+      role: "system",
+      content:
+        task.backend === "fresh-script"
+          ? SCRIPT_ROLE_PROMPTS[role]
+          : ROLE_PROMPTS[role],
+    },
     {
       role: "user",
       content: JSON.stringify({

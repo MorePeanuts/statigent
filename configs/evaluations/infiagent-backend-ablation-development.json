@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "purpose": "development",
+  "development_overlap": "infi-development-v1; selected CSVs are development-exposed; formal experiments must disclose or exclude overlap",
+  "benchmark": {
+    "adapter": "infiagent-dabench",
+    "version": "49ae783b20ecb60449ce1443c524e89f8ca8353a04e05e4d14a055b7a6f06126",
+    "options": {
+      "root": "benchmarks/infiagent-dabench"
+    },
+    "task_ids": [
+      "0",
+      "9",
+      "18",
+      "24",
+      "5",
+      "14",
+      "69",
+      "75",
+      "308",
+      "376",
+      "480",
+      "496"
+    ]
+  },
+  "agents": [
+    {
+      "id": "single-persistent-kernel",
+      "adapter": "statigent-eda",
+      "options": {
+        "image": "statigent-runtime:fresh-script",
+        "backend": "persistent-kernel",
+        "organization": "single"
+      },
+      "model_profile": "deepseek-flash",
+      "require_seed": true
+    },
+    {
+      "id": "planner-executor-persistent-kernel",
+      "adapter": "statigent-eda",
+      "options": {
+        "image": "statigent-runtime:fresh-script",
+        "backend": "persistent-kernel",
+        "organization": "planner-executor"
+      },
+      "model_profile": "deepseek-flash",
+      "require_seed": true
+    },
+    {
+      "id": "single-fresh-script",
+      "adapter": "statigent-eda",
+      "options": {
+        "image": "statigent-runtime:fresh-script",
+        "backend": "fresh-script",
+        "organization": "single"
+      },
+      "model_profile": "deepseek-flash",
+      "require_seed": true
+    },
+    {
+      "id": "planner-executor-fresh-script",
+      "adapter": "statigent-eda",
+      "options": {
+        "image": "statigent-runtime:fresh-script",
+        "backend": "fresh-script",
+        "organization": "planner-executor"
+      },
+      "model_profile": "deepseek-flash",
+      "require_seed": true
+    }
+  ],
+  "repetitions": 1,
+  "seed": 42,
+  "task_budget": {
+    "timeout_ms": 300000,
+    "model_attempts": 12,
+    "total_tokens": 100000
+  },
+  "batch_budget": {
+    "timeout_ms": 19200000,
+    "model_attempts": 576,
+    "total_tokens": 4800000
+  }
+}

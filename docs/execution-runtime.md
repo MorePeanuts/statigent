@@ -1,6 +1,6 @@
 # Docker Notebook 执行环境
 
-双角色 EDA 使用原生运行清单 v3：`collaboration.roles` 分别记录 planner/executor 的模型、提示词和用量，顶层用量为全任务合计；`collaboration.subtasks` 关联委派和执行者用量。角色小计、子任务小计是同一消费的不同视图，不再次相加。旧 v1/v2 记录仍可检查、导出和按原资格重放，不原地迁移。
+旧双角色 EDA 使用原生运行清单 v3，新写入使用 v4：`collaboration.roles` 分别记录 planner/executor 的模型、提示词和用量，顶层用量为全任务合计；`collaboration.subtasks` 关联委派和执行者用量。角色小计、子任务小计是同一消费的不同视图，不再次相加。旧 v1/v2 记录仍可检查、导出和按原资格重放，不原地迁移。
 
 双角色完整日志保存原始代码与调试历史，规划者仅接收子任务结果。规划者报告由宿主保存，具有模型提交来源，不伪造 Python 单元。Notebook 仅包含实际执行代码；代码重放不调用任何角色模型，也不重新生成规划者报告或验证报告结论。原始错误、截断或状态丢失的轨迹仍按既有规则报告严格重放不支持。
 
@@ -79,7 +79,7 @@ bun run runtime demo runs statigent-runtime:dev restart
 
 每次运行在 `runs/<run_id>/` 保存：
 
-- `manifest.json`：非敏感有效配置、输入 SHA-256、镜像与平台、宿主和 Docker 环境、代码 commit/dirty、依赖版本、种子、终态与阶段耗时。无模型 runtime/code_replay 的模型、提示词、token 和划分标为 not_applicable。新记录清单版本为 2，版本 1 保留读取与非覆盖式导出；智能体字段及迁移说明见 [agent.md](agent.md)。
+- `manifest.json`：非敏感有效配置、输入 SHA-256、镜像与平台、宿主和 Docker 环境、代码 commit/dirty、依赖版本、种子、终态与阶段耗时。无模型 runtime/code_replay 的模型、提示词、token 和划分标为 not_applicable。新记录清单版本为 4，版本 1–3 保留只读及非覆盖式导出；智能体字段及迁移说明见 [agent.md](agent.md)。
 - `events.jsonl`：追加式派发、输出引用、异常、取消、重启及终态；错误后修复不覆盖原尝试，未确认完成的单元保持 unknown。
 - `artifacts/`：宿主生成随机 ID 的独立快照，索引保存来源、类型、大小、SHA-256 和完整度；原文件覆盖后再收集也形成新快照。
 - `notebooks/`：按 kernel epoch 分别导出的 Notebook；清屏和显示更新在导出视图应用，原始事件仍保留。
@@ -94,7 +94,7 @@ bun run runtime export runs/<run_id>
 bun run runtime replay runs/<run_id> runs
 ```
 
-导出调用 nbformat 校验；多次导出生成不同文件，不覆盖较早导出的 Notebook。导出状态、重放资格和重放结果是三个独立字段。错误、保存截断、未知/中断或多个 epoch 的轨迹仍可以导出，但首版不支持重放验证。仅预览截断、实际保存完整时仍可重放。
+导出调用 nbformat 校验；多次导出生成不同文件，不覆盖较早导出的 Notebook；旧记录使用独立同级导出目录。导出状态、重放资格和重放结果是三个独立字段。错误、保存截断、未知/中断或多个 epoch 的轨迹仍可以导出，但首版不支持重放验证。仅预览截断、实际保存完整时仍可重放。
 
 重放核对原输入校验值、原镜像 ID 和平台，重新暂存允许的输入，在全新容器和空工作空间中执行；不挂载原运行记录或中间文件。原输入文件需要仍存在且校验值一致。镜像/输入不符会留下独立失败结果，不宣称同条件通过。新 run ID 的 `replay_of` 指向原运行，耗时独立计算；原 manifest、事件和产物不改写。重放任一单元失败即停止，不删除或自动修复代码。
 
@@ -111,3 +111,26 @@ bun run runtime cleanup <run_id>
 入口只匹配 `org.statigent.runtime=1` 和指定 `org.statigent.run` 标签，不清理无关容器。清理错误明确返回，需要保留诊断。
 
 后续大量实验再把同一控制程序、Dockerfile 和锁文件部署到 Linux 服务器，按服务器架构重新构建镜像、设置路径与资源，重跑集成及小规模冒烟测试，再验证并发和长时间稳定性。这不属于首个变更验收条件。正式性能比较固定服务器硬件、平台和预算；本地验收记录不会被当成服务器运行结果。
+
+## 新脚本后端
+
+可信调用方使用 `createSession({...config, backend: "fresh-script"}, observer)`。不指定 backend 时仍使用持久内核。脚本后端与 Notebook 共用镜像、输入暂存和 Docker 隔离参数；运行每份完整脚本时固定 `/workspace`，通过 `uv run --offline --no-sync` 新建 Python 进程。每次重置 Python/NumPy 种子及环境，保留任务工作目录。智能体须在每轮重新 import、定义变量，或显式读取前轮保存的文件。失败可能留下部分文件，程序不回滚。
+
+普通脚本末尾表达式没有 Notebook 自动展示语义：文本使用 `print()`，表格使用 `IPython.display.display(df)`，图片使用 `savefig()` 保存 PNG/JPEG，或显式 `display(Image(...))` 输出 PNG。标准输出与协议管道分离，打印 JSON 不会变成控制指令；交互输入收到 EOF。输出和产物额度在任务内累计，新进程不重置额度。
+
+容器 supervisor 按顺序执行，结束或中断后终止并回收进程组及脱离进程组的后代，再清点 `/proc`。无法确认清理时丢弃整个会话；不支持跨轮后台作业。只有文件能显式延续，Python 变量、导入、环境修改不能延续。初始化、执行、收集和清理均计入任务总墙钟与单次执行超时。脚本 wire v2 字段及未知结果语义见 [runtime-protocol.md](runtime-protocol.md)。
+
+脚本无模型示例（同一锁定依赖镜像）：
+
+```bash
+docker build -f docker/Dockerfile -t statigent-runtime:fresh-script .
+bun run runtime demo runs statigent-runtime:fresh-script fresh-script
+```
+
+示例第一轮保存 `means.csv`，第二轮重新 import 并读取文件，断言 A=2、B=4，再导出 `means.png`。实际镜像身份与验收结果见 [fresh-script-validation.md](fresh-script-validation.md)。
+
+新运行写 manifest v4，`execution` 显式记录后端、协议、初始化、种子重置规则、文件策略及导出类型。`timing.script_stages` 是进程初始化、用户代码、收集、回收的分类小计；无法确认的阶段累计到 `unknown_stages`。这些时间已包含在尝试耗时和任务墙钟中，不能再次相加。
+
+`inspect/export/replay` 命令保持相同入口。脚本导出为 `scripts/<export-id>/<order>-<execution_id>.py` 和有序 `manifest.json`，保留失败源码及结果，`export.notebook_status=not_applicable`。每次导出使用新目录；同名工作文件每次收集为不同宿主快照。重放校验源码哈希、初始化版本、输入和镜像，从空工作目录逐份启动新进程，显式文件依赖必须由前序重放脚本重建，不能从原运行补取。任何错误/未知/截断轨迹返回 unsupported；可重放轨迹中实际重执行失败返回 failed。
+
+旧 v1/v2/v3 按原持久语义只读解释，不补写 execution。旧记录导出写入同级 `<run-directory>-export-<id>`，返回 `export.directory`；源目录及其文件保持不变。代码重放仍创建新的 v4 记录，使用原镜像 ID 和原持久入口，不要求旧镜像声明脚本能力。导出成功、代码重放成功、模型决策复现是不同事实；代码重放不调用模型、不重新生成规划者报告。

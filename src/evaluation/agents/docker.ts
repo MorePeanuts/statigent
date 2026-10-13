@@ -28,6 +28,7 @@ export async function inspectImage(
   if (x.Os !== "linux") throw new Error("Linux image required");
   return {
     image_id: str(x.Id, "image ID"),
+    runtime_labels: obj(x.Config).Labels ?? {},
     platform: `${str(x.Os, "OS")}/${str(x.Architecture, "arch")}`,
     digests: x.RepoDigests,
     docker: info.ServerVersion,

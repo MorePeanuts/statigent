@@ -1,8 +1,13 @@
 import { randomUUID } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import type { ExecutionResult, SessionConfig } from "../execution/protocol";
-import { DockerSession } from "../execution/session";
+import { createSession } from "../execution/factory";
+import type { SessionConfig } from "../execution/protocol";
+import {
+  type BackendResult,
+  executionId,
+  sessionAvailable,
+} from "../execution/script-protocol";
 import {
   ChatClient,
   type Message,
@@ -53,6 +58,12 @@ import { modelCaller } from "./model-call";
 import { initialMessages, promptVersion, SYSTEM_PROMPT } from "./prompt";
 import type { AnalysisReport } from "./report";
 import { resolveReport } from "./report";
+import {
+  SCRIPT_ROLE_PROMPTS,
+  SCRIPT_ROLE_VERSIONS,
+  SCRIPT_SYSTEM_PROMPT,
+  scriptTools,
+} from "./script-prompt";
 import { Stop } from "./stop";
 export type AgentStatus =
   | "completed"
@@ -61,10 +72,7 @@ export type AgentStatus =
   | "cancelled"
   | "failed";
 export interface AgentSession {
-  execute(
-    code: string,
-    options: { requestId: string },
-  ): Promise<ExecutionResult>;
+  execute(code: string, options: { requestId: string }): Promise<BackendResult>;
   cancel(requestId: string): Promise<unknown>;
   close(): Promise<void>;
   readonly closeResult?: { status: string; cleanup_error?: string };
@@ -164,6 +172,10 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
     trace_bytes: 0,
     trace_incomplete: false,
   };
+  const script = task.backend === "fresh-script";
+  const rolePrompts = script ? SCRIPT_ROLE_PROMPTS : ROLE_PROMPTS;
+  const roleVersions = script ? SCRIPT_ROLE_VERSIONS : ROLE_PROMPT_VERSIONS;
+  const systemPrompt = script ? SCRIPT_SYSTEM_PROMPT : SYSTEM_PROMPT;
   const roleRecord = (role: AgentRole): RoleRecord => ({
     model: {
       profile: profileSnapshot(profile),
@@ -172,8 +184,8 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
       fingerprints: [],
     },
     prompt: {
-      version: ROLE_PROMPT_VERSIONS[role],
-      sha256: sha256(Buffer.from(ROLE_PROMPTS[role])),
+      version: roleVersions[role],
+      sha256: sha256(Buffer.from(rolePrompts[role])),
     },
     tokens: emptyLedger(),
   });
@@ -212,10 +224,14 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
         tokens,
         metadata: agent,
         prompt: {
-          version: collaboration ? "eda-collaboration-v1" : promptVersion(task),
+          version: collaboration
+            ? script
+              ? "eda-script-collaboration-v1"
+              : "eda-collaboration-v1"
+            : promptVersion(task),
           sha256: sha256(
             Buffer.from(
-              collaboration ? JSON.stringify(ROLE_PROMPTS) : SYSTEM_PROMPT,
+              collaboration ? JSON.stringify(rolePrompts) : systemPrompt,
             ),
           ),
         },
@@ -299,10 +315,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
   let recordError = false;
   try {
     checkClock();
-    session = await (options.createSession ?? DockerSession.create)(
-      config,
-      recorder,
-    );
+    session = await (options.createSession ?? createSession)(config, recorder);
     checkClock();
     for (;;) {
       const messages = collaboration ? histories[role] : singleMessages;
@@ -313,7 +326,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
       updateRemaining();
       const { attemptId, response } = await callModel(
         messages,
-        toolSet,
+        script ? scriptTools(toolSet) : toolSet,
         model,
         identity(),
       );
@@ -411,7 +424,10 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
                         : evidence),
                     ],
                     correction:
-                      "Only cite valid_evidence_refs. Failed cell IDs are not valid evidence, even if partial output exists. Remove unsupported claims; do not replace their references with unrelated valid IDs. Repair in a new cell if execution budget remains, otherwise return supported findings and limitations (partial if needed).",
+                      (script
+                        ? "Only cite valid_evidence_refs. Failed execution IDs"
+                        : "Only cite valid_evidence_refs. Failed cell IDs") +
+                      " are not valid evidence, even if partial output exists. Remove unsupported claims; do not replace their references with unrelated valid IDs. Repair in a new cell if execution budget remains, otherwise return supported findings and limitations (partial if needed).",
                   }
                 : {}),
               remaining: agent.remaining,
@@ -456,8 +472,15 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
             constraints: action.constraints,
             remaining: agent.remaining,
             execution_context: {
-              backend: "persistent-kernel",
-              session_continues: collaboration.subtasks.length > 1,
+              backend: task.backend,
+              ...(script
+                ? {
+                    history_continues: true,
+                    workspace_continues: true,
+                    memory_preserved: false,
+                    files_policy: "task-workspace",
+                  }
+                : { session_continues: collaboration.subtasks.length > 1 }),
               prior_subtasks: collaboration.subtasks.length - 1,
               prior_executions: agent.executions,
             },
@@ -556,13 +579,14 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
       });
       checkClock();
       active = requestId;
-      let result: ExecutionResult;
+      let result: BackendResult;
       try {
         result = await session.execute(action.code, { requestId });
       } finally {
         active = undefined;
       }
-      if (result.started) agent.executions++;
+      if (result.started || (script && result.execution_seq !== undefined))
+        agent.executions++;
       if (
         result.status === "ok" &&
         result.started &&
@@ -570,7 +594,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
       ) {
         successes++;
         codeErrors = 0;
-        evidence.add(result.cell_id);
+        evidence.add(executionId(result));
       }
       for (const ref of result.artifacts)
         if (
@@ -602,7 +626,9 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
           attempt_id: attemptId,
           tool_id: call.id,
           request_id: requestId,
-          cell_id: result.cell_id,
+          ...(result.protocol_version === 1
+            ? { cell_id: result.cell_id }
+            : { execution_id: result.execution_id }),
         },
         feedback,
       );
@@ -613,7 +639,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
       });
       checkClock();
       if (
-        !result.kernel_available ||
+        !sessionAvailable(result) ||
         !result.persistence_complete ||
         !result.started
       )

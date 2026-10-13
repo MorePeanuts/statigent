@@ -99,6 +99,8 @@ export class DockerSession {
     transport?: SessionTransport,
   ): Promise<DockerSession> {
     const session = new DockerSession(config, observer, transport);
+    if (config.backend === "fresh-script")
+      throw new ProtocolError("Persistent session cannot execute fresh-script");
     try {
       await session.start();
       return session;

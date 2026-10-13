@@ -9,6 +9,7 @@ import {
 import { validateTask } from "../../src/agent/config";
 import { runAgent } from "../../src/agent/run";
 import { deliverReport } from "../../src/evaluation/agents/statigent";
+import { executionId } from "../../src/execution/script-protocol";
 import { exportNotebooks } from "../../src/records/notebook";
 import {
   RunRecorder,
@@ -159,7 +160,7 @@ test("planner authored report finishes and delivers pinned images; failed storag
                 path: "chart.png",
                 mime_type: "image/png",
                 data_base64: png(1, 1).toString("base64"),
-                cell_id: result.cell_id,
+                cell_id: executionId(result),
               });
               return { ...result, artifacts: [ref] };
             },

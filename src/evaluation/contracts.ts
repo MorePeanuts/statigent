@@ -687,6 +687,8 @@ export interface AgentAdapter {
   version: string;
   capabilities: Capabilities;
   options(value: unknown): Record<string, unknown>;
+  /** Read-only capability checks; must not create containers or call models. */
+  preview?(config: AgentConfig): Promise<void>;
   preflight(config: AgentConfig): Promise<Record<string, unknown>>;
   run(invocation: Invocation, signal?: AbortSignal): Promise<Submission>;
 }

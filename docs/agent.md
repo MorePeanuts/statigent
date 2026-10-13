@@ -129,3 +129,20 @@ bun run test:smoke:collaboration
 本次实际检查、真实 DeepSeek 用量、运行 ID 和代码重放结果见 [本地验收记录](eda-agent-validation.md)。
 
 双角色的工程检查、首轮失败及状态复用修复后通过的有界真实验收见 [协作验收记录](eda-collaboration-validation.md)。
+
+## fresh-script 后端
+
+EDA task 可设置顶层 `"backend": "fresh-script"`，缺省仍为 `persistent-kernel`；`organization` 可独立选择 `single` 或 `planner-executor`。执行镜像须同时支持脚本 v2（示例 `statigent-runtime:fresh-script`）。不支持的配置或镜像在首次模型请求前失败。
+
+两组都保留执行者的历史代码和反馈。持久模式提示词原文及版本不变；脚本单角色使用 `eda-fresh-script-v1`，双角色使用 `eda-script-planner-v1/eda-script-executor-v1`。工具仍为一次 `execute_python({code})`，脚本必须完整，例如先执行 `import pandas as pd; pd.read_csv('/input/synthetic.csv').to_csv('middle.csv', index=False)`，后续再执行 `import pandas as pd; df=pd.read_csv('middle.csv'); print(df.describe())`。不自动重跑历史代码，不继承变量或导入。
+
+脚本反馈使用 `execution_id` 与实际进程身份，无虚构 cell/kernel 字段；`memory_preserved=false`、`files_policy=task-workspace`。后续委派明确历史与工作目录连续、内存不连续，规划者仍只接收结构化结果。普通错误可在既有总预算内提交新完整脚本修复；错误前写入的文件可能保留。执行次数、token、未知用量及取消在角色切换和新进程之间累计。报告与图片使用现有交付协议，代码按脚本清单导出。
+
+显式真实模型冒烟入口必须选择一种组织方式：
+
+```bash
+bun run test:smoke:script --organization single --preflight
+bun run test:smoke:script --organization planner-executor --preflight
+```
+
+预检不发送模型请求。固定范围与预算在 `configs/tasks/fresh-script-report.json`：20 次模型尝试、10 次执行、400000 token、600 秒任务时限。移除 `--preflight` 会真实调用已配置模型，只运行选择的一种组织，不自动加跑另一组或重跑失败任务；运行失败仍写 `smoke-result.json` 并保留首次轨迹。验收核对独立进程、显式 middle.csv 文件链、A=2/B=4、图表报告、已知用量及容器清理。该入口不属于默认 check。

@@ -15,12 +15,12 @@ import {
 } from "../../src/records/store";
 import { collaborationRecorder } from "../helpers/collaboration";
 
-test("v3 role identities and task totals are validated without changing v2", async () => {
+test("v4 role identities and task totals are validated without changing v2", async () => {
   const root = await mkdtemp(join(tmpdir(), "roles-record-"));
   try {
     const rec = await collaborationRecorder(root);
     const manifest = await readManifest(rec.directory);
-    expect(manifest.schema_version).toBe(3);
+    expect(manifest.schema_version).toBe(4);
     expect(manifest.collaboration?.roles.executor.model.profile).toEqual(
       manifest.collaboration?.roles.planner.model.profile,
     );
@@ -122,14 +122,14 @@ test("delegation journal rejects routing errors and retains unresolved executor 
   }
 });
 
-test("v3 inspection and notebook export keep host report out of execution cells", async () => {
+test("v4 inspection and notebook export keep host report out of execution cells", async () => {
   const root = await mkdtemp(join(tmpdir(), "roles-export-"));
   try {
     const rec = await collaborationRecorder(root);
     await rec.finish("failed");
     const before = await readFile(join(rec.directory, "events.jsonl"));
     await exportNotebooks(rec.directory, async () => {});
-    expect((await readManifest(rec.directory)).schema_version).toBe(3);
+    expect((await readManifest(rec.directory)).schema_version).toBe(4);
     expect(await readFile(join(rec.directory, "events.jsonl"))).toEqual(before);
     const raw = JSON.parse(
       await Bun.file(join(rec.directory, "manifest.json")).text(),

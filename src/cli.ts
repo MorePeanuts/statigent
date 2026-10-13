@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { cleanupRun } from "./execution/docker";
+import { createSession } from "./execution/factory";
 import { DEFAULT_LIMITS, type SessionConfig } from "./execution/protocol";
 import { DockerSession } from "./execution/session";
 import { exportNotebooks } from "./records/notebook";
@@ -16,6 +17,10 @@ export const DEMO_CELLS = [
   'means = df.groupby("group")["value"].mean()\nassert means.to_dict() == {"A": 2.0, "B": 4.0}\nprint(means.to_json())',
   'import matplotlib.pyplot as plt\nmeans.plot.bar()\nplt.tight_layout()\nplt.savefig("means.png")\nplt.show()',
 ];
+export const DEMO_SCRIPTS = [
+  'import pandas as pd\ndf=pd.read_csv("/input/synthetic.csv")\ndf.groupby("group")["value"].mean().to_csv("means.csv")',
+  'import pandas as pd\nmeans=pd.read_csv("means.csv",index_col=0).iloc[:,0]\nassert means.to_dict()=={"A":2.0,"B":4.0}\nprint(means.to_json())\nimport matplotlib.pyplot as plt\nmeans.plot.bar()\nplt.tight_layout()\nplt.savefig("means.png")\nplt.close()',
+];
 export async function demo(
   runRoot: string,
   image: string,
@@ -24,6 +29,9 @@ export async function demo(
   const runId = randomUUID();
   const config: SessionConfig = {
     run_id: runId,
+    ...(scenario === "fresh-script"
+      ? { backend: "fresh-script" as const }
+      : {}),
     image,
     input_root: resolve("tests/fixtures"),
     inputs: ["synthetic.csv"],
@@ -45,11 +53,11 @@ export async function demo(
     maxTotalArtifactBytes:
       config.limits.max_artifacts_bytes + config.limits.max_output_bytes,
   });
-  let session: DockerSession | undefined;
+  let session: Awaited<ReturnType<typeof createSession>> | undefined;
   let failure: unknown;
   const results = [];
   try {
-    session = await DockerSession.create(config, recorder);
+    session = await createSession(config, recorder);
     if (scenario === "timeout") {
       const result = await session.execute(
         "import time\nvalue = 1\ntime.sleep(60)",
@@ -58,7 +66,9 @@ export async function demo(
       if (result.status !== "timed_out")
         throw new Error(`Expected timeout, got ${result.status}`);
     } else {
-      for (const code of DEMO_CELLS) {
+      for (const code of scenario === "fresh-script"
+        ? DEMO_SCRIPTS
+        : DEMO_CELLS) {
         const result = await session.execute(code);
         results.push(result);
         if (result.status !== "ok")
@@ -67,6 +77,8 @@ export async function demo(
           );
       }
       if (scenario === "restart") {
+        if (!(session instanceof DockerSession))
+          throw Error("Restart requires persistent kernel");
         await session.restart();
         const result = await session.execute("print(df)");
         results.push(result);
@@ -100,8 +112,9 @@ export async function demo(
     directory: recorder.directory,
     results: results.map((result) => ({
       status: result.status,
-      cell_id: result.cell_id,
-      kernel_epoch: result.kernel_epoch,
+      ...(result.protocol_version === 1
+        ? { cell_id: result.cell_id, kernel_epoch: result.kernel_epoch }
+        : { execution_id: result.execution_id, process: result.process }),
       preview: result.preview,
       artifacts: result.artifacts,
     })),
@@ -134,7 +147,7 @@ async function main() {
       return { removed: await cleanupRun(value) };
     default:
       throw new Error(
-        "Usage: bun run runtime demo [RUN_ROOT] [IMAGE] [normal|timeout|restart] | export RUN_DIRECTORY | inspect RUN_DIRECTORY | replay RUN_DIRECTORY [RUN_ROOT] | cleanup RUN_ID",
+        "Usage: bun run runtime demo [RUN_ROOT] [IMAGE] [normal|timeout|restart|fresh-script] | export RUN_DIRECTORY | inspect RUN_DIRECTORY | replay RUN_DIRECTORY [RUN_ROOT] | cleanup RUN_ID",
       );
   }
 }

@@ -1,5 +1,5 @@
 import { obj } from "../../models/validation";
-import { readEvents } from "../../records/store";
+import { readEvents, readManifest } from "../../records/store";
 
 export const TRAJECTORY_FORMAT = "trajectory-v1";
 export const COLLABORATION_MAPPING = "planner-executor-v1";
@@ -43,13 +43,15 @@ export async function buildTrajectory(
   scrub: string[] = [],
   limit = TRAJECTORY_LIMIT,
 ): Promise<string> {
+  const script =
+    (await readManifest(runDirectory)).execution?.backend === "fresh-script";
   const steps = new Map<string, Step>();
   for (const event of await readEvents(runDirectory)) {
     if (event.type === "dispatch" && event.request) {
       const r = obj(event.request);
       steps.set(String(r.request_id), {
         seq: Number(r.execution_seq),
-        cell: String(r.cell_id),
+        cell: String(script ? r.execution_id : r.cell_id),
         code: String(r.code ?? ""),
         status: "not_finished",
         output: "",
@@ -71,16 +73,21 @@ export async function buildTrajectory(
     }
   }
   const lines = [`# Analysis trajectory (${TRAJECTORY_FORMAT})`, ""];
+  if (script)
+    lines.push(
+      "Backend: fresh-script; memory resets; task workspace files persist.",
+      "",
+    );
   if ([...steps.values()].some((s) => s.subtask))
     lines.push(
-      `Mapping: ${COLLABORATION_MAPPING}; executed cells only; final report authored by planner.`,
+      `Mapping: ${script ? "fresh-script-planner-executor-v1" : COLLABORATION_MAPPING}; executed ${script ? "scripts" : "cells"} only; final report authored by planner.`,
       "",
     );
   for (const [index, s] of [...steps.values()]
     .sort((a, b) => a.seq - b.seq)
     .entries())
     lines.push(
-      `## Step ${index + 1} (cell ${s.cell}, status ${s.status})`,
+      `## Step ${index + 1} (${script ? "execution" : "cell"} ${s.cell}, status ${s.status})`,
       "",
       ...(s.subtask ? [`Role: executor; subtask: ${s.subtask}`, ""] : []),
       "### Code",

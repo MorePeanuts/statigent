@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { statigentAdapter } from "../../src/evaluation/agents/statigent";
+import { executionId } from "../../src/execution/script-protocol";
 import { exportNotebooks } from "../../src/records/notebook";
 import { readManifest } from "../../src/records/store";
 import {
@@ -78,7 +79,7 @@ test("adapter validates organization and restricted native budgets before invoca
   });
 });
 
-test("v3 adapter delivers text and planner report, counts role costs once and maps every cell once", async () => {
+test("v4 adapter delivers text and planner report, counts role costs once and maps every cell once", async () => {
   for (const report of [false, true]) {
     const root = await mkdtemp(join(tmpdir(), "evaluation-collaboration-"));
     try {
@@ -151,7 +152,7 @@ test("v3 adapter delivers text and planner report, counts role costs once and ma
                   path: "means.png",
                   mime_type: "image/png",
                   data_base64: png(1, 1).toString("base64"),
-                  cell_id: result.cell_id,
+                  cell_id: executionId(result),
                 });
                 return { ...result, artifacts: [artifact] };
               },
@@ -169,7 +170,7 @@ test("v3 adapter delivers text and planner report, counts role costs once and ma
         source: "measured",
       });
       const m = await readManifest(s.native_run?.directory ?? "");
-      expect(m.schema_version).toBe(3);
+      expect(m.schema_version).toBe(4);
       expect(
         m.agent === "not_applicable" ? null : m.agent?.budget.executions,
       ).toBe(12);

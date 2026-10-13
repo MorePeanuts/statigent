@@ -227,3 +227,19 @@ DAComp-DA 与 DSBench-Analysis 的开发清单由 `bun src/evaluation/analysis-d
 两套配置都使用智能体 `deepseek-flash` 与评委 `deepseek-flash-judge`，智能体预算与评委预算分开声明；逐题 token 阈值（DAComp 800,000，DSBench 400,000）远高于 65,536 的输出预留。选择规则和清单写在对应的 `*-development-selection.json` 中，在真实调用前提交，开发结果不能报告为正式成绩。正式实验另行冻结配置，披露与开发题及共享 CSV 的重叠。迁移到 Linux 时使用同一锁文件、镜像构建与 CLI，调整基准根、模型环境变量和输出根；保留来源哈希，硬件与平台变化进入运行快照。
 
 默认 `bun run check` 不启动 Docker 容器或调用付费模型。`bun run test:evaluation:integration` 显式验证测试镜像；`bun run test:evaluation:upstream` 显式验证本地上游资源。真实实验和软件测试结果分开记录。
+
+## 第一章后端 × 角色开发对照
+
+新增 `infiagent-backend-ablation-development.json`、`dsbench-analysis-backend-ablation-development.json`、`dacomp-da-backend-ablation-development.json`，路径均在 `configs/evaluations/`。每套配置包含 single/planner-executor × persistent-kernel/fresh-script 四组，沿用该基准 development-selection 的任务、一次重复、种子 42、模型 profile 和逐题预算，统一使用支持两后端的 `statigent-runtime:fresh-script`。旧配置不修改。
+
+```bash
+bun run evaluate plan --config configs/evaluations/infiagent-backend-ablation-development.json
+bun run evaluate plan --config configs/evaluations/dsbench-analysis-backend-ablation-development.json
+bun run evaluate plan --config configs/evaluations/dacomp-da-backend-ablation-development.json
+```
+
+计划只读检查任务和脚本镜像能力，不启动任务容器、不发送模型请求。分别为 12×4=48、6×4=24、6×4=24 个执行单元。整批执行预算以及有评委基准的整批评委预算均按原配置乘四，覆盖声明计划；run 的实际预检还会握手并保存真实镜像、初始化、角色提示词版本/哈希、文件策略与原生预算。实际单位预算由 invocation.effective_budget 决定，整批剩余额度缩减不能被原生 task 配置恢复。
+
+统一轨迹仍为 trajectory-v1，新增 fresh-script-single-v1 / fresh-script-planner-executor-v1 映射。脚本按实际顺序呈现 execution_id、代码、输出和失败，双角色标记执行者与子任务；不伪造 Notebook/kernel 字段。报告与图片交付不变，原生代码导出按后端选择。长轨迹仍明确标记截断，宿主路径与密钥在交付前脱敏。
+
+两组都保留模型历史，脚本组允许显式工作文件复用；不会强迫每轮从原始数据重算。脚本的 import/初始化、收集和清理开销计入任务总墙钟，阶段小计不再次累计。普通脚本无末尾表达式自动展示，使用 print、显式 display 和保存图片；这是实验解释中需披露的输出语法差异。开发任务已暴露，不能冒充冻结的正式评测；四组配置准备和预览不代表真实模型冒烟或研究预实验已完成。本次没有执行真实付费批次，下一步需先明确任务范围及预算。

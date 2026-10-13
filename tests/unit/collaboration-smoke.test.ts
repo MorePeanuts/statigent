@@ -8,6 +8,7 @@ import {
   loadCollaborationSmokeConfiguration,
 } from "../../src/agent/collaboration-smoke";
 import { runAgent } from "../../src/agent/run";
+import { executionId } from "../../src/execution/script-protocol";
 import { exportNotebooks } from "../../src/records/notebook";
 import { fakeRuntime, profile, ScriptClient } from "../helpers/agent";
 import { collaborationScript } from "../helpers/collaboration-script";
@@ -44,7 +45,7 @@ test("collaboration smoke verifier requires real delegation/state evidence and c
               path: "means.png",
               mime_type: "image/png",
               data_base64: png(1, 1).toString("base64"),
-              cell_id: result.cell_id,
+              cell_id: executionId(result),
             });
             return { ...result, artifacts: [image] };
           },

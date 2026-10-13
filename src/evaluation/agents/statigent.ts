@@ -13,8 +13,17 @@ import {
   SYSTEM_PROMPT,
 } from "../../agent/prompt";
 import { type RunOptions, runAgent } from "../../agent/run";
+import {
+  SCRIPT_PROMPT_VERSION,
+  SCRIPT_ROLE_PROMPTS,
+  SCRIPT_ROLE_VERSIONS,
+  SCRIPT_SYSTEM_PROMPT,
+} from "../../agent/script-prompt";
+import { validateBackend } from "../../execution/backend";
+import { validateImageBackend } from "../../execution/docker";
 import { resolveCredential } from "../../models/config";
 import { integer, keys, obj, str } from "../../models/validation";
+import { executionMetadata } from "../../records/execution-metadata";
 import { resolveImageReference } from "../../records/markdown";
 import {
   inspectModelJournal,
@@ -75,7 +84,7 @@ export function statigentAdapter(
 ): AgentAdapter {
   const options = (value: unknown) => {
     const x = obj(value);
-    keys(x, ["image", "organization", "budget"]);
+    keys(x, ["image", "organization", "budget", "backend"]);
     const overrides = obj(x.budget ?? {});
     // Unified task/batch budgets own these three limits. Native options cannot increase them.
     const {
@@ -96,12 +105,13 @@ export function statigentAdapter(
     return {
       image: str(x.image, "image"),
       organization: validateOrganization(x.organization),
+      backend: validateBackend(x.backend),
       budget,
     };
   };
   return {
     id: "statigent-eda",
-    version: "2",
+    version: "3",
     capabilities: {
       schema_version: 2,
       outputs: ["text", "report"],
@@ -113,37 +123,59 @@ export function statigentAdapter(
       usage: "measured",
     },
     options,
+    async preview(config) {
+      const settings = options(config.options);
+      if (settings.backend === "fresh-script") {
+        const image = await (dependencies.image ?? inspectImage)(
+          settings.image,
+        );
+        validateImageBackend(settings.backend, image.runtime_labels);
+      }
+    },
     async preflight(config) {
       if (!config.model) throw new Error("Model profile required");
       if (!dependencies.overrides?.client) resolveCredential(config.model);
       const settings = options(config.options);
+      const image = await (dependencies.image ?? inspectImage)(settings.image);
+      validateImageBackend(settings.backend, image.runtime_labels);
+      const script = settings.backend === "fresh-script";
+      const roleVersions = script ? SCRIPT_ROLE_VERSIONS : ROLE_PROMPT_VERSIONS;
+      const rolePrompts = script ? SCRIPT_ROLE_PROMPTS : ROLE_PROMPTS;
+      const version = script ? SCRIPT_PROMPT_VERSION : PROMPT_VERSION;
       return {
-        ...(await (dependencies.image ?? inspectImage)(settings.image)),
+        ...image,
+        execution: executionMetadata(settings.backend),
         ...(settings.organization === "planner-executor"
           ? {
               role_prompts: Object.fromEntries(
                 (["planner", "executor"] as const).map((role) => [
                   role,
                   {
-                    version: ROLE_PROMPT_VERSIONS[role],
-                    sha256: sha256(Buffer.from(ROLE_PROMPTS[role])),
+                    version: roleVersions[role],
+                    sha256: sha256(Buffer.from(rolePrompts[role])),
                   },
                 ]),
               ),
-              trajectory_mapping: COLLABORATION_MAPPING,
+              trajectory_mapping: script
+                ? "fresh-script-planner-executor-v1"
+                : COLLABORATION_MAPPING,
             }
           : {
-              trajectory_mapping: "single-v1",
+              trajectory_mapping: script
+                ? "fresh-script-single-v1"
+                : "single-v1",
               prompt: {
-                version: PROMPT_VERSION,
-                report_version: `${PROMPT_VERSION}+${REPORT_PROMPT_VERSION}`,
-                sha256: sha256(Buffer.from(SYSTEM_PROMPT)),
+                version,
+                report_version: `${version}+${REPORT_PROMPT_VERSION}`,
+                sha256: sha256(
+                  Buffer.from(script ? SCRIPT_SYSTEM_PROMPT : SYSTEM_PROMPT),
+                ),
               },
             }),
         role: settings.organization,
         native_budget: settings.budget,
         unified_budget_source: "invocation.effective_budget",
-        backend: "persistent-kernel",
+        backend: settings.backend,
         capabilities: this.capabilities,
       };
     },
@@ -163,6 +195,7 @@ export function statigentAdapter(
         profile,
         task: {
           organization: settings.organization,
+          backend: settings.backend,
           goal: i.task.goal,
           constraints: [
             ...i.task.constraints,

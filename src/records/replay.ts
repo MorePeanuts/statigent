@@ -2,13 +2,11 @@ import { randomUUID } from "node:crypto";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { dockerCommand } from "../execution/docker";
-import {
-  type ExecutionResult,
-  type SessionConfig,
-  validateConfig,
-} from "../execution/protocol";
-import { DockerSession } from "../execution/session";
+import { createSession } from "../execution/factory";
+import { type SessionConfig, validateConfig } from "../execution/protocol";
 import { buildNotebooks, exportNotebooks } from "./notebook";
+import { buildScripts } from "./script-journal";
+import { verifyScriptExport } from "./scripts";
 import {
   type Manifest,
   object,
@@ -27,6 +25,7 @@ export interface ReplayReport {
   directory?: string;
   reasons: string[];
   failed_cell?: string;
+  failed_execution?: string;
 }
 export async function checkReplayInputs(
   manifest: Manifest,
@@ -69,10 +68,14 @@ export async function replayRun(
 ): Promise<ReplayReport> {
   originalDirectory = resolve(originalDirectory);
   const manifest = await readManifest(originalDirectory);
-  const view = buildNotebooks(
-    await readEvents(originalDirectory),
-    manifest.run_id,
-  );
+  const events = await readEvents(originalDirectory);
+  const script = manifest.execution?.backend === "fresh-script";
+  const scriptView = script ? buildScripts(events) : undefined;
+  const notebookView = script
+    ? undefined
+    : buildNotebooks(events, manifest.run_id);
+  const view = scriptView ?? notebookView;
+  if (!view) throw Error("Missing replay view");
   if (!manifest.ended_at) view.reasons.push("run_not_finished");
   if (manifest.status !== "completed") view.reasons.push("run_not_completed");
   if (!view.eligible || view.reasons.length)
@@ -92,10 +95,11 @@ export async function replayRun(
     seed: manifest.seed ?? undefined,
     replayOf: manifest.run_id,
   });
-  let session: DockerSession | undefined;
+  let session: Awaited<ReturnType<typeof createSession>> | undefined;
   let failedCell: string | undefined;
   let failure: string | undefined;
   try {
+    if (script) await verifyScriptExport(originalDirectory, manifest);
     const originalConfig = await checkReplayInputs(manifest, originalDirectory);
     const images: unknown = JSON.parse(
       await dockerCommand(["image", "inspect", manifest.image.id]),
@@ -119,23 +123,25 @@ export async function replayRun(
     };
     recorder.manifest.config = { ...config };
     await recorder.saveManifest();
-    session = await DockerSession.create(config, recorder);
+    session = await createSession(config, recorder);
     // Check the bytes actually mounted by the transport, closing a source-file race at staging.
     if (
       JSON.stringify(recorder.manifest.inputs) !==
       JSON.stringify(manifest.inputs)
     )
       throw new Error("Staged input checksum mismatch");
-    for (const notebook of view.notebooks.values())
-      for (const cell of notebook.cells) {
-        const result: ExecutionResult = await session.execute(cell.source);
-        if (result.status !== "ok" || !result.persistence_complete) {
-          failedCell = cell.id;
-          throw new Error(
-            `Replay cell ${cell.id}: ${result.status}; ${result.diagnostic ?? result.error?.evalue ?? "execution failed"}`,
-          );
-        }
+    const attempts = scriptView
+      ? scriptView.scripts.map((s) => ({ id: s.execution_id, source: s.code }))
+      : [...(notebookView?.notebooks.values() ?? [])].flatMap((n) => n.cells);
+    for (const attempt of attempts) {
+      const result = await session.execute(attempt.source);
+      if (result.status !== "ok" || !result.persistence_complete) {
+        failedCell = attempt.id;
+        throw Error(
+          `Replay execution ${attempt.id}: ${result.status}; ${result.diagnostic ?? result.error?.evalue ?? "execution failed"}`,
+        );
       }
+    }
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error);
   } finally {
@@ -166,7 +172,11 @@ export async function replayRun(
     run_id: runId,
     directory: recorder.directory,
     reasons: failure ? [failure] : [],
-    ...(failedCell ? { failed_cell: failedCell } : {}),
+    ...(failedCell
+      ? script
+        ? { failed_execution: failedCell }
+        : { failed_cell: failedCell }
+      : {}),
   };
   await writeJson(join(recorder.directory, "replay-result.json"), report);
   return report;
