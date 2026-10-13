@@ -46,6 +46,9 @@ export interface BenchmarkRuntimeOptions {
   imagePreflight?: typeof stage4Image;
   freeze?: typeof freezeModel;
   predict?: typeof predictFrozenModel;
+  inputAccess?: "complete" | "training";
+  /** 受信调度器在模型冻结后才发布本次预测特征，不能修改搜索输入。 */
+  publishPrediction?: () => Promise<void>;
 }
 export async function runBenchmarkModeling(
   o: ModelingOptions & { start: number },
@@ -67,6 +70,7 @@ export async function runBenchmarkModeling(
   );
   const task = { ...requested, image: image.id };
   const { root: sourceRoot, dataset } = await loadDatasetV3(task.dataset_root, {
+    access: hooks.inputAccess ?? "complete",
     signal: o.signal,
     timeout_ms: remaining(),
   });
@@ -176,6 +180,9 @@ export async function runBenchmarkModeling(
         if (task.delivery_mode === "fit_predict") {
           if (!dataset.prediction)
             throw new Error("Missing prediction partition");
+          options.signal.throwIfAborted();
+          await hooks.publishPrediction?.();
+          options.signal.throwIfAborted();
           prediction = await (hooks.predict ?? predictFrozenModel)({
             frozenRoot: options.root,
             runRoot: join(options.root, "predictions"),

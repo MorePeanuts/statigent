@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { type DataLimits, parseDataLimits } from "../modeling/data-limits";
 import { type ProtocolV2, validateProtocolV2 } from "../modeling/protocol-v2";
 import { type ModelProfile, validateProfile } from "../models/config";
@@ -82,6 +83,7 @@ export const INPUT_PHASES = [
   "prediction",
 ] as const;
 export type InputPhases = Record<(typeof INPUT_PHASES)[number], string[]>;
+export type PhaseRoots = Record<(typeof INPUT_PHASES)[number], string>;
 export type ImageType = "png" | "jpeg";
 export type OutputContract =
   | { kind: "text"; instructions: string }
@@ -721,6 +723,7 @@ export interface Invocation {
   budget: Budget;
   seed: number;
   input_root: string;
+  phase_roots?: PhaseRoots;
   run_root: string;
   /** Unit-owned directory the adapter writes deliverables into before the harness freezes it. */
   deliverables_root: string;
@@ -740,16 +743,40 @@ export function validateInvocation(value: unknown): Invocation {
     "run_root",
     "deliverables_root",
     "trajectory",
+    ...(contractVersion(value) === 3 ? ["phase_roots"] : []),
   ]);
   const c = obj(x.config);
   keys(c, ["id", "adapter", "options", "model", "require_seed"]);
   if (typeof c.require_seed !== "boolean" || typeof x.trajectory !== "boolean")
     throw new Error("Invalid seed/trajectory requirement");
+  const task = validateTask(x.task);
+  let phaseRoots: PhaseRoots | undefined;
+  if (task.output.kind === "predictions") {
+    if (contractVersion(value) !== 3)
+      throw new Error("Prediction invocation requires v3");
+    const roots = obj(x.phase_roots);
+    keys(roots, [...INPUT_PHASES]);
+    const root = (phase: (typeof INPUT_PHASES)[number]) => {
+      const path = str(roots[phase], `phase root ${phase}`);
+      if (path !== resolve(str(x.input_root, "input_root"), phase))
+        throw new Error("Phase root ownership mismatch");
+      return path;
+    };
+    phaseRoots = {
+      search: root("search"),
+      eda: root("eda"),
+      confirmation: root("confirmation"),
+      final_fit: root("final_fit"),
+      prediction: root("prediction"),
+    };
+  } else if (x.phase_roots !== undefined)
+    throw new Error("Unexpected phase roots");
   return {
     schema_version: contractVersion(value) === 3 ? 3 : 2,
     evaluation_id: id(x.evaluation_id),
     unit_id: id(x.unit_id),
-    task: validateTask(x.task),
+    task,
+    ...(phaseRoots ? { phase_roots: phaseRoots } : {}),
     config: {
       id: id(c.id),
       adapter: id(c.adapter),

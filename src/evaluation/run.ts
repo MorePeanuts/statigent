@@ -18,7 +18,7 @@ import {
   quarantineDeliverables,
   validateReport,
 } from "./deliverables";
-import { publishInputs } from "./files";
+import { publishTaskInputs } from "./files";
 import { JudgeBudgetExhausted, JudgeSession } from "./judge";
 import type { Plan, Registry } from "./plan";
 import { EvaluationStore, inspect, type UnitRecord } from "./records";
@@ -273,7 +273,12 @@ export async function runEvaluation(
       await mkdir(deliverablesRoot, { mode: 0o700 });
       try {
         const inputRoot = join(store.directory, "units", unit.id, "input");
-        const method = await publishInputs(plan.source_root, task, inputRoot);
+        const publication = await publishTaskInputs(
+          plan.source_root,
+          task,
+          inputRoot,
+        );
+        const method = publication.method;
         await store.event("inputs_published", { unit_id: unit.id, method });
         unitSignal.throwIfAborted();
         const runRoot = join(store.directory, "native", unit.id);
@@ -294,6 +299,9 @@ export async function runEvaluation(
               budget,
               seed: unit.seed,
               input_root: inputRoot,
+              ...(publication.phase_roots
+                ? { phase_roots: publication.phase_roots }
+                : {}),
               run_root: runRoot,
               deliverables_root: deliverablesRoot,
               trajectory,

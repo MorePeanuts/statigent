@@ -3,6 +3,7 @@
 import csv
 import hashlib
 import json
+import re
 from pathlib import Path
 
 from .data_v3 import ESCAPE_PREFIX, MISSING_TOKEN, split_rows, validate_features
@@ -16,10 +17,23 @@ def read_json(path, limit):
     return json.loads(path.read_text())
 
 
-def checked_file(root, ref, expected, limits):
+def validate_reference(ref, expected, limits):
     fields(ref, ["path", "bytes", "sha256"])
-    if ref["path"] != expected:
+    if (
+        ref["path"] != expected
+        or not isinstance(ref["sha256"], str)
+        or re.fullmatch(r"[a-f0-9]{64}", ref["sha256"]) is None
+    ):
         raise ValueError("Invalid partition file reference")
+    if (
+        type(ref["bytes"]) is not int
+        or not 0 <= ref["bytes"] <= limits["max_file_bytes"]
+    ):
+        raise ValueError("Partition file size mismatch/limit exceeded")
+
+
+def checked_file(root, ref, expected, limits):
+    validate_reference(ref, expected, limits)
     path = root / ref["path"]
     if path.resolve() != path or path.is_symlink() or not path.is_file():
         raise ValueError("Escaping/non-regular partition file")
@@ -35,7 +49,9 @@ def checked_file(root, ref, expected, limits):
     return path
 
 
-def load_dataset(root: Path, limits_override=None):
+def load_dataset(root: Path, limits_override=None, access="complete"):
+    if access not in ("complete", "training"):
+        raise ValueError("Unknown dataset access mode")
     root = root.resolve(strict=True)
     # 初始清单上限不随不可信清单自我声明膨胀。
     manifest = read_json(root / "dataset.json", 16 * 1024 * 1024)
@@ -195,6 +211,26 @@ def load_dataset(root: Path, limits_override=None):
         "training",
     )
     if manifest["prediction"] is not None:
+        validate_reference(manifest["prediction"], "final-prediction/test.csv", limits)
+    if manifest["evaluator"]["labels"] is not None:
+        validate_reference(
+            manifest["evaluator"]["labels"], "evaluator/labels.csv", limits
+        )
+    validate_reference(
+        manifest["evaluator"]["source_rows"], "evaluator/source-rows.jsonl", limits
+    )
+    prediction_rows = manifest["rows"]["prediction"]
+    if (
+        type(prediction_rows) is not int
+        or not 0 <= prediction_rows <= limits["max_rows"]
+        or (prediction_rows == 0) != (manifest["prediction"] is None)
+        or (
+            manifest["prediction"] is None
+            and manifest["evaluator"]["labels"] is not None
+        )
+    ):
+        raise ValueError("Prediction partition metadata mismatch")
+    if access == "complete" and manifest["prediction"] is not None:
         ids["prediction"] = scan(
             manifest["prediction"],
             "final-prediction/test.csv",
@@ -202,11 +238,13 @@ def load_dataset(root: Path, limits_override=None):
             "prediction",
         )
     for partition in ids:
+        if access == "training" and partition == "prediction":
+            continue
         if type(manifest["rows"][partition]) is not int or manifest["rows"][
             partition
         ] != len(ids[partition]):
             raise ValueError("Partition row count mismatch")
-    if manifest["evaluator"]["labels"] is not None:
+    if access == "complete" and manifest["evaluator"]["labels"] is not None:
         labels = scan(
             manifest["evaluator"]["labels"],
             "evaluator/labels.csv",
@@ -231,6 +269,8 @@ def load_dataset(root: Path, limits_override=None):
         "validation_rows": len(split["validation"]),
     }:
         raise ValueError("Frozen split mismatch")
+    if access == "training":
+        return manifest
     mapping = checked_file(
         root,
         manifest["evaluator"]["source_rows"],
@@ -268,5 +308,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("root", type=Path)
     parser.add_argument("--limits", type=json.loads)
+    parser.add_argument(
+        "--access", choices=["complete", "training"], default="complete"
+    )
     args = parser.parse_args()
-    print(json.dumps(load_dataset(args.root, args.limits), ensure_ascii=False))
+    print(
+        json.dumps(
+            load_dataset(args.root, args.limits, args.access), ensure_ascii=False
+        )
+    )

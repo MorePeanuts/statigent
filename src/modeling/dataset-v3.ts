@@ -148,6 +148,7 @@ export async function loadDatasetV3(
     timeout_ms?: number;
     signal?: AbortSignal;
     execute?: typeof command;
+    access?: "complete" | "training";
   } = {},
 ) {
   const root = await realpath(resolve(directory));
@@ -164,6 +165,7 @@ export async function loadDatasetV3(
   ];
   if (options.limits)
     args.push("--limits", JSON.stringify(parseDataLimits(options.limits)));
+  if (options.access) args.push("--access", options.access);
   const result = await (options.execute ?? command)(args, {
     timeout_ms: options.timeout_ms ?? 60000,
     signal: options.signal,
