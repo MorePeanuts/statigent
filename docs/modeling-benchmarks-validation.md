@@ -38,6 +38,8 @@
 
 首轮全候选受限准备：`bun run evaluate audit-prepare --config configs/evaluations/modeling-preparation-audit.json --out runs/modeling-candidate-preparation-v1` 退出 0，103 项全部留有结果，耗时 307.838 秒，产物 1,149,801,794 bytes。83 通过、18 资源阻塞、2 失败；零训练、零 LLM。单文件 64 MiB、列数 4,096、工作集 1 GiB、单项 120 秒、批次 30 分钟、产物 4 GiB 并保留磁盘 4 GiB。`santander-value-prediction-challenge` 的失败经只读核查为 4,993 个唯一非空列超过上限；`363630` 的 ARFF 声明含未加引号缺失标记，解码器已修复为从名义类别集合排除 None、保留加引号 '?'，20 项准备回归通过。单项修复验证另行记录，首轮失败不覆写。
 
+单项修复准备命令 `bun run evaluate prepare --config runs/modeling-candidate-preparation-v1/configs/tabarena-lite--363630.json --out runs/modeling-candidate-preparation-fixes-v1/363630` 退出 0，12.443 秒，47,678 条训练、23,840 条测试。汇总与复现索引见 `benchmarks/metadata/modeling-preparation-validation.json`：最终有准备成功证据的候选 84 项、资源阻塞 19 项、未检查 0 项。18 项原资源阻塞包括 15 个原文件过大、1 个成员工作集超限、2 个解码后产物超限；另 1 项为上述列数限制。所有候选的指标均映射到已实现且有合成测试的定义。首轮工作区审计未在报告头保存完整代码快照，索引如实记录该限制；后续入口已补充 commit/dirty，不把这轮数据准备验收作为正式研究实验。
+
 命令：`bun run test:modeling:scale`。此次直接运行等价的
 `uv run --no-sync pytest -s -m scale tests/python/test_modeling_data_scale.py`，退出 0。
 机器本地报告为 `runs/modeling-benchmarks-validation/data-scale.json`（忽略 Git）。

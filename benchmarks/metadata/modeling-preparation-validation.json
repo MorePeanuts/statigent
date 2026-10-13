@@ -1,0 +1,2655 @@
+{
+  "schema_version": 1,
+  "scope": "103-candidate-bounded-preparation",
+  "original": {
+    "path": "runs/modeling-candidate-preparation-v1/preparation-audit.json",
+    "sha256": "f4ac188496c316cd7a024276779340d9f5e32d73cec14a350294dafe684d77f1",
+    "elapsed_ms": 307838,
+    "output_bytes": 1149801794,
+    "initial_counts": {
+      "passed": 83,
+      "blocked": 18,
+      "failed": 2
+    }
+  },
+  "limits": {
+    "schema_version": 1,
+    "catalog": "benchmarks/metadata/modeling-task-catalog.json",
+    "data_root": "benchmarks",
+    "seed": 17,
+    "limits": {
+      "max_file_bytes": 67108864,
+      "max_rows": 1000000,
+      "max_columns": 4096,
+      "max_field_bytes": 65536,
+      "max_memory_bytes": 1073741824
+    },
+    "timeout_ms": 120000,
+    "batch_timeout_ms": 1800000,
+    "max_output_bytes": 4294967296,
+    "minimum_free_bytes": 4294967296
+  },
+  "counts": {
+    "passed": 84,
+    "blocked": 19,
+    "not_run": 0
+  },
+  "calls": {
+    "models": 0,
+    "fits": 0,
+    "downloads": 0
+  },
+  "code": {
+    "initial_base_commit": "99b4f61",
+    "initial_workspace_dirty": true,
+    "validation_implementation_commit": "9fabb93",
+    "initial_code_snapshot": "not_captured_in_initial_report; later audit entry records commit and dirty state"
+  },
+  "tasks": [
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "titanic",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 712,
+        "prediction": 179
+      },
+      "metric_id": "accuracy-v1",
+      "dataset_sha256": "c7531d8174c9279d907caed022a5f28de28a449fb2b40753e1deca61fa1accbe",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--titanic.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "santander-customer-transaction-prediction",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 160000,
+        "test_rows": 40000,
+        "features": 200
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "porto-seguro-safe-driver-prediction",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 476169,
+        "test_rows": 119043,
+        "features": 57
+      },
+      "metric_id": "normalized-gini-ds-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "santander-customer-satisfaction",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 60816,
+        "prediction": 15204
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "60ca5c3106bcc058191edfd25fc14c68ac20e5a2c99b922ea88879b0d44575d2",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--santander-customer-satisfaction.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "santander-value-prediction-challenge",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "failed",
+      "initial_reason": "Error: Invalid source CSV columns",
+      "preparation_status": "blocked",
+      "reason": "4993 unique nonempty source columns exceed configured max_columns=4096; initial generic error retained",
+      "rows": {
+        "train_rows": 3567,
+        "test_rows": 892,
+        "features": 4991
+      },
+      "metric_id": "rmsle-numpy-log-v1",
+      "dataset_sha256": null,
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--santander-value-prediction-challenge.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e1",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 132027,
+        "prediction": 33007
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "2be27a30fc8a55cebff6fd0c89f72cc9714d10b21a1e2128e79d25621e247cc0",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s4e1.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "Bank Customer Churn 与 s4e1 的潜在来源关联待核对，不预设独立泛化证据"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e2",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 16606,
+        "prediction": 4152
+      },
+      "metric_id": "accuracy-v1",
+      "dataset_sha256": "ce01a9284dc1fddbb971b245a9dc978a4b12ea86948d46d0d4eb11cadda961df",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s4e2.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "bike-sharing-demand",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 8708,
+        "prediction": 2178
+      },
+      "metric_id": "rmsle-numpy-log-v1",
+      "dataset_sha256": "40ccf870791720539d42b59b5aae7a1433e1b85f75aeb39d4f95a3cead960c89",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--bike-sharing-demand.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "包含明确日期/周语义：保留发布划分，未来预测解释仍待研究审计"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e5",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "Error: Preparation membership memory limit exceeded",
+      "preparation_status": "blocked",
+      "reason": "Error: Preparation membership memory limit exceeded",
+      "rows": {
+        "train_rows": 894365,
+        "test_rows": 223592,
+        "features": 20
+      },
+      "metric_id": "r2-sklearn-v1",
+      "dataset_sha256": null,
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s4e5.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e4",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 72492,
+        "prediction": 18123
+      },
+      "metric_id": "rmsle-sklearn-v1",
+      "dataset_sha256": "d93b852064c52777cd8c791f003564070a914ece1b77237df1881bcbafb8c5a3",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s4e4.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "microsoft-malware-prediction",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 380410,
+        "test_rows": 95103,
+        "features": 81
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "spaceship-titanic",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 6954,
+        "prediction": 1739
+      },
+      "metric_id": "accuracy-v1",
+      "dataset_sha256": "5b03bfe561c055c75da223e69d8290db6fd9098a97a27615e0ef3c310bde1052",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--spaceship-titanic.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "dont-overfit-ii",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 200,
+        "prediction": 50
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "4c07e0a8c5b3fb825a2d7c1a084c4545670842f12ffb7e54fad8544228c323cf",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--dont-overfit-ii.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e3",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 15375,
+        "prediction": 3844
+      },
+      "metric_id": "mean-target-auc-v1",
+      "dataset_sha256": "f46f9bf7f61c15910b7782d3943343d346050f13be3f27e032047d060d6b84a5",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s4e3.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "tabular-playground-series-sep-2021",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 416946,
+        "test_rows": 104237,
+        "features": 118
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e24",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 127404,
+        "prediction": 31852
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "d13d03081b7cb965fbea4975f54a4ff4517854f89319dbffe1b2d09d788a96b5",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e24.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "tabular-playground-series-aug-2022",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 21256,
+        "prediction": 5314
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "ac19ed7479782fe74113c1a4926996a8979830db8c4f0a2bd1e6bdc4f2fab3ba",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--tabular-playground-series-aug-2022.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e14",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 12231,
+        "prediction": 3058
+      },
+      "metric_id": "mae-v1",
+      "dataset_sha256": "d0d0848884f3645a492eb24e9cac53f92ea3cdf4d8858a06713a5890eab0ab7b",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e14.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "instant-gratification",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 209715,
+        "test_rows": 52429,
+        "features": 256
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "tabular-playground-series-aug-2021",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 200000,
+        "test_rows": 50000,
+        "features": 100
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "tabular-playground-series-jan-2021",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 240000,
+        "test_rows": 60000,
+        "features": 14
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e23",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 81410,
+        "prediction": 20353
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "0b6b24b361f08e7b6103d28c8edf3c410585afdbb047f1235674b4df4672cfc4",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e23.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e25",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 8325,
+        "prediction": 2082
+      },
+      "metric_id": "median-absolute-error-v1",
+      "dataset_sha256": "6be4d4542583e1a550e71e116feb244cfbd775c4e095855796db8337e44a561e",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e25.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e22",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 988,
+        "prediction": 247
+      },
+      "metric_id": "micro-f1-v1",
+      "dataset_sha256": "b17f3b98aef3badb82ed2265064f1c0de696c603ce793f995563f83a69b66923",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e22.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e17",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 109143,
+        "prediction": 27286
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "ad26defedec973076381e33d68ab54af49c023e2da00e9d5b11fa2652c34b77e",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e17.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "tabular-playground-series-mar-2021",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 240000,
+        "prediction": 60000
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "580825a633b7dfac04357ec50c2ba4fb54b2c15f348af6ccbf363a7871e5a2e1",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--tabular-playground-series-mar-2021.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e20",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 63218,
+        "test_rows": 15805,
+        "features": 74
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "包含明确日期/周语义：保留发布划分，未来预测解释仍待研究审计"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "tabular-playground-series-feb-2021",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 240000,
+        "test_rows": 60000,
+        "features": 24
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e16",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 59240,
+        "prediction": 14811
+      },
+      "metric_id": "mae-v1",
+      "dataset_sha256": "2f019bfac25b6f61011b9ca964d20f9ad1b9b8ef47d7833910e9ab8667e7b028",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e16.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "tabular-playground-series-nov-2021",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 480000,
+        "test_rows": 120000,
+        "features": 100
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "cat-in-the-dat",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 240000,
+        "prediction": 60000
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "462fdb74fcc45105126dde80e7956c207bfe68a0fd8701d712958f81ec86a6b4",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--cat-in-the-dat.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "tabular-playground-series-feb-2022",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 66900,
+        "test_rows": 16725,
+        "features": 286
+      },
+      "metric_id": "accuracy-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "tabular-playground-series-apr-2021",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 80000,
+        "prediction": 20000
+      },
+      "metric_id": "accuracy-v1",
+      "dataset_sha256": "aeeb73265f804cd5e2e684d1a1a87658fb0d8bef0d93d43bc51122c1bbf05c36",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--tabular-playground-series-apr-2021.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "tabular-playground-series-dec-2021",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 3200000,
+        "test_rows": 800000,
+        "features": 54
+      },
+      "metric_id": "accuracy-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e19",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 109560,
+        "prediction": 27390
+      },
+      "metric_id": "smape-ds-v1",
+      "dataset_sha256": "bfc5d1836027429ecea4820de0354a4005a00c10b1023ebfc71281e5a838a3ac",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e19.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "包含明确日期/周语义：保留发布划分，未来预测解释仍待研究审计"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "cat-in-the-dat-ii",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 480000,
+        "test_rows": 120000,
+        "features": 23
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "tabular-playground-series-may-2022",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 720000,
+        "test_rows": 180000,
+        "features": 31
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e12",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 331,
+        "prediction": 83
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "96c073ee8ee62052babe847bb7a6ffea1bd2e828228531e6682b2fe9f5bd39d8",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e12.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e18",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 11870,
+        "prediction": 2968
+      },
+      "metric_id": "mean-target-auc-v1",
+      "dataset_sha256": "429e1d0daa913f2d09077ef20654d1644aa515b3052b493a02f4025dd55dd2e3",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e18.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e11",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 288268,
+        "prediction": 72068
+      },
+      "metric_id": "rmsle-sklearn-v1",
+      "dataset_sha256": "926a8727def7e623e61aa417c40b3d2ca9a18f93c0e59745c965e0c782097beb",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e11.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e13",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 565,
+        "prediction": 142
+      },
+      "metric_id": "top3-hit-ds-v1",
+      "dataset_sha256": "4701b45371bc136669bb95d982e92faa5a0c2298ebb07ee4a35851191d674bee",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e13.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e5",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 1644,
+        "prediction": 412
+      },
+      "metric_id": "quadratic-kappa-ds10-v1",
+      "dataset_sha256": "c303e54345d3816754452d9acc7ed7b4774713cdf66e3e10f8051c954f077193",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e5.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e10",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 94051,
+        "prediction": 23513
+      },
+      "metric_id": "log-loss-sklearn-inferred-binary-v1",
+      "dataset_sha256": "3f0379cf54859f16dca9de0610dc5d1b0153064d96bc9aa80bca608659df5f65",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e10.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e2",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 12243,
+        "prediction": 3061
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "4931bd7f3b5fc78dddce5830e19543554a5812fe453185dfc14408ece444e12a",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e2.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e9",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 4325,
+        "prediction": 1082
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "2b6be65928435d070765748b175cb94c8c60bedddf9b5b5d4a7ef4a46647fa20",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e9.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "已用于协同/no_eda 真实开发，不能作为未见开发任务"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e8",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 154858,
+        "prediction": 38715
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "68a13bc51764d4750e8faf738a8f4513072b2936a6b4f6150e26c2fcf5036c46",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e8.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e6",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 18184,
+        "prediction": 4546
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "71cd4abbf9b2d6ae71c435d470194b3c5f822442396d5c648a7665e26f9df625",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e6.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e1",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 29709,
+        "prediction": 7428
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "7dbca969360d7b8e7161ce040cb2ecd8698226935cf4e28a8f914b584b6dcfb6",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e1.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e7",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 33680,
+        "prediction": 8420
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "2ffc05c3886e2b3f0b8d770a633e5e774a6048401691d1f86500dae6b5451bb3",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e7.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e3",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 1341,
+        "prediction": 336
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "be42165aab255a60e854c4cb8252829d79a9fdd7bf47a7f5fe86e82d883aeb80",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s3e3.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e4",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "blocked",
+      "initial_reason": "source_file_resource_limit",
+      "preparation_status": "blocked",
+      "reason": "source_file_resource_limit",
+      "rows": {
+        "train_rows": 175303,
+        "test_rows": 43826,
+        "features": 30
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": null,
+      "receipt": null,
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e6",
+      "source_status": "passed",
+      "structure_status": "passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 61214,
+        "prediction": 15304
+      },
+      "metric_id": "accuracy-v1",
+      "dataset_sha256": "1393f316cd43f5dc66ab4bbc8c9bb3ea5b817235f0fd8d45a1186d1b59c68991",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/dsbench-modeling--playground-series-s4e6.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363612",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 1002,
+        "prediction": 501
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "8c269f446fa104137e1d8ffd1109b23d843249af8865f400555420a15fffaa39",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363612.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363613",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 21846,
+        "prediction": 10923
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "0f237a5b040fac74d171e4e463eee9e7592e4f2c7ecb0b3b5dc0fc1f6196e553",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363613.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363614",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 598,
+        "prediction": 300
+      },
+      "metric_id": "log-loss-sklearn-v1",
+      "dataset_sha256": "31ac8f60bb7dd986fc7d2123e362eaf9846b3657d38b13e57fe6dd4bb3e632af",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363614.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363615",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 1025,
+        "prediction": 513
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "ead03e99594548d3f040663a8d58a27fab05c5eaca91ec3d8327c34eba66f83f",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363615.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363616",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "blocked",
+      "initial_reason": "Error: Prepared file limit exceeded",
+      "preparation_status": "blocked",
+      "reason": "Error: Prepared file limit exceeded",
+      "rows": {
+        "train_rows": 50666,
+        "test_rows": 25334,
+        "features": 170
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": null,
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363616.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363618",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 30140,
+        "prediction": 15071
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "41e573c768204cdc92feedd68d9daab7e445d312af11d823a8ece7dd279b601c",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363618.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363619",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 6666,
+        "prediction": 3334
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "f95a0bc85e0aae2eb6a8c1786580a0da59b47f73ab1b5a08ea041e615d7d1a07",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363619.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "Bank Customer Churn 与 s4e1 的潜在来源关联待核对，不预设独立泛化证据"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363620",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 2500,
+        "prediction": 1251
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "6548a93415dfee63949e5663f46e4bd745dc48c4a504052321bfb627d21863ef",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363620.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363621",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 498,
+        "prediction": 250
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "28c9b0a3effb895cd986866895761b183a6897c06fd8a7d617b5f1d8cbc33d74",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363621.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363623",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 3333,
+        "prediction": 1667
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "c1b965b4eccacdd83e19830a263e6f504d0e9ce06c359e29e42a09ebca3c1cfd",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363623.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363624",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 6548,
+        "prediction": 3274
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "8808ed9a0448ba6e651f3c9f7b5497254729a8052056a7e7affca3f981e7ab79",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363624.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363625",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 686,
+        "prediction": 344
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "c4b110a70d6a212eabead498f95faee490700c68adfb4bfd254ca642608ceec4",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363625.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363626",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 666,
+        "prediction": 334
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "420682c86b631688552543ddb977bdea79996ebfbdd7e4158424755cf8730444",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363626.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363627",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 20000,
+        "prediction": 10000
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "babd72e7cb34a1b318e72d3d9f8a4c2f31dfbfab78747bd92f1b542474e129cb",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363627.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363628",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 86586,
+        "prediction": 43294
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "80cdc0eebcf49591c448a22e33d536dde712235529a3913d4a4d873f243ca2a4",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363628.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363629",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 512,
+        "prediction": 256
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "aefb0eaf576d1d889953284caeb74e12ce4826edb7c0204c9d35469f6042c867",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363629.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363630",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "failed",
+      "initial_reason": "Error: Invalid nominal feature categories",
+      "preparation_status": "passed",
+      "reason": "ARFF missing nominal declaration fixed and separately verified",
+      "rows": {
+        "train_rows": 47678,
+        "test_rows": 23840,
+        "features": 47
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": null,
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363630.json",
+      "followup": {
+        "dataset_sha256": "d57a88ccf7aeda98770dcc60fabb56b000d1764afcb7a9ba9ebadb7713b82aa2",
+        "receipt": "runs/modeling-candidate-preparation-fixes-v1/363630.preparation.json",
+        "elapsed_ms": 12443
+      },
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363631",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 35960,
+        "prediction": 17980
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "c8b63024641f7d9a686ea43cb22ef6197c25191ca74f38850a542e9117d202e8",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363631.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363632",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 7332,
+        "prediction": 3667
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "d29772e4e985d111d6084776bb00caf7619813129dcec63aaf3c4c856888d9fc",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363632.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363671",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 1000,
+        "prediction": 500
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "9cb6c2b84856f1e78b76e3118b07bcf519ae9bd7547e9b233b742b8287a4f911",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363671.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363672",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 30300,
+        "prediction": 15151
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "5cb797d845ce388d5a2a6c8d13c3d5f831c8ed74a075a16831c1f822ccbdd767",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363672.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363673",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 100000,
+        "prediction": 50000
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "013e326bbee429853dc17a726892033716a60b641317b825ac054b5b82166b13",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363673.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363674",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 1600,
+        "prediction": 800
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "33c7fcf9de25f2e04e4913fea8c27bdb5f090ac58846ca9dd9daa84f0cb4db0d",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363674.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363675",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 892,
+        "prediction": 446
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "7f3e7e095e5e2bf7c045a3c374d690e20d8a109655b2bb12cf42c3603f906a51",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363675.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363676",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 6972,
+        "prediction": 3487
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "5a60f065e12ce8ed38ca16a2c48eb2190bf692cb412800ee0232625784638977",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363676.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363677",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 2563,
+        "prediction": 1282
+      },
+      "metric_id": "log-loss-sklearn-v1",
+      "dataset_sha256": "9f3c8f29a306a61413ff126ef99365e50b01115ca6857353337548c5d919c808",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363677.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363678",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 13760,
+        "prediction": 6880
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "55ff4cb58e11c0c17f89859f412ca60c8f4e283bf1d35a916f16c8871a3eefc3",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363678.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363679",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 12772,
+        "prediction": 6386
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "2bb3bec2dcbea8cfa890437fd3ee31750db4cc624667fad853ba2f8e399c7bc7",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363679.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363681",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 8456,
+        "prediction": 4228
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "853da01e97f7023c41b140574ce1426ca2de7a0baad89a9b3a821e807c5f561a",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363681.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363682",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 1148,
+        "prediction": 575
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "eb8eb0f5d4a2df3c062c8e78471a949b19998101f8c02af0dd798d667493f9d7",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363682.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363683",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "blocked",
+      "initial_reason": "Error: Prepared file limit exceeded",
+      "preparation_status": "blocked",
+      "reason": "Error: Prepared file limit exceeded",
+      "rows": {
+        "train_rows": 33333,
+        "test_rows": 16667,
+        "features": 212
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": null,
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363683.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363684",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 1493,
+        "prediction": 747
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "da046ab2f9c3a07c44cafa41f5a1b097e966abf59229ba9758a6fbf29fc1442a",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363684.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363685",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 676,
+        "prediction": 338
+      },
+      "metric_id": "log-loss-sklearn-v1",
+      "dataset_sha256": "5300c3efc6c34a28be8d8e58f97e087db7361e647d073a90e842c9e4596e3e02",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363685.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363686",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 9184,
+        "prediction": 4592
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "43e1061c514ee9ae85f37da795628c43f2f3f79be20b68c3cfc4edcbf12aaf19",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363686.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363689",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 4994,
+        "prediction": 2497
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "7053344741db9c7d9958bfe31fb027dd2bb9442e994d7175d93dc702a53750ba",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363689.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363691",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 8220,
+        "prediction": 4110
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "35a1d2cd6d3d0b2b1867c17cf768855756d85af06cb8009f624fc64fd470523d",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363691.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363693",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 30486,
+        "prediction": 15244
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "c066e2d355f59a1298c81e0f30a3f8174a152815d2ba3f1a8352b302b788fafc",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363693.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363694",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 3940,
+        "prediction": 1970
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "017376f33585a8121e6874762f7ccad272a7f6ad8f66b930760c57be382cb376",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363694.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363696",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 702,
+        "prediction": 352
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "913fadf75bb69ab3cc241662548798cfbdcdd7ef967c04b671140ad3dc7a5500",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363696.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363697",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 3828,
+        "prediction": 1914
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "72ee6625bd6c77697be9e047fbb7757e331d34c5626a0af25d63a3a00358e296",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363697.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363698",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 604,
+        "prediction": 303
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "f7b7a8d01b57f73cdc69807d52922f8b2d366c7c74312d9826abf355c4f904e6",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363698.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363699",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 52035,
+        "prediction": 26018
+      },
+      "metric_id": "log-loss-sklearn-v1",
+      "dataset_sha256": "359a362d5550e95618e862cbb37073932144ff345335c2e5f66f5461a207dd19",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363699.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363700",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 1722,
+        "prediction": 862
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "5a8831d7e617a6f95c0ecf32af4d3e905ede87dfca61908d57ef211361f3ea56",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363700.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363702",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 2126,
+        "prediction": 1064
+      },
+      "metric_id": "log-loss-sklearn-v1",
+      "dataset_sha256": "b92158975f9918a5967ba5d869899fd8f69ead8aa81baae127d38bf5866a6285",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363702.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363704",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 2949,
+        "prediction": 1475
+      },
+      "metric_id": "log-loss-sklearn-v1",
+      "dataset_sha256": "f3c9c0d15f3cb848757730c202bd0f57d0ff27939d7c232082988535c73eba28",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363704.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363705",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 14175,
+        "prediction": 7088
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "0e141629f9c98a125c37811012be390098f624b15a999ab4d4dffc8f24bd4540",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363705.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363706",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 4546,
+        "prediction": 2273
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "6c3aabdd39f477f1be883290fd3304a88e5e48328de190de57dff73293151515",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363706.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363707",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 902,
+        "prediction": 451
+      },
+      "metric_id": "log-loss-sklearn-v1",
+      "dataset_sha256": "3ef6f6c39abf6919e02452dc4ac1957cd1fdabb2b38cedcacc07c865e7e050dc",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363707.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363708",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 4331,
+        "prediction": 2166
+      },
+      "metric_id": "rmse-v1",
+      "dataset_sha256": "f61c67e1daee518d657d7beb3332ef5ac0d861b9abec9aab5cce51f3f6d1d47b",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363708.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363711",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 1132,
+        "prediction": 567
+      },
+      "metric_id": "log-loss-sklearn-v1",
+      "dataset_sha256": "ba055477e33a4e8653e869b580318f342f63aedc1f7972f086a986760b95ec5f",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363711.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363712",
+      "source_status": "passed",
+      "structure_status": "metadata_and_split_passed",
+      "initial_status": "passed",
+      "initial_reason": "prepared_and_validated",
+      "preparation_status": "passed",
+      "reason": "prepared_and_validated",
+      "rows": {
+        "training": 7256,
+        "prediction": 3629
+      },
+      "metric_id": "roc-auc-v1",
+      "dataset_sha256": "a2e8eeed0ad74a8f7d0bd1329f2144cb965d7fb154853db1e9e1ed59dba79fd0",
+      "receipt": "runs/modeling-candidate-preparation-v1/receipts/tabarena-lite--363712.json",
+      "followup": null,
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      },
+      "metric_support": "implemented-and-synthetic-tested"
+    }
+  ]
+}
