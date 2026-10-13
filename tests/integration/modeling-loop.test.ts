@@ -48,6 +48,11 @@ test("modeling keeps candidate identity through EDA, failed code and repair, the
     edaClient = new ScriptClient(modelingEdaScript());
   const result = await runModeling({
     task: {
+      schema_version: 2,
+      method: "adaptive_eda",
+      confirmation: { mode: "none" },
+      resource_version: "smoke-v1",
+
       goal: "Test synthetic loop",
       dataset_root: join(root, "data"),
       model_profile: profile.id,
@@ -146,15 +151,11 @@ test("modeling keeps candidate identity through EDA, failed code and repair, the
   console.log(JSON.stringify({ kind: "modeling_integration", ...result }));
 }, 240000);
 
-test("two EDA calls use distinct requested allowances, shared parent costs and independent kernels", async () => {
+test("two EDA calls use host allocations from remaining resources, shared parent costs and independent kernels", async () => {
   const root = resolve("runs/integration-modeling-loop", randomUUID());
   await mkdir(root, { recursive: true });
   await prepareDataset(source, join(root, "data"));
-  const base = modelingScript(false, false, {
-      task_timeout_ms: 90000,
-      total_tokens: 100000,
-      executions: 1,
-    }),
+  const base = modelingScript(false, false),
     eda = modelingEdaScript();
   const client = new ScriptClient((body, i) => {
     if (i === 2) {
@@ -162,11 +163,6 @@ test("two EDA calls use distinct requested allowances, shared parent costs and i
       return reply([
         analyzeCall(String(previous.source_experiment), {
           candidateUpdates: [],
-          requestedBudget: {
-            task_timeout_ms: 120000,
-            total_tokens: 500000,
-            executions: 3,
-          },
         }),
       ]);
     }
@@ -174,6 +170,11 @@ test("two EDA calls use distinct requested allowances, shared parent costs and i
   });
   const result = await runModeling({
     task: {
+      schema_version: 2,
+      method: "adaptive_eda",
+      confirmation: { mode: "none" },
+      resource_version: "smoke-v1",
+
       goal: "Two independent analyses",
       dataset_root: join(root, "data"),
       model_profile: profile.id,
@@ -202,13 +203,18 @@ test("two EDA calls use distinct requested allowances, shared parent costs and i
       (e) => e.type === "action_accepted" && obj(e.intent).kind === "analysis",
     )
     .map((e) => obj(obj(e.intent).allocation));
-  expect(allocations.map((a) => obj(a.requested).total_tokens)).toEqual([
-    100000, 500000,
-  ]);
+  expect(
+    allocations.every(
+      (a) =>
+        a.version === 2 &&
+        a.policy === "host-cap-v1" &&
+        a.requested === undefined,
+    ),
+  ).toBe(true);
   expect(allocations.map((a) => obj(a.effective).total_tokens)).toEqual([
-    100000, 299895,
+    299970, 299895,
   ]);
-  expect(allocations.map((a) => obj(a.effective).executions)).toEqual([1, 1]);
+  expect(allocations.map((a) => obj(a.effective).executions)).toEqual([2, 1]);
   expect(allocations[1]?.clipped).toContainEqual({
     dimension: "total_tokens",
     constraint: "remaining",

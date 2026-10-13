@@ -20,6 +20,29 @@ export interface Allocation {
     limit: number;
   }[];
 }
+export type HostAllocation = Omit<Allocation, "requested"> & {
+  version: 2;
+  policy: "host-cap-v1";
+};
+export function validateHostAllocation(value: unknown): HostAllocation {
+  const x = obj(value);
+  keys(x, ["version", "policy", "effective", "remaining", "limits", "clipped"]);
+  if (x.version !== 2 || x.policy !== "host-cap-v1")
+    throw new Error("Invalid host allocation version");
+  const limits = obj(x.limits);
+  const { requested: _requested, ...validated } = validateAllocation({
+    effective: x.effective,
+    remaining: x.remaining,
+    limits,
+    clipped: x.clipped,
+    requested: {
+      task_timeout_ms: limits.task_timeout_ms,
+      total_tokens: limits.total_tokens,
+      executions: limits.executions,
+    },
+  });
+  return { version: 2, policy: "host-cap-v1", ...validated };
+}
 export function requestedBudget(value: unknown): RequestedBudget {
   const x = obj(value);
   keys(x, ["task_timeout_ms", "total_tokens", "executions"]);
@@ -160,11 +183,14 @@ export class Budget {
   private readonly settlements = new Map<string, string>();
   training = 0;
   finalTraining = 0;
+  confirmationTraining = 0;
+  private readonly confirmationIds = new Set<string>();
   edaCalls = 0;
   edaExecutions = 0;
   constructor(
     readonly config: ModelingBudget,
     readonly remaining: () => number,
+    readonly confirmationReserve = 0,
   ) {}
   settleModel(usage: Usage, unknown: boolean, elapsed: number) {
     for (const l of [this.total, this.modeling]) {
@@ -220,7 +246,9 @@ export class Budget {
     this.check();
     const cap =
       this.config.training_attempts -
-      (final ? 0 : this.config.final_training_attempts);
+      (final
+        ? 0
+        : this.config.final_training_attempts + this.confirmationReserve);
     if (
       this.training >= cap ||
       (!final && this.explorationMs() <= 0) ||
@@ -232,6 +260,29 @@ export class Budget {
     this.canTrain(final);
     this.training++;
     if (final) this.finalTraining++;
+  }
+  confirmationMs() {
+    return Math.max(
+      0,
+      this.remaining() -
+        this.config.final_training_attempts *
+          (this.config.fit_timeout_ms + this.config.predict_timeout_ms),
+    );
+  }
+  confirm(id: string) {
+    this.check();
+    if (this.confirmationIds.has(id))
+      throw new Error("Confirmation already charged");
+    if (
+      this.confirmationTraining >= this.confirmationReserve ||
+      this.training >=
+        this.config.training_attempts - this.config.final_training_attempts ||
+      this.confirmationMs() <= 0
+    )
+      throw new Error("Confirmation budget exhausted");
+    this.confirmationIds.add(id);
+    this.confirmationTraining++;
+    this.training++;
   }
   childBudget(request: RequestedBudget): Allocation {
     const requested = requestedBudget(request);
@@ -281,6 +332,18 @@ export class Budget {
     }
     return { requested, effective, remaining, limits, clipped };
   }
+  hostChildBudget(): HostAllocation {
+    const { requested: _requested, ...allocation } = this.childBudget({
+      task_timeout_ms: this.config.eda_timeout_ms,
+      total_tokens: this.config.eda_tokens,
+      executions: this.config.eda_executions,
+    });
+    return validateHostAllocation({
+      version: 2,
+      policy: "host-cap-v1",
+      ...allocation,
+    });
+  }
   snapshot() {
     return {
       tokens: this.total,
@@ -288,6 +351,7 @@ export class Budget {
       children: Object.fromEntries(this.children),
       training_attempts: this.training,
       final_training_attempts: this.finalTraining,
+      confirmation_training_attempts: this.confirmationTraining,
       eda_calls: this.edaCalls,
       eda_executions: this.edaExecutions,
       remaining_ms: this.remaining(),

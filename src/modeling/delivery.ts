@@ -5,7 +5,12 @@ import { describeFile, regular, verifyFiles } from "../evaluation/files";
 import { dockerCommand } from "../execution/docker";
 import { obj, str } from "../models/validation";
 import { readManifest, writeJson } from "../records/store";
-import { type ModelingTask, validateModelingTask } from "./config";
+import {
+  type ModelingExecutionTask,
+  validateFrozenModelingTask,
+  validateModelingTask,
+} from "./config";
+import type { ConfirmationResult } from "./confirmation";
 import {
   type Dataset,
   datasetProtocol,
@@ -31,13 +36,20 @@ import {
   validateProtocol,
   validateScore,
 } from "./protocol";
+import { inspectModeling } from "./records";
 import { scoreTables } from "./scoring";
+import type { ValidationPlan } from "./validation";
 export async function deliver(
   root: string,
-  task: ModelingTask,
+  task: ModelingExecutionTask,
   selected: Experiment,
   final: Experiment,
   dataset: Dataset,
+  selection?: {
+    searchBest: Experiment;
+    confirmation: ConfirmationResult;
+    plan: ValidationPlan;
+  },
 ) {
   if (
     final.status !== "completed" ||
@@ -75,9 +87,19 @@ export async function deliver(
     await writeFile(join(dir, p), v, { flag: "wx", mode: 0o444 });
   const native = await readManifest(final.fit.directory);
   const manifest = {
-    schema_version: 2,
+    schema_version: selection ? 3 : 2,
+    stage_version: final.fit.stage_version ?? 2,
     protocol,
     source_experiment: selected.id,
+    ...(selection
+      ? {
+          search_best_experiment_id: selection.searchBest.id,
+          search_best_score: selection.searchBest.score,
+          selected_experiment_id: selected.id,
+          confirmation: selection.confirmation,
+          validation_plan: selection.plan,
+        }
+      : {}),
     dataset,
     model_environment: native.environment,
     code_version: native.code,
@@ -99,11 +121,12 @@ async function frozen(root: string) {
     JSON.parse(await readFile(await regular(root, "modeling.json"), "utf8")),
   );
   if (
-    (parent.schema_version !== 1 && parent.schema_version !== 2) ||
+    ![1, 2, 3].includes(Number(parent.schema_version)) ||
     parent.kind !== "modeling" ||
     parent.status !== "completed"
   )
     throw new Error("Delivery is not frozen and completed");
+  if (parent.schema_version === 3) await inspectModeling(root);
   const directory = join(root, "delivery");
   const manifest = obj(
     JSON.parse(
@@ -136,7 +159,7 @@ async function frozen(root: string) {
       "predictions.csv",
       "train.py",
       "predict.py",
-      ...(manifest.schema_version === 2 ? ["model-metadata.json"] : []),
+      ...(manifest.schema_version !== 1 ? ["model-metadata.json"] : []),
       "README.md",
     ])
   )
@@ -149,11 +172,11 @@ async function frozen(root: string) {
   )
     throw new Error("Legacy delivery cannot contain a v2 task protocol");
   if (
-    (manifest.schema_version === 2 || manifest.dataset !== undefined) &&
+    (manifest.schema_version !== 1 || manifest.dataset !== undefined) &&
     JSON.stringify(manifest.dataset) !== JSON.stringify(dataset)
   )
     throw new Error("Delivery dataset mismatch");
-  if (manifest.schema_version === 2) {
+  if (manifest.schema_version !== 1) {
     const protocol = validateProtocol(manifest.protocol, dataset.id_column);
     if (
       protocol.protocol_sha256 !== datasetProtocol(dataset).protocol_sha256 ||
@@ -178,10 +201,53 @@ async function frozen(root: string) {
   const tolerance = obj(manifest.prediction_tolerance);
   if (tolerance.atol !== 1e-8 || tolerance.rtol !== 1e-6)
     throw new Error("Invalid prediction tolerance");
+  if (manifest.schema_version === 3) {
+    if (!Array.isArray(parent.experiments))
+      throw new Error("Missing frozen experiments");
+    const experiments = parent.experiments.map(obj);
+    const selected = experiments.find(
+      (e) => e.id === parent.selected_experiment_id,
+    );
+    const best = experiments.find(
+      (e) => e.id === parent.search_best_experiment_id,
+    );
+    const final = experiments.find((e) => e.id === manifest.final_experiment);
+    if (
+      !selected ||
+      !best ||
+      !final ||
+      final.phase !== "final" ||
+      final.status !== "completed" ||
+      final.code_sha256 !== selected.code_sha256 ||
+      files[0]?.sha256 !== selected.code_sha256 ||
+      JSON.stringify(manifest.validation_score) !==
+        JSON.stringify(selected.score) ||
+      JSON.stringify(manifest.search_best_score) !==
+        JSON.stringify(best.score) ||
+      JSON.stringify(manifest.task) !== JSON.stringify(obj(parent.config).task)
+    )
+      throw new Error("Delivery selected pipeline metadata mismatch");
+    for (const key of [
+      "search_best_experiment_id",
+      "selected_experiment_id",
+      "confirmation",
+    ])
+      if (JSON.stringify(manifest[key]) !== JSON.stringify(parent[key]))
+        throw new Error("Delivery selection mismatch");
+    if (
+      manifest.source_experiment !== manifest.selected_experiment_id ||
+      JSON.stringify(manifest.validation_plan) !==
+        JSON.stringify(obj(parent.config).validation_plan)
+    )
+      throw new Error("Delivery frozen plan mismatch");
+  }
   return {
     directory,
     manifest,
-    task: validateModelingTask(manifest.task),
+    task:
+      manifest.schema_version === 3
+        ? validateModelingTask(manifest.task)
+        : validateFrozenModelingTask(manifest.task),
     dataset,
     files,
   };
@@ -197,6 +263,9 @@ export async function reproduce(
   if (JSON.stringify(data.dataset) !== JSON.stringify(f.dataset))
     throw new Error("Frozen input identity mismatch");
   const task = { ...f.task, image: str(image.id, "image ID") };
+  const stageVersion = f.manifest.stage_version ?? 2;
+  if (stageVersion !== 2 && stageVersion !== 3)
+    throw new Error("Unsupported frozen modeling stage version");
   const images: unknown = JSON.parse(
     await dockerCommand(["image", "inspect", task.image]),
   );
@@ -228,6 +297,7 @@ export async function reproduce(
           root: dir,
           stage: "predict",
           legacy: f.manifest.schema_version === 1,
+          stageVersion,
           entrypoint: entrypoints.predict,
           code,
           data: data.test,
@@ -245,6 +315,7 @@ export async function reproduce(
           candidateId: "reproduce",
           final: true,
           legacy: f.manifest.schema_version === 1,
+          stageVersion,
           entrypoints,
         });
   const stage = "final" in result ? result.predict : result;
@@ -300,7 +371,7 @@ export async function scoreDelivery(
   if (JSON.stringify(labels.columns) !== JSON.stringify([id, target]))
     throw new Error("Expected private ID/target label columns");
   const ids = rowIds(data.test, id);
-  if (f.manifest.schema_version === 2) {
+  if (f.manifest.schema_version !== 1) {
     const dir = resolve(outRoot, randomUUID());
     await mkdir(dir, { recursive: true });
     const protocol = datasetProtocol(data.dataset);

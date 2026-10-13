@@ -1,0 +1,609 @@
+{
+  "manifest": {
+    "schema_version": 3,
+    "status": "failed",
+    "config": {
+      "task": {
+        "method": "collaborative",
+        "confirmation": {
+          "mode": "terminal_repeated_holdout"
+        }
+      }
+    },
+    "experiments": [
+      {
+        "id": "ef801629-78c7-492c-99aa-532020f97a2f",
+        "phase": "search",
+        "status": "completed",
+        "score": {
+          "metric": "rmse",
+          "direction": "minimize",
+          "value": 10.071742649611338,
+          "protocol_sha256": "7ac2d770c3bd5452930457cc8d49715ef8cf0d1ee0990bfe1f4486cd3b22546b",
+          "scoring_version": "tabular-metrics-v1",
+          "evaluation_id": "b6411925ce8b3c13c2f6726159833224debbdcce390e5e647750692d8c27ea55"
+        }
+      },
+      {
+        "id": "d0389071-58e3-4a8d-ab37-ec13703ba0f8",
+        "phase": "search",
+        "status": "completed",
+        "score": {
+          "metric": "rmse",
+          "direction": "minimize",
+          "value": 2.198129442157285e-15,
+          "protocol_sha256": "7ac2d770c3bd5452930457cc8d49715ef8cf0d1ee0990bfe1f4486cd3b22546b",
+          "scoring_version": "tabular-metrics-v1",
+          "evaluation_id": "b6411925ce8b3c13c2f6726159833224debbdcce390e5e647750692d8c27ea55"
+        }
+      },
+      {
+        "id": "a3b0993a-c66e-4b49-a762-cda7aadbb704",
+        "phase": "confirmation",
+        "status": "completed",
+        "score": {
+          "metric": "rmse",
+          "direction": "minimize",
+          "value": 0,
+          "protocol_sha256": "7ac2d770c3bd5452930457cc8d49715ef8cf0d1ee0990bfe1f4486cd3b22546b",
+          "scoring_version": "tabular-metrics-v1",
+          "evaluation_id": "0c5f3c0b3e91b2d99526743df6246c8ffb08b743a2afd45fdf5427f47ba14d0f"
+        }
+      },
+      {
+        "id": "b5871b2d-8b63-4940-bd57-77cfe4ec167e",
+        "phase": "confirmation",
+        "status": "completed",
+        "score": {
+          "metric": "rmse",
+          "direction": "minimize",
+          "value": 1.88411095042053e-15,
+          "protocol_sha256": "7ac2d770c3bd5452930457cc8d49715ef8cf0d1ee0990bfe1f4486cd3b22546b",
+          "scoring_version": "tabular-metrics-v1",
+          "evaluation_id": "fe98405d8efab448ad21fa4ca9f905cea1c1607fee3fd17d70a3fe40ff16fcf2"
+        }
+      },
+      {
+        "id": "4026544a-7e17-4c79-872c-39b76b096dd2",
+        "phase": "confirmation",
+        "status": "completed",
+        "score": {
+          "metric": "rmse",
+          "direction": "minimize",
+          "value": 8.634813257969162,
+          "protocol_sha256": "7ac2d770c3bd5452930457cc8d49715ef8cf0d1ee0990bfe1f4486cd3b22546b",
+          "scoring_version": "tabular-metrics-v1",
+          "evaluation_id": "0c5f3c0b3e91b2d99526743df6246c8ffb08b743a2afd45fdf5427f47ba14d0f"
+        }
+      },
+      {
+        "id": "c4b2ddd1-f2ef-4d77-b19c-341b167112ac",
+        "phase": "confirmation",
+        "status": "completed",
+        "score": {
+          "metric": "rmse",
+          "direction": "minimize",
+          "value": 5.546169849544819,
+          "protocol_sha256": "7ac2d770c3bd5452930457cc8d49715ef8cf0d1ee0990bfe1f4486cd3b22546b",
+          "scoring_version": "tabular-metrics-v1",
+          "evaluation_id": "fe98405d8efab448ad21fa4ca9f905cea1c1607fee3fd17d70a3fe40ff16fcf2"
+        }
+      },
+      {
+        "id": "9c2591f7-b29c-40c6-a45d-0bcd7d39e5b0",
+        "phase": "final",
+        "status": "completed",
+        "score": null
+      }
+    ],
+    "analyses": [
+      {
+        "id": "early-failure",
+        "dispatch": "started",
+        "status": "failed",
+        "request": {
+          "purpose": "explore",
+          "source_experiments": []
+        }
+      },
+      {
+        "id": "0f7c33f0-863b-4e31-af2a-b4025372d8f0",
+        "dispatch": "started",
+        "status": "completed",
+        "request": {
+          "kind": "analyze",
+          "candidate_updates": [],
+          "knowledge_updates": [
+            {
+              "op": "create",
+              "id": "q",
+              "kind": "question",
+              "base_revision": null,
+              "statement": "What patterns could guide modeling?",
+              "status": "open",
+              "reason": "Update understanding from actual evidence",
+              "sources": [],
+              "candidate_ids": []
+            }
+          ],
+          "knowledge_refs": [
+            {
+              "id": "q",
+              "revision": 1
+            }
+          ],
+          "purpose": "explore",
+          "candidates": [],
+          "question": "Describe x and target",
+          "expected_evidence": "Numerical pattern",
+          "source_experiments": []
+        },
+        "source_experiment": null,
+        "effective_budget": {
+          "model_attempts": 20,
+          "total_tokens": 400000,
+          "executions": 10,
+          "task_timeout_ms": 300000
+        },
+        "cost": {
+          "status": "known",
+          "input_tokens": 40,
+          "output_tokens": 20,
+          "total_tokens": 60,
+          "attempts": 4,
+          "unknown_attempts": 0,
+          "elapsed_ms": 4,
+          "currency_cost": "not_computed"
+        },
+        "context_sha256": "004e867dfc25a70bae80039eaf9e2a7aafa6aca073fcb955397a1de16fa3e013"
+      },
+      {
+        "id": "1c6ae085-3def-42d0-ad41-bb6dc5fd9746",
+        "dispatch": "started",
+        "status": "completed",
+        "request": {
+          "kind": "analyze",
+          "candidate_updates": [],
+          "knowledge_updates": [
+            {
+              "op": "revise",
+              "id": "q",
+              "kind": "question",
+              "base_revision": 1,
+              "statement": "Does validation support a linear feature?",
+              "status": "open",
+              "reason": "Update understanding from actual evidence",
+              "sources": [
+                {
+                  "kind": "analysis",
+                  "analysis_id": "0f7c33f0-863b-4e31-af2a-b4025372d8f0",
+                  "finding": 0,
+                  "evidence_refs": [
+                    "47ab43c0-87fc-420e-9cf2-66e943153167"
+                  ],
+                  "source_sha256": "57df901ec67c8c4786d736b467ecdad169116974217631794f5177d91155da65",
+                  "applicability": "Original data-only exploration"
+                },
+                {
+                  "kind": "experiment",
+                  "experiment_id": "ef801629-78c7-492c-99aa-532020f97a2f",
+                  "fact": "score"
+                }
+              ],
+              "candidate_ids": [
+                "baseline"
+              ]
+            }
+          ],
+          "knowledge_refs": [
+            {
+              "id": "q",
+              "revision": 2
+            }
+          ],
+          "purpose": "diagnose",
+          "candidates": [
+            "baseline"
+          ],
+          "question": "Check remaining residual pattern",
+          "expected_evidence": "Residual trend",
+          "source_experiments": [
+            "ef801629-78c7-492c-99aa-532020f97a2f"
+          ]
+        },
+        "source_experiment": "ef801629-78c7-492c-99aa-532020f97a2f",
+        "effective_budget": {
+          "model_attempts": 20,
+          "total_tokens": 400000,
+          "executions": 9,
+          "task_timeout_ms": 300000
+        },
+        "cost": {
+          "status": "known",
+          "input_tokens": 40,
+          "output_tokens": 20,
+          "total_tokens": 60,
+          "attempts": 4,
+          "unknown_attempts": 0,
+          "elapsed_ms": 4,
+          "currency_cost": "not_computed"
+        },
+        "context_sha256": "500df5bd48f37baf72c4839fac06c5f81838cb1e67053f5ccf0628ae89563fb7"
+      }
+    ],
+    "knowledge_control": {
+      "history": [
+        {
+          "id": "q",
+          "revision": 1,
+          "sources": []
+        },
+        {
+          "id": "q",
+          "revision": 2,
+          "sources": [
+            {
+              "kind": "analysis",
+              "analysis_id": "0f7c33f0-863b-4e31-af2a-b4025372d8f0",
+              "finding": 0,
+              "evidence_refs": [
+                "47ab43c0-87fc-420e-9cf2-66e943153167"
+              ],
+              "source_sha256": "57df901ec67c8c4786d736b467ecdad169116974217631794f5177d91155da65",
+              "applicability": "Original data-only exploration"
+            },
+            {
+              "kind": "experiment",
+              "experiment_id": "ef801629-78c7-492c-99aa-532020f97a2f",
+              "fact": "score"
+            }
+          ]
+        },
+        {
+          "id": "q",
+          "revision": 3,
+          "sources": [
+            {
+              "kind": "experiment",
+              "experiment_id": "d0389071-58e3-4a8d-ab37-ec13703ba0f8",
+              "fact": "score"
+            }
+          ]
+        }
+      ]
+    },
+    "confirmation": {
+      "status": "incomplete"
+    }
+  },
+  "events": [
+    {
+      "type": "action_accepted",
+      "protocol_version": 3,
+      "intent": {
+        "kind": "analysis",
+        "analysis_id": "0f7c33f0-863b-4e31-af2a-b4025372d8f0",
+        "child_id": "8fc86908-d362-48a8-b31f-d87c188e91de",
+        "allocation": {
+          "version": 2,
+          "policy": "host-cap-v1",
+          "effective": {
+            "model_attempts": 20,
+            "total_tokens": 400000,
+            "executions": 10,
+            "task_timeout_ms": 300000
+          },
+          "remaining": {
+            "model_attempts": 39,
+            "total_tokens": 599985,
+            "executions": 10,
+            "task_timeout_ms": 448805,
+            "eda_calls": 2,
+            "parent_task_ms": 1198805
+          },
+          "limits": {
+            "model_attempts": 20,
+            "total_tokens": 400000,
+            "executions": 10,
+            "task_timeout_ms": 300000,
+            "final_reserve_ms": 750000
+          },
+          "clipped": []
+        },
+        "started_at": "2026-10-13T10:16:26.066Z",
+        "deadline_at": "2026-10-13T10:21:26.066Z"
+      }
+    },
+    {
+      "type": "child_result",
+      "analysis_id": "0f7c33f0-863b-4e31-af2a-b4025372d8f0",
+      "status": "completed"
+    },
+    {
+      "type": "action_accepted",
+      "protocol_version": 3,
+      "intent": {
+        "kind": "experiment",
+        "experiment_id": "ef801629-78c7-492c-99aa-532020f97a2f",
+        "candidate_id": "baseline",
+        "final": false,
+        "phase": "search",
+        "evaluation": {
+          "evaluation_id": "b6411925ce8b3c13c2f6726159833224debbdcce390e5e647750692d8c27ea55",
+          "phase": "search",
+          "model_seed": 42,
+          "split_seed": 42,
+          "split_method": "hash-v1",
+          "split": {
+            "train": [
+              "6",
+              "4",
+              "7",
+              "12",
+              "9",
+              "5",
+              "8",
+              "3",
+              "2",
+              "10"
+            ],
+            "validation": [
+              "1",
+              "11"
+            ],
+            "sha256": "462a3842e71084eb9278dad503cc88feed24debc09abdcf24d3126d08bc17545"
+          },
+          "protocol_sha256": "7ac2d770c3bd5452930457cc8d49715ef8cf0d1ee0990bfe1f4486cd3b22546b",
+          "train_sha256": "c51467eaab8184de03cd448d6b04eb121e5586e6444f22207c36a2144d84542c"
+        },
+        "repair_of_experiment": null
+      }
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "ef801629-78c7-492c-99aa-532020f97a2f",
+      "status": "completed"
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "ef801629-78c7-492c-99aa-532020f97a2f",
+      "status": "completed"
+    },
+    {
+      "type": "experiment_result",
+      "experiment_id": "ef801629-78c7-492c-99aa-532020f97a2f",
+      "status": "completed"
+    },
+    {
+      "type": "action_accepted",
+      "protocol_version": 3,
+      "intent": {
+        "kind": "analysis",
+        "analysis_id": "1c6ae085-3def-42d0-ad41-bb6dc5fd9746",
+        "child_id": "599d7782-3d03-44cc-859c-834c6517c87e",
+        "allocation": {
+          "version": 2,
+          "policy": "host-cap-v1",
+          "effective": {
+            "model_attempts": 20,
+            "total_tokens": 400000,
+            "executions": 9,
+            "task_timeout_ms": 300000
+          },
+          "remaining": {
+            "model_attempts": 33,
+            "total_tokens": 599895,
+            "executions": 9,
+            "task_timeout_ms": 433615,
+            "eda_calls": 1,
+            "parent_task_ms": 1183615
+          },
+          "limits": {
+            "model_attempts": 20,
+            "total_tokens": 400000,
+            "executions": 10,
+            "task_timeout_ms": 300000,
+            "final_reserve_ms": 750000
+          },
+          "clipped": [
+            {
+              "dimension": "executions",
+              "constraint": "remaining",
+              "limit": 9
+            }
+          ]
+        },
+        "started_at": "2026-10-13T10:16:41.255Z",
+        "deadline_at": "2026-10-13T10:21:41.255Z"
+      }
+    },
+    {
+      "type": "child_result",
+      "analysis_id": "1c6ae085-3def-42d0-ad41-bb6dc5fd9746",
+      "status": "completed"
+    },
+    {
+      "type": "action_accepted",
+      "protocol_version": 3,
+      "intent": {
+        "kind": "experiment",
+        "experiment_id": "d0389071-58e3-4a8d-ab37-ec13703ba0f8",
+        "candidate_id": "linear",
+        "final": false,
+        "phase": "search",
+        "evaluation": {
+          "evaluation_id": "b6411925ce8b3c13c2f6726159833224debbdcce390e5e647750692d8c27ea55",
+          "phase": "search",
+          "model_seed": 42,
+          "split_seed": 42,
+          "split_method": "hash-v1",
+          "split": {
+            "train": [
+              "6",
+              "4",
+              "7",
+              "12",
+              "9",
+              "5",
+              "8",
+              "3",
+              "2",
+              "10"
+            ],
+            "validation": [
+              "1",
+              "11"
+            ],
+            "sha256": "462a3842e71084eb9278dad503cc88feed24debc09abdcf24d3126d08bc17545"
+          },
+          "protocol_sha256": "7ac2d770c3bd5452930457cc8d49715ef8cf0d1ee0990bfe1f4486cd3b22546b",
+          "train_sha256": "c51467eaab8184de03cd448d6b04eb121e5586e6444f22207c36a2144d84542c"
+        },
+        "repair_of_experiment": null
+      }
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "d0389071-58e3-4a8d-ab37-ec13703ba0f8",
+      "status": "completed"
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "d0389071-58e3-4a8d-ab37-ec13703ba0f8",
+      "status": "completed"
+    },
+    {
+      "type": "experiment_result",
+      "experiment_id": "d0389071-58e3-4a8d-ab37-ec13703ba0f8",
+      "status": "completed"
+    },
+    {
+      "type": "action_accepted",
+      "protocol_version": 3,
+      "intent": {
+        "kind": "finish",
+        "experiment_id": "9c2591f7-b29c-40c6-a45d-0bcd7d39e5b0",
+        "search_best_experiment_id": "d0389071-58e3-4a8d-ab37-ec13703ba0f8",
+        "shortlist": [
+          {
+            "experiment_id": "d0389071-58e3-4a8d-ab37-ec13703ba0f8",
+            "code_sha256": "79b6dac83305fa13d26d0955238c591a0d7ef4507655b74821d4ce9d31cbaa00"
+          },
+          {
+            "experiment_id": "ef801629-78c7-492c-99aa-532020f97a2f",
+            "code_sha256": "60eeba590e042c2630ed1f1ade357fde9fde3e58d459c990944ec9af31a388f9"
+          }
+        ]
+      }
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "a3b0993a-c66e-4b49-a762-cda7aadbb704",
+      "status": "completed"
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "a3b0993a-c66e-4b49-a762-cda7aadbb704",
+      "status": "completed"
+    },
+    {
+      "type": "experiment_result",
+      "experiment_id": "a3b0993a-c66e-4b49-a762-cda7aadbb704",
+      "status": "completed"
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "b5871b2d-8b63-4940-bd57-77cfe4ec167e",
+      "status": "completed"
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "b5871b2d-8b63-4940-bd57-77cfe4ec167e",
+      "status": "completed"
+    },
+    {
+      "type": "experiment_result",
+      "experiment_id": "b5871b2d-8b63-4940-bd57-77cfe4ec167e",
+      "status": "completed"
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "4026544a-7e17-4c79-872c-39b76b096dd2",
+      "status": "completed"
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "4026544a-7e17-4c79-872c-39b76b096dd2",
+      "status": "completed"
+    },
+    {
+      "type": "experiment_result",
+      "experiment_id": "4026544a-7e17-4c79-872c-39b76b096dd2",
+      "status": "completed"
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "c4b2ddd1-f2ef-4d77-b19c-341b167112ac",
+      "status": "completed"
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "c4b2ddd1-f2ef-4d77-b19c-341b167112ac",
+      "status": "completed"
+    },
+    {
+      "type": "experiment_result",
+      "experiment_id": "c4b2ddd1-f2ef-4d77-b19c-341b167112ac",
+      "status": "completed"
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "9c2591f7-b29c-40c6-a45d-0bcd7d39e5b0",
+      "status": "completed"
+    },
+    {
+      "type": "child_result",
+      "experiment_id": "9c2591f7-b29c-40c6-a45d-0bcd7d39e5b0",
+      "status": "completed"
+    },
+    {
+      "type": "experiment_result",
+      "experiment_id": "9c2591f7-b29c-40c6-a45d-0bcd7d39e5b0",
+      "status": "completed"
+    }
+  ],
+  "actions": [
+    {
+      "kind": "analyze",
+      "candidate_updates": []
+    },
+    {
+      "kind": "train",
+      "candidate_id": "baseline",
+      "candidate_updates": [
+        {
+          "op": "create",
+          "id": "baseline"
+        }
+      ]
+    },
+    {
+      "kind": "analyze",
+      "candidate_updates": []
+    },
+    {
+      "kind": "train",
+      "candidate_id": "linear",
+      "candidate_updates": [
+        {
+          "op": "create",
+          "id": "linear"
+        }
+      ]
+    },
+    {
+      "kind": "finish",
+      "candidate_updates": []
+    }
+  ]
+}

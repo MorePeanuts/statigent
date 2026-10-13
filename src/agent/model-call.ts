@@ -53,6 +53,7 @@ export function modelCaller(context: CallContext) {
     toolSet: readonly unknown[],
     model: ModelMetadata,
     identity?: { role: AgentRole; subtask_id: string | null },
+    outputLimit = profile.generation.max_output_tokens,
   ) => {
     for (;;) {
       checkClock();
@@ -66,6 +67,7 @@ export function modelCaller(context: CallContext) {
       // 输入仍用保守字节估计；profile 是输出上限，不是每轮必须预留的消费。
       const maxOutputTokens = Math.min(
         profile.generation.max_output_tokens,
+        outputLimit,
         task.budget.total_tokens - tokens.total_tokens - estimate,
       );
       if (maxOutputTokens < 1)

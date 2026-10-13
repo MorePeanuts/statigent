@@ -40,6 +40,7 @@ export interface AgentTask {
   budget: AgentBudget;
   /** Present when the task must end with a Markdown report saved in the workspace. */
   report: ReportSpec | null;
+  completion_policy?: "modeling-diagnostic-v1";
 }
 export function validateTask(value: unknown): AgentTask {
   const x = obj(value);
@@ -52,6 +53,7 @@ export function validateTask(value: unknown): AgentTask {
     "report",
     "organization",
     "backend",
+    "completion_policy",
   ]);
   const b = obj(x.budget ?? {});
   keys(b, Object.keys(DEFAULT_BUDGET));
@@ -97,6 +99,13 @@ export function validateTask(value: unknown): AgentTask {
   config.inputs.forEach(safeRelativePath);
   const { run_id: _runId, staging_root: _staging, ...execution } = config;
   const organization = validateOrganization(x.organization);
+  if (
+    x.completion_policy !== undefined &&
+    (x.completion_policy !== "modeling-diagnostic-v1" ||
+      organization !== "planner-executor" ||
+      x.report != null)
+  )
+    throw new Error("Invalid analysis completion policy");
   const report =
     x.report === undefined || x.report === null
       ? null
@@ -109,6 +118,9 @@ export function validateTask(value: unknown): AgentTask {
   return {
     backend,
     organization,
+    ...(x.completion_policy === "modeling-diagnostic-v1"
+      ? { completion_policy: x.completion_policy }
+      : {}),
     goal: str(x.goal, "goal"),
     constraints: strings(x.constraints ?? [], "constraints"),
     model_profile: str(x.model_profile, "model_profile"),

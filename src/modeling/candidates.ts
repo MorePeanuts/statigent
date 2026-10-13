@@ -1,4 +1,5 @@
 import { integer, keys, obj, str, strings } from "../models/validation";
+import { type KnowledgeRef, parseKnowledgeRefs } from "./knowledge";
 import type { Score } from "./protocol";
 
 export interface EvidenceUse {
@@ -7,7 +8,7 @@ export interface EvidenceUse {
   refs: string[];
   applicability: string;
 }
-export type CandidateUpdate =
+export type CandidateUpdate = (
   | {
       op: "create";
       id: string;
@@ -24,7 +25,8 @@ export type CandidateUpdate =
       disposition: "keep" | "defer" | "resume";
       reason: string;
       evidence: EvidenceUse[];
-    };
+    }
+) & { knowledge_refs?: KnowledgeRef[] };
 export interface CandidateState {
   id: string;
   hypothesis: string;
@@ -35,8 +37,10 @@ export interface CandidateState {
   evidence: EvidenceUse[];
   experiment_ids: string[];
   revision: number;
+  knowledge_refs?: KnowledgeRef[];
 }
 export interface CandidateExperiment {
+  phase?: "search" | "confirmation" | "final";
   id: string;
   candidate_id: string;
   status: string;
@@ -79,6 +83,7 @@ export function parseEvidence(value: unknown): EvidenceUse[] {
 export function parseCandidateUpdates(
   value: unknown,
   maxCandidates: number,
+  knowledgeEnabled = false,
 ): CandidateUpdate[] {
   integer(maxCandidates, "max candidates");
   if (!Array.isArray(value) || value.length > maxCandidates)
@@ -87,6 +92,10 @@ export function parseCandidateUpdates(
   return value.map((value: unknown): CandidateUpdate => {
     const c = obj(value);
     const id = identifier(c.id);
+    const knowledge =
+      knowledgeEnabled && c.knowledge_refs !== undefined
+        ? { knowledge_refs: parseKnowledgeRefs(c.knowledge_refs) }
+        : {};
     if (ids.has(id)) throw new Error("Duplicate candidate update");
     ids.add(id);
     if (c.op === "create") {
@@ -98,6 +107,7 @@ export function parseCandidateUpdates(
         "priority",
         "reason",
         "evidence",
+        ...(knowledgeEnabled ? ["knowledge_refs"] : []),
       ]);
       return {
         op: "create",
@@ -107,10 +117,19 @@ export function parseCandidateUpdates(
         priority: integer(c.priority, "priority"),
         reason: short(c.reason, "reason"),
         evidence: parseEvidence(c.evidence),
+        ...knowledge,
       };
     }
     if (c.op !== "update") throw new Error("Invalid candidate operation");
-    keys(c, ["op", "id", "priority", "disposition", "reason", "evidence"]);
+    keys(c, [
+      "op",
+      "id",
+      "priority",
+      "disposition",
+      "reason",
+      "evidence",
+      ...(knowledgeEnabled ? ["knowledge_refs"] : []),
+    ]);
     if (
       c.disposition !== "keep" &&
       c.disposition !== "defer" &&
@@ -124,6 +143,7 @@ export function parseCandidateUpdates(
       disposition: c.disposition,
       reason: short(c.reason, "reason"),
       evidence: parseEvidence(c.evidence),
+      ...knowledge,
     };
   });
 }
@@ -133,9 +153,14 @@ export function applyCandidateUpdates(
   current: readonly CandidateState[],
   updates: readonly CandidateUpdate[],
   maxCandidates: number,
+  knowledgeEnabled = false,
 ): CandidateState[] {
-  const parsed = parseCandidateUpdates(updates, maxCandidates);
-  const next = validateCandidateState(current, maxCandidates);
+  const parsed = parseCandidateUpdates(
+    updates,
+    maxCandidates,
+    knowledgeEnabled,
+  );
+  const next = validateCandidateState(current, maxCandidates, knowledgeEnabled);
   for (const update of parsed) {
     const index = next.findIndex((c) => c.id === update.id);
     if (update.op === "create") {
@@ -167,6 +192,9 @@ export function applyCandidateUpdates(
               : "pending",
       reason: update.reason,
       evidence: update.evidence,
+      ...(update.knowledge_refs === undefined
+        ? {}
+        : { knowledge_refs: update.knowledge_refs }),
       revision: integer(c.revision + 1, "revision"),
     };
   }
@@ -243,6 +271,9 @@ export function candidateSummary(
           refs: [...e.refs],
         })),
         revision: c.revision,
+        ...(c.knowledge_refs === undefined
+          ? {}
+          : { knowledge_refs: c.knowledge_refs }),
         attempts: c.experiment_ids.length,
         latest_experiment: last
           ? {
@@ -265,6 +296,7 @@ export function candidateSummary(
 export function validateCandidateState(
   value: unknown,
   maxCandidates: number,
+  knowledgeEnabled = false,
 ): CandidateState[] {
   integer(maxCandidates, "max candidates");
   if (!Array.isArray(value) || value.length > maxCandidates)
@@ -283,6 +315,7 @@ export function validateCandidateState(
       "evidence",
       "experiment_ids",
       "revision",
+      ...(knowledgeEnabled ? ["knowledge_refs"] : []),
     ]);
     const id = identifier(c.id);
     if (ids.has(id)) throw new Error("Duplicate candidate");
@@ -310,6 +343,9 @@ export function validateCandidateState(
       evidence: parseEvidence(c.evidence),
       experiment_ids,
       revision: integer(c.revision, "revision"),
+      ...(knowledgeEnabled && c.knowledge_refs !== undefined
+        ? { knowledge_refs: parseKnowledgeRefs(c.knowledge_refs) }
+        : {}),
     };
   });
 }

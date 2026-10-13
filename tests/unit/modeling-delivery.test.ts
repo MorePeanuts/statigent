@@ -11,7 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import binary from "../../configs/modeling/binary-prepare.json";
 import { describeFile } from "../../src/evaluation/files";
-import { validateModelingTask } from "../../src/modeling/config";
+import { validateFrozenModelingTask } from "../../src/modeling/config";
 import { datasetProtocol, prepareDataset } from "../../src/modeling/data";
 import { scoreDelivery } from "../../src/modeling/delivery";
 
@@ -50,7 +50,7 @@ async function fixture() {
       scoring_version: protocol.scoring_version,
     },
     files: await Promise.all(paths.map((p) => describeFile(delivery, p))),
-    task: validateModelingTask({
+    task: validateFrozenModelingTask({
       goal: "test",
       dataset_root: join(root, "data"),
       model_profile: "test",

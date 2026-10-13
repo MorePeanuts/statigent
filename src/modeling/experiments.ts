@@ -7,7 +7,7 @@ import { DockerSession } from "../execution/session";
 import { obj } from "../models/validation";
 import { exportNotebooks } from "../records/notebook";
 import { RunRecorder, readArtifact, sha256 } from "../records/store";
-import type { ModelingTask } from "./config";
+import type { ModelingExecutionTask } from "./config";
 import {
   csv,
   type Dataset,
@@ -21,8 +21,10 @@ import {
 import { validatePredictions } from "./predictions";
 import { type Score, validateModelMetadata } from "./protocol";
 import { ScoringFailure, scoreTables } from "./scoring";
+import type { Evaluation, ExperimentPhase } from "./validation";
 
 export interface StageResult {
+  stage_version?: 1 | 2 | 3;
   run_id: string;
   directory: string;
   status: string;
@@ -33,7 +35,7 @@ export interface StageResult {
   elapsed_ms: number;
 }
 export interface StageOptions {
-  task: ModelingTask;
+  task: ModelingExecutionTask;
   dataset: Dataset;
   root: string;
   runId?: string;
@@ -42,6 +44,8 @@ export interface StageOptions {
   data: Table;
   entrypoint?: string;
   legacy?: boolean;
+  stageVersion?: 2 | 3;
+  modelSeed?: number;
   model?: Buffer;
   signal: AbortSignal;
   remainingMs: number;
@@ -59,11 +63,22 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     "data.csv": csv(o.data),
     "stage.json": JSON.stringify({
       ...(!o.legacy
-        ? { schema_version: 2, protocol: datasetProtocol(o.dataset) }
+        ? {
+            schema_version: o.stageVersion ?? 3,
+            protocol: datasetProtocol(o.dataset),
+            ...(o.stageVersion !== 2
+              ? {
+                  model_artifact: {
+                    compression: "zlib-3",
+                    max_bytes: o.task.limits.max_artifact_bytes,
+                  },
+                }
+              : {}),
+          }
         : {}),
       target: o.dataset.target,
       id_column: o.dataset.id_column,
-      seed: o.dataset.seed,
+      seed: o.modelSeed ?? o.dataset.seed,
     }),
   };
   if (o.model) values["model.joblib"] = o.model;
@@ -82,7 +97,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     input_root: inputs,
     inputs: Object.keys(values),
     staging_root: resolve(o.root, ".staging"),
-    seed: o.dataset.seed,
+    seed: o.modelSeed ?? o.dataset.seed,
     limits: {
       ...o.task.limits,
       task_timeout_ms: timeout,
@@ -101,7 +116,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     config: { ...config },
     inputs: [],
     image: { id: "unresolved", platform: "unresolved" },
-    seed: o.dataset.seed,
+    seed: o.modelSeed ?? o.dataset.seed,
     maxArtifactBytes: config.limits.max_artifact_bytes,
     maxTotalArtifactBytes:
       config.limits.max_artifacts_bytes + config.limits.max_output_bytes,
@@ -132,7 +147,13 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     )
       throw new Error("Staged input mismatch");
     result = await session.execute(o.entrypoint ?? stageEntrypoint(o.stage));
-    if (result.status !== "ok" || !result.persistence_complete)
+    if (
+      !result.started ||
+      !result.kernel_available ||
+      !result.persistence_complete
+    )
+      failure = `${result.status}:incomplete execution:${result.error?.evalue ?? result.diagnostic ?? "unconfirmed execution state"}`;
+    else if (result.status !== "ok")
       failure = `${result.status}:${result.error?.evalue ?? result.diagnostic ?? "incomplete execution"}`;
   } catch (e) {
     failure = String(e);
@@ -145,7 +166,23 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
       failure = `cleanup:${String(e)}`;
     }
   }
+  if (session?.closeResult && session.closeResult.status !== "ok")
+    failure = `cleanup:${session.closeResult.status}:${failure ?? "unconfirmed close"}`;
   if (o.signal.aborted) failure = "cancelled";
+  // This is a candidate failure only after the isolated worker and all records
+  // have closed cleanly. Transport limits or unknown state remain fatal.
+  if (
+    !o.signal.aborted &&
+    failure?.startsWith("error:") &&
+    result?.status === "error" &&
+    result.error?.ename === "ModelArtifactLimitError" &&
+    result.started &&
+    result.kernel_available &&
+    result.persistence_complete &&
+    session?.closeResult?.status === "ok" &&
+    !session.closeResult.cleanup_error
+  )
+    failure = `model_artifact_limit:${result.error.evalue}`;
   let output: StageResult["output"] = null;
   let metadata: StageResult["metadata"];
   if (!failure) {
@@ -182,6 +219,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
   await recorder.finish(failure ? "failed" : "completed");
   await exportNotebooks(recorder.directory);
   return {
+    stage_version: o.legacy ? 1 : (o.stageVersion ?? 3),
     run_id: runId,
     directory: recorder.directory,
     status: failure ? "failed" : "completed",
@@ -254,9 +292,12 @@ export interface Experiment {
   fit: StageResult | null;
   predict: StageResult | null;
   final: boolean;
+  phase?: ExperimentPhase;
+  evaluation?: Evaluation;
+  source_search_experiment_id?: string | null;
 }
 export async function runExperiment(o: {
-  task: ModelingTask;
+  task: ModelingExecutionTask;
   dataset: Dataset;
   train: Table;
   test: Table;
@@ -266,10 +307,13 @@ export async function runExperiment(o: {
   signal: AbortSignal;
   remaining: () => number;
   final?: boolean;
+  evaluation?: Evaluation;
+  sourceSearchExperimentId?: string;
   id?: string;
   onStage?: (id: string) => Promise<void>;
   entrypoints?: { fit: string; predict: string };
   legacy?: boolean;
+  stageVersion?: 2 | 3;
   score?: typeof scoreTables;
 }): Promise<Experiment> {
   const e: Experiment = {
@@ -283,7 +327,23 @@ export async function runExperiment(o: {
     fit: null,
     predict: null,
     final: o.final ?? false,
+    ...(o.evaluation
+      ? {
+          phase: o.evaluation.phase,
+          evaluation: o.evaluation,
+          source_search_experiment_id: o.sourceSearchExperimentId ?? null,
+        }
+      : {}),
   };
+  if (
+    o.evaluation &&
+    ((o.evaluation.phase === "final") !== Boolean(o.final) ||
+      o.evaluation.protocol_sha256 !==
+        datasetProtocol(o.dataset).protocol_sha256 ||
+      o.evaluation.train_sha256 !== o.dataset.files[0]?.sha256)
+  )
+    throw new Error("Experiment evaluation mismatch");
+  const split = o.evaluation?.split ?? o.dataset.split;
   if (Buffer.byteLength(o.code) > o.task.limits.max_code_bytes)
     throw new Error("Code exceeds limit");
   const base = {
@@ -294,14 +354,14 @@ export async function runExperiment(o: {
     signal: o.signal,
     onIntent: o.onStage,
     legacy: o.legacy,
+    stageVersion: o.stageVersion,
+    modelSeed: o.evaluation?.model_seed,
   };
   e.fit = await runStage({
     ...base,
     stage: "fit",
     entrypoint: o.entrypoints?.fit,
-    data: o.final
-      ? o.train
-      : select(o.train, o.dataset.split.train, o.dataset.id_column),
+    data: o.final ? o.train : select(o.train, split.train, o.dataset.id_column),
     remainingMs: o.remaining(),
   });
   if (e.fit.status !== "completed") {
@@ -320,7 +380,7 @@ export async function runExperiment(o: {
     model: await stageBytes(e.fit),
     data: o.final
       ? o.test
-      : select(o.train, o.dataset.split.validation, o.dataset.id_column, [
+      : select(o.train, split.validation, o.dataset.id_column, [
           o.dataset.target,
         ]),
     remainingMs: o.remaining(),
@@ -332,7 +392,7 @@ export async function runExperiment(o: {
   try {
     const expected = o.final
       ? rowIds(o.test, o.dataset.id_column)
-      : o.dataset.split.validation;
+      : split.validation;
     const predictions = parseCsv((await stageBytes(e.predict)).toString());
     const protocol = datasetProtocol(o.dataset);
     validatePredictions(predictions, expected, o.dataset.id_column, protocol);
@@ -360,7 +420,10 @@ export async function runExperiment(o: {
         timeout_ms: o.remaining(),
       });
       if (!scored.score) throw new Error(scored.error ?? "Invalid score");
-      e.score = scored.score;
+      e.score = {
+        ...scored.score,
+        ...(o.evaluation ? { evaluation_id: o.evaluation.evaluation_id } : {}),
+      };
     }
     e.status = "completed";
     e.reason = "ok";

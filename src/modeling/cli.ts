@@ -1,9 +1,14 @@
 import { resolve } from "node:path";
 import { selectProfile } from "../models/config";
 import { obj } from "../models/validation";
-import { validateModelingTask } from "./config";
 import { datasetProtocol, prepareDataset } from "./data";
 import { reproduce, scoreDelivery } from "./delivery";
+import { developmentGoal, developmentReport } from "./development";
+import {
+  DEVELOPMENT_TASKS,
+  modelingPreflight,
+  taskWithResource,
+} from "./preflight";
 import { inspectModeling } from "./records";
 import { runModeling } from "./run";
 export function flags(
@@ -81,32 +86,73 @@ export async function modelingMain(args: string[]): Promise<unknown> {
       resolve(f["--runs"] ?? "runs/modeling-scores"),
     );
   }
-  if (command !== "run")
+  if (command !== "run" && command !== "develop")
     throw new Error("Expected prepare/run/inspect/reproduce/score");
-  const f = flags(args.slice(1), ["--task", "--models", "--model", "--runs"]);
-  if (!f["--task"]) throw new Error("run requires --task");
-  const task = validateModelingTask(
-    await Bun.file(resolve(f["--task"])).json(),
+  const preflight = args.includes("--preflight");
+  if (args.filter((arg) => arg === "--preflight").length > 1)
+    throw new Error("Duplicate preflight option");
+  const f = flags(
+    args.slice(1).filter((arg) => arg !== "--preflight"),
+    [
+      "--task",
+      "--models",
+      "--model",
+      "--runs",
+      "--method",
+      "--resource",
+      "--seed",
+    ],
   );
+  if (!f["--task"]) throw new Error("run requires --task");
+  let taskPath = f["--task"];
+  if (command === "develop") {
+    if (
+      !f["--method"] ||
+      !f["--resource"] ||
+      !f["--seed"] ||
+      !Object.hasOwn(DEVELOPMENT_TASKS, taskPath)
+    )
+      throw new Error(
+        "develop requires one explicit --task s3e9|binary|multiclass, --method, --seed and --resource file",
+      );
+    taskPath = DEVELOPMENT_TASKS[taskPath as keyof typeof DEVELOPMENT_TASKS];
+  }
+  const raw = obj(await Bun.file(resolve(taskPath)).json());
+  if (f["--method"]) raw.method = f["--method"];
+  const task = await taskWithResource(raw, f["--resource"]);
   if (f["--model"]) {
     task.model_profile = f["--model"];
     task.eda_profile = f["--model"];
   }
+  const seed = f["--seed"] === undefined ? undefined : Number(f["--seed"]);
+  if (seed !== undefined && (!Number.isSafeInteger(seed) || seed < 0))
+    throw new Error("Invalid seed");
+  if (command === "develop")
+    task.goal = developmentGoal(task.goal, task.method);
+  const preview = await modelingPreflight(task, seed);
   const models: unknown = await Bun.file(
     resolve(f["--models"] ?? "configs/models.json"),
   ).json();
+  const selectedProfile = selectProfile(models, task.model_profile),
+    selectedEdaProfile = selectProfile(models, task.eda_profile);
+  if (preflight)
+    return {
+      ...preview,
+      scope: command === "develop" ? f["--task"] : taskPath,
+    };
   const controller = new AbortController(),
     stop = () => controller.abort();
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
   try {
-    return await runModeling({
+    const result = await runModeling({
       task,
-      profile: selectProfile(models, task.model_profile),
-      edaProfile: selectProfile(models, task.eda_profile),
+      profile: selectedProfile,
+      edaProfile: selectedEdaProfile,
       runRoot: resolve(f["--runs"] ?? "runs/modeling"),
       signal: controller.signal,
     });
+    return command === "develop" ? developmentReport(result, preview) : result;
   } finally {
     process.off("SIGINT", stop);
     process.off("SIGTERM", stop);
@@ -119,7 +165,7 @@ if (import.meta.main)
       const v = obj(x);
       if (
         typeof v.status === "string" &&
-        !["completed", "passed"].includes(v.status)
+        !["completed", "passed", "ready"].includes(v.status)
       )
         process.exitCode = 1;
     })

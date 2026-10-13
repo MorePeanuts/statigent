@@ -1,1 +1,12 @@
-{"goal":"Build a regression pipeline for target. Train a baseline, investigate residual patterns with EDA when useful, test a follow-up candidate and select the best validation result.","dataset_root":"runs/modeling-synthetic-data","model_profile":"deepseek-flash","image":"statigent-runtime:dev"}
+{
+  "schema_version": 2,
+  "method": "adaptive_eda",
+  "confirmation": {
+    "mode": "none"
+  },
+  "resource_version": "smoke-v1",
+  "goal": "Build an effective and reproducible regression pipeline using the frozen task metric and allowed training data. Use focused analysis when it informs modeling, validate proposed changes with experiments, and finish explicitly to deliver the selected pipeline. Improvement after any particular analysis is not guaranteed. Keep preprocessing inside the pipeline.",
+  "dataset_root": "runs/modeling-synthetic-data",
+  "model_profile": "deepseek-flash",
+  "image": "statigent-runtime:dev"
+}

@@ -40,6 +40,11 @@ async function options(
   let count = 0;
   return {
     task: {
+      schema_version: 2,
+      method: "adaptive_eda",
+      confirmation: { mode: "none" },
+      resource_version: "smoke-v1",
+
       goal: "test",
       dataset_root: join(root, "data"),
       model_profile: profile.id,
@@ -64,10 +69,14 @@ async function options(
             protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
             scoring_version: datasetProtocol(o.dataset).scoring_version,
             value: ++count,
+            evaluation_id: o.evaluation?.evaluation_id,
           },
       fit: null,
       predict: null,
       final: o.final ?? false,
+      phase: o.evaluation?.phase,
+      evaluation: o.evaluation,
+      source_search_experiment_id: o.sourceSearchExperimentId ?? null,
     }),
     analysis: async (o) => {
       const result = {
@@ -77,7 +86,7 @@ async function options(
         dispatch: "started" as const,
         effective_budget: o.budget,
         deadline: o.deadline,
-        source_experiment: o.request.source_experiment,
+        source_experiment: o.request.source_experiments[0] ?? null,
         dataset_hash: o.dataset.files[0]?.sha256 ?? "",
         split_hash: o.dataset.split.sha256,
         protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
@@ -160,6 +169,7 @@ async function options(
     },
     delivery: async (_root, task, selected, final, dataset) => ({
       schema_version: 2,
+      stage_version: 3,
       protocol: datasetProtocol(dataset),
       source_experiment: selected.id,
       dataset,
@@ -384,7 +394,10 @@ test("final retries use new experiments, unchanged code and the configured reser
           }),
     ]);
   const o = await options(direct);
-  o.task = { ...obj(o.task), budget: { final_training_attempts: 2 } };
+  o.task = {
+    ...obj(o.task),
+    budget: { final_training_attempts: 2, final_reserve_ms: 300000 },
+  };
   const ex = o.experiment;
   if (!ex) throw Error("fixture");
   let finalAttempts = 0;
@@ -406,37 +419,65 @@ test("final retries use new experiments, unchanged code and the configured reser
   expect(new Set(codes).size).toBe(1);
 });
 
-test("a failed training attempt can be explicitly referenced by its bounded repair", async () => {
-  const o = await options((body, i) =>
-    reply([
-      i === 0
-        ? trainCall()
-        : i === 1
-          ? trainCall(baselineCode, [], null, {
-              candidateId: "baseline",
-              candidateUpdates: [],
-              repairOf: String(obj(lastFeedback(body).result).experiment_id),
-            })
-          : call("finish_modeling", {
-              candidate_updates: [],
-              experiment_id: lastFeedback(body).best_experiment_id,
-              reason: "done",
-            }),
-    ]),
-  );
-  const ex = o.experiment;
-  if (!ex) throw Error("fixture");
-  let attempts = 0;
-  o.experiment = async (input) => {
-    const e = await ex(input);
-    return attempts++ === 0
-      ? { ...e, status: "failed", reason: "error:bad candidate", score: null }
-      : e;
-  };
-  const r = await runModeling(o);
-  expect(r.status, r.reason).toBe("completed");
-  expect(attempts).toBe(3);
-});
+test.each([
+  "error:bad candidate",
+  "model_artifact_limit:compressed model bytes=512 exceeds max_bytes=256",
+])(
+  "a failed training attempt can be explicitly referenced by its bounded repair: %s",
+  async (reason) => {
+    const o = await options((body, i) =>
+      reply([
+        i === 0
+          ? trainCall()
+          : i === 1
+            ? trainCall(baselineCode, [], null, {
+                candidateId: "baseline",
+                candidateUpdates: [],
+                repairOf: String(obj(lastFeedback(body).result).experiment_id),
+              })
+            : call("finish_modeling", {
+                candidate_updates: [],
+                experiment_id: lastFeedback(body).best_experiment_id,
+                reason: "done",
+              }),
+      ]),
+    );
+    const ex = o.experiment;
+    if (!ex) throw Error("fixture");
+    let attempts = 0;
+    o.experiment = async (input) => {
+      const e = await ex(input);
+      return attempts++ === 0
+        ? { ...e, status: "failed", reason, score: null }
+        : e;
+    };
+    const r = await runModeling(o);
+    expect(r.status, r.reason).toBe("completed");
+    expect(attempts).toBe(3);
+  },
+);
+
+test.each([
+  "output_limit_exceeded:incomplete execution",
+  "cleanup:model_artifact_limit",
+  "record_failure:model_artifact_limit",
+])(
+  "unknown or unclean artifact failure stops without repair: %s",
+  async (reason) => {
+    const o = await options(() => reply([trainCall()]));
+    const ex = o.experiment;
+    if (!ex) throw Error("fixture");
+    let attempts = 0;
+    o.experiment = async (input) => {
+      attempts++;
+      return { ...(await ex(input)), status: "failed", reason, score: null };
+    };
+    const r = await runModeling(o);
+    expect(r.status).toBe("failed");
+    expect(r.reason).toBe(reason);
+    expect(attempts).toBe(1);
+  },
+);
 
 test("candidate batches and budget rejection are atomic while model costs remain charged", async () => {
   for (const mode of ["batch", "budget", "evidence"] as const) {
@@ -685,7 +726,7 @@ test("scoring failure terminates the parent without dispatching another experime
   ).toBeNull();
 });
 
-test("new modeling run preserves a legacy regression dataset and records an explicit v2 protocol", async () => {
+test("new modeling run preserves a legacy regression dataset and records a v3 parent with the original metric protocol", async () => {
   const o = await options((body, i) =>
     reply([i === 0 ? trainCall() : finishCall(body)]),
   );
@@ -699,7 +740,7 @@ test("new modeling run preserves a legacy regression dataset and records an expl
   const result = await runModeling(o);
   expect(result.status, result.reason).toBe("completed");
   const view = await inspectModeling(result.directory);
-  expect(view.manifest.schema_version).toBe(2);
+  expect(view.manifest.schema_version).toBe(3);
   expect(obj(view.manifest.config).dataset).toMatchObject({
     schema_version: 1,
   });
@@ -708,4 +749,206 @@ test("new modeling run preserves a legacy regression dataset and records an expl
     metric: "rmse",
   });
   expect(await Bun.file(path).text()).toBe(original);
+});
+
+test("two explorations may precede candidate creation and the agent may decline both reports", async () => {
+  const o = await options((body, i) =>
+    reply(
+      i < 2
+        ? [analyzeCall(null, { candidates: [], candidateUpdates: [] })]
+        : i === 2
+          ? [trainCall()]
+          : [finishCall(body)],
+    ),
+  );
+  o.task = { ...obj(o.task), budget: { eda_calls: 2 } };
+  const r = await runModeling(o);
+  expect(r.status, r.reason).toBe("completed");
+  const { manifest } = await inspectModeling(r.directory);
+  expect(manifest.analyses).toHaveLength(2);
+  const candidates = obj(manifest.candidate_control).candidates as unknown[];
+  expect(candidates).toHaveLength(1);
+  expect(manifest.usage).toMatchObject({ eda_calls: 2, training_attempts: 2 });
+}, 30000);
+
+test("training can use earlier valid evidence after a newer analysis", async () => {
+  let evidence: unknown[] = [];
+  const o = await options((body, i) => {
+    if (i < 2) {
+      if (i === 1) {
+        const a = obj(lastFeedback(body).result);
+        evidence = [
+          {
+            analysis_id: a.analysis_id,
+            source_experiment: null,
+            refs: ["ref1"],
+            applicability: "Earlier data-only finding still applies",
+          },
+        ];
+      }
+      return reply([
+        analyzeCall(null, { candidates: [], candidateUpdates: [] }),
+      ]);
+    }
+    if (i === 2) return reply([trainCall(undefined, evidence)]);
+    return reply([finishCall(body)]);
+  });
+  o.task = { ...obj(o.task), budget: { eda_calls: 2 } };
+  const r = await runModeling(o);
+  expect(r.status, r.reason).toBe("completed");
+  expect((await inspectModeling(r.directory)).manifest.analyses).toHaveLength(
+    2,
+  );
+}, 30000);
+
+for (const method of [
+  "no_eda",
+  "initial_eda",
+  "adaptive_eda",
+  "collaborative",
+] as const)
+  test(`${method} shares training capability and enforces its tool boundary`, async () => {
+    const o = await options((body, i) =>
+      reply(i === 0 ? [trainCall()] : [finishCall(body)]),
+    );
+    o.task = { ...obj(o.task), method };
+    const r = await runModeling(o);
+    expect(r.status, r.reason).toBe("completed");
+    const view = await inspectModeling(r.directory);
+    expect(view.manifest.usage).toMatchObject({
+      eda_calls: method === "initial_eda" ? 1 : 0,
+      training_attempts: 2,
+    });
+    const first = obj((o.client as ScriptClient).bodies[0]);
+    const names = (first.tools as { function: { name: string } }[]).map(
+      (t) => t.function.name,
+    );
+    expect(names.includes("analyze")).toBe(
+      method === "adaptive_eda" || method === "collaborative",
+    );
+    expect(view.knowledge_control).toEqual(
+      method === "collaborative"
+        ? {
+            version: 1,
+            history: [],
+            applied_sequence: Number(
+              obj(view.manifest.candidate_control).applied_sequence,
+            ),
+          }
+        : "disabled",
+    );
+  }, 30000);
+
+test("initial analysis known failure is not repeated and modeling can still finish", async () => {
+  const o = await options((body, i) =>
+    reply(i === 0 ? [trainCall()] : [finishCall(body)]),
+  );
+  o.task = { ...obj(o.task), method: "initial_eda" };
+  let analyses = 0;
+  o.analysis = async (args) => {
+    analyses++;
+    return {
+      id: args.id,
+      run_id: args.runId,
+      directory: null,
+      dispatch: "not_started",
+      effective_budget: args.budget,
+      deadline: args.deadline,
+      source_experiment: null,
+      dataset_hash: args.dataset.files[0]?.sha256 ?? "",
+      split_hash: args.dataset.split.sha256,
+      protocol_sha256: datasetProtocol(args.dataset).protocol_sha256,
+      prediction_sha256: null,
+      status: "failed",
+      reason: "known preparation failure",
+      analysis: null,
+      cost: emptyLedger(),
+      role_usage: { planner: emptyLedger(), executor: emptyLedger() },
+      executions: 0,
+      request: args.request,
+    };
+  };
+  const r = await runModeling(o);
+  expect(r.status, r.reason).toBe("completed");
+  expect(analyses).toBe(1);
+  expect((await inspectModeling(r.directory)).manifest.analyses).toHaveLength(
+    1,
+  );
+}, 30000);
+
+for (const fault of ["unknown", "cancel", "timeout", "record"] as const)
+  test(`closing ${fault} never selects partial confirmation or resumes the model`, async () => {
+    const controller = new AbortController();
+    const o = await options((body, i) =>
+      reply([i === 0 ? trainCall() : finishCall(body)]),
+    );
+    o.signal = controller.signal;
+    o.task = {
+      ...obj(o.task),
+      confirmation: { mode: "terminal_repeated_holdout" },
+      budget: {
+        training_attempts: 6,
+        task_timeout_ms: 1200000,
+        final_reserve_ms: 750000,
+      },
+    };
+    const execute = o.experiment;
+    if (!execute) throw Error("fixture");
+    let confirmations = 0,
+      finals = 0;
+    o.experiment = async (input) => {
+      if (input.final) finals++;
+      if (input.evaluation?.phase === "confirmation") {
+        confirmations++;
+        if (fault === "unknown") throw Error("unconfirmed runtime");
+        if (fault === "cancel") controller.abort();
+        if (fault === "timeout")
+          return {
+            ...(await execute(input)),
+            status: "failed",
+            score: null,
+            reason: "timeout:closing deadline",
+          };
+      }
+      return execute(input);
+    };
+    if (fault === "record")
+      o.createRecord = async (...args) => {
+        const r = await ModelingRecord.create(...args),
+          event = r.event.bind(r);
+        r.event = async (type, fields, payload) => {
+          if (type === "experiment_intent" && fields?.phase === "confirmation")
+            throw Error("record_failure:closing intent");
+          return event(type, fields, payload);
+        };
+        return r;
+      };
+    const r = await runModeling(o);
+    expect(r.status).not.toBe("completed");
+    expect((o.client as ScriptClient).bodies).toHaveLength(2);
+    expect(finals).toBe(0);
+    expect(confirmations).toBeLessThanOrEqual(1);
+    const view = await inspectModeling(r.directory);
+    expect(view.manifest.selected_experiment_id).toBeNull();
+    expect(obj(view.manifest.confirmation).status).toBe("incomplete");
+    if (fault === "unknown")
+      expect(view.unconfirmed_experiments).toHaveLength(1);
+    if (fault === "record") expect(r.record_error).toBe(true);
+  });
+
+test("deferring the best candidate at finish does not remove its successful pipeline", async () => {
+  const o = await options((body, i) =>
+    reply([
+      i === 0
+        ? trainCall()
+        : finishCall(body, [updateCandidate("baseline", [], "defer")]),
+    ]),
+  );
+  const r = await runModeling(o);
+  expect(r.status, r.reason).toBe("completed");
+  const m = (await inspectModeling(r.directory)).manifest;
+  expect(m.selected_experiment_id).toBe(m.search_best_experiment_id);
+  expect(obj(m.candidate_control).candidates).toMatchObject([
+    { id: "baseline", status: "deferred" },
+  ]);
 });

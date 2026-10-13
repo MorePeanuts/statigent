@@ -12,6 +12,11 @@ import {
 } from "../../src/modeling/data";
 
 const task = {
+  schema_version: 2,
+  method: "adaptive_eda",
+  confirmation: { mode: "none" },
+  resource_version: "smoke-v1",
+
   goal: "regress",
   dataset_root: "runs/data",
   image: "statigent-runtime:dev",

@@ -41,6 +41,11 @@ for (const source of [binary, multiclass]) {
       edaClient = new ScriptClient(classificationEdaScript());
     const r = await runModeling({
       task: {
+        schema_version: 2,
+        method: "adaptive_eda",
+        confirmation: { mode: "none" },
+        resource_version: "smoke-v1",
+
         goal: "synthetic classification",
         dataset_root: join(root, "data"),
         model_profile: profile.id,
@@ -57,7 +62,7 @@ for (const source of [binary, multiclass]) {
     expect(await validateSmoke(r.directory)).toMatchObject({
       source_experiment: expect.any(String),
     });
-    expect(view.manifest.schema_version).toBe(2);
+    expect(view.manifest.schema_version).toBe(3);
     const experiments = (view.manifest.experiments as unknown[]).map(obj);
     expect(experiments).toHaveLength(3);
     expect(r.best_experiment_id).toBe(String(experiments[1]?.id));
@@ -129,6 +134,11 @@ for (const source of [binary, multiclass]) {
     await mkdir(root, { recursive: true });
     await prepareDataset({ ...source, metric: "accuracy" }, join(root, "data"));
     const task = validateModelingTask({
+      schema_version: 2,
+      method: "adaptive_eda",
+      confirmation: { mode: "none" },
+      resource_version: "smoke-v1",
+
       goal: "accuracy",
       dataset_root: join(root, "data"),
       model_profile: profile.id,
@@ -154,6 +164,11 @@ test("illegal probabilities fail before scoring or evidence; scoring timeout and
   await mkdir(root, { recursive: true });
   await prepareDataset(binary, join(root, "data"));
   const task = validateModelingTask({
+    schema_version: 2,
+    method: "adaptive_eda",
+    confirmation: { mode: "none" },
+    resource_version: "smoke-v1",
+
     goal: "failure boundary",
     dataset_root: join(root, "data"),
     model_profile: profile.id,

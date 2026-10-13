@@ -5,8 +5,16 @@ import { join, resolve } from "node:path";
 import { regular } from "../evaluation/files";
 import { integer, keys, obj, str } from "../models/validation";
 import { readManifest, sha256, writeJson } from "../records/store";
-import { action, type ModelingAction } from "./actions";
-import { ledger, roleLedgers, validateAllocation } from "./budget";
+import {
+  type ModelingAction as NewAction,
+  action as newAction,
+} from "./actions";
+import {
+  ledger,
+  roleLedgers,
+  validateAllocation,
+  validateHostAllocation,
+} from "./budget";
 import {
   applyCandidateUpdates,
   attachExperiment,
@@ -17,7 +25,15 @@ import {
   validateCandidateState,
   validateRepair,
 } from "./candidates";
+import { validateModelingTask } from "./config";
 import { datasetProtocol, validateDataset } from "./data";
+import { inspectKnowledge } from "./knowledge-records";
+import { action, type ModelingAction as LegacyAction } from "./legacy-actions";
+import { initialAnalysis } from "./methods";
+import { ValidationAudit } from "./validation-records";
+
+type ModelingAction = LegacyAction | NewAction;
+
 import {
   better,
   type Score,
@@ -28,6 +44,9 @@ export class ModelingRecord {
   private failed = false;
   private bytes = 0;
   private sequence = 0;
+  get nextSequence() {
+    return this.sequence + 1;
+  }
   private constructor(
     readonly directory: string,
     readonly id: string,
@@ -47,7 +66,12 @@ export class ModelingRecord {
     const commit = Bun.spawnSync(["git", "rev-parse", "HEAD"]),
       dirty = Bun.spawnSync(["git", "status", "--porcelain"]);
     const header = {
-      schema_version: config.protocol === undefined ? 1 : 2,
+      schema_version:
+        obj(config.task ?? {}).schema_version === 2
+          ? 3
+          : config.protocol === undefined
+            ? 1
+            : 2,
       kind: "modeling",
       run_id: id,
       started_at: new Date().toISOString(),
@@ -133,7 +157,7 @@ export async function inspectModeling(directory: string) {
     throw new Error("Manifest too large");
   const manifest = obj(JSON.parse(await readFile(path, "utf8")));
   if (
-    (manifest.schema_version !== 1 && manifest.schema_version !== 2) ||
+    ![1, 2, 3].includes(Number(manifest.schema_version)) ||
     manifest.kind !== "modeling"
   )
     throw new Error("Unsupported modeling record");
@@ -142,7 +166,7 @@ export async function inspectModeling(directory: string) {
     obj(manifest.config).protocol !== undefined
   )
     throw new Error("Legacy record cannot contain a v2 task protocol");
-  if (manifest.schema_version === 2) {
+  if (manifest.schema_version === 2 || manifest.schema_version === 3) {
     const config = obj(manifest.config),
       data = validateDataset(config.dataset),
       protocol = validateProtocol(config.protocol, data.id_column);
@@ -177,6 +201,11 @@ export async function inspectModeling(directory: string) {
       if (data.length !== ref.bytes || sha256(data) !== ref.sha256)
         throw new Error("Payload integrity mismatch");
       payloads.set(i + 1, JSON.parse(data.toString()));
+      if (
+        e.type === "model_context" &&
+        (e.version !== 1 || e.sha256 !== ref.sha256 || e.bytes !== ref.bytes)
+      )
+        throw new Error("Model visible context identity mismatch");
     }
   }
   const completed = new Set(
@@ -192,6 +221,12 @@ export async function inspectModeling(directory: string) {
     manifest,
     events,
     candidate_control: control.view,
+    knowledge_control: await inspectKnowledge(
+      directory,
+      manifest,
+      events,
+      payloads,
+    ),
     unconfirmed_experiments: control.unconfirmed_experiments,
     unconfirmed_children: children.filter((e) => !completed.has(e.child_id)),
   };
@@ -227,7 +262,13 @@ function evidence(
       !a ||
       !confirmed.has(use.analysis_id) ||
       a.status !== "completed" ||
-      a.source_experiment !== use.source_experiment ||
+      (Array.isArray(a.source_experiments)
+        ? use.source_experiment === null
+          ? a.source_experiments.length !== 0
+          : !a.source_experiments.some(
+              (raw) => obj(raw).experiment_id === use.source_experiment,
+            )
+        : a.source_experiment !== use.source_experiment) ||
       !a.analysis
     )
       throw new Error("Candidate evidence provenance mismatch");
@@ -269,7 +310,7 @@ async function inspectControl(
   }
   const config = obj(manifest.config);
   const protocol =
-    manifest.schema_version === 2
+    manifest.schema_version === 2 || manifest.schema_version === 3
       ? validateProtocol(
           config.protocol,
           validateDataset(config.dataset).id_column,
@@ -294,7 +335,13 @@ async function inspectControl(
     let score: Score | null = null;
     for (const e of results.values()) {
       const s = scoreOf(e);
-      if (e.status === "completed" && !e.final && s && better(s, score)) {
+      if (
+        e.status === "completed" &&
+        !e.final &&
+        e.phase !== "confirmation" &&
+        s &&
+        better(s, score)
+      ) {
         best = e;
         score = s;
       }
@@ -312,7 +359,16 @@ async function inspectControl(
     position = integer(extension.applied_sequence, "applied sequence", 0);
   if (position > events.length)
     throw new Error("Candidate snapshot sequence beyond journal");
-  const snapshot = validateCandidateState(extension.candidates, max);
+  const modern = manifest.schema_version === 3;
+  const method = modern ? validateModelingTask(task).method : null;
+  const validationAudit = modern
+    ? await ValidationAudit.create(directory, manifest)
+    : null;
+  const snapshot = validateCandidateState(
+    extension.candidates,
+    max,
+    method === "collaborative",
+  );
   const experiments = objects(manifest.experiments ?? [], "experiments"),
     analyses = objects(manifest.analyses ?? [], "analyses");
   const accepted = new Map<
@@ -331,10 +387,33 @@ async function inspectControl(
     tokens = 0,
     edaCalls = 0,
     edaExecutions = 0;
+  let initialScheduled = false,
+    initialAccepted = false;
   if (position === 0) same(snapshot, current, "Candidate snapshot");
   for (const e of events) {
     const seq = integer(e.sequence, "sequence");
     let changed = false;
+    if (modern && e.type === "initial_analysis_scheduled") {
+      if (
+        method !== "initial_eda" ||
+        initialScheduled ||
+        attempts ||
+        results.size ||
+        e.version !== 1
+      )
+        throw new Error("Invalid initial analysis schedule");
+      same(
+        payloads.get(seq),
+        initialAnalysis(validateDataset(config.dataset)),
+        "Initial analysis request",
+      );
+      initialScheduled = true;
+    }
+    if (
+      validationAudit?.frozen &&
+      (e.type === "model_request" || e.type === "action_accepted")
+    )
+      throw new Error("Model/search continued after finish");
     if (e.type === "model_request") attempts++;
     if (e.type === "model_response" || e.type === "model_failure") {
       const usage = obj(e.usage);
@@ -343,7 +422,7 @@ async function inspectControl(
         integer(usage.output_tokens ?? 0, "output tokens", 0);
     }
     if (e.type === "action_accepted") {
-      if (e.protocol_version !== 2)
+      if (e.protocol_version !== (modern ? 3 : 2))
         throw new Error("Unsupported modeling action protocol");
       str(e.attempt_id, "accepted attempt");
       str(e.tool_id, "accepted tool");
@@ -357,17 +436,50 @@ async function inspectControl(
             : kind === "finish"
               ? "finish_modeling"
               : "invalid";
-      const selected = action(
+      const selected = (modern ? newAction : action)(
         name,
         JSON.stringify(parameters),
         integer(limits.max_code_bytes, "max code"),
         max,
+        e.origin === "host_initial"
+          ? "adaptive_eda"
+          : (method ?? "adaptive_eda"),
       );
-      if (selected.kind !== "finish" && selected.source_experiment !== null) {
-        const origin = results.get(selected.source_experiment);
+      if (modern && e.origin === "host_initial") {
+        if (
+          method !== "initial_eda" ||
+          !initialScheduled ||
+          initialAccepted ||
+          attempts ||
+          selected.kind !== "analyze"
+        )
+          throw new Error("Invalid initial analysis acceptance");
+        same(
+          parameters,
+          initialAnalysis(validateDataset(config.dataset)),
+          "Host initial request",
+        );
+        initialAccepted = true;
+      } else if (
+        modern &&
+        (e.origin !== "model" ||
+          (method === "initial_eda" && !initialScheduled))
+      )
+        throw new Error("Invalid decision origin");
+      const selectedSources =
+        selected.kind === "finish"
+          ? []
+          : "source_experiments" in selected
+            ? selected.source_experiments
+            : selected.source_experiment === null
+              ? []
+              : [selected.source_experiment];
+      for (const source of selectedSources) {
+        const origin = results.get(source);
         if (
           !origin ||
           origin.final ||
+          origin.phase === "confirmation" ||
           (selected.kind === "analyze" && origin.status !== "completed")
         )
           throw new Error("Invalid accepted source experiment");
@@ -380,7 +492,12 @@ async function inspectControl(
           obj(manifest.config).dataset,
         );
       const before = current;
-      current = applyCandidateUpdates(current, selected.candidate_updates, max);
+      current = applyCandidateUpdates(
+        current,
+        selected.candidate_updates,
+        max,
+        method === "collaborative",
+      );
       const intent = obj(e.intent);
       accepted.set(seq, { action: selected, intent });
       if (selected.kind === "analyze") {
@@ -396,12 +513,17 @@ async function inspectControl(
           )
         )
           throw new Error("Duplicate analysis identity");
-        const allocation = validateAllocation(intent.allocation);
-        same(
-          allocation.requested,
-          selected.requested_budget,
-          "Requested budget",
-        );
+        const allocation = (
+          manifest.schema_version === 3
+            ? validateHostAllocation
+            : validateAllocation
+        )(intent.allocation);
+        if ("requested" in allocation && "requested_budget" in selected)
+          same(
+            allocation.requested,
+            selected.requested_budget,
+            "Requested budget",
+          );
         same(
           allocation.limits,
           {
@@ -448,6 +570,14 @@ async function inspectControl(
         )
           throw new Error("Allocation deadline mismatch");
         acceptedChildren.push({ ...intent, sequence: seq });
+      } else if (modern && selected.kind === "finish") {
+        if (intent.kind !== "finish") throw new Error("Invalid finish intent");
+        same(
+          selected.experiment_id,
+          intent.search_best_experiment_id,
+          "Finish search best",
+        );
+        validationAudit?.freeze(selected.experiment_id, intent.shortlist);
       } else {
         if (
           intent.kind !== "experiment" ||
@@ -459,6 +589,12 @@ async function inspectControl(
           active: selected.kind === "train",
         });
         if (selected.kind === "train") {
+          validationAudit?.search(
+            str(intent.experiment_id, "experiment ID"),
+            selected.code,
+            candidate,
+            intent.evaluation,
+          );
           same(candidate, selected.candidate_id, "Experiment candidate");
           same(
             intent.repair_of_experiment,
@@ -503,9 +639,24 @@ async function inspectControl(
       const id = str(e.experiment_id, "experiment ID"),
         acceptedSequence = integer(e.accepted_sequence, "accepted sequence");
       const origin = accepted.get(acceptedSequence);
-      if (!origin || origin.intent.kind !== "experiment")
+      if (
+        !origin ||
+        (origin.intent.kind !== "experiment" &&
+          !(modern && origin.intent.kind === "finish"))
+      )
         throw new Error("Experiment lacks accepted decision");
-      if (e.retry === true) {
+      if (modern && origin.intent.kind === "finish") {
+        validationAudit?.closingIntent(e);
+        if (intents.has(id)) throw new Error("Duplicate closing experiment");
+        intents.set(id, e);
+        current = attachExperiment(
+          current,
+          str(e.candidate_id, "candidate ID"),
+          id,
+        );
+        histories.push({ sequence: seq, intent: e, after: current });
+        changed = true;
+      } else if (e.retry === true) {
         const previous = [...intents.values()]
           .filter((i) => i.final === true)
           .at(-1);
@@ -556,6 +707,7 @@ async function inspectControl(
         intent = intents.get(id);
       if (!intent || results.has(id))
         throw new Error("Unknown or duplicate experiment result");
+      validationAudit?.result(e);
       const status = str(e.status, "experiment status");
       if (
         typeof intent.final !== "boolean" ||
@@ -577,10 +729,16 @@ async function inspectControl(
         id,
         candidate_id: str(intent.candidate_id, "candidate ID"),
         final: intent.final,
+        ...(modern
+          ? { phase: e.phase as "search" | "confirmation" | "final" }
+          : {}),
         status,
         ...(protocol ? { score } : { rmse: e.rmse as number | null }),
         reason: str(e.reason, "experiment reason"),
       });
+    } else if (e.type === "confirmation_result") {
+      if (!validationAudit) throw new Error("Legacy confirmation event");
+      validationAudit.update(payloads.get(seq));
     } else if (e.type === "child_result" && e.analysis_id !== undefined) {
       const intent = acceptedChildren.find(
         (x) => x.child_id === e.child_id && x.analysis_id === e.analysis_id,
@@ -648,8 +806,36 @@ async function inspectControl(
         ? obj(obj(origin.predict).output).sha256
         : null;
       same(a.prediction_sha256, hash, "Analysis prediction");
+      if (modern && Array.isArray(a.source_experiments))
+        for (const raw of a.source_experiments) {
+          const source = obj(raw),
+            origin = experiments.find((e) => e.id === source.experiment_id);
+          if (
+            !origin ||
+            origin.phase !== "search" ||
+            origin.status !== "completed"
+          )
+            throw new Error("Invalid analysis search source");
+          same(
+            obj(origin.evaluation),
+            validationAudit?.plan.search,
+            "Analysis evaluation",
+          );
+          same(
+            source.prediction_sha256,
+            origin.predict ? obj(obj(origin.predict).output).sha256 : null,
+            "Analysis source prediction",
+          );
+        }
     }
   }
+  if (modern)
+    same(
+      manifest.search_best_experiment_id,
+      bestResult()?.id ?? null,
+      "Search best experiment",
+    );
+  validationAudit?.finish();
   const budgetView = await inspectAllocations(
     directory,
     manifest,
@@ -701,7 +887,11 @@ async function inspectAllocations(
     if (!decision || decision.action.kind !== "analyze")
       throw new Error("Missing accepted analysis decision");
     same(a.request, decision.action, "Analysis request");
-    const allocation = validateAllocation(intent.allocation);
+    const allocation = (
+      manifest.schema_version === 3
+        ? validateHostAllocation
+        : validateAllocation
+    )(intent.allocation);
     if (a.allocation !== undefined)
       same(a.allocation, allocation, "Analysis allocation");
     same(a.effective_budget, allocation.effective, "Analysis effective budget");

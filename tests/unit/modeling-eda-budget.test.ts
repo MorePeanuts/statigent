@@ -43,6 +43,11 @@ async function options(): Promise<Parameters<typeof analyze>[0]> {
     runId: "child-1",
     root,
     task: validateModelingTask({
+      schema_version: 2,
+      method: "adaptive_eda",
+      confirmation: { mode: "none" },
+      resource_version: "smoke-v1",
+
       goal: "test",
       dataset_root: join(root, "data"),
       model_profile: profile.id,
@@ -57,14 +62,8 @@ async function options(): Promise<Parameters<typeof analyze>[0]> {
       candidates: ["c1"],
       question: "Inspect x",
       expected_evidence: "x distribution",
-      decision_rules: "Decide whether to transform x",
-      source_experiment: null,
-      requested_budget: {
-        task_timeout_ms: 10000,
-        total_tokens: 100,
-        executions: 2,
-      },
-      budget_reason: "One bounded numeric check",
+      purpose: "explore",
+      source_experiments: [],
     },
     resolvedCandidates: [
       {
@@ -127,7 +126,7 @@ test("EDA distinguishes preparation failure from unconfirmed dispatch and sends 
     dispatch: "not_started",
     cost: { status: "known", total_tokens: 0 },
   });
-  o.prepare = async () => [];
+  delete o.prepare;
   o.run = async (child) => {
     expect(child.deadline).toBe(o.deadline);
     const task = obj(child.task);
@@ -175,9 +174,7 @@ test("complete EDA role loop retains actual token overshoot then stops; unknown 
           result.role_usage,
         ),
       ).toThrow("accounting_incomplete");
-      expect(() => parent.childBudget(o.request.requested_budget)).toThrow(
-        "accounting_incomplete",
-      );
+      expect(() => parent.hostChildBudget()).toThrow("accounting_incomplete");
     } else {
       expect(result.status).toBe("budget_exhausted");
       expect(result.cost.total_tokens).toBe(110000);
