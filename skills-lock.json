@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "nature-figure": {
+      "source": "Yuan1z0825/nature-skills",
+      "sourceType": "github",
+      "skillPath": "skills/nature-figure/SKILL.md",
+      "computedHash": "3d555eea8b676fa1ce4b5a83aca1ca1630d834848d613ae2b7c7e36eb10980e6"
+    }
+  }
+}
