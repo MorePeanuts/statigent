@@ -60,6 +60,7 @@ export interface PromptMetadata {
 }
 export interface AgentMetadata {
   goal: string;
+  completion_policy?: "modeling-diagnostic-v1";
   constraints: string[];
   budget: AgentBudget;
   remaining: {
@@ -139,6 +140,11 @@ export function validateAgentFields(value: Record<string, unknown>): void {
   )
     throw new Error("Invalid model timing");
   const agent = obj(value.agent);
+  if (
+    agent.completion_policy !== undefined &&
+    agent.completion_policy !== "modeling-diagnostic-v1"
+  )
+    throw new Error("Invalid completion policy");
   str(agent.goal, "goal");
   if (
     !Array.isArray(agent.constraints) ||

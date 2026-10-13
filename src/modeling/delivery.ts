@@ -88,6 +88,7 @@ export async function deliver(
   const native = await readManifest(final.fit.directory);
   const manifest = {
     schema_version: selection ? 3 : 2,
+    stage_version: final.fit.stage_version ?? 2,
     protocol,
     source_experiment: selected.id,
     ...(selection
@@ -262,6 +263,9 @@ export async function reproduce(
   if (JSON.stringify(data.dataset) !== JSON.stringify(f.dataset))
     throw new Error("Frozen input identity mismatch");
   const task = { ...f.task, image: str(image.id, "image ID") };
+  const stageVersion = f.manifest.stage_version ?? 2;
+  if (stageVersion !== 2 && stageVersion !== 3)
+    throw new Error("Unsupported frozen modeling stage version");
   const images: unknown = JSON.parse(
     await dockerCommand(["image", "inspect", task.image]),
   );
@@ -293,6 +297,7 @@ export async function reproduce(
           root: dir,
           stage: "predict",
           legacy: f.manifest.schema_version === 1,
+          stageVersion,
           entrypoint: entrypoints.predict,
           code,
           data: data.test,
@@ -310,6 +315,7 @@ export async function reproduce(
           candidateId: "reproduce",
           final: true,
           legacy: f.manifest.schema_version === 1,
+          stageVersion,
           entrypoints,
         });
   const stage = "final" in result ? result.predict : result;

@@ -82,3 +82,19 @@ bun run modeling develop --task binary --method collaborative --seed 42 --resour
 两个局部限制先于父总上限触发。第二轮 EDA 多次执行复拟合、特征组合和重复值诊断，后续请求按预检估算不能落入该次分析剩余 token 额度，因此在实际消费未到 400,000 时停止。后续候选含 600 棵随机森林、600 棵极端随机树及梯度提升的集成，日志明确为 `artifact rejected model.joblib: file exceeds max_artifact_bytes`；不是控制台文字过多，也不是父总 token/墙钟耗尽。原始候选代码、已完成预测、EDA 轨迹和拒绝记录均保留。
 
 由此只能确认软件保护和失败记录有效，不能确认真实完整协同链路已验收，更不能推出预测收益。后续应单独评审 EDA 聚焦与收尾、模型序列化/产物大小以及可恢复失败策略；本轮没有通过改限额或追加运行来获取成功。主规格同步、归档、推送和合并均未执行，待真实验收问题评审后决定。
+
+## 失败后的修复与重新验收
+
+用户随后明确授权“修复这些行为，然后重新做冒烟测试”。新增任务 8.1–8.4，保留上述失败原记录；新授权仅复测 s3e9 一次，仍为 collaborative、seed=42、deepseek-flash、collaboration-dev-v1，不扩大总额度。
+
+实现 `modeling-diagnostic-v1`：建模 EDA 聚焦已有数据/预测诊断，每次输出至多 8,192 token；按两角色请求大小与剩余资源提前切换返回/总结，只开放终止工具并由宿主执行权限校验。完整历史、有效证据校验和未知消费停止保持不变，独立 EDA 默认策略不变。
+
+新 stage 3 显式配置 zlib-3 模型压缩与文件上限，序列化后超限先删除模型再返回错误。只有完整回执与成功清理才反馈为搜索可修复错误；不完整执行/收集、记录或清理故障仍停止，确认阶段不允许模型修代码。交付记录 stage_version，旧交付继续采用原阶段协议及原镜像。
+
+- `bun run check` 通过：295 个 TypeScript 单测、64 个 Python 测试；格式、lint、类型检查通过。日志 `/private/tmp/statigent-repair-check.log`。
+- 首批 Docker 专项 6 项通过：真实两轮协同及交付、旧大产物传输、压缩产物超限后修正并完成交付及预测复现、回归隔离、超时/超限/取消、确认成员隔离。日志 `/private/tmp/statigent-repair-integration.log`。
+- 收尾单测覆盖请求增长与 token 预留、执行/调用/时间/请求大小边界、关闭后伪造执行/委派、错误证据拒绝，默认 EDA 行为保持。
+- 自审将策略元信息保存在 agent 记录、阶段版本保存在 StageResult/交付记录，保持原生 SessionConfig 严格协议不变；新增测试核对其仍可供 Notebook 重放解析。最终快速检查再次通过，日志 `/private/tmp/statigent-repair-check-final.log`。
+- 最终源码的两轮协同和超限恢复整链复核 2 项通过（120.8 秒），包括原生执行配置解析与独立预测复现。日志 `/private/tmp/statigent-repair-final-chain.log`。
+- 原失败候选 `3d16eda212c7a4957b68a311ad7493296569a89c854ab54655903a13c76c4365` 原样复演：同一内部训练成员与 seed=42，压缩后 83,566,576 字节（79.695 MiB），拟合和独立预测成功，未调用 LLM。旧 schema 1 回归与 schema 2 二分类交付独立预测复现通过；原失败父记录哈希不变。记录为 `runs/modeling-repair-probe/b1d18596-9b73-4319-a1ce-3c0716cb0b82/probe.json`。这一尺寸测量不代表所有模型都能通过同一上限，也不代表重新运行了完整智能体。
+- 后续兼容检查与新真实冒烟结果将在执行后补充；本段不表示真实验收已通过。

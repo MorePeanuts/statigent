@@ -32,14 +32,16 @@ def protocol(kind="binary", metric="roc_auc", classes=None, positive="01"):
     return validate_protocol(value, "id")
 
 
-def setup(tmp_path, p, code):
+def setup(tmp_path, p, code, version=2, max_bytes=1024 * 1024):
     config = {
-        "schema_version": 2,
+        "schema_version": version,
         "protocol": p,
         "target": "target",
         "id_column": "id",
         "seed": 42,
     }
+    if version == 3:
+        config["model_artifact"] = {"compression": "zlib-3", "max_bytes": max_bytes}
     (tmp_path / "stage.json").write_text(json.dumps(config))
     (tmp_path / "candidate.py").write_text(code)
     (tmp_path / "data.csv").write_text(
@@ -140,3 +142,24 @@ def test_accuracy_does_not_require_probability_interface_or_model_classes(tmp_pa
         "def predict_proba", "def unavailable"
     )
     assert "NA,01" in setup(tmp_path, protocol(metric="accuracy"), code)
+
+
+def test_compressed_model_roundtrip_and_size_failure(tmp_path):
+    from statigent_modeling.runner import ModelArtifactLimitError
+
+    code = CODE.replace("return self", "self.payload = np.zeros(200000); return self")
+    expected = setup(tmp_path, protocol(), code)
+    original_size = (tmp_path / "model.joblib").stat().st_size
+    assert setup(tmp_path, protocol(), code, version=3) == expected
+    assert (tmp_path / "model.joblib").stat().st_size < original_size / 10
+    (tmp_path / "model-metadata.json").unlink()
+    with pytest.raises(ModelArtifactLimitError, match="max_bytes=32"):
+        setup(tmp_path, protocol(), code, version=3, max_bytes=32)
+    assert not (tmp_path / "model.joblib").exists()
+    assert not (tmp_path / "model-metadata.json").exists()
+
+
+@pytest.mark.parametrize("limit", [0, -1, 1.5, True, "32"])
+def test_invalid_artifact_policy(tmp_path, limit):
+    with pytest.raises(ValueError, match="artifact policy"):
+        setup(tmp_path, protocol(), CODE, version=3, max_bytes=limit)

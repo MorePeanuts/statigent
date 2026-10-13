@@ -13,6 +13,10 @@ import pandas as pd
 from statigent_modeling.protocol import class_indices, probabilities, validate_protocol
 
 
+class ModelArtifactLimitError(ValueError):
+    """A fully serialized model exceeds its declared delivery limit."""
+
+
 def load_candidate(path: Path):
     spec = importlib.util.spec_from_file_location("candidate", path)
     if spec is None or spec.loader is None:
@@ -34,22 +38,34 @@ def run(stage: str, root: str = "/input", output: str = "."):
     base, destination = Path(root), Path(output)
     config = json.loads((base / "stage.json").read_text())
     version = config.get("schema_version", 1)
-    if version not in (1, 2):
+    if version not in (1, 2, 3):
         raise ValueError("Unsupported stage version")
     p = (
         validate_protocol(config["protocol"], config["id_column"])
-        if version == 2
+        if version >= 2
         else None
     )
     if version == 1 and set(config) != {"target", "id_column", "seed"}:
         raise ValueError("Invalid legacy stage fields")
-    if version == 2 and set(config) != {
+    fields = {
         "schema_version",
         "protocol",
         "target",
         "id_column",
         "seed",
-    }:
+    }
+    if version == 3:
+        fields.add("model_artifact")
+        artifact = config["model_artifact"]
+        if (
+            not isinstance(artifact, dict)
+            or set(artifact) != {"compression", "max_bytes"}
+            or artifact["compression"] != "zlib-3"
+            or type(artifact["max_bytes"]) is not int
+            or artifact["max_bytes"] < 1
+        ):
+            raise ValueError("Invalid model artifact policy")
+    if version >= 2 and set(config) != fields:
         raise ValueError("Invalid stage fields")
     load_candidate(base / "candidate.py")
     # Features use pandas inference; IDs and labels retain CSV spelling.
@@ -71,10 +87,23 @@ def run(stage: str, root: str = "/input", output: str = "."):
         model.fit(frame, target)
         if p and p["output"] == "probabilities":
             model_classes(model, p)
+        model_path = destination / "model.joblib"
         joblib.dump(
             {"protocol": p, "estimator": model} if p else model,
-            destination / "model.joblib",
+            model_path,
+            compress=("zlib", 3) if version == 3 else 0,
         )
+        if version == 3:
+            size = model_path.stat().st_size
+            if size > config["model_artifact"]["max_bytes"]:
+                # Remove before notebook artifact collection, so a known size
+                # error cannot turn into an incomplete transport/persistence.
+                model_path.unlink()
+                raise ModelArtifactLimitError(
+                    f"compressed model.joblib bytes={size} exceeds "
+                    f"max_bytes={config['model_artifact']['max_bytes']}; "
+                    "reduce model size and retry within the search repair allowance"
+                )
         if p:
             (destination / "model-metadata.json").write_text(
                 json.dumps({"schema_version": 1, "protocol": p}, ensure_ascii=False)

@@ -45,6 +45,9 @@ export function roleInitialMessages(
         constraints: task.constraints,
         inputs: task.execution.inputs.map((p) => `/input/${p}`),
         budget: task.budget,
+        ...(task.completion_policy
+          ? { completion_policy: task.completion_policy }
+          : {}),
         ...(task.report
           ? role === "planner"
             ? { report: task.report }

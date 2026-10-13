@@ -4,14 +4,21 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import source from "../../configs/modeling/synthetic-prepare.json";
 import { dockerCommand } from "../../src/execution/docker";
+import { validateConfig } from "../../src/execution/protocol";
 import { validateModelingTask } from "../../src/modeling/config";
 import { loadDataset, prepareDataset, select } from "../../src/modeling/data";
+import { reproduce } from "../../src/modeling/delivery";
 import {
   runExperiment,
   runStage,
   stageBytes,
 } from "../../src/modeling/experiments";
+import { inspectModeling } from "../../src/modeling/records";
+import { runModeling } from "../../src/modeling/run";
+import { obj } from "../../src/models/validation";
 import { readManifest } from "../../src/records/store";
+import { lastFeedback, profile, reply, ScriptClient } from "../helpers/agent";
+import { baselineCode, finishCall, trainCall } from "../helpers/modeling";
 
 const code = `from sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.linear_model import LinearRegression\ndef build_pipeline(seed):\n    import os\n    assert sorted(os.listdir('/input')) == ['candidate.py','data.csv','stage.json']\n    return make_pipeline(ColumnTransformer([('x','passthrough',['x'])]),LinearRegression())\n`;
 test("a tree ensemble above the old 16 MiB limit is saved, collected on close and loaded in an independent prediction container", async () => {
@@ -45,6 +52,7 @@ test("a tree ensemble above the old 16 MiB limit is saved, collected on close an
     task,
     ...(await loadDataset(task.dataset_root)),
     candidateId: "trees",
+    stageVersion: 2,
     signal: new AbortController().signal,
     remaining: () => 120000,
     code: "from sklearn.ensemble import ExtraTreesRegressor\ndef build_pipeline(seed):\n    return ExtraTreesRegressor(n_estimators=256,random_state=seed,n_jobs=1)\n",
@@ -95,6 +103,61 @@ async function setup() {
     code,
   };
 }
+
+test("compressed artifact rejection can be repaired and delivered without losing failed history", async () => {
+  const o = await setup();
+  const client = new ScriptClient((body, i) => {
+    if (i === 0)
+      return reply([
+        trainCall(
+          "import random\nfrom sklearn.dummy import DummyRegressor\ndef build_pipeline(seed):\n    model=DummyRegressor()\n    model.payload=random.Random(seed).randbytes(8192)\n    return model\n",
+        ),
+      ]);
+    if (i === 1) {
+      const failed = obj(lastFeedback(body).result);
+      expect(failed.diagnostic).toContain("model_artifact_limit:");
+      return reply([
+        trainCall(baselineCode, [], null, {
+          candidateUpdates: [],
+          repairOf: String(failed.experiment_id),
+        }),
+      ]);
+    }
+    return reply([finishCall(body)]);
+  });
+  const result = await runModeling({
+    task: {
+      ...o.task,
+      method: "no_eda",
+      limits: { ...o.task.limits, max_artifact_bytes: 2048 },
+    },
+    profile,
+    edaProfile: profile,
+    client,
+    runRoot: o.root,
+  });
+  expect(result.status, result.reason).toBe("completed");
+  const manifest = obj(
+    await Bun.file(join(result.directory, "modeling.json")).json(),
+  );
+  if (!Array.isArray(manifest.experiments)) throw Error("Missing experiments");
+  const experiments = manifest.experiments.map(obj);
+  expect(experiments.map((e) => e.status)).toEqual([
+    "failed",
+    "completed",
+    "completed",
+  ]);
+  expect(obj(experiments[0]?.fit).output).toBeNull();
+  const fit = obj(experiments[1]?.fit);
+  expect(fit.stage_version).toBe(3);
+  const native = await readManifest(String(fit.directory));
+  expect(() => validateConfig(native.config)).not.toThrow();
+  expect(client.bodies).toHaveLength(3);
+  await inspectModeling(result.directory);
+  expect(
+    (await reproduce(result.directory, join(o.root, "reproduced"))).status,
+  ).toBe("passed");
+}, 180000);
 test("isolated regression trains, predicts and records trusted RMSE without validation labels in either stage", async () => {
   const options = await setup();
   const e = await runExperiment(options);
@@ -156,6 +219,15 @@ test("training timeout, artifact limit and cancellation cannot yield successful 
     remainingMs: 20000,
   });
   expect(large.status).toBe("failed");
+  expect(large.reason).toContain(
+    "model_artifact_limit:compressed model.joblib bytes=",
+  );
+  expect(large.output).toBeNull();
+  const rejected = await readManifest(large.directory);
+  expect(rejected.workspace_collection.status).toBe("complete");
+  expect(rejected.artifacts.some((a) => a.source_path === "model.joblib")).toBe(
+    false,
+  );
   const cancel = new AbortController();
   const timer = setTimeout(() => cancel.abort(), 2000);
   const cancelled = await runStage({

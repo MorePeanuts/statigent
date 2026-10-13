@@ -609,6 +609,7 @@ export class RunRecorder {
           "subtask_delegated",
           "subtask_returned",
           "analysis_submitted",
+          "analysis_closing",
         ].includes(type)
       )
         throw new Error("Invalid agent event type");
@@ -897,6 +898,7 @@ export async function inspectModelJournal(directory: string) {
         "subtask_delegated",
         "subtask_returned",
         "analysis_submitted",
+        "analysis_closing",
       ].includes(String(event.type))
     )
       collaboration.accept(String(event.type), event);

@@ -169,6 +169,7 @@ async function options(
     },
     delivery: async (_root, task, selected, final, dataset) => ({
       schema_version: 2,
+      stage_version: 3,
       protocol: datasetProtocol(dataset),
       source_experiment: selected.id,
       dataset,
@@ -418,37 +419,65 @@ test("final retries use new experiments, unchanged code and the configured reser
   expect(new Set(codes).size).toBe(1);
 });
 
-test("a failed training attempt can be explicitly referenced by its bounded repair", async () => {
-  const o = await options((body, i) =>
-    reply([
-      i === 0
-        ? trainCall()
-        : i === 1
-          ? trainCall(baselineCode, [], null, {
-              candidateId: "baseline",
-              candidateUpdates: [],
-              repairOf: String(obj(lastFeedback(body).result).experiment_id),
-            })
-          : call("finish_modeling", {
-              candidate_updates: [],
-              experiment_id: lastFeedback(body).best_experiment_id,
-              reason: "done",
-            }),
-    ]),
-  );
-  const ex = o.experiment;
-  if (!ex) throw Error("fixture");
-  let attempts = 0;
-  o.experiment = async (input) => {
-    const e = await ex(input);
-    return attempts++ === 0
-      ? { ...e, status: "failed", reason: "error:bad candidate", score: null }
-      : e;
-  };
-  const r = await runModeling(o);
-  expect(r.status, r.reason).toBe("completed");
-  expect(attempts).toBe(3);
-});
+test.each([
+  "error:bad candidate",
+  "model_artifact_limit:compressed model bytes=512 exceeds max_bytes=256",
+])(
+  "a failed training attempt can be explicitly referenced by its bounded repair: %s",
+  async (reason) => {
+    const o = await options((body, i) =>
+      reply([
+        i === 0
+          ? trainCall()
+          : i === 1
+            ? trainCall(baselineCode, [], null, {
+                candidateId: "baseline",
+                candidateUpdates: [],
+                repairOf: String(obj(lastFeedback(body).result).experiment_id),
+              })
+            : call("finish_modeling", {
+                candidate_updates: [],
+                experiment_id: lastFeedback(body).best_experiment_id,
+                reason: "done",
+              }),
+      ]),
+    );
+    const ex = o.experiment;
+    if (!ex) throw Error("fixture");
+    let attempts = 0;
+    o.experiment = async (input) => {
+      const e = await ex(input);
+      return attempts++ === 0
+        ? { ...e, status: "failed", reason, score: null }
+        : e;
+    };
+    const r = await runModeling(o);
+    expect(r.status, r.reason).toBe("completed");
+    expect(attempts).toBe(3);
+  },
+);
+
+test.each([
+  "output_limit_exceeded:incomplete execution",
+  "cleanup:model_artifact_limit",
+  "record_failure:model_artifact_limit",
+])(
+  "unknown or unclean artifact failure stops without repair: %s",
+  async (reason) => {
+    const o = await options(() => reply([trainCall()]));
+    const ex = o.experiment;
+    if (!ex) throw Error("fixture");
+    let attempts = 0;
+    o.experiment = async (input) => {
+      attempts++;
+      return { ...(await ex(input)), status: "failed", reason, score: null };
+    };
+    const r = await runModeling(o);
+    expect(r.status).toBe("failed");
+    expect(r.reason).toBe(reason);
+    expect(attempts).toBe(1);
+  },
+);
 
 test("candidate batches and budget rejection are atomic while model costs remain charged", async () => {
   for (const mode of ["batch", "budget", "evidence"] as const) {

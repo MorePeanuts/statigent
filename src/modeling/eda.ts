@@ -282,10 +282,12 @@ export async function analyze(o: {
     client: o.client,
     task: {
       organization: "planner-executor",
+      completion_policy: "modeling-diagnostic-v1",
       goal: JSON.stringify({ ...o.request, candidates: o.resolvedCandidates }),
       constraints: [
         "Investigate the requested exploration, model diagnosis or comparison. context.json contains historical knowledge with original provenance, not new execution evidence. This is internal validation, never external test evaluation.",
         "Return concise evidence and methods. Do not write a Markdown report or train candidate models. source.json identifies data, target and prediction provenance.",
+        "Focus on the requested question: inspect existing predictions, residual groups and data statistics first. Do not refit models, run feature searches or tune hyperparameters here; return those proposals to the modeling agent for controlled experiments. Return once the question has useful evidence; list new questions as limitations instead of expanding the task. Keep findings concise (at most 6), with exact valid evidence IDs. When the host announces closing, return supported findings and explicitly state anything unresolved; the planner must preserve those limitations in finish_analysis.",
       ],
       model_profile: o.profile.id,
       execution: {

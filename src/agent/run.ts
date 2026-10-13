@@ -53,6 +53,7 @@ import {
   returnedImages,
   validatePlannerReport,
 } from "./collaboration-report";
+import { DIAGNOSTIC_OUTPUT_TOKENS, diagnosticClosure } from "./completion";
 import { type AgentTask, preflightInputs, validateTask } from "./config";
 import { modelCaller } from "./model-call";
 import { initialMessages, promptVersion, SYSTEM_PROMPT } from "./prompt";
@@ -158,6 +159,9 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
   };
   const agent: AgentMetadata = {
     goal: task.goal,
+    ...(task.completion_policy
+      ? { completion_policy: task.completion_policy }
+      : {}),
     constraints: task.constraints,
     budget: task.budget,
     remaining: {
@@ -313,22 +317,77 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
   let reason = "not_finished";
   let analysis: Analysis | null = null;
   let recordError = false;
+  let closing = false;
+  const closingNotified = new Set<AgentRole>();
   try {
     checkClock();
     session = await (options.createSession ?? createSession)(config, recorder);
     checkClock();
     for (;;) {
       const messages = collaboration ? histories[role] : singleMessages;
-      const toolSet = collaboration
+      let toolSet = collaboration
         ? roleTools(role, task.report !== null)
         : tools(task.report !== null);
       checkClock();
       updateRemaining();
+      if (task.completion_policy && collaboration) {
+        if (!closing && tokens.attempts > 0) {
+          const executorBytes = Buffer.byteLength(
+            client.requestBody(
+              histories.executor,
+              roleTools("executor", false),
+            ),
+          );
+          const plannerBytes = Buffer.byteLength(
+            client.requestBody(histories.planner, roleTools("planner", false)),
+          );
+          const decision = diagnosticClosure({
+            role,
+            remaining: agent.remaining,
+            executorBytes,
+            plannerBytes,
+            modelTimeoutMs: task.budget.model_timeout_ms,
+            maxRequestBytes: task.budget.max_request_bytes,
+          });
+          if (decision.reason) {
+            closing = true;
+            await recorder.modelEvent("analysis_closing", {
+              ...identity(),
+              policy: task.completion_policy,
+              ...decision,
+              executor_request_bytes: executorBytes,
+              planner_request_bytes: plannerBytes,
+              remaining: agent.remaining,
+            });
+          }
+        }
+        if (closing) {
+          // Both role tool lists put the terminal action last. Enforce this again
+          // below: a model may still emit a tool absent from the advertised list.
+          toolSet = roleTools(role, false).slice(-1);
+          if (!closingNotified.has(role)) {
+            messages.push({
+              role: "user",
+              content: JSON.stringify({
+                phase: "closing",
+                policy: task.completion_policy,
+                instruction:
+                  role === "executor"
+                    ? "Return_result now using only supported findings and valid evidence IDs. Mark partial and explain unresolved questions when necessary. No more code execution."
+                    : "Finish_analysis now using returned evidence. Preserve all material limitations and unresolved questions; do not delegate further. Never fabricate missing evidence.",
+                remaining: agent.remaining,
+              }),
+            });
+            closingNotified.add(role);
+          }
+        }
+      }
       const { attemptId, response } = await callModel(
         messages,
         script ? scriptTools(toolSet) : toolSet,
         model,
         identity(),
+        task.completion_policy ? DIAGNOSTIC_OUTPUT_TOKENS : undefined,
       );
       const calls = response.message.tool_calls ?? [];
       for (const call of calls) {
@@ -345,6 +404,14 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
           throw new Error("Exactly one tool action required");
         const call = calls[0];
         if (!call) throw new Error("Missing tool");
+        if (
+          closing &&
+          call.function.name !==
+            (role === "executor" ? "return_result" : "finish_analysis")
+        )
+          throw new Error(
+            "Analysis is closing: only return_result / finish_analysis is allowed; no new execution or delegation",
+          );
         action = collaboration
           ? validateRoleAction(
               role,

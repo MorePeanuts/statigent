@@ -24,6 +24,7 @@ import { ScoringFailure, scoreTables } from "./scoring";
 import type { Evaluation, ExperimentPhase } from "./validation";
 
 export interface StageResult {
+  stage_version?: 1 | 2 | 3;
   run_id: string;
   directory: string;
   status: string;
@@ -43,6 +44,7 @@ export interface StageOptions {
   data: Table;
   entrypoint?: string;
   legacy?: boolean;
+  stageVersion?: 2 | 3;
   modelSeed?: number;
   model?: Buffer;
   signal: AbortSignal;
@@ -61,7 +63,18 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     "data.csv": csv(o.data),
     "stage.json": JSON.stringify({
       ...(!o.legacy
-        ? { schema_version: 2, protocol: datasetProtocol(o.dataset) }
+        ? {
+            schema_version: o.stageVersion ?? 3,
+            protocol: datasetProtocol(o.dataset),
+            ...(o.stageVersion !== 2
+              ? {
+                  model_artifact: {
+                    compression: "zlib-3",
+                    max_bytes: o.task.limits.max_artifact_bytes,
+                  },
+                }
+              : {}),
+          }
         : {}),
       target: o.dataset.target,
       id_column: o.dataset.id_column,
@@ -134,7 +147,13 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
     )
       throw new Error("Staged input mismatch");
     result = await session.execute(o.entrypoint ?? stageEntrypoint(o.stage));
-    if (result.status !== "ok" || !result.persistence_complete)
+    if (
+      !result.started ||
+      !result.kernel_available ||
+      !result.persistence_complete
+    )
+      failure = `${result.status}:incomplete execution:${result.error?.evalue ?? result.diagnostic ?? "unconfirmed execution state"}`;
+    else if (result.status !== "ok")
       failure = `${result.status}:${result.error?.evalue ?? result.diagnostic ?? "incomplete execution"}`;
   } catch (e) {
     failure = String(e);
@@ -147,7 +166,23 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
       failure = `cleanup:${String(e)}`;
     }
   }
+  if (session?.closeResult && session.closeResult.status !== "ok")
+    failure = `cleanup:${session.closeResult.status}:${failure ?? "unconfirmed close"}`;
   if (o.signal.aborted) failure = "cancelled";
+  // This is a candidate failure only after the isolated worker and all records
+  // have closed cleanly. Transport limits or unknown state remain fatal.
+  if (
+    !o.signal.aborted &&
+    failure?.startsWith("error:") &&
+    result?.status === "error" &&
+    result.error?.ename === "ModelArtifactLimitError" &&
+    result.started &&
+    result.kernel_available &&
+    result.persistence_complete &&
+    session?.closeResult?.status === "ok" &&
+    !session.closeResult.cleanup_error
+  )
+    failure = `model_artifact_limit:${result.error.evalue}`;
   let output: StageResult["output"] = null;
   let metadata: StageResult["metadata"];
   if (!failure) {
@@ -184,6 +219,7 @@ export async function runStage(o: StageOptions): Promise<StageResult> {
   await recorder.finish(failure ? "failed" : "completed");
   await exportNotebooks(recorder.directory);
   return {
+    stage_version: o.legacy ? 1 : (o.stageVersion ?? 3),
     run_id: runId,
     directory: recorder.directory,
     status: failure ? "failed" : "completed",
@@ -277,6 +313,7 @@ export async function runExperiment(o: {
   onStage?: (id: string) => Promise<void>;
   entrypoints?: { fit: string; predict: string };
   legacy?: boolean;
+  stageVersion?: 2 | 3;
   score?: typeof scoreTables;
 }): Promise<Experiment> {
   const e: Experiment = {
@@ -317,6 +354,7 @@ export async function runExperiment(o: {
     signal: o.signal,
     onIntent: o.onStage,
     legacy: o.legacy,
+    stageVersion: o.stageVersion,
     modelSeed: o.evaluation?.model_seed,
   };
   e.fit = await runStage({
