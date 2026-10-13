@@ -1,6 +1,7 @@
 import type { Analysis } from "../agent/actions";
 import { sha256 } from "../records/store";
 import type { CandidateState } from "./candidates";
+import type { AnalysisRecord } from "./eda";
 import {
   type KnowledgeRevision,
   type KnowledgeUpdate,
@@ -32,6 +33,22 @@ export interface KnowledgeFacts {
     prediction_sha256: string | null;
     reason: string;
   }[];
+}
+/** Hints expose only already accepted findings; they never upgrade failed EDA. */
+export function analysisSourceHints(
+  a: Pick<AnalysisRecord, "id" | "status" | "analysis" | "source_sha256">,
+) {
+  if (a.status !== "completed" || !a.analysis || !a.source_sha256) return [];
+  const sourceHash = a.source_sha256;
+  return a.analysis.findings.map((finding, index) => ({
+    kind: "analysis" as const,
+    analysis_id: a.id,
+    finding: index,
+    evidence_refs: [...finding.evidence_refs],
+    source_sha256: sourceHash,
+    applicability:
+      "Explain how this finding on the supplied training data and source experiments applies to your candidate.",
+  }));
 }
 function sameScope(
   a: KnowledgeRevision["scope"],
@@ -75,7 +92,9 @@ export function validateKnowledgeSources(
           ref.profile_sha256 !== facts.profile_sha256 ||
           !pointerExists(facts.profile, ref.path)
         )
-          throw new Error("Unknown profile fact");
+          throw new Error(
+            `Unknown profile fact for ${update.id}: use the current basic_profile_sha256 and an existing JSON pointer relative to basic_profile, such as /rows or /columns/0/missing`,
+          );
       } else if (ref.kind === "experiment") {
         const experiment = facts.experiments.find(
           (e) => e.id === ref.experiment_id,
@@ -111,7 +130,9 @@ export function validateKnowledgeSources(
           !finding ||
           ref.evidence_refs.some((r) => !finding.evidence_refs.includes(r))
         )
-          throw new Error("Unknown finding evidence");
+          throw new Error(
+            `Unknown finding evidence for ${update.id}, analysis ${ref.analysis_id}, finding ${ref.finding}; valid refs for this finding: ${JSON.stringify(finding?.evidence_refs ?? [])}. Do not move evidence from another finding; use a separate source with its actual finding index.`,
+          );
         for (const source of analysis.sources) {
           const experiment = facts.experiments.find(
             (e) => e.id === source.experiment_id,

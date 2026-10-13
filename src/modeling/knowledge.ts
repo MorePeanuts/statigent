@@ -42,7 +42,10 @@ export interface KnowledgeRevision
   accepted_sequence: number;
   scope: { run_id: string; dataset_sha256: string; protocol_sha256: string };
 }
-const statuses: Record<KnowledgeKind, readonly KnowledgeStatus[]> = {
+export const KNOWLEDGE_STATUSES: Record<
+  KnowledgeKind,
+  readonly KnowledgeStatus[]
+> = {
   observation: ["active", "withdrawn"],
   hypothesis: ["open", "supported", "challenged", "withdrawn"],
   question: ["open", "resolved", "withdrawn"],
@@ -78,7 +81,9 @@ export function parseKnowledgeSources(value: unknown): KnowledgeSource[] {
         path.includes("..") ||
         /~(?![01])/.test(path)
       )
-        throw new Error("Invalid profile pointer");
+        throw new Error(
+          "Invalid profile pointer: use a JSON pointer within basic_profile, e.g. /rows or /columns/0/missing; do not use basic_profile as a path or remove an observation's source",
+        );
       return { kind: "profile", profile_sha256: hash(x.profile_sha256), path };
     }
     if (x.kind === "analysis") {
@@ -146,8 +151,10 @@ export function parseKnowledgeUpdates(value: unknown): KnowledgeUpdate[] {
       x.kind !== "question"
     )
       throw new Error("Invalid knowledge kind");
-    if (!statuses[x.kind].some((s) => s === x.status))
-      throw new Error("Invalid knowledge status");
+    if (!KNOWLEDGE_STATUSES[x.kind].some((s) => s === x.status))
+      throw new Error(
+        `Invalid knowledge status for ${id} (${x.kind}): ${String(x.status)}; allowed: ${KNOWLEDGE_STATUSES[x.kind].join(", ")}`,
+      );
     const base_revision =
       x.op === "create" ? null : integer(x.base_revision, "base revision");
     if (x.op === "create" && x.base_revision !== null)
@@ -160,7 +167,9 @@ export function parseKnowledgeUpdates(value: unknown): KnowledgeUpdate[] {
     )
       throw new Error("Invalid related candidates");
     if (x.kind === "observation" && !sources.length)
-      throw new Error("Observation requires a source");
+      throw new Error(
+        `Observation requires a source: ${id}; cite a valid profile pointer, completed analysis finding or confirmed experiment. Otherwise omit this optional update; never fabricate a source.`,
+      );
     if (
       x.status === "supported" &&
       !sources.some((s) => s.kind === "experiment" && s.fact === "score")

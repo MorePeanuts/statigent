@@ -70,17 +70,23 @@ test("full Docker collaboration transfers revised knowledge across isolated EDA 
       const finding = obj(
         (obj(firstAnalysis.analysis).findings as unknown[])[0],
       );
+      if (!Array.isArray(firstAnalysis.knowledge_source_hints))
+        throw Error("Missing accepted source hints");
+      const hint = obj(firstAnalysis.knowledge_source_hints[0]);
+      expect(hint).toMatchObject({
+        kind: "analysis",
+        analysis_id: firstAnalysis.analysis_id,
+        finding: 0,
+        evidence_refs: finding.evidence_refs,
+        source_sha256: firstAnalysis.source_sha256,
+      });
       return reply([
         call("analyze", {
           candidate_updates: [],
           knowledge_updates: [
             question(2, [
               {
-                kind: "analysis",
-                analysis_id: firstAnalysis.analysis_id,
-                finding: 0,
-                evidence_refs: finding.evidence_refs,
-                source_sha256: firstAnalysis.source_sha256,
+                ...hint,
                 applicability: "Original data-only exploration",
               },
               { kind: "experiment", experiment_id: baseline, fact: "score" },

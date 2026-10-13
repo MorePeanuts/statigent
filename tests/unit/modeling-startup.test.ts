@@ -63,9 +63,27 @@ test("four methods receive identical basic statistics before their first decisio
     });
     expect(client.bodies).toHaveLength(1);
     const messages = client.bodies[0]?.messages as { content: string }[];
-    views.push(
-      messages.find((m) => m.content.includes('"basic_profile"'))?.content,
+    const visible = JSON.parse(
+      messages.find((m) => m.content.includes('"basic_profile"'))?.content ??
+        "{}",
     );
+    // Citation syntax belongs to the collaborative interface; the underlying
+    // statistics and their identity must remain identical in every method.
+    views.push(
+      JSON.stringify({
+        basic_profile: visible.basic_profile,
+        basic_profile_sha256: visible.basic_profile_sha256,
+      }),
+    );
+    if (method === "collaborative")
+      expect(visible.profile_source_examples).toEqual(
+        ["/rows", "/column_count", "/columns"].map((path) => ({
+          kind: "profile",
+          profile_sha256: visible.basic_profile_sha256,
+          path,
+        })),
+      );
+    else expect(visible.profile_source_examples).toBeUndefined();
     const manifest = JSON.parse(
       await readFile(join(result.directory, "modeling.json"), "utf8"),
     );

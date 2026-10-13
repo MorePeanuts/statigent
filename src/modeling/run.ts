@@ -40,6 +40,7 @@ import {
   requireKnowledge,
 } from "./knowledge";
 import {
+  analysisSourceHints,
   validateKnowledgeLinks,
   validateKnowledgeSources,
 } from "./knowledge-sources";
@@ -314,11 +315,25 @@ export async function runModeling(o: ModelingOptions) {
       artifact: basicProfile.artifact,
       elapsed_ms: profileElapsed,
     });
+    const profileSha = basicProfile.artifact.sha256;
     messages.push({
       role: "user",
       content: JSON.stringify({
         basic_profile: basicProfile.profile,
         basic_profile_sha256: basicProfile.artifact.sha256,
+        ...(task.method === "collaborative"
+          ? {
+              profile_source_examples: [
+                "/rows",
+                "/column_count",
+                "/columns",
+              ].map((path) => ({
+                kind: "profile",
+                profile_sha256: profileSha,
+                path,
+              })),
+            }
+          : {}),
       }),
     });
     await record.save(state());
@@ -704,6 +719,9 @@ export async function runModeling(o: ModelingOptions) {
           source_experiments: a.source_experiments,
           source_sha256: a.source_sha256,
           analysis: a.analysis,
+          ...(task.method === "collaborative"
+            ? { knowledge_source_hints: analysisSourceHints(a) }
+            : {}),
           allocation,
         };
       } else {

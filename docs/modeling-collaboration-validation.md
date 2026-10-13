@@ -6,7 +6,7 @@
 
 - 软件：已实现共享基础概览、任务内认识修订、探索/诊断/比较、显式多轮交接、宿主分配、终局确认、schema 3 交付和四组方法权限。快速检查与全部相关集成行为已验证，具体结果见下方。
 - 可控 Docker 验证：真实容器与计算，模型输出由测试脚本提供，不产生付费模型调用。两次 EDA、来源修订、不采用分支、独立会话及确认排名翻转已通过专项测试。
-- 真实模型：已按操作者选择执行 s3e9 一次，结果为 failed；未再运行。完成第一轮 EDA、认识修订和首次训练，但第二轮诊断未成功收尾，后续训练产物超限。真实完整链路未通过，详情见下方。
+- 真实模型：首次 s3e9 失败于第二轮诊断未收尾及模型产物超限。用户授权修复后另执行一次，新运行完成首轮 EDA，但因认识更新协议错误耗尽纠正次数，尚未训练。两份失败记录分别保留；真实完整链路仍未通过，详情见下方。
 - 研究效果：尚未验证；完整 DSBench/TabArena 适配、四组比较、外部基线和正式统计协议另列后续工作。
 
 ## 开发资源数值与依据
@@ -62,7 +62,7 @@ bun run modeling develop --task binary --method collaborative --seed 42 --resour
 
 完整协同篡改测试初次试写只读 context.json 触发 EACCES。测试现先临时调整自建夹具权限，再验证篡改拒绝，并在 finally 恢复字节和权限；应用实现未变。专项重跑 1 项通过（含两次 EDA、确认、复现和两类篡改）。Python 集成 6 项通过。
 
-## 唯一一次真实开发冒烟结果
+## 首次真实开发冒烟结果
 
 2026-10-13，运行 ID `0031d15a-f872-4eff-88ed-a2db110a15ce`，源码 `c0128c8b3d2ea7db7b21ac5422e0609a5888ed59`，dirty=false；方法/模型/种子/资源与操作者选择一致。父目录为 `runs/modeling-collaboration-smoke/0031d15a-f872-4eff-88ed-a2db110a15ce`。首次 smoke-result.json 保持原样；另存 offline-review.json，记录其哈希及只读复核结果。
 
@@ -97,4 +97,17 @@ bun run modeling develop --task binary --method collaborative --seed 42 --resour
 - 自审将策略元信息保存在 agent 记录、阶段版本保存在 StageResult/交付记录，保持原生 SessionConfig 严格协议不变；新增测试核对其仍可供 Notebook 重放解析。最终快速检查再次通过，日志 `/private/tmp/statigent-repair-check-final.log`。
 - 最终源码的两轮协同和超限恢复整链复核 2 项通过（120.8 秒），包括原生执行配置解析与独立预测复现。日志 `/private/tmp/statigent-repair-final-chain.log`。
 - 原失败候选 `3d16eda212c7a4957b68a311ad7493296569a89c854ab54655903a13c76c4365` 原样复演：同一内部训练成员与 seed=42，压缩后 83,566,576 字节（79.695 MiB），拟合和独立预测成功，未调用 LLM。旧 schema 1 回归与 schema 2 二分类交付独立预测复现通过；原失败父记录哈希不变。记录为 `runs/modeling-repair-probe/b1d18596-9b73-4319-a1ce-3c0716cb0b82/probe.json`。这一尺寸测量不代表所有模型都能通过同一上限，也不代表重新运行了完整智能体。
-- 后续兼容检查与新真实冒烟结果将在执行后补充；本段不表示真实验收已通过。
+- 兼容 Docker 专项 11 项通过：二分类/多分类完整链路与标签输出、非法概率/评分故障/取消、原 EDA 状态保持与重放、回归/分类确认排名翻转、初始 EDA 方法。日志 `/private/tmp/statigent-repair-compat.log`。加首批 6 项共覆盖 17 项不同集成行为；两项最终整链复核为重复验证，不重复计数。
+
+### 新授权的一次复测结果
+
+运行 `d9ed15df-838c-43f2-a976-df6db23dec3a`，源码 `23ed613e5a05e3a73be5759da33dd88dd31b1cf5`、dirty=false；镜像 `sha256:9b511502e5c8a65aa5497ed0a20b34df54749d8ab84777b01775f1356271aff4`（linux/arm64）。配置与预检记录于 `runs/modeling-collaboration-retest/{freeze,preflight}.json`，仍使用原总额度。结果为 **failed / action_corrections**，不是前一轮的 token 或产物超限重现。
+
+- 首轮 EDA completed：11 次模型调用、8 次代码执行、96,005 token；没有到达资源收尾阈值，属于正常返回，不能据此宣称实测了阈值触发。
+- 建模 4 次调用、51,159 token；先后拒绝 profile path=`basic_profile`、无来源 observation、status=active 的 hypothesis。两次纠正机会耗尽，第三次非法响应使父任务停止；未接受任何训练请求。
+- 全任务 15 次调用、147,164 token（输入 130,092、输出 17,072），墙钟 97.4 秒；训练、第二次 EDA、确认、交付、预测复现均未进入。外层评分未运行。
+- 新旧 `smoke-result.json` 不覆盖；新失败的检查可重建真实接受/拒绝及已知成本，不将被拒绝认识视为已提交。
+
+后续非付费修复：认识工具 schema 增加按类型的合法状态组合和观察来源下限，明确 JSON pointer 语法；错误提示给出条目、允许状态及 finding 的有效 refs，成功分析提供精确来源模板。提示升级为 modeling-v5；来源、原子提交、纠正上限不放宽。新增回归覆盖三类错误修正、schema/宿主状态一致性以及跨 finding 引用拒绝。此修复需要另行真实验收，不能回填上述失败为成功；尚未追加付费运行。
+
+接口修复验证：`bun run check` 通过（300 个 TypeScript 单测、64 个 Python 测试，以及格式/lint/类型检查），日志 `/private/tmp/statigent-knowledge-guidance-check-final.log`。真实 Docker 可控两轮协同使用来源模板完成修订、确认、交付与独立复现，1 项通过（89.7 秒），日志 `/private/tmp/statigent-knowledge-guidance-integration.log`。首次快速检查暴露四组启动夹具比较了整个消息而非基础统计；现分别核对四组相同统计/哈希和完整组的引用语法，复测通过。严格 Spec 校验与 diff 检查通过，任务 8.3 保留未完成，真实验收未通过；未推送、合并或归档。

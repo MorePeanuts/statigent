@@ -96,6 +96,50 @@ function initial(body: Record<string, unknown>) {
     knowledge_refs: [{ id: "o", revision: 1 }],
   };
 }
+test.each(["pointer", "missing-source", "hypothesis-status"])(
+  "knowledge format rejection gives actionable feedback and permits atomic correction: %s",
+  async (mode) => {
+    const o = await options((body, i) => {
+      if (i >= 2)
+        return reply([
+          call("finish_modeling", {
+            candidate_updates: [],
+            knowledge_updates: [],
+            knowledge_refs: [],
+            experiment_id: lastFeedback(body).best_experiment_id,
+            reason: "done",
+          }),
+        ]);
+      const args = initial(body);
+      if (i === 0) {
+        const change = args.knowledge_updates[0];
+        if (!change) throw Error("Missing observation");
+        if (mode === "pointer") {
+          const source = change.sources[0];
+          if (!source) throw Error("Missing source");
+          source.path = "basic_profile";
+        }
+        if (mode === "missing-source") change.sources = [];
+        if (mode === "hypothesis-status") change.kind = "hypothesis";
+      } else {
+        const error = String(lastFeedback(body).error);
+        expect(error).toContain(
+          mode === "pointer"
+            ? "/rows"
+            : mode === "missing-source"
+              ? "Observation requires a source: o"
+              : "allowed: open, supported, challenged, withdrawn",
+        );
+      }
+      return reply([call("run_experiment", args)]);
+    });
+    const result = await runModeling(o);
+    const view = await inspectModeling(result.directory);
+    expect(result.reason).not.toBe("action_corrections");
+    expect(obj(view.knowledge_control).history).toHaveLength(1);
+    expect(view.manifest.experiments).toHaveLength(2);
+  },
+);
 test("joint decision persists knowledge and candidates; revisions audit and snapshot tampering rejects", async () => {
   const o = await options((body, i) =>
     i === 0

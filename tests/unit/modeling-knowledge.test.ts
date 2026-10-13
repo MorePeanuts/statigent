@@ -1,10 +1,13 @@
 import { expect, test } from "bun:test";
+import { modelingTools } from "../../src/modeling/actions";
 import {
   applyKnowledgeUpdates,
   type KnowledgeUpdate,
   parseKnowledgeUpdates,
   requireKnowledge,
 } from "../../src/modeling/knowledge";
+import { createProtocol } from "../../src/modeling/protocol";
+import { obj } from "../../src/models/validation";
 
 const scope = {
   run_id: "run",
@@ -36,6 +39,56 @@ const observation: KnowledgeUpdate = {
     },
   ],
 };
+test("advertised knowledge kind/status combinations match runtime acceptance", () => {
+  const tools = modelingTools(
+    createProtocol("regression", "rmse", [], null, "id"),
+    "collaborative",
+  );
+  for (const tool of tools) {
+    const item = obj(
+      obj(tool.function.parameters.properties.knowledge_updates).items,
+    );
+    if (!Array.isArray(item.anyOf))
+      throw Error("Missing typed knowledge alternatives");
+    for (const kind of ["observation", "hypothesis", "question"] as const) {
+      const branch = item.anyOf
+        .map(obj)
+        .find((b) => obj(obj(b.properties).kind).const === kind);
+      if (!branch) throw Error("Missing kind branch");
+      const allowed = obj(obj(branch.properties).status).enum;
+      if (!Array.isArray(allowed)) throw Error("Missing status options");
+      for (const status of [
+        "active",
+        "open",
+        "supported",
+        "challenged",
+        "resolved",
+        "withdrawn",
+      ] as const) {
+        const update = {
+          ...hypothesis,
+          kind,
+          status,
+          sources: [
+            {
+              kind: "experiment" as const,
+              experiment_id: "e",
+              fact: "score" as const,
+            },
+          ],
+        };
+        if (allowed.includes(status))
+          expect(() => parseKnowledgeUpdates([update])).not.toThrow();
+        else
+          expect(() => parseKnowledgeUpdates([update])).toThrow(
+            "Invalid knowledge status",
+          );
+      }
+      if (kind === "observation")
+        expect(obj(obj(branch.properties).sources).minItems).toBe(1);
+    }
+  }
+});
 test("revisions preserve the observation and every earlier hypothesis including withdrawal", () => {
   const initial = applyKnowledgeUpdates(
     [],

@@ -10,6 +10,7 @@ import {
 } from "./candidates";
 import type { ModelingMethod } from "./config";
 import {
+  KNOWLEDGE_STATUSES,
   type KnowledgeRef,
   type KnowledgeUpdate,
   parseKnowledgeRefs,
@@ -72,12 +73,26 @@ const evidence = array(
 const sources = array(
   {
     anyOf: [
-      object({ kind: { const: "profile" }, profile_sha256: text, path: text }),
+      object({
+        kind: { const: "profile" },
+        profile_sha256: text,
+        path: {
+          ...text,
+          pattern: "^/",
+          description:
+            "JSON pointer relative to basic_profile, e.g. /rows or /columns/0/missing. Use the actual basic_profile_sha256. Not a filename and not basic_profile itself.",
+        },
+      }),
       object({
         kind: { const: "analysis" },
         analysis_id: text,
         finding: { type: "integer", minimum: 0 },
-        evidence_refs: { ...array(text, 32), minItems: 1 },
+        evidence_refs: {
+          ...array(text, 32),
+          minItems: 1,
+          description:
+            "Use only IDs belonging to this exact zero-based finding index; never combine refs from different findings in one source. Copy a provided knowledge_source_hint when applicable.",
+        },
         source_sha256: text,
         applicability: text,
       }),
@@ -90,28 +105,37 @@ const sources = array(
   },
   32,
 );
-const knowledgeUpdates = array(
-  object({
+const knowledgeUpdates = array({
+  ...object({
     op: { enum: ["create", "revise"] },
     id: text,
     kind: { enum: ["observation", "hypothesis", "question"] },
-    base_revision: { type: ["integer", "null"], minimum: 1 },
+    base_revision: {
+      type: ["integer", "null"],
+      minimum: 1,
+      description:
+        "create requires null; revise requires the exact existing revision.",
+    },
     statement: text,
     status: {
-      enum: [
-        "active",
-        "open",
-        "supported",
-        "challenged",
-        "resolved",
-        "withdrawn",
-      ],
+      enum: [...new Set(Object.values(KNOWLEDGE_STATUSES).flat())],
+      description:
+        "observation: active/withdrawn; hypothesis: open/supported/challenged/withdrawn; question: open/resolved/withdrawn. supported requires a successful experiment score source.",
     },
     reason: text,
     sources,
     candidate_ids: array(text),
   }),
-);
+  anyOf: Object.entries(KNOWLEDGE_STATUSES).map(([kind, statuses]) => ({
+    properties: {
+      kind: { const: kind },
+      status: { enum: statuses },
+      ...(kind === "observation" ? { sources: { minItems: 1 } } : {}),
+    },
+  })),
+  description:
+    "Optional knowledge changes: [] is valid. An observation must have a real source; hypotheses and questions start open and may have no source. Invalid updates reject the whole action.",
+});
 function candidateUpdates(knowledge: boolean) {
   const fields = {
     reason: text,
@@ -301,7 +325,7 @@ export function action(
     code,
   };
 }
-export const MODELING_PROMPT_VERSION = "modeling-v4";
+export const MODELING_PROMPT_VERSION = "modeling-v5";
 // Keep the existing runner contract verbatim; method guidance is independently versioned below.
 const runnerContract = LEGACY_PROMPT.split("\n").slice(0, 2).join("\n");
 export function modelingPrompt(method: ModelingMethod) {
@@ -309,6 +333,6 @@ export function modelingPrompt(method: ModelingMethod) {
 Optimize predictive quality with reliable evaluation and reproducible delivery. You may explore data before proposing candidates, train directly, diagnose one model or compare two. Use analysis when it can inform the next decision; consecutive analyses, direct training, deferring or rejecting a finding are legitimate. No mandatory EDA count or order. The host allocates resources and reserves closing time; do not request quotas. Explain each choice using the actual evidence available. Do not claim an improvement without the host's scores.
 Maintain stable candidates through candidate_updates (empty when unchanged): create {op:"create",id,hypothesis,change,priority,reason,evidence:[]}; update {op:"update",id,priority:null,disposition:"keep"|"defer"|"resume",reason,evidence:[]}. A new direction gets a new candidate ID. Failed code can be repaired under the same candidate; repair_of_experiment must identify its confirmed failed search trial. Resume a deferred candidate before using it. Priority is advice, not a scheduling requirement. The host owns revisions and experiment identities. Cite EDA evidence using its original analysis and source experiment plus applicability; do not relabel historical model evidence. You may choose older evidence or no analysis evidence when that is justified.
 Use the current search best_experiment_id in finish_modeling and explain why further search is unnecessary. Acceptance freezes search. Configured terminal confirmation uses two additional training-internal splits to choose among up to two different pipelines; it may select another pipeline. This is adaptive internal resampling, not independent generalization evidence. No model calls follow acceptance. All phases share the recorded budget.
-Method: ${method}. ${method === "collaborative" ? "Maintain task-local observations, hypotheses and questions with knowledge_updates (create/revise, exact base_revision; [] is valid). Observations require real profile/finding/experiment sources; hypotheses are judgments, not facts. A supported hypothesis needs a successful experiment reference. Failed code is evidence of execution failure, not automatic statistical refutation. Preserve observations while revising explanations. Link candidates and actions via knowledge_refs {id,revision}; use exact revisions and original sources. Updates and action commit atomically. Do not invent host scores or acceptance sequence." : "Use the normal task, candidate, report and experiment history. Do not submit knowledge_updates or knowledge_refs."}`;
+Method: ${method}. ${method === "collaborative" ? "Maintain task-local observations, hypotheses and questions with knowledge_updates (create/revise, exact base_revision; [] is valid). For create use base_revision:null; for revise use the exact existing revision. Valid status by kind: observation=active|withdrawn; hypothesis=open|supported|challenged|withdrawn; question=open|resolved|withdrawn. Never set a hypothesis to active. Observations require real sources; optional unsupported observations should be omitted. Profile sources use the actual basic_profile_sha256 and a JSON pointer relative to the profile object, e.g. /rows, /column_count, /columns/0/missing; do not prepend basic_profile. Analysis sources must cite only evidence_refs belonging to their exact finding index; use knowledge_source_hints and explain applicability. Hypotheses are judgments, not facts: use open until a successful experiment score source supports the claim. Failed code is evidence of execution failure, not automatic statistical refutation. Preserve observations while revising explanations. Link candidates and actions via knowledge_refs {id,revision}; use exact revisions and original sources. Updates and action commit atomically. Do not invent host scores or acceptance sequence." : "Use the normal task, candidate, report and experiment history. Do not submit knowledge_updates or knowledge_refs."}`;
 }
 export const MODELING_PROMPT = modelingPrompt("adaptive_eda");

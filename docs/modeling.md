@@ -6,7 +6,7 @@
 
 第二章采用“分析与建模协同驱动的自主机器学习方法”，以独立测试预测效果为主，同时关注可靠性与实际效率。三项核心机制、研究假设和消融以 [研究大纲](overview.md#第二核心章节面向预测性数据建模的智能体研究) 为准，评价口径见 [Benchmark 协议](benchmark.md#第二章预测性建模)。预算管理在研究中承担运行保护与公平控制的作用。
 
-新版实现包含任务内认识、自主分析交接、终局确认及四种方法权限。任务 schema 2、动作协议 3、提示词 modeling-v4、父记录与交付 schema 3 配套使用。固定原始数据与搜索划分继续保留。软件检查、真实模型验收和研究效果分别报告，见 [本轮开发验收](modeling-collaboration-validation.md)。
+新版实现包含任务内认识、自主分析交接、终局确认及四种方法权限。任务 schema 2、动作协议 3、提示词 modeling-v5、父记录与交付 schema 3 配套使用。固定原始数据与搜索划分继续保留。软件检查、真实模型验收和研究效果分别报告，见 [本轮开发验收](modeling-collaboration-validation.md)。
 
 当前默认一次 EDA、三次搜索拟合和一次最终拟合用于开发验证，不代表正式实验的协同深度或资源条件。历史验收记录保留其当时配置与结论；功能链路通过不等于上述方法具有稳定的预测收益。
 
@@ -46,6 +46,8 @@ bun run modeling prepare --config configs/modeling/synthetic-prepare.json --out 
 完整协同模式可随任一动作提交 `knowledge_updates` 和 `knowledge_refs`，允许空更新；普通模式不提供这两个字段。认识记录分为 observation（active/withdrawn）、hypothesis（open/supported/challenged/withdrawn）、question（open/resolved/withdrawn）。`create` 的 `base_revision` 为 null；`revise` 必须指向当前修订，保存新版本和旧版本，宿主分配修订号、任务作用域及接受序号。
 
 例如观察可引用 `{kind:"profile", profile_sha256:"启动上下文中的哈希", path:"/columns/1/missing"}`；假设获得实验支持时引用 `{kind:"experiment", experiment_id:"真实搜索实验ID", fact:"score"}`。模型不能在来源中提交成绩数值，宿主从实验结果读取；`fact:"failure"` 只表示真实执行故障，不自动否定统计假设。EDA finding 来源包括原 analysis_id、从 0 开始的 finding 序号、执行 evidence_refs、source_sha256 和 applicability，不能把历史预测换成另一模型来源。
+
+工具 schema 按认识类型限制合法状态：observation 为 active/withdrawn，hypothesis 为 open/supported/challenged/withdrawn，question 为 open/resolved/withdrawn。观察必须有来源；尚无证据时可省略可选更新，不伪造来源。profile path 是相对于 basic_profile 对象的 JSON pointer，不能写成 `basic_profile` 或带此前缀；完整组初始上下文提供来源示例。成功 EDA 返回 `knowledge_source_hints`，逐 finding 绑定真实 ID、原始哈希和可引用证据；不同 finding 的 refs 不能混入同一个来源。错误提示包含条目、合法状态或当前 finding 的有效 refs，纠正上限和来源校验不变。
 
 认识、候选、动作引用及资源一起预检；宿主持久化一次 `action_accepted` 后才更新状态和派发。任何非法来源、陈旧修订、额度拒绝或接受记录故障均不留下部分状态。检查入口重演接受事件，核对 `knowledge_control` 修订快照、基本概览哈希与实验事实；普通方法显示 disabled，旧记录显示 not_recorded。文字中的“supported”是模型判断，不改变可信指标排名。
 

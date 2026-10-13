@@ -8,6 +8,7 @@ import {
   type KnowledgeUpdate,
 } from "../../src/modeling/knowledge";
 import {
+  analysisSourceHints,
   type KnowledgeFacts,
   validateKnowledgeLinks,
   validateKnowledgeSources,
@@ -99,6 +100,31 @@ function fixture() {
   };
   return { facts, update };
 }
+
+test("source hints bind exact accepted findings and never expose failed analyses as evidence", () => {
+  const { facts, update } = fixture();
+  const a = facts.analyses[0];
+  if (!a?.analysis) throw Error("Missing analysis");
+  a.analysis.findings.push({
+    statement: "Other finding",
+    evidence_refs: ["cell2"],
+  });
+  const hints = analysisSourceHints(a);
+  expect(hints).toHaveLength(2);
+  for (const hint of hints)
+    expect(() =>
+      validateKnowledgeSources([{ ...update, sources: [hint] }], facts),
+    ).not.toThrow();
+  expect(analysisSourceHints({ ...a, status: "failed" })).toEqual([]);
+  const first = hints[0];
+  if (!first) throw Error("Missing source hint");
+  expect(() =>
+    validateKnowledgeSources(
+      [{ ...update, sources: [{ ...first, evidence_refs: ["cell2"] }] }],
+      facts,
+    ),
+  ).toThrow('valid refs for this finding: ["cell1"]');
+});
 test("profile, finding and experiment facts resolve only against accepted host identities", () => {
   const { facts, update } = fixture();
   for (const source of [
