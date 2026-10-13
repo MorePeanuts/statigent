@@ -48,4 +48,4 @@ Bun 1.4.2；Python 3.12.9、uv 0.8.22 及计算依赖按锁文件构建。Docker
 
 允许文件复用、脚本输出语法和每轮随机初始化是对照条件的一部分。当前没有测量方法收益或因果归因，没有将缓存/历史产物报告为本次免费计算。任务内存与文件访问安全边界是 Docker 容器；uv 子进程及 bridge 本身不是额外安全隔离层。
 
-`openspec validate add-fresh-script-backend --strict` 通过。实现、检查及本验收文档不包含付费模型调用，不同步/归档主规格，也不推送或合并。
+实现阶段的 `openspec validate add-fresh-script-backend --strict` 通过；实现及验收未调用付费模型。随后已同步主规格并通过 `openspec validate --specs --strict`，完整规划与任务记录见[变更归档](../openspec/changes/archive/2026-10-13-add-fresh-script-backend/)。
