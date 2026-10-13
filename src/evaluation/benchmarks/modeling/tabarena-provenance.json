@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "repository": "autogluon/tabarena",
+  "code_commit": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+  "dataset_revision": "9044df07027054209362651af7c9502036aa92f0",
+  "python": "3.12",
+  "environment": "environments/tabarena",
+  "resources": [
+    {
+      "path": "packages/tabarena/src/tabarena/benchmark/exec_models/external.py",
+      "sha256": "086e2bcf7cc413e9f540de1c1b4ff7b584bd1fb3099173fabdf7c205f9a0f919"
+    },
+    {
+      "path": "packages/tabarena/src/tabarena/benchmark/exec_models/base.py",
+      "sha256": "5d03686981ee7bd9f2def508e1fb6b10c055b057d9be1a722a56b6ab01c01e7c"
+    },
+    {
+      "path": "packages/tabarena/src/tabarena/benchmark/experiment/experiment_runner.py",
+      "sha256": "4f049ce932460aefdb17205b6d2209b8555320df548820dd2c550c7c21950351"
+    }
+  ],
+  "system_class": "tabarena.benchmark.exec_models.ExternalSystemModel",
+  "fit_parameters": [
+    "self",
+    "X",
+    "y",
+    "target_name",
+    "problem_type",
+    "eval_metric",
+    "validation_metadata",
+    "num_cpus",
+    "num_gpus",
+    "memory_limit",
+    "time_limit",
+    "random_state"
+  ],
+  "metric_mapping": {
+    "rmse": {
+      "native_direction": "minimize",
+      "official_error": "native"
+    },
+    "roc_auc": {
+      "native_direction": "maximize",
+      "official_error": "1 - native"
+    },
+    "log_loss": {
+      "native_direction": "minimize",
+      "official_error": "native"
+    }
+  },
+  "label_semantics": "ExternalSystemModel disables label preprocessing; the experiment runner fits AutoGluon LabelCleaner on outer training y only. Its transform_proba determines class ordering and binary positive column 1. Preserve raw labels into the system; return all raw-label probability columns.",
+  "environment_lock_sha256": "e855c9fae096dcf6eb8e6cbcc88db05ad72fb8d0eb8fff092d464636534acd46",
+  "metric_dependencies": {
+    "tabarena": "0.1.0",
+    "bencheval": "0.1.0",
+    "autogluon.core": "1.6.4b20261013",
+    "numpy": "2.5.4",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.18.1"
+  }
+}

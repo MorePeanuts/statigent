@@ -1,4 +1,5 @@
 import { join, resolve } from "node:path";
+import { auditModeling } from "./benchmarks/modeling/audit";
 import { cleanupEvaluation } from "./cleanup";
 import { id } from "./contracts";
 import { buildPlan, type Registry } from "./plan";
@@ -13,7 +14,7 @@ import {
 import { runEvaluation } from "./run";
 
 export const HELP =
-  "bun run evaluate plan|run --config FILE [--models FILE] [--root RUN_ROOT]\nbun run evaluate inspect|cleanup EVALUATION_ID [--root RUN_ROOT]\nbun run evaluate score EVALUATION_ID [--root RUN_ROOT] [--allow-model-calls --judge-budget FILE]";
+  "bun run evaluate plan|run --config FILE [--models FILE] [--root RUN_ROOT]\nbun run evaluate inspect|cleanup EVALUATION_ID [--root RUN_ROOT]\nbun run evaluate score EVALUATION_ID [--root RUN_ROOT] [--allow-model-calls --judge-budget FILE]\nbun run evaluate audit [--data-root benchmarks] [--catalog FILE] [--output NEW_FILE]";
 export function parseArguments(args: string[]) {
   if (!args.length || args[0] === "--help") return null;
   const [operation, ...rest] = args;
@@ -70,6 +71,7 @@ export async function main(
   registry: Registry = defaultRegistry(),
   dependencies: Pick<RescoreOptions, "judgeFactory"> = {},
 ): Promise<unknown> {
+  if (args[0] === "audit") return auditModeling(args.slice(1));
   const options = parseArguments(args);
   if (!options) return { help: HELP };
   if (options.operation === "plan" || options.operation === "run") {

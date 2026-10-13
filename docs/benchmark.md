@@ -328,6 +328,12 @@ credit_score,country,gender,age,tenure,balance,products_number,credit_card,activ
 
 ### 下载范围与实验清单的区别
 
+建模适配现已建立 [全候选目录](../benchmarks/metadata/modeling-task-catalog.json) 和 [DSBench 逐题审计矩阵](modeling-dsbench-audit.md)，`bun run evaluate audit` 可执行只读来源/结构审计。2026-10-14 的 103 项来源检查未发现哈希错误，RPG 的 104 个固定参考成员均可安全解析且方向一致；完整解码、内部划分、资源与模型执行尚须分层验收。TabArena 固定官方接口/指标探针在独立锁定环境通过，尚不代表本项目 system wrapper 或真实任务已接入，见 [兼容环境](../environments/tabarena/README.md)。
+
+主兼容口径依据发布评分实现：s3e13 使用前三命中而非位置加权；s3e19 双零属于未定义边界；s3e20、s3e23 的误导变量分别实际计算 RMSE、AUC。s3e18 的 EC3–EC6 以及 bike-sharing-demand 的 casual/registered 均不能进入预测特征。原题面不改写，差异公开记录；后续修订公式需要独立版本和参考。
+
+候选状态不会因静态检查通过自动变为正式研究资格。s3e9 已有真实开发暴露；日期/周字段的未来预测解释以及跨任务/跨基准的潜在同源关系仍待审计，原发布划分保持不变。全指标工程覆盖也不等于全部候选已完成真实实验。
+
 DSBench 官方索引有 74 项，当前下载其中 **52 项常规结构化表格任务**，排除 22 项文本、时序/信号、未来预测或特殊结构任务。具体清单及理由见 [ds-modeling-selection.json](../benchmarks/metadata/ds-modeling-selection.json)。发布压缩包还多出索引之外的 `tabular-playground-series-oct-2021`，本次不自动纳入。每项只提取任务说明、处理后的训练/测试 CSV 和评测端标签，不下载原 Kaggle 提交模板及 macOS 隐藏文件。
 
 这是按任务类型确定的下载候选集，**尚未证明 52 项都适合低成本训练**；例如部分任务仍是大表。先在独立开发任务上测量资源，再按事先公开的资源规则冻结正式集合，不按本方法测试分数挑题。任何减少任务数的实验必须明确标为子集。TabArena 的 51 项也遵循同样原则。其中 APSFailure 使用 OpenML 元数据提供的同版本官方 Parquet 文件，以支持分块重试；其余任务保留 ARFF。文件格式调整不改变任务、标签或官方外层划分。

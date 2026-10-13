@@ -76,7 +76,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -98,7 +98,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -363,7 +365,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -385,7 +387,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -507,7 +511,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -529,7 +533,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -963,7 +969,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -985,7 +991,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -6043,7 +6051,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -6065,7 +6073,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -6142,7 +6152,8 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "Bank Customer Churn 与 s4e1 的潜在来源关联待核对，不预设独立泛化证据"
         ]
       },
       "adaptation": {
@@ -6164,7 +6175,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -6245,7 +6258,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -6267,7 +6280,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -6346,7 +6361,8 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "包含明确日期/周语义：保留发布划分，未来预测解释仍待研究审计"
         ]
       },
       "adaptation": {
@@ -6368,7 +6384,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -6453,7 +6471,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -6475,7 +6493,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -6548,7 +6568,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -6570,7 +6590,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -6718,7 +6740,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -6740,7 +6762,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -6817,7 +6841,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -6839,7 +6863,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -7204,7 +7230,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -7226,7 +7252,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -7332,7 +7360,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -7354,7 +7382,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -7539,7 +7569,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -7561,7 +7591,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -7648,7 +7680,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -7670,7 +7702,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -7759,7 +7793,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -7781,7 +7815,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -7862,7 +7898,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -7884,7 +7920,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -8205,7 +8243,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -8227,7 +8265,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -8392,7 +8432,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -8414,7 +8454,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -8493,7 +8535,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -8515,7 +8557,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -8604,7 +8648,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -8626,7 +8670,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -8702,7 +8748,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -8724,7 +8770,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -8818,7 +8866,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -8840,7 +8888,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -8917,7 +8967,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -8939,7 +8989,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -9034,7 +9086,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -9056,7 +9108,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -9198,7 +9252,8 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "包含明确日期/周语义：保留发布划分，未来预测解释仍待研究审计"
         ]
       },
       "adaptation": {
@@ -9220,7 +9275,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -9309,7 +9366,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -9331,7 +9388,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -9407,7 +9466,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -9429,7 +9488,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -9596,7 +9657,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -9618,7 +9679,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -9706,7 +9769,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -9728,7 +9791,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -10081,7 +10146,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -10103,7 +10168,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -10178,7 +10245,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -10200,7 +10267,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -10319,7 +10388,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -10341,7 +10410,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -10413,7 +10484,8 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "包含明确日期/周语义：保留发布划分，未来预测解释仍待研究审计"
         ]
       },
       "adaptation": {
@@ -10435,7 +10507,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -10523,7 +10597,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -10545,7 +10619,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -10641,7 +10717,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -10663,7 +10739,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -10736,7 +10814,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -10758,7 +10836,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -10864,7 +10944,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -10886,7 +10966,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -10966,7 +11048,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -10988,7 +11070,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -11120,7 +11204,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -11142,7 +11226,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -11220,7 +11306,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -11242,7 +11328,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -11318,7 +11406,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -11340,7 +11428,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -11415,7 +11505,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -11437,7 +11527,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -11512,7 +11604,8 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "已用于协同/no_eda 真实开发，不能作为未见开发任务"
         ]
       },
       "adaptation": {
@@ -11534,7 +11627,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -11608,7 +11703,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -11630,7 +11725,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -11711,7 +11808,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -11733,7 +11830,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -11808,7 +11907,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -11830,7 +11929,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -11912,7 +12013,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -11934,7 +12035,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -12034,7 +12137,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12056,7 +12159,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -12151,7 +12256,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12173,7 +12278,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "dsbench-modeling",
@@ -12274,7 +12381,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12296,7 +12403,9 @@
           "status": "not_run",
           "evidence": []
         }
-      }
+      },
+      "code_revision": "ba786096137a5108af11c016ad3f09cdb97beefd",
+      "openml": null
     },
     {
       "benchmark": "tabarena-lite",
@@ -12326,6 +12435,18 @@
           "sha256": "f8268b5bc32c43e5cdf318af6300cb529b247f6cc10a8fd3190534d4fc5f62a9",
           "bytes": 22461,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363612/lite-metadata.json",
+          "sha256": "6fd522b1fd4ef22974579bdbbcd9b20a786de5fa219bdfa0a6c5b53d23afeaf8",
+          "bytes": 1496,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363612/split-source.json",
+          "sha256": "034f5c379474f91608629427ab2a9bdc4f5c88962c25150fd05059b52fdf4995",
+          "bytes": 234,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -12334,7 +12455,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12356,6 +12477,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46904",
+        "version": 9,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -12386,6 +12514,18 @@
           "sha256": "7d36e3798e131425a03279aa6bb0032604fbea3e6951aa7ec468e9c64fed56a9",
           "bytes": 535064,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363613/lite-metadata.json",
+          "sha256": "a7ea6c8ba05ae6c8423b8fd94ae0f94208658c006ccc4781863371ce787d0dda",
+          "bytes": 1537,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363613/split-source.json",
+          "sha256": "1ad1632dd40a1af3cdc55ed50fb67cda1e00e4c34bf943fe5d83e50c25de8115",
+          "bytes": 235,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -12394,7 +12534,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12416,6 +12556,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46905",
+        "version": 3,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -12446,6 +12593,18 @@
           "sha256": "d4edf81bbc32e96cedb0a2b4d86285fffaefff53e3871fa620baf10e75dd700d",
           "bytes": 13084,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363614/lite-metadata.json",
+          "sha256": "63dfb1dd1b88c22f0faf46b18db0fd1381171b73fc59d8e4fe275d9bfa338b16",
+          "bytes": 1522,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363614/split-source.json",
+          "sha256": "23a04f89ca01c5aa8fa7ed1397a449915b9a8402e7f8a60d8105e99f9c70c35d",
+          "bytes": 212,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -12454,7 +12613,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12476,6 +12635,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46906",
+        "version": 18,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -12506,6 +12672,18 @@
           "sha256": "c346d77b668e74377fdb0686087e62de15c7ef35bfb54b34c22ceffbe9fed59b",
           "bytes": 23009,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363615/lite-metadata.json",
+          "sha256": "50c58975bf3839546d38ffb1b2cd51a2cbfdea7ea51d98ca4823a3ba819a8e28",
+          "bytes": 1561,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363615/split-source.json",
+          "sha256": "e3c2a32526ba8aba23108f72f5fa061cd4036ffa1541120472cfef9c9d5b29a3",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -12514,7 +12692,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12536,6 +12714,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46907",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -12566,6 +12751,18 @@
           "sha256": "78131956d19cc57612da773f02d0f9885131a418603861b7ba53501ecc4a6fe4",
           "bytes": 1255580,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363616/lite-metadata.json",
+          "sha256": "6499b66fea7a7eb369e43fb84ce30441479360af9e65432acd557a2a96db89b0",
+          "bytes": 1579,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363616/split-source.json",
+          "sha256": "36e782a6b75abd72018c88bb518162c0fff3cf66cfcf523aecb48e45b50d61fa",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -12574,7 +12771,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12596,6 +12793,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46908",
+        "version": 2,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -12626,6 +12830,18 @@
           "sha256": "874ceff9248c1c75bcd6847f10a49d9e3265b5b3f0558fed4b4d54667d9b77d5",
           "bytes": 742430,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363618/lite-metadata.json",
+          "sha256": "cfc7c4af74838970fc96ee93723bb0400165b502acb7de0b2a51a2cbdf3bc30b",
+          "bytes": 1559,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363618/split-source.json",
+          "sha256": "d008c096fe757159242036d0f1dd85aee1a3530246acab1ccd4f8ffaf78a9d44",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -12634,7 +12850,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12656,6 +12872,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46910",
+        "version": 10,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -12686,6 +12909,18 @@
           "sha256": "ddad0090e18c3c264db553bdece5cfefb6a785bb420d1c88ad9155f41da07539",
           "bytes": 155580,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363619/lite-metadata.json",
+          "sha256": "beb994ca0bd3c31595f74d36e5e799c2ee242acafebb01d75a1c02576a3fe227",
+          "bytes": 1529,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363619/split-source.json",
+          "sha256": "471746553119fcba2a614d6069b61dafe7dbd652d2bffcfdb3061970355ddb58",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -12694,7 +12929,8 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "Bank Customer Churn 与 s4e1 的潜在来源关联待核对，不预设独立泛化证据"
         ]
       },
       "adaptation": {
@@ -12716,6 +12952,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46911",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -12746,6 +12989,18 @@
           "sha256": "2a45502e29009cca5fb8366b786d67dfb26a0766bf1d33ee89364e7954d18eb0",
           "bytes": 57679,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363620/lite-metadata.json",
+          "sha256": "48163ca7980d6fe083fd72bf6e0c4c42235a716e245cdc436b948b0e7c6c8940",
+          "bytes": 1583,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363620/split-source.json",
+          "sha256": "f6ddd0d2e99d94fb13184637bcf7768c540eb8777efba77def839b105159e938",
+          "bytes": 234,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -12754,7 +13009,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12776,6 +13031,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46912",
+        "version": 4,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -12806,6 +13068,18 @@
           "sha256": "13257b054a828af5051139cf8c2d22517b53bf7eaaa781ad3df4a537d8c753fe",
           "bytes": 10884,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363621/lite-metadata.json",
+          "sha256": "501ff37e5ded056d2015fa13466f3c69a7049b750a5c858fcc209dd7eba4e9c5",
+          "bytes": 1605,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363621/split-source.json",
+          "sha256": "7b3bbd9c4d3de9a5438c92f98af1c682d2e95bf414addda2b2eb5a1f8ca20859",
+          "bytes": 212,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -12814,7 +13088,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12836,6 +13110,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46913",
+        "version": 2,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -12866,6 +13147,18 @@
           "sha256": "29a332221f8b46c7ec757219233010a1c3059db2b831fd6b4c67e9c4776bb076",
           "bytes": 77247,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363623/lite-metadata.json",
+          "sha256": "9c8ab703810d6d01115b8b30f0083526cd9d9035841cc7fa276ca1b6cd54a7ec",
+          "bytes": 1533,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363623/split-source.json",
+          "sha256": "fe49710a65b785e9347dd5fead860654cbfa940d2f5a66a3bcbf37a2199af27b",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -12874,7 +13167,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12896,6 +13189,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46915",
+        "version": 4,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -12926,6 +13226,18 @@
           "sha256": "cc84efccb36a4754dc3102687e5f6d0d7c0293e8274f5b6d97d26d9baa005b3c",
           "bytes": 152792,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363624/lite-metadata.json",
+          "sha256": "0e42e146d2c5b013cb2c1a6bf009b1aa53c57e9de6f45df9ed5c2a1e6e8958fb",
+          "bytes": 1541,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363624/split-source.json",
+          "sha256": "badea0638287f54f275fc5f104738f13e9d7a8ae03c1916855011a02fbf71344",
+          "bytes": 234,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -12934,7 +13246,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -12956,6 +13268,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46916",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -12986,6 +13305,18 @@
           "sha256": "983b4227495aab296918fd368e672244b06403f660cc50bd7ef2db7edb7f375a",
           "bytes": 15050,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363625/lite-metadata.json",
+          "sha256": "4db8bebff6ab96d68cada87bbf84d7b2bebee54309d8380e79d3b11900503a38",
+          "bytes": 1578,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363625/split-source.json",
+          "sha256": "ae4d3434dcab5e5d87316cf7f3ea9a9851f9ff16a8a48cd9740e2ef180e7ba83",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -12994,7 +13325,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13016,6 +13347,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46917",
+        "version": 8,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13046,6 +13384,18 @@
           "sha256": "ac524f55695c94b16560465a21f211360c3580c9407acc191dda8fd21f47ca18",
           "bytes": 14580,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363626/lite-metadata.json",
+          "sha256": "df3f27c54d666ccc52f56b9f327e07c821a76e0540a4d44e24c2941108e7b4ba",
+          "bytes": 1526,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363626/split-source.json",
+          "sha256": "bf6179e32596e3bfe35eafa9ccd127b6d30a0e65a7d0cd835a7fcdfdbfe4e212",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13054,7 +13404,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13076,6 +13426,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46918",
+        "version": 5,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13106,6 +13463,18 @@
           "sha256": "31e9f4fb5cb3e6ae981d4b78b79667f392c5dfeef8a5a51f8f28279c8127447b",
           "bytes": 488914,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363627/lite-metadata.json",
+          "sha256": "9715ed934d4a0d0dd56bea57bd2b64b5a37b1f7d762b4d62aff2e893d29dcf53",
+          "bytes": 1540,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363627/split-source.json",
+          "sha256": "90cdbfb5239b869baaff04b0ce0acfc78a8ccb78618759ce7d4ae887451108db",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13114,7 +13483,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13136,6 +13505,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46919",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13166,6 +13542,18 @@
           "sha256": "9a92b3c2397f10e2cf271f28d2ed14283ba32f848c23115d36fe16228574f9f3",
           "bytes": 2183460,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363628/lite-metadata.json",
+          "sha256": "d41f8e98e0b5ed173ad49295cc9b68577975f74b0ee8fd4432d6601285b948f8",
+          "bytes": 1595,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363628/split-source.json",
+          "sha256": "e153c4cefaae1001c8a2bf85666259149374f43635892380164bd9dd0a6bf992",
+          "bytes": 215,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13174,7 +13562,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13196,6 +13584,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46920",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13226,6 +13621,18 @@
           "sha256": "02289b9a1f4e333563bdfccea629b932e10461365f3d069e507da118e129561b",
           "bytes": 11178,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363629/lite-metadata.json",
+          "sha256": "e6a47b34e44384472eabfa49fff112094ba44eec8b3a7cd777b5376cd9c62655",
+          "bytes": 1515,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363629/split-source.json",
+          "sha256": "921c73f57701abd9931db21436587861f8113b7a9fff3e3e4e3e3871616e3410",
+          "bytes": 233,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13234,7 +13641,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13256,6 +13663,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46921",
+        "version": 7,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13286,6 +13700,18 @@
           "sha256": "0b2e2d2809bf8d39c0d7e728090c0b7e382c88986be38aec44290e630756717e",
           "bytes": 1180880,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363630/lite-metadata.json",
+          "sha256": "420beed79c2ec08e9249fa523fe098172088d244a7a8793c2a721af86e5e44e5",
+          "bytes": 1563,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363630/split-source.json",
+          "sha256": "f8d730ffea6264f80f9a7dba54d861f9ef9f336dcee6bd974ea41d6d3ecc267a",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13294,7 +13720,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13316,6 +13742,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46922",
+        "version": 4,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13346,6 +13779,18 @@
           "sha256": "6f27c3b3b962a8959f9dcfff76db2c54f827bc1d2cf06412024a957d04530bda",
           "bytes": 887914,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363631/lite-metadata.json",
+          "sha256": "ac8d7f360192c36faec7e88a880c760269e7ee3f9dfc7f9cae37915aebd64a6c",
+          "bytes": 1470,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363631/split-source.json",
+          "sha256": "604fc6546e0a7a4f9cf3d79e4dd5be952117bec1cccc6668243d0c22a108f390",
+          "bytes": 215,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13354,7 +13799,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13376,6 +13821,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46923",
+        "version": 9,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13406,6 +13858,18 @@
           "sha256": "da997cdc48b7eb7b5e4c0d486cd47ecbec56fd8e2110efec916e45914dccb1cf",
           "bytes": 172230,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363632/lite-metadata.json",
+          "sha256": "120cd8413e0d74873902ab3f6608ca8f8ddfa592f0a99c1b35749e3085187104",
+          "bytes": 1570,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363632/split-source.json",
+          "sha256": "5487110fbe7fa881fbfee39ebe63697beb34ab2b8adf20020d45af95867e88f6",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13414,7 +13878,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13436,6 +13900,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46924",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13466,6 +13937,18 @@
           "sha256": "5dd4b87d3d6e5daf9adffd2aaca793e46a0c297f9f5674143efd3490e7698181",
           "bytes": 22414,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363671/lite-metadata.json",
+          "sha256": "a772b18dabb44d2483f3e220473f8502cdb9992d42bf38347e82b680b0327dea",
+          "bytes": 1492,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363671/split-source.json",
+          "sha256": "88edc2308f47993970372f53b7055441fb0479b35b949d996c627c8ba69940a2",
+          "bytes": 233,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13474,7 +13957,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13496,6 +13979,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46927",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13526,6 +14016,18 @@
           "sha256": "86a8227105126fcce1b2da5c5cd4f874b5de284b729def0bc3f98e199dd072db",
           "bytes": 746430,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363672/lite-metadata.json",
+          "sha256": "0db9409283bfa51bc05bfa571c178be4f7fd98bb2d3aa35e68eb67a54151f9c1",
+          "bytes": 1545,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363672/split-source.json",
+          "sha256": "d46ca3f8396ee8f0a305ebffc80120aeb0e98ab1cb0750913f41385905b3dcef",
+          "bytes": 215,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13534,7 +14036,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13556,6 +14058,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46928",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13586,6 +14095,18 @@
           "sha256": "b65b3ac780575221980485db449a57de807fb78b6c630c48916cbe2edc07d038",
           "bytes": 2538914,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363673/lite-metadata.json",
+          "sha256": "78fe1bc24de47d88eb530af800c67650d8cc55b4bb3bba07b22989d61374d840",
+          "bytes": 1534,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363673/split-source.json",
+          "sha256": "459637739ae736355ae64eac128b8b2ad0ff2572c0bd3221a298e6dfb7a8b729",
+          "bytes": 215,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13594,7 +14115,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13616,6 +14137,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46929",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13646,6 +14174,18 @@
           "sha256": "e161b3bf6a8a4c109e1917505552e9db40147e28babdae3873ae01b672268d28",
           "bytes": 36514,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363674/lite-metadata.json",
+          "sha256": "a7906487aa5ed8dc393cbd00affa42bda784d9b4fcede837b941c19f9697568e",
+          "bytes": 1527,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363674/split-source.json",
+          "sha256": "9745fb430603005e1c1a307887c622e6437bd5a8bece7f6b286ee5c84c53737d",
+          "bytes": 234,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13654,7 +14194,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13676,6 +14216,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46930",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13706,6 +14253,18 @@
           "sha256": "e11d12d71ca26d6ab5bbde478cb4863eaee8e050f45f6d0ed48af08425d66e2d",
           "bytes": 19876,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363675/lite-metadata.json",
+          "sha256": "d0ef6481e9fabedc1ee97eab6e5d685eb9e0a2b8dcf63f979c72dc50bdf73190",
+          "bytes": 1505,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363675/split-source.json",
+          "sha256": "60bbc69a21e0c4a6d71924f37e59da41785a486fa8a38f24d4ac248d17f6764a",
+          "bytes": 234,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13714,7 +14273,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13736,6 +14295,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46931",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13766,6 +14332,18 @@
           "sha256": "8c9a7e4642b332ca6c955b032992a0f9439bd010639b794a11d5cb6b2b2d8d92",
           "bytes": 163230,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363676/lite-metadata.json",
+          "sha256": "7b4aba9de56bb82f276e27ebab7971c67461b34c9b5b04ecaeadd1dca1b74a1a",
+          "bytes": 1521,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363676/split-source.json",
+          "sha256": "49ad1cb8024d8d19552ca11e814037bbd294f252c1258e48f516696ac458915b",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13774,7 +14352,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13796,6 +14374,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46932",
+        "version": 3,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13826,6 +14411,18 @@
           "sha256": "11e3f23e13b2d99b99559d071d58241a64bf00b0bb6da25e3309f387fc285c3e",
           "bytes": 59152,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363677/lite-metadata.json",
+          "sha256": "d2e4dd35b49071c9ef4f8906ff48e47767b4e82386f580c7776553c8be63af9f",
+          "bytes": 1581,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363677/split-source.json",
+          "sha256": "5bf7a50d2088cb1885aebee54f5209a9582d8cecae2b37e5ae469869c19ba280",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13834,7 +14431,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13856,6 +14453,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46933",
+        "version": 2,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13886,6 +14490,18 @@
           "sha256": "fcea3fff0a146877ea36c5a585e5b57bbac1d2c5e33f837ed5452dafbb240466",
           "bytes": 332914,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363678/lite-metadata.json",
+          "sha256": "d3b73bb025fd233a71275596de2efd8b7b9f319afd3e6993365d68cad7a09244",
+          "bytes": 1478,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363678/split-source.json",
+          "sha256": "c07ee382aff95e578cbf6f420b61cb14f5fc213f87f8ec4fe74cf19404843859",
+          "bytes": 235,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13894,7 +14510,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13916,6 +14532,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46934",
+        "version": 7,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -13946,6 +14569,18 @@
           "sha256": "64c69cdce9508859b507ccdab26e1b704a7877a0849747773779afcdd29a6d0b",
           "bytes": 308214,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363679/lite-metadata.json",
+          "sha256": "0340c87285347ba71010e55cd4a15428cf549c0f2617aec206e556ebf8a789c6",
+          "bytes": 1584,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363679/split-source.json",
+          "sha256": "341ccd2a61388e529238326dd032ee0ae600d3102212f65c81387791414b8618",
+          "bytes": 234,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -13954,7 +14589,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -13976,6 +14611,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46935",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14006,6 +14648,18 @@
           "sha256": "c6648262cf0446441e7e5283462170cd7a87681b9c9a65763e798564a65300fb",
           "bytes": 200314,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363681/lite-metadata.json",
+          "sha256": "274ff01bacfe6bd9da7fc497715228013066d2aa421f992fe1e9c420fc91681f",
+          "bytes": 1544,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363681/split-source.json",
+          "sha256": "f56e9c901dcf7025c41134d8dda622725bab33b78664130286b7385c5fb4c315",
+          "bytes": 234,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14014,7 +14668,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14036,6 +14690,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46937",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14066,6 +14727,18 @@
           "sha256": "4886dc67f3e4d4784c8e48ac0915417436391b9997a4e52b9cb29cd6e0822690",
           "bytes": 25907,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363682/lite-metadata.json",
+          "sha256": "e91a4c2b5dc93d07b25289903e30fd786d6cf355b2540ed009bf0eda140ec430",
+          "bytes": 1583,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363682/split-source.json",
+          "sha256": "eebdda646e8b0085006d4e3aadc4933237cbabb567897d8625dacb0edfe879c4",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14074,7 +14747,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14096,6 +14769,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46938",
+        "version": 2,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14126,6 +14806,18 @@
           "sha256": "98dbce370e0dd461749e260aa4753a07a9aa3c9f3ce40e2a16d495fb575d9ff9",
           "bytes": 822247,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363683/lite-metadata.json",
+          "sha256": "2e0b31b3b882952f4228119eb0cea852b8dddc910aca15ea3753804e2f296441",
+          "bytes": 1551,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363683/split-source.json",
+          "sha256": "c52fd86b615758c73605340cd2638e26087e70106efe3ba81ba7e804b3d8835a",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14134,7 +14826,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14156,6 +14848,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46939",
+        "version": 2,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14186,6 +14885,18 @@
           "sha256": "9d907a4015c2288416c350c58c43afc9b3f1f903291f70e5220a88470f1d687d",
           "bytes": 34007,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363684/lite-metadata.json",
+          "sha256": "b1d19892960f63719c69f5066eb76080c4cbdcc25089c84fb77212863b1dbecb",
+          "bytes": 1555,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363684/split-source.json",
+          "sha256": "e68dcba8410500271ee550b4e6350dc9bccfa292cb4f7fa4315b576e819714b2",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14194,7 +14905,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14216,6 +14927,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46940",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14246,6 +14964,18 @@
           "sha256": "fd7e02e24883e26b9046b43fa77633cc788e2d42cc126931f764294af23d606c",
           "bytes": 14800,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363685/lite-metadata.json",
+          "sha256": "ad631f61990625c2b0fc1a229abc7c611a3e01be6687295769be91e0144361d1",
+          "bytes": 1511,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363685/split-source.json",
+          "sha256": "1aee19684f98dd4d26b8df18f41f06a2b8c355beeb5a0e64f66bf2c93423851a",
+          "bytes": 233,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14254,7 +14984,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14276,6 +15006,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46941",
+        "version": 3,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14306,6 +15043,18 @@
           "sha256": "404d81fb9b81aca55dd2cd77d38a67906f98882804814a9acb16d301d6d4febf",
           "bytes": 218514,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363686/lite-metadata.json",
+          "sha256": "58664e07616131179325748a1d7aa8e1a60edc17d8e5f761c6f9ad5372a0c6be",
+          "bytes": 1483,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363686/split-source.json",
+          "sha256": "7354998f1285ac8cbffea11f6620473f57bef857ed304d936b8573b310f6e623",
+          "bytes": 235,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14314,7 +15063,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14336,6 +15085,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46942",
+        "version": 3,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14366,6 +15122,18 @@
           "sha256": "6bc9a6243068fc985ffbc2d037f6b30308c13539462f1d2048d773d94b167a1d",
           "bytes": 116273,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363689/lite-metadata.json",
+          "sha256": "05cbade04877844fa4be6ca6cb64581c8a6402a2eaead3dd431ae5ac9f2d8d62",
+          "bytes": 1494,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363689/split-source.json",
+          "sha256": "0145a8804ae15cb1d76e1eb41365c0124f784775398903df818699c8a0eed0a2",
+          "bytes": 234,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14374,7 +15142,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14396,6 +15164,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46969",
+        "version": 3,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14426,6 +15201,18 @@
           "sha256": "f6cff98194bb748ecca9a0ed6f86b1e880706c3fffd3b3ae450bdb6f8f64d1d7",
           "bytes": 194414,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363691/lite-metadata.json",
+          "sha256": "7d6da3dda9c8af3e203197fa19d52ac93a56e5d463de598233496f1965d33e00",
+          "bytes": 1520,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363691/split-source.json",
+          "sha256": "de93e7390a385227e4da23d68c142f92ed52233c3b37a87d407d4f50de246532",
+          "bytes": 234,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14434,7 +15221,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14456,6 +15243,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46947",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14486,6 +15280,18 @@
           "sha256": "bcecee1667eff2c5345bf6c307087bcae534a14a2d74874e861e2db1947c1d24",
           "bytes": 751080,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363693/lite-metadata.json",
+          "sha256": "545d33be9b5a1f0a036a1bc45c7a22210337963fa46a9edb506a2edb05294fd9",
+          "bytes": 1555,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363693/split-source.json",
+          "sha256": "5ad47715e3aa34752667c56bc3f306d305009cb28935773f574210d3292379a8",
+          "bytes": 215,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14494,7 +15300,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14516,6 +15322,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46949",
+        "version": 8,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14546,6 +15359,18 @@
           "sha256": "6a4bbdffd0a3fd7326ec0c3dcfdd6836594becf9ff3127a439cde9b52f9e28d0",
           "bytes": 91504,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363694/lite-metadata.json",
+          "sha256": "a36c6cfd31df7952a1a77cb3dd8235094bdd82e72c88119042208d3b26fafa89",
+          "bytes": 1528,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363694/split-source.json",
+          "sha256": "12288ee06d703fe78373f99c9b41356ea3c0d4f1c6504e107141f7edd6df07b6",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14554,7 +15379,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14576,6 +15401,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46950",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14606,6 +15438,18 @@
           "sha256": "5b64bfe288f5343857909ff7a3648b08062d570924b92052b2eb2357a9e73c0d",
           "bytes": 15426,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363696/lite-metadata.json",
+          "sha256": "e2b6523f82f70a25b6ee9672fb46dcf4b8e1aedd72c0ef61f919d3fb3330c283",
+          "bytes": 1550,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363696/split-source.json",
+          "sha256": "753c3f1b3bf888903bc48114dd76540e823123668e0b849b6aa423f46c691ace",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14614,7 +15458,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14636,6 +15480,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46952",
+        "version": 2,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14666,6 +15517,18 @@
           "sha256": "05decc4874765e4caa889159a64e59eb9f05566cf21e83d083da57649a86ecd9",
           "bytes": 88872,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363697/lite-metadata.json",
+          "sha256": "411cb4bcc83905178e68032cb2ae88a883270395491eea07da0f16352fc4e768",
+          "bytes": 1495,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363697/split-source.json",
+          "sha256": "c987989b069fe29743a00341475649282eb419b0fad40a6e72f8f0467fc07abe",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14674,7 +15537,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14696,6 +15559,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46953",
+        "version": 2,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14726,6 +15596,18 @@
           "sha256": "cd094ba212a0aee15f377df18a0527719a6792ae7b004980ee481723b7cc9cfd",
           "bytes": 13216,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363698/lite-metadata.json",
+          "sha256": "36a3cd16fd629c9e3119e7fb34fe9b7c85dda7b06e042615de0a9e6d2e679006",
+          "bytes": 1526,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363698/split-source.json",
+          "sha256": "6b12413cbe795bff1a61c0d9f7e8e97d79e27d3d0d5393520b29e196cab9d170",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14734,7 +15616,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14756,6 +15638,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46954",
+        "version": 8,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14786,6 +15675,18 @@
           "sha256": "44bd448a86843e587fe5a76e20420dad4de44524e0f11d10159f57e5df9f172f",
           "bytes": 1289797,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363699/lite-metadata.json",
+          "sha256": "d998bbcab7ccedfbc317c00db056eff5fc5c2dd5a91f5a7df0ba1f9aa2bd3006",
+          "bytes": 1543,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363699/split-source.json",
+          "sha256": "144453ee8106d62992b82bd4daac67785812e559e5ed2a693a47eeb9ef65f4c1",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14794,7 +15695,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14816,6 +15717,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46955",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14846,6 +15754,18 @@
           "sha256": "3f53afb7510efa0f752648df400a497faced596c11c73218c4cf164ddd8b299a",
           "bytes": 39396,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363700/lite-metadata.json",
+          "sha256": "e1cd13509e0275af9a0e967d6c91a90237ad2d7854138760420a7eab3a64f2fc",
+          "bytes": 1566,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363700/split-source.json",
+          "sha256": "cc25bf71dc5af9a17c5a9b30452a276117b065750685f41561e1e270ffd9351f",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14854,7 +15774,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14876,6 +15796,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46956",
+        "version": 4,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14906,6 +15833,18 @@
           "sha256": "467efb745988338b268a9cdb17f316307200aad065d0f78383e9e796539bd637",
           "bytes": 48890,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363702/lite-metadata.json",
+          "sha256": "ca533bf4af76a05e803c9dcdb47eb9adf8810c67738a2203ef1c2213fcecd53d",
+          "bytes": 1539,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363702/split-source.json",
+          "sha256": "b82965a286cdc5e6343eba144856a2224159bfbe3e7af6231a24676d848bbbf4",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14914,7 +15853,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14936,6 +15875,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46958",
+        "version": 4,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -14966,6 +15912,18 @@
           "sha256": "cf69584a068a93ebefa5775cad9c0b3b85389bc9ad91df588dc92cf09b0ba5f4",
           "bytes": 68223,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363704/lite-metadata.json",
+          "sha256": "e5a941c2fc93a789d562a052eacf795df679c393c97ab339bd016eb66c44b7fe",
+          "bytes": 1600,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363704/split-source.json",
+          "sha256": "7e174510fcc11bd7cbcc7536ebbff1e960388594494d996927eb7a821fac1ad7",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -14974,7 +15932,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -14996,6 +15954,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46960",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -15026,6 +15991,18 @@
           "sha256": "70867585f8b6f7331558c6e25ffa0c36d675095748866de7cb6de14d3f2223d1",
           "bytes": 343297,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363705/lite-metadata.json",
+          "sha256": "0fbdf61e6fe130f6c8662762633cfdb7713b213e88e90c6ad54aa61d453fe0ea",
+          "bytes": 1538,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363705/split-source.json",
+          "sha256": "27c4135dd5cc6a731b408e865b559dc0b7b17266f8662a7c511a2a880a426dbf",
+          "bytes": 215,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -15034,7 +16011,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -15056,6 +16033,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46961",
+        "version": 8,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -15086,6 +16070,18 @@
           "sha256": "eee4cd6e62d62779f71373bdbdf361ca4270f928178d47a59d887afa7f52cb50",
           "bytes": 105745,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363706/lite-metadata.json",
+          "sha256": "cd77d6872153fd5ebfce9b5c411e8575ba9e4da597649a9bc59db9e5e2a4bff5",
+          "bytes": 1520,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363706/split-source.json",
+          "sha256": "865b1c7431982fd098ed5f6373b6de11d30bdb671ded926eadf637b35e5b1dd0",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -15094,7 +16090,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -15116,6 +16112,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46962",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -15146,6 +16149,18 @@
           "sha256": "dbca3665d0667dfcfdf203050762e7b71a3638e33721e2620320a4f9d3e287b7",
           "bytes": 20111,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363707/lite-metadata.json",
+          "sha256": "e91c8bcb34f0df17491fc6d8220fc67f4ec7f154765f83c9cf940299cb541d07",
+          "bytes": 1507,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363707/split-source.json",
+          "sha256": "00679403afc25043f1f291ede5088c78e366ecf5c1f3f7a082e905a3e70646e9",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -15154,7 +16169,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -15176,6 +16191,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46963",
+        "version": 1,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -15206,6 +16228,18 @@
           "sha256": "746e4a6f3de382e40e58082f3e4a8e1aad693a459912f0b35ba0b4d3668d37e3",
           "bytes": 100700,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363708/lite-metadata.json",
+          "sha256": "fef4cc26821f428801f604e6c027afdfbf2efd6b08bc93b27d666df56c6cb8b3",
+          "bytes": 1541,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363708/split-source.json",
+          "sha256": "093533220e7a9091962d96782bf52e9d0063589c4d6b12e55e1b4f58290de6dd",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -15214,7 +16248,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -15236,6 +16270,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46964",
+        "version": 7,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -15266,6 +16307,18 @@
           "sha256": "9bfbd7c3a3d954e046d2eff760aa0580169a715fc6698247059e5dbca00a98ae",
           "bytes": 25531,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363711/lite-metadata.json",
+          "sha256": "25b26f54ac908c7cb59db74b56ed6e673a10cb5e8154eabe5d709c63166663be",
+          "bytes": 1514,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363711/split-source.json",
+          "sha256": "cadfb5450d3a4ba87de115c9a84bf3b895357d961c9988d782f586bf4ebcb44c",
+          "bytes": 213,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -15274,7 +16327,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -15296,6 +16349,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46980",
+        "version": 3,
+        "repeat": 0,
+        "fold": 0
       }
     },
     {
@@ -15326,6 +16386,18 @@
           "sha256": "9629729ef4549a3bea3a561c27953ec6eb8eda961fe482f9216f84d06118d954",
           "bytes": 170330,
           "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363712/lite-metadata.json",
+          "sha256": "37c758f305e2a6c99da193baffad23dd9c9b9de0ec8436e2824d3a4d617bcaba",
+          "bytes": 1526,
+          "access": "raw"
+        },
+        {
+          "path": "tabarena-lite/raw/363712/split-source.json",
+          "sha256": "14cea596c4e7fb34d2f71c9892d3a87bb9e4f6257f530dc23427415b73066507",
+          "bytes": 214,
+          "access": "raw"
         }
       ],
       "outer_split": "openml-r0f0",
@@ -15334,7 +16406,7 @@
       "research": {
         "status": "review_required",
         "reasons": [
-          "研究资格、数据同源与开发暴露尚待审计"
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
         ]
       },
       "adaptation": {
@@ -15356,6 +16428,13 @@
           "status": "not_run",
           "evidence": []
         }
+      },
+      "code_revision": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+      "openml": {
+        "dataset_id": "46979",
+        "version": 3,
+        "repeat": 0,
+        "fold": 0
       }
     }
   ]

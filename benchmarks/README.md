@@ -42,6 +42,18 @@ TabArena 保留官方原始数据与 Lite 索引。APSFailure（OpenML dataset 4
 
 DSBench 的原始题面/评分脚本可能使用作者本机路径，旧题面中的 Kaggle 行数也可能与本地重划分数据不同。源码按固定版本保存，后续适配时应明确路径、样本 ID 和输出格式；不能把“已下载”称为“已可直接完整评测”。
 
+## 建模候选静态审计
+
+新增 [103 项版本化目录](metadata/modeling-task-catalog.json)，逐项分开记录研究资格、适配状态及 preflight/deterministic/live 验收。DSBench 的实际指标、目标、额外标签排除、样本身份与预测导出列见 [52 项审计矩阵](../docs/modeling-dsbench-audit.md)。RPG 只读取已冻结的 104 个参考成员，不解包、不执行参考文本；评分依赖和成员哈希见 [来源清单](../src/evaluation/benchmarks/modeling/dsbench-references.json)。
+
+```bash
+bun run evaluate audit --output runs/modeling-benchmarks-validation/candidate-audit.json
+```
+
+先创建报告父目录；输出文件必须不存在。此命令只读本地来源，缺文件时报错，不下载、不调用模型、不训练。2026-10-14 首次执行覆盖全部 103 项：文件身份均通过，52 项 CSV 列/行数/身份与参考可读性检查通过，51 项 OpenML 版本及 r0f0 覆盖检查通过；约 49 秒。TabArena 原始 ARFF/Parquet 完整解码、内部划分、运行资源及真实训练另行验收，不能由此次静态报告推定通过。报告留在忽略 Git 的运行目录。
+
+TabArena 官方代码和指标环境单独锁定，安装及接口探针说明见 [可选兼容环境](../environments/tabarena/README.md)。官方接口探针通过与 Statigent system 桥接接通是不同状态。当前所有任务仍保留研究资格待审计状态；已暴露的 s3e9、潜在数据同源关系及带日期/周语义的任务均保留问题，不自动放入正式清单。
+
 ## 来源与复现
 
 `metadata/revisions.json` 固定 Hugging Face 数据版本；GitHub tree 文件固定评分代码 commit；逐文件清单保存源 URL、字节数与 SHA-256。DSBench 压缩包成员另做 CRC32 校验，DAComp 与 Hugging Face 官方 LFS SHA-256 比对。OpenML 保存 task ID、dataset ID、dataset version 及本地文件校验值。ARFF 与官方 MD5 比对；Parquet 的来源及校验值见相应任务目录的 `parquet-source.json`。下载完成后以 `metadata/download-status.json` 为实际状态。

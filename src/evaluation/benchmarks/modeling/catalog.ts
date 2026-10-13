@@ -32,6 +32,8 @@ export type CatalogTask = {
   benchmark: ModelingBenchmark;
   task_id: string;
   source_revision: string;
+  code_revision: string | null;
+  openml: { dataset_id: string; version: number; repeat: 0; fold: 0 } | null;
   files: CatalogFile[];
   outer_split: string;
   protocol: CatalogProtocol | null;
@@ -178,6 +180,8 @@ export function parseModelingCatalog(value: unknown): ModelingCatalog {
       "benchmark",
       "task_id",
       "source_revision",
+      "code_revision",
+      "openml",
       "files",
       "outer_split",
       "protocol",
@@ -224,6 +228,26 @@ export function parseModelingCatalog(value: unknown): ModelingCatalog {
     const files = task.files.map(file);
     if (new Set(files.map((item) => item.path)).size !== files.length)
       throw new Error("Duplicate catalog file");
+    const codeRevision =
+      task.code_revision === null
+        ? null
+        : str(task.code_revision, "code revision");
+    if (codeRevision !== null && !/^[a-f0-9]{40}$/.test(codeRevision))
+      throw new Error("Invalid code revision");
+    let openml: CatalogTask["openml"] = null;
+    if (benchmark === "tabarena-lite") {
+      const rawOpenml = obj(task.openml);
+      keys(rawOpenml, ["dataset_id", "version", "repeat", "fold"]);
+      if (rawOpenml.repeat !== 0 || rawOpenml.fold !== 0)
+        throw new Error("Expected r0f0");
+      openml = {
+        dataset_id: str(rawOpenml.dataset_id, "OpenML dataset id"),
+        version: integer(rawOpenml.version, "OpenML version"),
+        repeat: 0,
+        fold: 0,
+      };
+    } else if (task.openml !== null)
+      throw new Error("Unexpected OpenML identity");
     function stage(name: "preflight" | "deterministic" | "live") {
       const rawStage = obj(acceptance[name]);
       keys(rawStage, ["status", "evidence"]);
@@ -245,6 +269,8 @@ export function parseModelingCatalog(value: unknown): ModelingCatalog {
       benchmark,
       task_id: taskId,
       source_revision: str(task.source_revision, "source revision"),
+      code_revision: codeRevision,
+      openml,
       files,
       outer_split: str(task.outer_split, "outer split"),
       protocol: task.protocol === null ? null : protocol(task.protocol),

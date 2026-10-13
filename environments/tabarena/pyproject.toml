@@ -1,0 +1,14 @@
+[project]
+name = "statigent-tabarena-compat"
+version = "0.1.0"
+requires-python = "==3.12.*"
+# 可选官方接口/指标验证环境，与主运行时及训练镜像独立。
+dependencies = ["tabarena", "bencheval", "pytest==8.4.2"]
+
+[tool.uv]
+package = false
+prerelease = "allow"
+
+[tool.uv.sources]
+tabarena = { git = "https://github.com/autogluon/tabarena", rev = "df2f7533fc0cb3a781d8d4d4b12129644bfcf748", subdirectory = "packages/tabarena" }
+bencheval = { git = "https://github.com/autogluon/tabarena", rev = "df2f7533fc0cb3a781d8d4d4b12129644bfcf748", subdirectory = "packages/bencheval" }

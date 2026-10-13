@@ -6,6 +6,7 @@ import {
   assertCatalogCoverage,
   parseModelingCatalog,
 } from "../../src/evaluation/benchmarks/modeling/catalog";
+import { main } from "../../src/evaluation/cli";
 
 test("catalog retains all 52 DSBench and 51 TabArena candidate identities", () => {
   const parsed = parseModelingCatalog(catalog);
@@ -87,4 +88,15 @@ test("research, adaptation and acceptance are independent and require evidence",
   expect(parsed.tasks[0]?.research.status).toBe("excluded");
   expect(parsed.tasks[0]?.adaptation.status).toBe("blocked");
   expect(parsed.tasks[0]?.acceptance.live.status).toBe("not_run");
+});
+
+test("audit rejects model-call and run options before doing any work", async () => {
+  for (const args of [
+    ["--allow-model-calls"],
+    ["--models", "config.json"],
+    ["--output"],
+    ["--data-root", "benchmarks", "--data-root", "other"],
+  ]) {
+    await expect(main(["audit", ...args])).rejects.toThrow("evaluate audit");
+  }
 });
