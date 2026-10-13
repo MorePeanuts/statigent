@@ -419,6 +419,9 @@ class Bridge:
                     "numpy",
                     "pandas",
                     "matplotlib",
+                    "scikit-learn",
+                    "scipy",
+                    "joblib",
                 )
             }
             versions["python"] = platform.python_version()

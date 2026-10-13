@@ -69,6 +69,8 @@ export interface AgentSession {
   readonly closeResult?: { status: string; cleanup_error?: string };
 }
 export interface RunOptions {
+  /** Trusted caller identity, recorded before nested work is dispatched. */
+  runId?: string;
   task: unknown;
   profile: ModelProfile;
   runRoot: string;
@@ -108,7 +110,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
   const remainingTime = () =>
     Math.max(0, Math.floor(deadline - performance.now()));
   const timer = setTimeout(() => controller.abort(), remainingTime());
-  const runId = randomUUID();
+  const runId = options.runId ?? randomUUID();
   const config: SessionConfig = {
     ...task.execution,
     run_id: runId,

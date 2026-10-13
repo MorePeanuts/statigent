@@ -1,0 +1,1 @@
+{"goal":"Build a regression pipeline for target. Train a baseline, investigate residual patterns with EDA when useful, test a follow-up candidate and select the best validation result.","dataset_root":"runs/modeling-synthetic-data","model_profile":"deepseek-flash","image":"statigent-runtime:dev"}

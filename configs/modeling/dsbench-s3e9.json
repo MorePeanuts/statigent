@@ -1,0 +1,22 @@
+{
+  "goal": "Build a regression pipeline for Strength using the allowed training data. This development task checks collaboration: train an initial model, propose concrete alternatives based on its validation results, ask the EDA agent one bounded diagnostic question about those alternatives, then use returned evidence to choose and train a follow-up experiment. Finally select the best validated pipeline and deliver predictions. Do not require the follow-up score to improve. Keep the single analysis focused and leave the reserved finalization time unused during exploration.",
+  "dataset_root": "runs/modeling-s3e9-data",
+  "model_profile": "deepseek-flash",
+  "eda_profile": "deepseek-flash",
+  "image": "statigent-runtime:dev",
+  "budget": {
+    "model_attempts": 40,
+    "total_tokens": 600000,
+    "task_timeout_ms": 900000,
+    "training_attempts": 4,
+    "final_training_attempts": 1,
+    "final_reserve_ms": 180000,
+    "fit_timeout_ms": 120000,
+    "predict_timeout_ms": 30000,
+    "eda_calls": 1,
+    "eda_executions": 10,
+    "eda_model_attempts": 20,
+    "eda_tokens": 400000,
+    "eda_timeout_ms": 300000
+  }
+}

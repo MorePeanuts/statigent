@@ -1,0 +1,1 @@
+{"input_root":"tests/fixtures/modeling","train":"train.csv","test":"test.csv","target":"target","id_column":"id","kind":"regression","metric":"rmse","seed":42}
