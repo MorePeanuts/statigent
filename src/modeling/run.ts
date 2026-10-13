@@ -11,9 +11,9 @@ import type { ModelMetadata } from "../records/agent-metadata";
 import { sha256 } from "../records/store";
 import {
   action,
-  MODELING_PROMPT,
   MODELING_PROMPT_VERSION,
   type ModelingAction,
+  modelingPrompt,
   modelingTools,
 } from "./actions";
 import { Budget } from "./budget";
@@ -30,7 +30,22 @@ import { datasetProtocol, loadDataset } from "./data";
 import { deliver } from "./delivery";
 import { type AnalysisRecord, analyze, validateEvidence } from "./eda";
 import { type Experiment, runExperiment } from "./experiments";
+import {
+  applyKnowledgeUpdates,
+  type KnowledgeRevision,
+  requireKnowledge,
+} from "./knowledge";
+import {
+  validateKnowledgeLinks,
+  validateKnowledgeSources,
+} from "./knowledge-sources";
 import { createBasicProfile } from "./profile";
+import {
+  analysisContext,
+  CONTEXT_LIMITS,
+  contextIdentity,
+  knowledgeView,
+} from "./prompt";
 import { better, validateScore } from "./protocol";
 import { ModelingRecord } from "./records";
 export interface ModelingOptions {
@@ -56,6 +71,7 @@ export async function runModeling(o: ModelingOptions) {
     throw new Error("Profile/task mismatch");
   const data = await loadDataset(task.dataset_root);
   const protocol = datasetProtocol(data.dataset);
+  const prompt = modelingPrompt(task.method);
   const remaining = () =>
     Math.max(
       0,
@@ -92,8 +108,9 @@ export async function runModeling(o: ModelingOptions) {
         model: profileSnapshot(profile),
         eda_model: profileSnapshot(edaProfile),
         prompt: {
+          context_limits: CONTEXT_LIMITS,
           version: MODELING_PROMPT_VERSION,
-          sha256: sha256(Buffer.from(MODELING_PROMPT)),
+          sha256: sha256(Buffer.from(prompt)),
         },
       },
       task.budget.max_trace_bytes,
@@ -111,7 +128,7 @@ export async function runModeling(o: ModelingOptions) {
     recordError = false,
     corrections = 0,
     repairs = 0;
-  let pendingAnalysis: string | null = null;
+  let knowledge: KnowledgeRevision[] = [];
   let candidates: CandidateState[] = [];
   let basicProfile: Awaited<ReturnType<typeof createBasicProfile>> | null =
     null;
@@ -158,7 +175,7 @@ export async function runModeling(o: ModelingOptions) {
     },
   });
   const messages: Message[] = [
-    { role: "system", content: MODELING_PROMPT },
+    { role: "system", content: prompt },
     {
       role: "user",
       content: JSON.stringify({
@@ -185,6 +202,16 @@ export async function runModeling(o: ModelingOptions) {
     best_validation_score: best?.score ?? null,
     budget: budget.snapshot(),
     candidates: candidateSummary(candidates, experiments),
+    ...(task.method === "collaborative"
+      ? {
+          knowledge: knowledgeView(
+            knowledge,
+            [],
+            candidates,
+            best?.candidate_id,
+          ),
+        }
+      : {}),
   });
   const state = () => ({
     status,
@@ -199,6 +226,10 @@ export async function runModeling(o: ModelingOptions) {
     wall_ms: performance.now() - start,
     basic_profile: basicProfile,
     preparation: { profile_elapsed_ms: profileElapsed },
+    knowledge_control:
+      task.method === "collaborative"
+        ? { version: 1, history: knowledge, applied_sequence: appliedSequence }
+        : "disabled",
     candidate_control: {
       version: 1,
       candidates,
@@ -233,17 +264,31 @@ export async function runModeling(o: ModelingOptions) {
     });
     messages.push({
       role: "user",
-      content: JSON.stringify({ basic_profile: basicProfile.profile }),
+      content: JSON.stringify({
+        basic_profile: basicProfile.profile,
+        basic_profile_sha256: basicProfile.artifact.sha256,
+      }),
     });
     await record.save(state());
     while (true) {
       check();
       update();
-      const response = await call(messages, modelingTools(protocol), model);
+      await record.event(
+        "model_context",
+        { version: 1, method: task.method, ...contextIdentity(messages) },
+        messages,
+      );
+      const response = await call(
+        messages,
+        modelingTools(protocol, task.method),
+        model,
+      );
       messages.push(response.response.message);
       const calls = response.response.message.tool_calls ?? [];
       let selected: ModelingAction;
       let nextCandidates: CandidateState[];
+      let nextKnowledge: KnowledgeRevision[];
+      let nextContext: ReturnType<typeof analysisContext> | undefined;
       try {
         if (calls.length !== 1 || !calls[0] || seenCalls.has(calls[0].id))
           throw new Error("Exactly one new tool call is required");
@@ -252,6 +297,7 @@ export async function runModeling(o: ModelingOptions) {
           calls[0].function.arguments,
           task.limits.max_code_bytes,
           task.budget.max_candidates,
+          task.method,
         );
         for (const change of selected.candidate_updates)
           validateEvidence(
@@ -264,14 +310,65 @@ export async function runModeling(o: ModelingOptions) {
           candidates,
           selected.candidate_updates,
           task.budget.max_candidates,
+          task.method === "collaborative",
         );
+        const scope = {
+          run_id: record.id,
+          dataset_sha256: data.dataset.files[0]?.sha256 ?? "",
+          protocol_sha256: protocol.protocol_sha256,
+        };
+        const updates = selected.knowledge_updates ?? [];
+        validateKnowledgeSources(updates, {
+          scope,
+          profile: basicProfile.profile,
+          profile_sha256: basicProfile.artifact.sha256,
+          protocol,
+          experiments: experiments.map((e) => ({
+            id: e.id,
+            scope,
+            status: e.status,
+            phase: e.final ? "final" : "search",
+            score: e.score,
+            reason: e.reason,
+            prediction_sha256: e.predict?.output?.sha256 ?? null,
+          })),
+          analyses: analyses.map((a) => ({
+            id: a.id,
+            scope,
+            status: a.status,
+            analysis: a.analysis,
+            source_sha256: a.source_sha256 ?? "",
+            sources: a.source_experiments ?? [],
+          })),
+        });
+        nextKnowledge = applyKnowledgeUpdates(
+          knowledge,
+          updates,
+          scope,
+          record.nextSequence,
+        );
+        validateKnowledgeLinks(nextKnowledge, nextCandidates);
+        for (const ref of selected.knowledge_refs ?? [])
+          requireKnowledge(nextKnowledge, ref);
+        if (selected.kind === "analyze")
+          nextContext = analysisContext({
+            question: selected.question,
+            candidates: selected.candidates.map((id) =>
+              requireCandidate(nextCandidates, id),
+            ),
+            history: task.method === "collaborative" ? nextKnowledge : [],
+            refs: selected.knowledge_refs ?? [],
+            bestCandidate: best?.candidate_id,
+          });
         if (selected.kind === "finish") {
           if (!best || best.id !== selected.experiment_id)
             throw new Error(
               "Finish must select current best successful experiment",
             );
         } else {
-          source(selected.source_experiment, selected.kind === "analyze");
+          if (selected.kind === "analyze")
+            for (const id of selected.source_experiments) source(id);
+          else source(selected.source_experiment, false);
           if (selected.kind === "train") {
             requireCandidate(nextCandidates, selected.candidate_id, {
               active: true,
@@ -287,13 +384,6 @@ export async function runModeling(o: ModelingOptions) {
               data.dataset,
               experiments,
             );
-            if (
-              pendingAnalysis &&
-              !selected.evidence.some((e) => e.analysis_id === pendingAnalysis)
-            )
-              throw new Error(
-                "Follow-up training must link the returned analysis",
-              );
           }
           if (selected.kind === "analyze")
             for (const id of selected.candidates)
@@ -319,10 +409,9 @@ export async function runModeling(o: ModelingOptions) {
       }
       const tool = calls[0];
       if (!tool) throw new Error("Missing validated tool");
-      let allocation: ReturnType<Budget["childBudget"]> | undefined;
+      let allocation: ReturnType<Budget["hostChildBudget"]> | undefined;
       try {
-        if (selected.kind === "analyze")
-          allocation = budget.childBudget(selected.requested_budget);
+        if (selected.kind === "analyze") allocation = budget.hostChildBudget();
         else budget.canTrain(selected.kind === "finish");
       } catch (e) {
         if (e instanceof Stop) throw e;
@@ -372,7 +461,7 @@ export async function runModeling(o: ModelingOptions) {
       const acceptedSequence = await record.event(
         "action_accepted",
         {
-          protocol_version: 2,
+          protocol_version: 3,
           attempt_id: response.attemptId,
           tool_id: tool.id,
           intent,
@@ -380,6 +469,7 @@ export async function runModeling(o: ModelingOptions) {
         selected,
       );
       candidates = nextCandidates;
+      knowledge = nextKnowledge;
       if (selected.kind !== "analyze") {
         if (!candidateId) throw new Error("Missing accepted candidate");
         candidates = attachExperiment(candidates, candidateId, operationId);
@@ -408,7 +498,13 @@ export async function runModeling(o: ModelingOptions) {
             task,
             dataset: data.dataset,
             train: data.train,
-            experiment: source(selected.source_experiment),
+            experiment: source(selected.source_experiments[0] ?? null),
+            experiments: selected.source_experiments.map((id) => {
+              const e = source(id);
+              if (!e) throw new Error("Missing analysis source");
+              return e;
+            }),
+            context: nextContext,
             request: selected,
             resolvedCandidates: selected.candidates.map((id) =>
               requireCandidate(candidates, id),
@@ -424,7 +520,6 @@ export async function runModeling(o: ModelingOptions) {
           throw new Stop("failed", `unconfirmed_eda:${String(e)}`);
         }
         analyses.push(a);
-        if (a.status === "completed" && a.analysis) pendingAnalysis = a.id;
         await record.event("child_result", {
           child_id: childId,
           analysis_id: id,
@@ -440,6 +535,8 @@ export async function runModeling(o: ModelingOptions) {
           status: a.status,
           diagnostic: a.reason,
           source_experiment: a.source_experiment,
+          source_experiments: a.source_experiments,
+          source_sha256: a.source_sha256,
           analysis: a.analysis,
           allocation,
         };
@@ -489,7 +586,6 @@ export async function runModeling(o: ModelingOptions) {
           else if (e.score !== null)
             throw new Error("Unexpected experiment score");
           experiments.push(e);
-          if (!final) pendingAnalysis = null;
           for (const s of [e.fit, e.predict])
             if (s)
               await record.event("child_result", {

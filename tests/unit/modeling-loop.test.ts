@@ -82,7 +82,7 @@ async function options(
         dispatch: "started" as const,
         effective_budget: o.budget,
         deadline: o.deadline,
-        source_experiment: o.request.source_experiment,
+        source_experiment: o.request.source_experiments[0] ?? null,
         dataset_hash: o.dataset.files[0]?.sha256 ?? "",
         split_hash: o.dataset.split.sha256,
         protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
@@ -389,7 +389,10 @@ test("final retries use new experiments, unchanged code and the configured reser
           }),
     ]);
   const o = await options(direct);
-  o.task = { ...obj(o.task), budget: { final_training_attempts: 2 } };
+  o.task = {
+    ...obj(o.task),
+    budget: { final_training_attempts: 2, final_reserve_ms: 300000 },
+  };
   const ex = o.experiment;
   if (!ex) throw Error("fixture");
   let finalAttempts = 0;
@@ -690,7 +693,7 @@ test("scoring failure terminates the parent without dispatching another experime
   ).toBeNull();
 });
 
-test("new modeling run preserves a legacy regression dataset and records an explicit v2 protocol", async () => {
+test("new modeling run preserves a legacy regression dataset and records a v3 parent with the original metric protocol", async () => {
   const o = await options((body, i) =>
     reply([i === 0 ? trainCall() : finishCall(body)]),
   );
@@ -704,7 +707,7 @@ test("new modeling run preserves a legacy regression dataset and records an expl
   const result = await runModeling(o);
   expect(result.status, result.reason).toBe("completed");
   const view = await inspectModeling(result.directory);
-  expect(view.manifest.schema_version).toBe(2);
+  expect(view.manifest.schema_version).toBe(3);
   expect(obj(view.manifest.config).dataset).toMatchObject({
     schema_version: 1,
   });
@@ -714,3 +717,53 @@ test("new modeling run preserves a legacy regression dataset and records an expl
   });
   expect(await Bun.file(path).text()).toBe(original);
 });
+
+test("two explorations may precede candidate creation and the agent may decline both reports", async () => {
+  const o = await options((body, i) =>
+    reply(
+      i < 2
+        ? [analyzeCall(null, { candidates: [], candidateUpdates: [] })]
+        : i === 2
+          ? [trainCall()]
+          : [finishCall(body)],
+    ),
+  );
+  o.task = { ...obj(o.task), budget: { eda_calls: 2 } };
+  const r = await runModeling(o);
+  expect(r.status, r.reason).toBe("completed");
+  const { manifest } = await inspectModeling(r.directory);
+  expect(manifest.analyses).toHaveLength(2);
+  const candidates = obj(manifest.candidate_control).candidates as unknown[];
+  expect(candidates).toHaveLength(1);
+  expect(manifest.usage).toMatchObject({ eda_calls: 2, training_attempts: 2 });
+}, 30000);
+
+test("training can use earlier valid evidence after a newer analysis", async () => {
+  let evidence: unknown[] = [];
+  const o = await options((body, i) => {
+    if (i < 2) {
+      if (i === 1) {
+        const a = obj(lastFeedback(body).result);
+        evidence = [
+          {
+            analysis_id: a.analysis_id,
+            source_experiment: null,
+            refs: ["ref1"],
+            applicability: "Earlier data-only finding still applies",
+          },
+        ];
+      }
+      return reply([
+        analyzeCall(null, { candidates: [], candidateUpdates: [] }),
+      ]);
+    }
+    if (i === 2) return reply([trainCall(undefined, evidence)]);
+    return reply([finishCall(body)]);
+  });
+  o.task = { ...obj(o.task), budget: { eda_calls: 2 } };
+  const r = await runModeling(o);
+  expect(r.status, r.reason).toBe("completed");
+  expect((await inspectModeling(r.directory)).manifest.analyses).toHaveLength(
+    2,
+  );
+}, 30000);

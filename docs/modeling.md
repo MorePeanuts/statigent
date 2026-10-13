@@ -6,7 +6,7 @@
 
 第二章采用“分析与建模协同驱动的自主机器学习方法”，以独立测试预测效果为主，同时关注可靠性与实际效率。三项核心机制、研究假设和消融以 [研究大纲](overview.md#第二核心章节面向预测性数据建模的智能体研究) 为准，评价口径见 [Benchmark 协议](benchmark.md#第二章预测性建模)。预算管理在研究中承担运行保护与公平控制的作用。
 
-本文其余部分描述**当前可执行接口**。现行 EDA 动作仍须关联候选、预先说明证据需求与决策影响，并显式申请时间、token、执行次数额度；这些要求尚未因研究主线调整而改变。无前置候选的分析、持续数据理解的表示与更新、跨轮分析上下文及候选稳定性确认，仍需后续 OpenSpec 变更细化并落实。固定内部划分和既有软件规格继续适用于当前运行。
+当前功能分支正在实施新版协议。动作已升级为 v3，支持无前置候选的探索、认识修订和宿主额度分配；候选确认、完整四组接入与开发验收尚在实施。旧协议参考用于解释历史运行，不用于新启动配置。固定原始数据与搜索划分继续保留。
 
 当前默认一次 EDA、三次搜索拟合和一次最终拟合用于开发验证，不代表正式实验的协同深度或资源条件。历史验收记录保留其当时配置与结论；功能链路通过不等于上述方法具有稳定的预测收益。
 
@@ -31,6 +31,16 @@ bun run modeling prepare --config configs/modeling/synthetic-prepare.json --out 
 输出目录必须尚不存在，父目录必须存在。生成只读 train.csv/test.csv 和 dataset.json，后者保存文件哈希、目标、种子、指标方向及精确内部划分。回归默认按 seed 与行 ID 哈希排序生成 80/20 留出，分类按类别分层生成；可显式给出完整且不相交的 split.train/split.validation ID 清单。搜索不能重新划分。
 
 源配置使用 input_root/train/test/target/id_column/kind/metric/seed；类型/指标按下方支持矩阵校验；二分类另需 positive_class。原始数据和准备产物不提交 Git。每次加载校验哈希、列结构和划分成员，输入变化须重新准备并保留新版本。
+
+## 认识状态与原子决策 v3
+
+完整协同模式可随任一动作提交 `knowledge_updates` 和 `knowledge_refs`，允许空更新；普通模式不提供这两个字段。认识记录分为 observation（active/withdrawn）、hypothesis（open/supported/challenged/withdrawn）、question（open/resolved/withdrawn）。`create` 的 `base_revision` 为 null；`revise` 必须指向当前修订，保存新版本和旧版本，宿主分配修订号、任务作用域及接受序号。
+
+例如观察可引用 `{kind:"profile", profile_sha256:"启动上下文中的哈希", path:"/columns/1/missing"}`；假设获得实验支持时引用 `{kind:"experiment", experiment_id:"真实搜索实验ID", fact:"score"}`。模型不能在来源中提交成绩数值，宿主从实验结果读取；`fact:"failure"` 只表示真实执行故障，不自动否定统计假设。EDA finding 来源包括原 analysis_id、从 0 开始的 finding 序号、执行 evidence_refs、source_sha256 和 applicability，不能把历史预测换成另一模型来源。
+
+认识、候选、动作引用及资源一起预检；宿主持久化一次 `action_accepted` 后才更新状态和派发。任何非法来源、陈旧修订、额度拒绝或接受记录故障均不留下部分状态。检查入口重演接受事件，核对 `knowledge_control` 修订快照、基本概览哈希与实验事实；普通方法显示 disabled，旧记录显示 not_recorded。文字中的“supported”是模型判断，不改变可信指标排名。
+
+新版分析参数为 `purpose`（explore/diagnose/compare）、`candidates`、`question`、`expected_evidence` 和 `source_experiments`。三个目的分别要求 0/1/2 个成功搜索来源；探索允许空候选。不接收 requested_budget、budget_reason 或 decision_rules，宿主按配置和剩余资源分配。训练可采用更早的分析，也可解释后不采用最近分析。
 
 ## 实验执行
 

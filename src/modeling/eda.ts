@@ -3,12 +3,14 @@ import { join } from "node:path";
 import type { Analysis } from "../agent/actions";
 import { DEFAULT_BUDGET } from "../agent/config";
 import { type RunOptions, runAgent } from "../agent/run";
+import { describeFile } from "../evaluation/files";
 import type { ModelClient } from "../models/client";
 import type { ModelProfile } from "../models/config";
 import { emptyLedger } from "../records/agent-metadata";
 import { readManifest, sha256 } from "../records/store";
 import type { EvidenceUse, ModelingAction } from "./actions";
 import { type EffectiveBudget, ledger, roleLedgers } from "./budget";
+import { identifier } from "./candidates";
 import type { ModelingTask } from "./config";
 import {
   csv,
@@ -23,6 +25,9 @@ import { validatePredictions } from "./predictions";
 export interface AnalysisRecord {
   id: string;
   source_experiment: string | null;
+  source_experiments?: { experiment_id: string; prediction_sha256: string }[];
+  source_sha256?: string;
+  context_sha256?: string;
   dataset_hash: string;
   split_hash: string;
   protocol_sha256?: string;
@@ -47,7 +52,8 @@ export async function prepareAnalysisInput(
   root: string,
   dataset: Dataset,
   train: Table,
-  experiment: Experiment | null,
+  experiment: Experiment | Experiment[] | null,
+  context: unknown = {},
 ) {
   await mkdir(root, { recursive: false });
   await writeFile(join(root, "train.csv"), csv(train), {
@@ -60,60 +66,96 @@ export async function prepareAnalysisInput(
   });
   const inputs = ["train.csv", "split.json"];
   const protocol = datasetProtocol(dataset);
-  let predictionHash: string | null = null;
-  let fields: {
-    prediction: string;
-    probabilities: { column: string; label: string }[];
-  } | null = null;
-  if (experiment) {
-    if (
-      experiment.status !== "completed" ||
-      !experiment.predict ||
-      experiment.final
-    )
-      throw new Error("Invalid analysis experiment");
-    const bytes = await stageBytes(experiment.predict);
-    predictionHash = sha256(bytes);
-    const values = validatePredictions(
-      parseCsv(bytes.toString()),
-      dataset.split.validation,
-      dataset.id_column,
-      protocol,
-    );
-    const table = select(train, dataset.split.validation, dataset.id_column);
-    let prediction = "__prediction";
-    while (table.columns.includes(prediction)) prediction += "_";
-    const columns = [...table.columns, prediction];
-    const probabilities = values.probabilities
-      ? protocol.classes.map((label, i) => {
-          let column = `__probability_${i}`;
-          while (columns.includes(column)) column += "_";
-          columns.push(column);
-          return { column, label };
-        })
-      : [];
-    fields = { prediction, probabilities };
-    const errors = {
-      columns,
-      rows: table.rows.map((r, i) => [
-        ...r,
-        String(values.values[i]),
-        ...(values.probabilities?.[i]?.map(String) ?? []),
-      ]),
-    };
-    await writeFile(join(root, "validation.csv"), csv(errors), {
-      flag: "wx",
-      mode: 0o444,
+  const experiments =
+    experiment === null
+      ? []
+      : Array.isArray(experiment)
+        ? experiment
+        : [experiment];
+  if (
+    experiments.length > 2 ||
+    new Set(experiments.map((e) => e.id)).size !== experiments.length
+  )
+    throw new Error("Invalid analysis sources");
+  const sources: Record<string, unknown>[] = [];
+  for (const experiment of experiments) {
+    identifier(experiment.id);
+    let predictionHash: string | null = null;
+    let fields: {
+      prediction: string;
+      probabilities: { column: string; label: string }[];
+    } | null = null;
+    if (experiment) {
+      if (
+        experiment.status !== "completed" ||
+        !experiment.predict ||
+        experiment.final
+      )
+        throw new Error("Invalid analysis experiment");
+      const bytes = await stageBytes(experiment.predict);
+      predictionHash = sha256(bytes);
+      const values = validatePredictions(
+        parseCsv(bytes.toString()),
+        dataset.split.validation,
+        dataset.id_column,
+        protocol,
+      );
+      const table = select(train, dataset.split.validation, dataset.id_column);
+      let prediction = "__prediction";
+      while (table.columns.includes(prediction)) prediction += "_";
+      const columns = [...table.columns, prediction];
+      const probabilities = values.probabilities
+        ? protocol.classes.map((label, i) => {
+            let column = `__probability_${i}`;
+            while (columns.includes(column)) column += "_";
+            columns.push(column);
+            return { column, label };
+          })
+        : [];
+      fields = { prediction, probabilities };
+      const errors = {
+        columns,
+        rows: table.rows.map((r, i) => [
+          ...r,
+          String(values.values[i]),
+          ...(values.probabilities?.[i]?.map(String) ?? []),
+        ]),
+      };
+      await writeFile(
+        join(
+          root,
+          experiments.length === 1
+            ? "validation.csv"
+            : `validation-${experiment.id}.csv`,
+        ),
+        csv(errors),
+        {
+          flag: "wx",
+          mode: 0o444,
+        },
+      );
+      inputs.push(
+        experiments.length === 1
+          ? "validation.csv"
+          : `validation-${experiment.id}.csv`,
+      );
+    }
+    sources.push({
+      experiment_id: experiment.id,
+      prediction_sha256: predictionHash,
+      fields,
+      path: inputs.at(-1),
     });
-    inputs.push("validation.csv");
   }
   await writeFile(
     join(root, "source.json"),
     JSON.stringify({
-      experiment_id: experiment?.id ?? null,
+      version: 2,
+      sources,
+      experiment_id: experiments[0]?.id ?? null,
       protocol,
-      prediction_sha256: predictionHash,
-      fields,
+      prediction_sha256: sources[0]?.prediction_sha256 ?? null,
+      fields: sources[0]?.fields ?? null,
       target: dataset.target,
       id_column: dataset.id_column,
       data: dataset.files[0],
@@ -122,6 +164,14 @@ export async function prepareAnalysisInput(
     { flag: "wx", mode: 0o444 },
   );
   inputs.push("source.json");
+  const contextBytes = JSON.stringify(context);
+  if (Buffer.byteLength(contextBytes) > 131072)
+    throw new Error("Analysis context limit");
+  await writeFile(join(root, "context.json"), contextBytes, {
+    flag: "wx",
+    mode: 0o444,
+  });
+  inputs.push("context.json");
   return inputs;
 }
 export async function analyze(o: {
@@ -132,6 +182,8 @@ export async function analyze(o: {
   dataset: Dataset;
   train: Table;
   experiment: Experiment | null;
+  experiments?: Experiment[];
+  context?: unknown;
   request: Extract<ModelingAction, { kind: "analyze" }>;
   resolvedCandidates: {
     id: string;
@@ -153,7 +205,7 @@ export async function analyze(o: {
   if (!Number.isFinite(o.deadline)) throw new Error("Invalid EDA deadline");
   const notStarted = (status: string, reason: string): AnalysisRecord => ({
     id: o.id,
-    source_experiment: o.request.source_experiment,
+    source_experiment: o.request.source_experiments[0] ?? null,
     dataset_hash: o.dataset.files[0]?.sha256 ?? "",
     split_hash: o.dataset.split.sha256,
     protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
@@ -186,7 +238,8 @@ export async function analyze(o: {
       input,
       o.dataset,
       o.train,
-      o.experiment,
+      o.experiments ?? o.experiment,
+      o.context ?? {},
     );
   } catch (error) {
     return (
@@ -199,6 +252,8 @@ export async function analyze(o: {
   }
   const preparedStop = stopped();
   if (preparedStop) return preparedStop;
+  const sourceFile = await describeFile(input, "source.json");
+  const contextFile = await describeFile(input, "context.json");
   const b = o.task.budget;
   const options: RunOptions = {
     runId: o.runId,
@@ -211,7 +266,7 @@ export async function analyze(o: {
       organization: "planner-executor",
       goal: JSON.stringify({ ...o.request, candidates: o.resolvedCandidates }),
       constraints: [
-        "Only investigate the current candidate uncertainty. This is internal validation, never external test evaluation.",
+        "Investigate the requested exploration, model diagnosis or comparison. context.json contains historical knowledge with original provenance, not new execution evidence. This is internal validation, never external test evaluation.",
         "Return concise evidence and methods. Do not write a Markdown report or train candidate models. source.json identifies data, target and prediction provenance.",
       ],
       model_profile: o.profile.id,
@@ -261,11 +316,22 @@ export async function analyze(o: {
       throw new Error("Unconfirmed EDA budget configuration");
   return {
     id: o.id,
-    source_experiment: o.request.source_experiment,
+    source_experiment: o.request.source_experiments[0] ?? null,
     dataset_hash: o.dataset.files[0]?.sha256 ?? "",
     split_hash: o.dataset.split.sha256,
     protocol_sha256: datasetProtocol(o.dataset).protocol_sha256,
     prediction_sha256: o.experiment?.predict?.output?.sha256 ?? null,
+    source_sha256: sourceFile.sha256,
+    context_sha256: contextFile.sha256,
+    source_experiments: (
+      o.experiments ?? (o.experiment ? [o.experiment] : [])
+    ).map((e) => {
+      if (!e.predict?.output) throw new Error("Missing confirmed prediction");
+      return {
+        experiment_id: e.id,
+        prediction_sha256: e.predict.output.sha256,
+      };
+    }),
     status: result.status,
     reason: result.reason,
     analysis: result.status === "completed" ? result.analysis : null,
@@ -292,7 +358,13 @@ export function validateEvidence(
       !a ||
       a.status !== "completed" ||
       !a.analysis ||
-      a.source_experiment !== use.source_experiment ||
+      (a.source_experiments
+        ? use.source_experiment === null
+          ? a.source_experiments.length !== 0
+          : !a.source_experiments.some(
+              (s) => s.experiment_id === use.source_experiment,
+            )
+        : a.source_experiment !== use.source_experiment) ||
       a.dataset_hash !== dataset.files[0]?.sha256 ||
       a.split_hash !== dataset.split.sha256
     )
@@ -301,6 +373,16 @@ export function validateEvidence(
       if (a.protocol_sha256 !== datasetProtocol(dataset).protocol_sha256)
         throw new Error("Evidence protocol mismatch");
       if (experiments) {
+        for (const ref of a.source_experiments ?? []) {
+          const source = experiments.find((e) => e.id === ref.experiment_id);
+          if (
+            !source ||
+            source.final ||
+            source.status !== "completed" ||
+            source.predict?.output?.sha256 !== ref.prediction_sha256
+          )
+            throw new Error("Evidence prediction provenance mismatch");
+        }
         const source = experiments.find((e) => e.id === a.source_experiment);
         if (
           a.source_experiment &&

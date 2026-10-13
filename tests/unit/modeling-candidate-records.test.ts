@@ -10,18 +10,13 @@ import {
   type CandidateState,
   type CandidateUpdate,
 } from "../../src/modeling/candidates";
-import { validateModelingTask } from "../../src/modeling/config";
+import { validateFrozenModelingTask } from "../../src/modeling/config";
 import { inspectModeling, ModelingRecord } from "../../src/modeling/records";
 import { emptyLedger } from "../../src/records/agent-metadata";
 import { RunRecorder } from "../../src/records/store";
 import { collaborationMetadata } from "../helpers/collaboration";
 
-const task = validateModelingTask({
-  schema_version: 2,
-  method: "adaptive_eda",
-  confirmation: { mode: "none" },
-  resource_version: "smoke-v1",
-
+const task = validateFrozenModelingTask({
   goal: "check records",
   dataset_root: ".",
   model_profile: "test",

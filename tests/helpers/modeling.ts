@@ -74,15 +74,8 @@ export function analyzeCall(
     candidates: options.candidates ?? ["linear"],
     question: "Are baseline residuals related to x?",
     expected_evidence: "Compare x with residuals",
-    decision_rules: "If systematic, prioritize linear fit; otherwise keep mean",
-    source_experiment: source,
-    requested_budget: options.requestedBudget ?? {
-      task_timeout_ms: 90000,
-      total_tokens: 100000,
-      executions: 3,
-    },
-    budget_reason:
-      "A focused residual comparison needs one notebook execution and both EDA roles",
+    purpose: source === null ? "explore" : "diagnose",
+    source_experiments: source === null ? [] : [source],
   });
 }
 export function finishCall(
@@ -160,7 +153,7 @@ export function modelingEdaScript() {
     if (i === 1)
       return reply([
         call("execute_python", {
-          code: "import pandas as pd\nfrom pathlib import Path\nassert 'df' not in globals()\nassert sorted(p.name for p in Path('/input').iterdir()) == ['source.json','split.json','train.csv','validation.csv']\ndf=pd.read_csv('/input/validation.csv')\nprint((df['target']-df['__prediction']).tolist())\nprint(df['x'].tolist())",
+          code: "import pandas as pd\nfrom pathlib import Path\nassert 'df' not in globals()\nassert sorted(p.name for p in Path('/input').iterdir()) == ['context.json','source.json','split.json','train.csv','validation.csv']\ndf=pd.read_csv('/input/validation.csv')\nprint((df['target']-df['__prediction']).tolist())\nprint(df['x'].tolist())",
         }),
       ]);
     if (i === 2) {

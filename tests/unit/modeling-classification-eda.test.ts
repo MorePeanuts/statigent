@@ -84,6 +84,7 @@ test("EDA snapshot preserves literal targets, aligns by ID and avoids feature na
   const input = join(o.root, "input");
   await prepareAnalysisInput(input, o.dataset, train, o.experiment);
   expect((await readdir(input)).sort()).toEqual([
+    "context.json",
     "source.json",
     "split.json",
     "train.csv",
@@ -136,14 +137,8 @@ test("invalid predictions cannot be published to EDA, and evidence binds protoco
       candidates: ["c"],
       question: "q",
       expected_evidence: "e",
-      decision_rules: "r",
-      source_experiment: "e",
-      requested_budget: {
-        task_timeout_ms: 1000,
-        total_tokens: 1000,
-        executions: 1,
-      },
-      budget_reason: "r",
+      purpose: "diagnose",
+      source_experiments: ["e"],
     },
   };
   const use = {
@@ -184,4 +179,43 @@ test("invalid predictions cannot be published to EDA, and evidence binds protoco
   expect(await readdir(input)).not.toContain("validation.csv");
   expect(await readdir(input)).not.toContain("source.json");
   expect(obj(a).prediction_sha256).not.toBe(o.experiment.predict.output.sha256);
+});
+
+test("two model snapshots preserve aligned IDs and separate provenance; invalid paths/hashes reject", async () => {
+  const o = await fixture(),
+    second = { ...o.experiment, id: "e2" },
+    input = join(o.root, "compare");
+  await prepareAnalysisInput(
+    input,
+    o.dataset,
+    o.train,
+    [o.experiment, second],
+    { question: "Compare errors", knowledge: { entries: [], omitted: [] } },
+  );
+  const source = obj(
+    JSON.parse(await readFile(join(input, "source.json"), "utf8")),
+  );
+  expect(source.sources).toHaveLength(2);
+  for (const id of ["e", "e2"]) {
+    const table = parseCsv(
+      await readFile(join(input, `validation-${id}.csv`), "utf8"),
+    );
+    expect(table.rows.map((r) => r[0])).toEqual(o.dataset.split.validation);
+  }
+  await expect(
+    prepareAnalysisInput(join(o.root, "escape"), o.dataset, o.train, [
+      { ...second, id: "../private" },
+    ]),
+  ).rejects.toThrow("identity");
+  if (!second.predict?.output) throw new Error("fixture");
+  second.predict = {
+    ...second.predict,
+    output: { ...second.predict.output, sha256: "f".repeat(64) },
+  };
+  await expect(
+    prepareAnalysisInput(join(o.root, "bad-hash"), o.dataset, o.train, [
+      o.experiment,
+      second,
+    ]),
+  ).rejects.toThrow();
 });

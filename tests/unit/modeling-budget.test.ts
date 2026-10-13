@@ -179,3 +179,40 @@ test("parent journal links unresolved children, detects tampering and latches re
   await expect(fail.event("intent")).rejects.toThrow();
   await expect(fail.event("dispatch")).rejects.toThrow("record_failure");
 });
+
+test("host allocation records no model request and recomputes remaining caps without precharging", async () => {
+  const { validateHostAllocation } = await import("../../src/modeling/budget");
+  let remaining = 500000;
+  const budget = new Budget(
+    { ...MODELING_BUDGET, eda_calls: 2 },
+    () => remaining,
+  );
+  const first = budget.hostChildBudget();
+  expect(first.policy).toBe("host-cap-v1");
+  expect("requested" in first).toBe(false);
+  expect(validateHostAllocation(first)).toEqual(first);
+  expect(budget.total.attempts).toBe(0);
+  budget.settleChild(
+    "a",
+    {
+      ...emptyLedger(),
+      attempts: 2,
+      input_tokens: 30,
+      output_tokens: 10,
+      total_tokens: 40,
+    },
+    3,
+  );
+  remaining = 200000;
+  const second = budget.hostChildBudget();
+  expect(second.effective.task_timeout_ms).toBe(20000);
+  expect(second.effective.executions).toBe(7);
+  expect(() =>
+    validateHostAllocation({
+      ...second,
+      effective: { ...second.effective, executions: 8 },
+    }),
+  ).toThrow();
+  remaining = MODELING_BUDGET.final_reserve_ms;
+  expect(() => budget.hostChildBudget()).toThrow();
+});

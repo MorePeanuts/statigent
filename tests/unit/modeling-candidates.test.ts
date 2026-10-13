@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { action } from "../../src/modeling/actions";
+import { action } from "../../src/modeling/legacy-actions";
 import {
   applyCandidateUpdates,
   attachExperiment,
