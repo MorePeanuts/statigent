@@ -17,6 +17,14 @@ import {
   type ModelingAction,
 } from "./actions";
 import { Budget } from "./budget";
+import {
+  applyCandidateUpdates,
+  attachExperiment,
+  type CandidateState,
+  candidateSummary,
+  requireCandidate,
+  validateRepair,
+} from "./candidates";
 import { validateModelingTask } from "./config";
 import { loadDataset } from "./data";
 import { deliver } from "./delivery";
@@ -34,6 +42,7 @@ export interface ModelingOptions {
   experiment?: typeof runExperiment;
   analysis?: typeof analyze;
   delivery?: typeof deliver;
+  createRecord?: typeof ModelingRecord.create;
 }
 export async function runModeling(o: ModelingOptions) {
   const start = performance.now(),
@@ -70,7 +79,7 @@ export async function runModeling(o: ModelingOptions) {
   };
   let record: ModelingRecord;
   try {
-    record = await ModelingRecord.create(
+    record = await (o.createRecord ?? ModelingRecord.create)(
       o.runRoot,
       {
         task,
@@ -98,8 +107,9 @@ export async function runModeling(o: ModelingOptions) {
     corrections = 0,
     repairs = 0;
   let pendingAnalysis: string | null = null;
-  const candidates = new Set<string>(),
-    seenCalls = new Set<string>();
+  let candidates: CandidateState[] = [];
+  let appliedSequence = 0;
+  const seenCalls = new Set<string>();
   const check = () => {
     if (o.signal?.aborted) throw new Stop("cancelled", "user_cancelled");
     if (signal.aborted || remaining() <= 0)
@@ -125,7 +135,6 @@ export async function runModeling(o: ModelingOptions) {
       manifest: {},
       modelEvent: async (type, fields, content) => {
         await record.event(type, fields, content);
-        if (type === "model_request") budget.modeling.attempts++;
       },
     },
     tokens: budget.total,
@@ -134,7 +143,11 @@ export async function runModeling(o: ModelingOptions) {
     remainingTime: remaining,
     checkClock: check,
     updateRemaining: update,
-    settle: (...args) => budget.settleModel(...args),
+    settle: (...args) => {
+      // A persisted request may still be cancelled before dispatch.
+      budget.modeling.attempts++;
+      budget.settleModel(...args);
+    },
   });
   const messages: Message[] = [
     { role: "system", content: MODELING_PROMPT },
@@ -152,6 +165,12 @@ export async function runModeling(o: ModelingOptions) {
           validation_rows: data.dataset.split.validation.length,
         },
         budget: task.budget,
+        execution_limits: {
+          memory_bytes: task.limits.memory_bytes,
+          workspace_bytes: task.limits.workspace_bytes,
+          max_artifact_bytes: task.limits.max_artifact_bytes,
+          max_artifacts_bytes: task.limits.max_artifacts_bytes,
+        },
       }),
     },
   ];
@@ -159,6 +178,7 @@ export async function runModeling(o: ModelingOptions) {
     best_experiment_id: best?.id ?? null,
     best_validation_rmse: best?.rmse ?? null,
     budget: budget.snapshot(),
+    candidates: candidateSummary(candidates, experiments),
   });
   const state = () => ({
     status,
@@ -171,6 +191,11 @@ export async function runModeling(o: ModelingOptions) {
     best_experiment_id: best?.id ?? null,
     delivery,
     wall_ms: performance.now() - start,
+    candidate_control: {
+      version: 1,
+      candidates,
+      applied_sequence: appliedSequence,
+    },
   });
   const source = (id: string | null, requireSuccess = true) => {
     if (id === null) return null;
@@ -181,6 +206,7 @@ export async function runModeling(o: ModelingOptions) {
   };
   try {
     await record.event("run_started");
+    await record.save(state());
     while (true) {
       check();
       update();
@@ -188,6 +214,7 @@ export async function runModeling(o: ModelingOptions) {
       messages.push(response.response.message);
       const calls = response.response.message.tool_calls ?? [];
       let selected: ModelingAction;
+      let nextCandidates: CandidateState[];
       try {
         if (calls.length !== 1 || !calls[0] || seenCalls.has(calls[0].id))
           throw new Error("Exactly one new tool call is required");
@@ -195,6 +222,13 @@ export async function runModeling(o: ModelingOptions) {
           calls[0].function.name,
           calls[0].function.arguments,
           task.limits.max_code_bytes,
+          task.budget.max_candidates,
+        );
+        for (const change of selected.candidate_updates)
+          validateEvidence(change.evidence, analyses, data.dataset);
+        nextCandidates = applyCandidateUpdates(
+          candidates,
+          selected.candidate_updates,
           task.budget.max_candidates,
         );
         if (selected.kind === "finish") {
@@ -205,6 +239,14 @@ export async function runModeling(o: ModelingOptions) {
         } else {
           source(selected.source_experiment, selected.kind === "analyze");
           if (selected.kind === "train") {
+            requireCandidate(nextCandidates, selected.candidate_id, {
+              active: true,
+            });
+            validateRepair(
+              experiments,
+              selected.candidate_id,
+              selected.repair_of_experiment,
+            );
             validateEvidence(selected.evidence, analyses, data.dataset);
             if (
               pendingAnalysis &&
@@ -214,16 +256,12 @@ export async function runModeling(o: ModelingOptions) {
                 "Follow-up training must link the returned analysis",
               );
           }
-          const ids =
-            selected.kind === "train"
-              ? [selected.candidate_id]
-              : selected.candidates.map((c) => c.id);
-          if (
-            new Set([...candidates, ...ids]).size > task.budget.max_candidates
-          )
-            throw new Error("Candidate count limit");
+          if (selected.kind === "analyze")
+            for (const id of selected.candidates)
+              requireCandidate(nextCandidates, id, { active: true });
         }
       } catch (e) {
+        if (e instanceof Stop) throw e;
         await record.event("action_rejected", { reason: String(e) });
         if (++corrections > task.budget.action_corrections)
           throw new Stop("failed", "action_corrections");
@@ -242,34 +280,84 @@ export async function runModeling(o: ModelingOptions) {
       }
       const tool = calls[0];
       if (!tool) throw new Error("Missing validated tool");
+      let allocation: ReturnType<Budget["childBudget"]> | undefined;
+      try {
+        if (selected.kind === "analyze")
+          allocation = budget.childBudget(selected.requested_budget);
+        else budget.canTrain(selected.kind === "finish");
+      } catch (e) {
+        if (e instanceof Stop) throw e;
+        await record.event(
+          "action_rejected",
+          { reason: String(e), tool_id: tool.id },
+          selected,
+        );
+        messages.push({
+          role: "tool",
+          tool_call_id: tool.id,
+          content: JSON.stringify({ error: String(e), ...view() }),
+        });
+        continue;
+      }
+      const operationId = randomUUID(),
+        childId = randomUUID();
+      const final = selected.kind === "finish";
+      const candidateId =
+        selected.kind === "train" ? selected.candidate_id : best?.candidate_id;
+      const repair =
+        selected.kind === "train" ? selected.repair_of_experiment : null;
+      const allocatedAt = Date.now();
+      const deadline = allocation
+        ? performance.now() + allocation.effective.task_timeout_ms
+        : null;
+      const intent =
+        selected.kind === "analyze"
+          ? {
+              kind: "analysis",
+              analysis_id: operationId,
+              child_id: childId,
+              allocation,
+              started_at: new Date(allocatedAt).toISOString(),
+              deadline_at: new Date(
+                allocatedAt + (allocation?.effective.task_timeout_ms ?? 0),
+              ).toISOString(),
+            }
+          : {
+              kind: "experiment",
+              experiment_id: operationId,
+              candidate_id: candidateId,
+              final,
+              repair_of_experiment: repair,
+            };
       seenCalls.add(tool.id);
-      await record.event(
+      const acceptedSequence = await record.event(
         "action_accepted",
-        { attempt_id: response.attemptId, tool_id: tool.id },
+        {
+          protocol_version: 2,
+          attempt_id: response.attemptId,
+          tool_id: tool.id,
+          intent,
+        },
         selected,
       );
+      candidates = nextCandidates;
+      if (selected.kind !== "analyze") {
+        if (!candidateId) throw new Error("Missing accepted candidate");
+        candidates = attachExperiment(candidates, candidateId, operationId);
+      }
+      appliedSequence = acceptedSequence;
+      await record.save(state());
       check();
       let feedback: unknown;
       if (selected.kind === "analyze") {
-        let allocation: ReturnType<Budget["childBudget"]>;
-        try {
-          allocation = budget.childBudget();
-        } catch (e) {
-          if (e instanceof Stop) throw e;
-          messages.push({
-            role: "tool",
-            tool_call_id: tool.id,
-            content: JSON.stringify({ error: String(e), ...view() }),
-          });
-          continue;
-        }
-        for (const c of selected.candidates) candidates.add(c.id);
-        const id = randomUUID(),
-          childId = randomUUID();
+        if (!allocation || deadline === null)
+          throw new Error("Missing accepted allocation");
+        const id = operationId;
         await record.event("child_intent", {
           child_id: childId,
           analysis_id: id,
           allocation,
+          accepted_sequence: acceptedSequence,
         });
         budget.edaCalls++;
         let a: AnalysisRecord;
@@ -283,9 +371,13 @@ export async function runModeling(o: ModelingOptions) {
             train: data.train,
             experiment: source(selected.source_experiment),
             request: selected,
+            resolvedCandidates: selected.candidates.map((id) =>
+              requireCandidate(candidates, id),
+            ),
             profile: edaProfile,
             signal,
-            budget: allocation,
+            budget: allocation.effective,
+            deadline,
             client: o.edaClient,
           });
         } catch (e) {
@@ -298,8 +390,9 @@ export async function runModeling(o: ModelingOptions) {
           child_id: childId,
           analysis_id: id,
           status: a.status,
+          dispatch: a.dispatch,
         });
-        budget.settleChild(childId, a.cost, a.executions);
+        budget.settleChild(childId, a.cost, a.executions, a.role_usage);
         if (/cleanup|record_failure/.test(a.reason))
           throw new Stop("failed", a.reason);
         check();
@@ -309,35 +402,30 @@ export async function runModeling(o: ModelingOptions) {
           diagnostic: a.reason,
           source_experiment: a.source_experiment,
           analysis: a.analysis,
+          allocation,
         };
       } else {
-        const final = selected.kind === "finish";
-        try {
-          budget.train(final);
-        } catch (e) {
-          if (e instanceof Stop) throw e;
-          messages.push({
-            role: "tool",
-            tool_call_id: tool.id,
-            content: JSON.stringify({ error: String(e), ...view() }),
-          });
-          continue;
-        }
+        budget.train(final);
         const code = selected.kind === "train" ? selected.code : best?.code;
         if (!code) throw new Error("Missing candidate code");
         let e: Experiment;
+        let id = operationId;
+        let retry = false;
         while (true) {
-          const id = randomUUID(),
-            candidateId =
-              selected.kind === "train"
-                ? selected.candidate_id
-                : (best?.candidate_id ?? "final");
-          candidates.add(candidateId);
-          await record.event("experiment_intent", {
+          if (!candidateId) throw new Error("Missing accepted candidate");
+          const sequence = await record.event("experiment_intent", {
             experiment_id: id,
             candidate_id: candidateId,
             final,
+            accepted_sequence: acceptedSequence,
+            repair_of_experiment: repair,
+            retry,
           });
+          if (retry) {
+            candidates = attachExperiment(candidates, candidateId, id);
+            appliedSequence = sequence;
+            await record.save(state());
+          }
           e = await (o.experiment ?? runExperiment)({
             task,
             ...data,
@@ -350,11 +438,12 @@ export async function runModeling(o: ModelingOptions) {
               : () => Math.min(remaining(), budget.explorationMs()),
             final,
             id,
-            onStage: async (childId) =>
-              record.event("child_intent", {
+            onStage: async (childId) => {
+              await record.event("child_intent", {
                 child_id: childId,
                 experiment_id: id,
-              }),
+              });
+            },
           });
           experiments.push(e);
           if (!final) pendingAnalysis = null;
@@ -386,6 +475,8 @@ export async function runModeling(o: ModelingOptions) {
             budget.finalTraining < task.budget.final_training_attempts
           ) {
             budget.train(true);
+            id = randomUUID();
+            retry = true;
             continue;
           }
           break;

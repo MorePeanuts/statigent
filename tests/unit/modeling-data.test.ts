@@ -17,6 +17,27 @@ const task = {
   image: "statigent-runtime:dev",
   model_profile: "deepseek-flash",
 };
+test("model artifact allowance has a usable transport frame and preserves explicitly frozen limits", () => {
+  const defaults = validateModelingTask(task).limits;
+  expect(defaults.max_artifact_bytes).toBe(256 * 1024 ** 2);
+  expect(defaults.max_artifacts_bytes).toBe(1024 ** 3);
+  expect(defaults.memory_bytes).toBe(4 * 1024 ** 3);
+  for (const max of [defaults.max_artifact_bytes, 384 * 1024 ** 2]) {
+    const config = validateModelingTask({
+      ...task,
+      limits: { max_artifact_bytes: max },
+    });
+    expect(config.limits.max_frame_bytes).toBeGreaterThan(
+      Math.ceil(max / 3) * 4,
+    );
+    expect(validateModelingTask(config)).toEqual(config);
+  }
+  const legacy = validateModelingTask({
+    ...task,
+    limits: { max_artifact_bytes: 16 * 1024 ** 2, max_frame_bytes: 1024 ** 2 },
+  });
+  expect(legacy.limits.max_frame_bytes).toBe(1024 ** 2);
+});
 test("modeling rejects unsupported budgets, paths, targets and protocols before work", async () => {
   const root = await mkdtemp(join(await realpath(tmpdir()), "modeling-data-"));
   for (const change of [

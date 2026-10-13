@@ -28,6 +28,7 @@ import { exportNotebooks } from "../records/notebook";
 import { RunRecorder, readManifest, sha256, writeJson } from "../records/store";
 import {
   type Analysis,
+  EvidenceReferenceError,
   renderAnalysis,
   tools,
   validateAction,
@@ -71,6 +72,8 @@ export interface AgentSession {
 export interface RunOptions {
   /** Trusted caller identity, recorded before nested work is dispatched. */
   runId?: string;
+  /** Parent monotonic deadline includes preparation before this child starts. */
+  deadline?: number;
   task: unknown;
   profile: ModelProfile;
   runRoot: string;
@@ -102,7 +105,12 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
   )
     throw new Error("Client/profile mismatch");
   await preflightInputs(task);
-  const deadline = began + task.budget.task_timeout_ms;
+  if (options.deadline !== undefined && !Number.isFinite(options.deadline))
+    throw new Error("Invalid parent deadline");
+  const deadline = Math.min(
+    began + task.budget.task_timeout_ms,
+    options.deadline ?? Infinity,
+  );
   const controller = new AbortController();
   const signal = options.signal
     ? AbortSignal.any([options.signal, controller.signal])
@@ -318,6 +326,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
       let action: RoleAction | undefined;
       let reportImages: AnalysisReport["images"] | undefined;
       let invalid: string | undefined;
+      let evidenceError: EvidenceReferenceError | undefined;
       try {
         if (calls.length !== 1)
           throw new Error("Exactly one tool action required");
@@ -373,6 +382,7 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
         }
       } catch (error) {
         invalid = error instanceof Error ? error.message : "Invalid action";
+        if (error instanceof EvidenceReferenceError) evidenceError = error;
       }
       await recorder.modelEvent("tool_validation", {
         ...identity(),
@@ -392,6 +402,19 @@ export async function runAgent(options: RunOptions): Promise<AgentResult> {
             content: JSON.stringify({
               status: "rejected",
               diagnostic: invalid,
+              ...(evidenceError
+                ? {
+                    invalid_evidence_refs: evidenceError.invalidRefs,
+                    valid_evidence_refs: [
+                      ...(collaboration && role === "planner"
+                        ? visibleEvidence
+                        : evidence),
+                    ],
+                    correction:
+                      "Only cite valid_evidence_refs. Failed cell IDs are not valid evidence, even if partial output exists. Remove unsupported claims; do not replace their references with unrelated valid IDs. Repair in a new cell if execution budget remains, otherwise return supported findings and limitations (partial if needed).",
+                  }
+                : {}),
+              remaining: agent.remaining,
             }),
           });
         if (!calls.length)

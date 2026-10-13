@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import source from "../../configs/modeling/synthetic-prepare.json";
 import { dockerCommand } from "../../src/execution/docker";
@@ -14,6 +14,56 @@ import {
 import { readManifest } from "../../src/records/store";
 
 const code = `from sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.linear_model import LinearRegression\ndef build_pipeline(seed):\n    import os\n    assert sorted(os.listdir('/input')) == ['candidate.py','data.csv','stage.json']\n    return make_pipeline(ColumnTransformer([('x','passthrough',['x'])]),LinearRegression())\n`;
+test("a tree ensemble above the old 16 MiB limit is saved, collected on close and loaded in an independent prediction container", async () => {
+  const root = resolve("runs/integration-modeling-large", randomUUID());
+  const input = join(root, "input");
+  await mkdir(input, { recursive: true });
+  const rows = Array.from(
+    { length: 1000 },
+    (_, i) =>
+      `${i},${Math.sin(i)},${Math.cos(i * 0.7)},${Math.sin(i * 0.01) + (i % 7)}`,
+  ).join("\n");
+  await writeFile(join(input, "train.csv"), `id,x,z,target\n${rows}\n`);
+  await writeFile(
+    join(input, "test.csv"),
+    "id,x,z\n1001,0.1,0.3\n1002,0.5,0.7\n",
+  );
+  await prepareDataset({ ...source, input_root: input }, join(root, "data"));
+  const task = validateModelingTask({
+    goal: "large model persistence",
+    dataset_root: join(root, "data"),
+    model_profile: "test",
+    image: "statigent-runtime:dev",
+  });
+  const result = await runExperiment({
+    root,
+    task,
+    ...(await loadDataset(task.dataset_root)),
+    candidateId: "trees",
+    signal: new AbortController().signal,
+    remaining: () => 120000,
+    code: "from sklearn.ensemble import ExtraTreesRegressor\ndef build_pipeline(seed):\n    return ExtraTreesRegressor(n_estimators=256,random_state=seed,n_jobs=1)\n",
+  });
+  expect(result.status, result.reason).toBe("completed");
+  expect(result.fit?.output?.bytes).toBeGreaterThan(16 * 1024 ** 2);
+  expect(result.rmse).not.toBeNull();
+  const fit = await readManifest(result.fit?.directory ?? "");
+  expect(fit.workspace_collection.status).toBe("complete");
+  const snapshots = fit.artifacts.filter(
+    (a) => a.source_path === "model.joblib",
+  );
+  expect(snapshots).toHaveLength(2);
+  expect(snapshots[0]?.sha256).toBe(snapshots[1]?.sha256);
+  for (const stage of [result.fit, result.predict])
+    expect(
+      await dockerCommand([
+        "ps",
+        "-aq",
+        "--filter",
+        `label=org.statigent.run=${stage?.run_id}`,
+      ]),
+    ).toBe("");
+}, 180000);
 async function setup() {
   const root = resolve("runs/integration-modeling", randomUUID());
   await mkdir(root, { recursive: true });

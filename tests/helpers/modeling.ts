@@ -1,3 +1,4 @@
+import type { RequestedBudget } from "../../src/modeling/budget";
 import { obj } from "../../src/models/validation";
 import { call, lastFeedback, reply } from "./agent";
 import { returned } from "./collaboration";
@@ -5,69 +6,145 @@ export const baselineCode =
   "from sklearn.dummy import DummyRegressor\ndef build_pipeline(seed):\n    return DummyRegressor()\n";
 export const linearCode =
   "from sklearn.compose import ColumnTransformer\nfrom sklearn.pipeline import make_pipeline\nfrom sklearn.linear_model import LinearRegression\ndef build_pipeline(seed):\n    return make_pipeline(ColumnTransformer([('x', 'passthrough', ['x'])]), LinearRegression())\n";
+export function createCandidate(
+  id: string,
+  priority = 1,
+  evidence: unknown[] = [],
+) {
+  return {
+    op: "create",
+    id,
+    hypothesis:
+      id === "baseline"
+        ? "Mean provides a reference"
+        : "Residual dependence supports testing linear x",
+    change: id === "baseline" ? "Mean prediction" : "Use x linear regression",
+    priority,
+    reason: "Test a bounded modeling hypothesis",
+    evidence,
+  };
+}
+export function updateCandidate(
+  id: string,
+  evidence: unknown[] = [],
+  disposition = "keep",
+  priority: number | null = 1,
+) {
+  return {
+    op: "update",
+    id,
+    priority,
+    disposition,
+    reason: "Evidence determines the next bounded experiment",
+    evidence,
+  };
+}
 export function trainCall(
   code = baselineCode,
   evidence: unknown[] = [],
   source: string | null = null,
+  options: {
+    candidateId?: string;
+    candidateUpdates?: unknown[];
+    repairOf?: string | null;
+  } = {},
 ) {
+  const candidate = options.candidateId ?? (source ? "linear" : "baseline");
   return call("run_experiment", {
-    candidate_id: source ? "linear" : "baseline",
-    hypothesis: "Inspect systematic residual dependence on x",
+    candidate_updates: options.candidateUpdates ?? [createCandidate(candidate)],
+    candidate_id: candidate,
     change: source ? "Use x linear regression" : "Mean prediction",
     reason: source ? "Evidence supports testing x" : "Establish reference",
     source_experiment: source,
+    repair_of_experiment: options.repairOf ?? null,
     evidence,
     code,
   });
 }
-export function modelingScript(worse = false) {
+export function analyzeCall(
+  source: string | null,
+  options: {
+    candidates?: string[];
+    candidateUpdates?: unknown[];
+    requestedBudget?: RequestedBudget;
+  } = {},
+) {
+  return call("analyze", {
+    candidate_updates: options.candidateUpdates ?? [createCandidate("linear")],
+    candidates: options.candidates ?? ["linear"],
+    question: "Are baseline residuals related to x?",
+    expected_evidence: "Compare x with residuals",
+    decision_rules: "If systematic, prioritize linear fit; otherwise keep mean",
+    source_experiment: source,
+    requested_budget: options.requestedBudget ?? {
+      task_timeout_ms: 90000,
+      total_tokens: 100000,
+      executions: 3,
+    },
+    budget_reason:
+      "A focused residual comparison needs one notebook execution and both EDA roles",
+  });
+}
+export function finishCall(
+  body: Record<string, unknown>,
+  candidateUpdates: unknown[] = [],
+) {
+  return call("finish_modeling", {
+    candidate_updates: candidateUpdates,
+    experiment_id: lastFeedback(body).best_experiment_id,
+    reason: "Use lowest observed RMSE",
+  });
+}
+export function modelingScript(
+  worse = false,
+  repair = false,
+  requestedBudget?: RequestedBudget,
+) {
   let source = "";
+  let evidence: unknown[] = [];
   return (body: Record<string, unknown>, i: number) => {
     if (i === 0) return reply([trainCall()]);
     if (i === 1) {
       source = String(obj(lastFeedback(body).result).experiment_id);
-      return reply([
-        call("analyze", {
-          candidates: [{ id: "linear", change: "Use x", priority: 1 }],
-          question: "Are baseline residuals related to x?",
-          expected_evidence: "Compare x with residuals",
-          decision_rules:
-            "If systematic, prioritize linear fit; otherwise keep mean",
-          source_experiment: source,
-        }),
-      ]);
+      return reply([analyzeCall(source, { requestedBudget })]);
     }
     if (i === 2) {
       const a = obj(lastFeedback(body).result),
         analysis = obj(a.analysis),
         finding = obj((analysis.findings as unknown[])[0]);
+      evidence = [
+        {
+          analysis_id: a.analysis_id,
+          source_experiment: source,
+          refs: finding.evidence_refs,
+          applicability: "Same fixed validation split and baseline predictions",
+        },
+      ];
       return reply([
         trainCall(
-          worse
-            ? baselineCode.replace(
-                "DummyRegressor()",
-                "DummyRegressor(strategy='constant', constant=1000)",
-              )
-            : linearCode,
-          [
-            {
-              analysis_id: a.analysis_id,
-              source_experiment: source,
-              refs: finding.evidence_refs,
-              applicability:
-                "Same fixed validation split and baseline predictions",
-            },
-          ],
+          repair
+            ? "def build_pipeline(seed):\n    raise ValueError('planned repairable feature failure')\n"
+            : worse
+              ? baselineCode.replace(
+                  "DummyRegressor()",
+                  "DummyRegressor(strategy='constant', constant=1000)",
+                )
+              : linearCode,
+          evidence,
           source,
+          { candidateUpdates: [updateCandidate("linear", evidence)] },
         ),
       ]);
     }
-    return reply([
-      call("finish_modeling", {
-        experiment_id: lastFeedback(body).best_experiment_id,
-        reason: "Use lowest observed RMSE",
-      }),
-    ]);
+    if (repair && i === 3) {
+      return reply([
+        trainCall(linearCode, evidence, source, {
+          candidateUpdates: [],
+          repairOf: String(obj(lastFeedback(body).result).experiment_id),
+        }),
+      ]);
+    }
+    return reply([finishCall(body)]);
   };
 }
 export function modelingEdaScript() {

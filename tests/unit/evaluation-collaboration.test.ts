@@ -50,7 +50,7 @@ test("adapter validates organization and restricted native budgets before invoca
     native_budget: { executions: 12 },
     role_prompts: {
       planner: { version: "eda-planner-v2" },
-      executor: { version: "eda-executor-v2" },
+      executor: { version: "eda-executor-v3" },
     },
     trajectory_mapping: "planner-executor-v1",
   });

@@ -59,22 +59,42 @@ export function modelCaller(context: CallContext) {
       updateRemaining();
       if (tokens.attempts >= task.budget.model_attempts)
         throw new Stop("budget_exhausted", "model_attempts");
-      const body = client.requestBody(messages, toolSet);
-      const estimate = Buffer.byteLength(body);
+      let body = client.requestBody(messages, toolSet);
+      let estimate = Buffer.byteLength(body);
       if (estimate > task.budget.max_request_bytes)
         throw new Stop("budget_exhausted", "request_size_limit");
-      if (
-        tokens.total_tokens + estimate + profile.generation.max_output_tokens >
-        task.budget.total_tokens
-      )
+      // 输入仍用保守字节估计；profile 是输出上限，不是每轮必须预留的消费。
+      const maxOutputTokens = Math.min(
+        profile.generation.max_output_tokens,
+        task.budget.total_tokens - tokens.total_tokens - estimate,
+      );
+      if (maxOutputTokens < 1)
         throw new Stop("budget_exhausted", "token_preflight");
+      if (maxOutputTokens < profile.generation.max_output_tokens) {
+        body = client.requestBody(
+          messages,
+          toolSet,
+          undefined,
+          maxOutputTokens,
+        );
+        estimate = Buffer.byteLength(body);
+        if (estimate > task.budget.max_request_bytes)
+          throw new Stop("budget_exhausted", "request_size_limit");
+        if (
+          tokens.total_tokens + estimate + maxOutputTokens >
+          task.budget.total_tokens
+        )
+          throw new Stop("budget_exhausted", "token_preflight");
+      }
       const attemptId = randomUUID();
       await recorder.modelEvent("agent_budget", {
         ...identity,
         remaining: agent.remaining,
         input_estimate: estimate,
         estimate_method: "utf8_bytes_estimate",
-        max_output_tokens: profile.generation.max_output_tokens,
+        max_output_tokens: maxOutputTokens,
+        configured_max_output_tokens: profile.generation.max_output_tokens,
+        output_limit_policy: "remaining_budget_v1",
       });
       await recorder.modelEvent(
         "model_request",

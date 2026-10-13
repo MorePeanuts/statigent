@@ -10,6 +10,7 @@ import {
   rm,
 } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { jsonLines } from "./frames";
 import {
   type BridgeMessage,
   type HostRequest,
@@ -281,29 +282,17 @@ export class DockerTransport implements SessionTransport {
     sessionId: string,
     onMessage: (message: BridgeMessage) => Promise<void>,
   ) {
-    let pending = Buffer.alloc(0);
-    for await (const chunk of streamChunks(stream)) {
-      pending = Buffer.concat([pending, chunk]);
-      let newline = pending.indexOf(10);
-      while (newline >= 0) {
-        const frame = pending.subarray(0, newline);
-        if (frame.length > config.limits.max_frame_bytes)
-          throw new ProtocolError("oversized bridge frame");
-        if (frame.length)
-          await onMessage(
-            parseBridgeMessage(
-              frame.toString("utf8"),
-              config.limits.max_frame_bytes,
-              sessionId,
-            ),
-          );
-        pending = pending.subarray(newline + 1);
-        newline = pending.indexOf(10);
-      }
-      if (pending.length > config.limits.max_frame_bytes)
-        throw new ProtocolError("oversized unterminated bridge frame");
-    }
-    if (pending.length) throw new ProtocolError("incomplete final JSONL frame");
+    for await (const frame of jsonLines(
+      streamChunks(stream),
+      config.limits.max_frame_bytes,
+    ))
+      await onMessage(
+        parseBridgeMessage(
+          frame.toString("utf8"),
+          config.limits.max_frame_bytes,
+          sessionId,
+        ),
+      );
   }
   async send(message: HostRequest) {
     if (

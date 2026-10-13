@@ -128,6 +128,11 @@ export function validateAction(
       : {}),
   };
 }
+export class EvidenceReferenceError extends Error {
+  constructor(readonly invalidRefs: string[]) {
+    super("Invalid or foreign evidence reference");
+  }
+}
 export function validateAnalysis(
   x: Record<string, unknown>,
   evidence: ReadonlySet<string>,
@@ -139,8 +144,9 @@ export function validateAnalysis(
     const f = obj(value);
     keys(f, ["statement", "value", "evidence_refs"]);
     const refs = strings(f.evidence_refs, "evidence_refs");
-    if (!refs.length || refs.some((ref) => !evidence.has(ref)))
-      throw new Error("Invalid or foreign evidence reference");
+    const invalidRefs = refs.filter((ref) => !evidence.has(ref));
+    if (!refs.length || invalidRefs.length)
+      throw new EvidenceReferenceError(invalidRefs);
     return {
       statement: str(f.statement, "statement"),
       ...(f.value !== undefined ? { value: f.value } : {}),

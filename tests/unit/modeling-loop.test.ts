@@ -3,15 +3,16 @@ import { mkdtemp, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import source from "../../configs/modeling/synthetic-prepare.json";
+import { DEFAULT_BUDGET } from "../../src/agent/config";
 import { action } from "../../src/modeling/actions";
 import { prepareDataset } from "../../src/modeling/data";
 import { validateEvidence } from "../../src/modeling/eda";
-import { inspectModeling } from "../../src/modeling/records";
+import { inspectModeling, ModelingRecord } from "../../src/modeling/records";
 import { type ModelingOptions, runModeling } from "../../src/modeling/run";
 import { ModelFailure, normalizeUsage } from "../../src/models/client";
 import { obj } from "../../src/models/validation";
 import { emptyLedger } from "../../src/records/agent-metadata";
-import { sha256 } from "../../src/records/store";
+import { RunRecorder, sha256 } from "../../src/records/store";
 import {
   call,
   lastFeedback,
@@ -19,7 +20,16 @@ import {
   reply,
   ScriptClient,
 } from "../helpers/agent";
-import { baselineCode, modelingScript, trainCall } from "../helpers/modeling";
+import { collaborationMetadata } from "../helpers/collaboration";
+import {
+  analyzeCall,
+  baselineCode,
+  createCandidate,
+  finishCall,
+  modelingScript,
+  trainCall,
+  updateCandidate,
+} from "../helpers/modeling";
 
 async function options(
   script: ConstructorParameters<typeof ScriptClient>[0],
@@ -50,47 +60,93 @@ async function options(
       predict: null,
       final: o.final ?? false,
     }),
-    analysis: async (o) => ({
-      id: o.id,
-      run_id: o.runId,
-      directory: join(root, o.runId),
-      source_experiment: o.request.source_experiment,
-      dataset_hash: o.dataset.files[0]?.sha256 ?? "",
-      split_hash: o.dataset.split.sha256,
-      status: "completed",
-      reason: "ok",
-      analysis: {
-        summary: "Observation",
-        findings: [{ statement: "Finding", evidence_refs: ["ref1"] }],
-        methods: ["synthetic"],
-        limitations: [],
-      },
-      cost: {
-        ...emptyLedger(),
-        attempts: 4,
-        input_tokens: 40,
-        output_tokens: 20,
-        total_tokens: 60,
-      },
-      role_usage: {
-        planner: {
-          ...emptyLedger(),
-          attempts: 2,
-          input_tokens: 20,
-          output_tokens: 10,
-          total_tokens: 30,
+    analysis: async (o) => {
+      const result = {
+        id: o.id,
+        run_id: o.runId,
+        directory: join(o.root, "eda", o.runId),
+        dispatch: "started" as const,
+        effective_budget: o.budget,
+        deadline: o.deadline,
+        source_experiment: o.request.source_experiment,
+        dataset_hash: o.dataset.files[0]?.sha256 ?? "",
+        split_hash: o.dataset.split.sha256,
+        status: "completed",
+        reason: "ok",
+        analysis: {
+          summary: "Observation",
+          findings: [{ statement: "Finding", evidence_refs: ["ref1"] }],
+          methods: ["synthetic"],
+          limitations: [],
         },
-        executor: {
+        cost: {
           ...emptyLedger(),
-          attempts: 2,
-          input_tokens: 20,
-          output_tokens: 10,
-          total_tokens: 30,
+          attempts: 4,
+          input_tokens: 40,
+          output_tokens: 20,
+          total_tokens: 60,
         },
-      },
-      executions: 1,
-      request: o.request,
-    }),
+        role_usage: {
+          planner: {
+            ...emptyLedger(),
+            attempts: 2,
+            input_tokens: 20,
+            output_tokens: 10,
+            total_tokens: 30,
+          },
+          executor: {
+            ...emptyLedger(),
+            attempts: 2,
+            input_tokens: 20,
+            output_tokens: 10,
+            total_tokens: 30,
+          },
+        },
+        executions: 1,
+        request: o.request,
+      };
+      const collaboration = collaborationMetadata();
+      collaboration.roles.planner.tokens = result.role_usage.planner;
+      collaboration.roles.executor.tokens = result.role_usage.executor;
+      collaboration.subtasks.push({
+        subtask_id: "subtask",
+        tool_id: "delegate",
+        status: "completed",
+        tokens: result.role_usage.executor,
+        evidence_refs: ["ref1"],
+      });
+      const child = await RunRecorder.create({
+        runRoot: join(o.root, "eda"),
+        runId: o.runId,
+        config: {},
+        inputs: [],
+        image: { id: "fixture", platform: "linux/arm64" },
+        agent: {
+          model: structuredClone(collaboration.roles.planner.model),
+          prompt: { version: "fixture", sha256: "a".repeat(64) },
+          tokens: result.cost,
+          collaboration,
+          metadata: {
+            goal: "test",
+            constraints: [],
+            budget: { ...DEFAULT_BUDGET, ...o.budget },
+            remaining: {
+              model_attempts: o.budget.model_attempts - 4,
+              executions: o.budget.executions - 1,
+              tokens: o.budget.total_tokens - 60,
+              task_ms: o.budget.task_timeout_ms,
+            },
+            executions: 1,
+            termination: null,
+            final_result: null,
+            trace_bytes: 0,
+            trace_incomplete: false,
+          },
+        },
+      });
+      await child.finish("completed");
+      return result;
+    },
     delivery: async (_root, task, selected, final, dataset) => ({
       schema_version: 1,
       source_experiment: selected.id,
@@ -112,6 +168,15 @@ test("EDA evidence drives follow-up while worse scores preserve original best an
     r = await runModeling(o);
   expect(r.status, r.reason).toBe("completed");
   const { manifest } = await inspectModeling(r.directory);
+  const firstBody = (o.client as ScriptClient).bodies[0];
+  const firstMessages = obj(firstBody).messages as {
+    role: string;
+    content: string;
+  }[];
+  const initial = firstMessages.find((m) => m.role === "user");
+  expect(JSON.parse(initial?.content ?? "{}").execution_limits).toMatchObject({
+    max_artifact_bytes: 256 * 1024 ** 2,
+  });
   const experiments = manifest.experiments as { id: string }[];
   expect(r.best_experiment_id).toBe(experiments[0]?.id ?? null);
   expect(manifest.usage).toMatchObject({
@@ -128,11 +193,18 @@ test("direct training may finish without EDA; malformed multi-actions and missin
       i === 0
         ? [trainCall(), trainCall()]
         : i === 1
-          ? [call("finish_modeling", { experiment_id: "fake", reason: "fake" })]
+          ? [
+              call("finish_modeling", {
+                candidate_updates: [],
+                experiment_id: "fake",
+                reason: "fake",
+              }),
+            ]
           : i === 2
             ? [trainCall()]
             : [
                 call("finish_modeling", {
+                  candidate_updates: [],
                   experiment_id: lastFeedback(body).best_experiment_id,
                   reason: "done",
                 }),
@@ -169,6 +241,7 @@ test("unknown model usage stops and retry attempts are included", async () => {
       i === 1
         ? trainCall()
         : call("finish_modeling", {
+            candidate_updates: [],
             experiment_id: lastFeedback(body).best_experiment_id,
             reason: "done",
           }),
@@ -229,15 +302,19 @@ test("known analysis failure is diagnostic, unknown child cost terminates, and c
   const o = await options(script);
   const original = o.analysis;
   if (!original) throw Error("missing fixture");
-  o.analysis = async (input) => ({
-    ...(await original(input)),
-    cost: {
+  o.analysis = async (input) => {
+    const cost = {
       ...emptyLedger(),
-      status: "unknown",
+      status: "unknown" as const,
       attempts: 1,
       unknown_attempts: 1,
-    },
-  });
+    };
+    return {
+      ...(await original(input)),
+      cost,
+      role_usage: { planner: cost, executor: emptyLedger() },
+    };
+  };
   const failed = await runModeling(o);
   expect(failed.status).toBe("failed");
   expect(failed.reason).toContain("accounting_incomplete");
@@ -261,6 +338,7 @@ test("failed finalization or missing delivery never becomes completed", async ()
       i === 0
         ? trainCall()
         : call("finish_modeling", {
+            candidate_updates: [],
             experiment_id: lastFeedback(body).best_experiment_id,
             reason: "done",
           }),
@@ -288,6 +366,7 @@ test("final retries use new experiments, unchanged code and the configured reser
       i === 0
         ? trainCall()
         : call("finish_modeling", {
+            candidate_updates: [],
             experiment_id: lastFeedback(body).best_experiment_id,
             reason: "done",
           }),
@@ -321,12 +400,13 @@ test("a failed training attempt can be explicitly referenced by its bounded repa
       i === 0
         ? trainCall()
         : i === 1
-          ? trainCall(
-              baselineCode,
-              [],
-              String(obj(lastFeedback(body).result).experiment_id),
-            )
+          ? trainCall(baselineCode, [], null, {
+              candidateId: "baseline",
+              candidateUpdates: [],
+              repairOf: String(obj(lastFeedback(body).result).experiment_id),
+            })
           : call("finish_modeling", {
+              candidate_updates: [],
               experiment_id: lastFeedback(body).best_experiment_id,
               reason: "done",
             }),
@@ -344,4 +424,196 @@ test("a failed training attempt can be explicitly referenced by its bounded repa
   const r = await runModeling(o);
   expect(r.status, r.reason).toBe("completed");
   expect(attempts).toBe(3);
+});
+
+test("candidate batches and budget rejection are atomic while model costs remain charged", async () => {
+  for (const mode of ["batch", "budget", "evidence"] as const) {
+    const o = await options((body, i) => {
+      if (i === 0) {
+        const updates = [createCandidate("ghost")];
+        const tool =
+          mode === "budget"
+            ? analyzeCall(null, {
+                candidates: ["ghost"],
+                candidateUpdates: updates,
+              })
+            : trainCall(baselineCode, [], null, {
+                candidateId: "ghost",
+                candidateUpdates: [
+                  ...updates,
+                  mode === "batch"
+                    ? updateCandidate("missing")
+                    : {
+                        ...createCandidate("other"),
+                        evidence: [
+                          {
+                            analysis_id: "missing",
+                            source_experiment: null,
+                            refs: ["r"],
+                            applicability: "invalid",
+                          },
+                        ],
+                      },
+                ],
+              });
+        return reply([tool]);
+      }
+      if (i === 1) {
+        expect(lastFeedback(body).candidates).toEqual([]);
+        return reply([trainCall()]);
+      }
+      return reply([finishCall(body)]);
+    });
+    if (mode === "budget")
+      o.task = { ...obj(o.task), budget: { eda_calls: 0 } };
+    const r = await runModeling(o);
+    expect(r.status, r.reason).toBe("completed");
+    const inspected = await inspectModeling(r.directory);
+    expect(obj(inspected.manifest.candidate_control).candidates).toMatchObject([
+      { id: "baseline" },
+    ]);
+    expect(
+      obj(inspected.manifest.candidate_control).candidates as unknown[],
+    ).toHaveLength(1);
+    expect(inspected.manifest.usage).toMatchObject({
+      tokens: { attempts: 3, total_tokens: 45 },
+      training_attempts: 2,
+      eda_calls: 0,
+    });
+  }
+});
+
+test("deferred candidates require explicit resume and priority does not force scheduling", async () => {
+  const o = await options((body, i) => {
+    if (i === 0)
+      return reply([
+        trainCall(baselineCode, [], null, {
+          candidateUpdates: [
+            createCandidate("baseline", 2),
+            createCandidate("alternative", 1),
+          ],
+        }),
+      ]);
+    if (i === 1)
+      return reply([
+        trainCall(baselineCode, [], null, {
+          candidateUpdates: [updateCandidate("baseline", [], "defer")],
+        }),
+      ]);
+    if (i === 2) {
+      expect(
+        (
+          lastFeedback(body).candidates as { id: string; status: string }[]
+        ).find((c) => c.id === "baseline")?.status,
+      ).toBe("tried");
+      return reply([
+        trainCall(baselineCode, [], null, {
+          candidateId: "alternative",
+          candidateUpdates: [updateCandidate("baseline", [], "defer")],
+        }),
+      ]);
+    }
+    if (i === 3)
+      return reply([
+        trainCall(baselineCode, [], null, {
+          candidateUpdates: [updateCandidate("baseline", [], "resume", 3)],
+        }),
+      ]);
+    return reply([
+      finishCall(body, [updateCandidate("alternative", [], "defer")]),
+    ]);
+  });
+  const r = await runModeling(o);
+  expect(r.status, r.reason).toBe("completed");
+  const m = (await inspectModeling(r.directory)).manifest;
+  expect(obj(m.candidate_control).candidates).toMatchObject([
+    { id: "baseline", priority: 3, status: "tried", revision: 6 },
+    { id: "alternative", priority: 1, status: "deferred", revision: 3 },
+  ]);
+  expect(
+    (m.experiments as { candidate_id: string }[]).map((e) => e.candidate_id),
+  ).toEqual(["baseline", "alternative", "baseline", "baseline"]);
+});
+
+test("failed acceptance persistence dispatches nothing and leaves only the prior snapshot", async () => {
+  const o = await options(() => reply([trainCall()]));
+  let calls = 0;
+  o.experiment = async () => {
+    calls++;
+    throw Error("must not execute");
+  };
+  o.createRecord = async (...args) => {
+    const r = await ModelingRecord.create(...args);
+    const event = r.event.bind(r);
+    r.event = async (type, fields, payload) => {
+      if (type === "action_accepted")
+        throw Error("record_failure:injected acceptance failure");
+      return event(type, fields, payload);
+    };
+    return r;
+  };
+  const r = await runModeling(o);
+  expect(r.status).toBe("failed");
+  expect(r.record_error).toBe(true);
+  expect(calls).toBe(0);
+  const m = (await inspectModeling(r.directory)).manifest;
+  expect(obj(m.candidate_control).candidates).toEqual([]);
+  expect(m.usage).toMatchObject({
+    tokens: { attempts: 1, total_tokens: 15 },
+    training_attempts: 0,
+  });
+});
+
+test("accepted decision survives interruption without inventing execution and unknown training never retries", async () => {
+  for (const stage of ["snapshot", "execution"] as const) {
+    const o = await options(() => reply([trainCall()]));
+    let calls = 0;
+    o.experiment = async () => {
+      calls++;
+      throw Error("unconfirmed runtime");
+    };
+    if (stage === "snapshot")
+      o.createRecord = async (...args) => {
+        const r = await ModelingRecord.create(...args);
+        const save = r.save.bind(r);
+        r.save = async (state) => {
+          if (obj(state.candidate_control).applied_sequence !== 0)
+            throw Error("record_failure:injected snapshot failure");
+          return save(state);
+        };
+        return r;
+      };
+    const r = await runModeling(o);
+    expect(r.status).toBe("failed");
+    expect(calls).toBe(stage === "snapshot" ? 0 : 1);
+    const inspected = await inspectModeling(r.directory);
+    expect(inspected.unconfirmed_experiments).toHaveLength(1);
+    expect(obj(inspected.candidate_control).candidates).toMatchObject([
+      { id: "baseline", status: "tried" },
+    ]);
+  }
+});
+
+test("cancellation after request persistence charges no unstarted attempt", async () => {
+  const controller = new AbortController();
+  const o = await options(() => {
+    throw Error("must not dispatch");
+  });
+  o.signal = controller.signal;
+  o.createRecord = async (...args) => {
+    const r = await ModelingRecord.create(...args);
+    const event = r.event.bind(r);
+    r.event = async (type, fields, payload) => {
+      const seq = await event(type, fields, payload);
+      if (type === "model_request") controller.abort();
+      return seq;
+    };
+    return r;
+  };
+  const r = await runModeling(o);
+  expect(r.status).toBe("cancelled");
+  expect((await inspectModeling(r.directory)).manifest.usage).toMatchObject({
+    tokens: { attempts: 0 },
+    modeling: { attempts: 0 },
+  });
 });

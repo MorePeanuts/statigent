@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { lstat, mkdir, open, readFile, rename } from "node:fs/promises";
 import { arch, cpus, platform, release, totalmem } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
+import { validBase64 } from "../execution/base64";
 import {
   type AgentMetadata,
   type CollaborationRecord,
@@ -468,12 +469,7 @@ export class RunRecorder {
         Math.ceil((this.options.maxArtifactBytes ?? 16 * 1024 * 1024) / 3) * 4
       )
         throw new Error("Artifact too large");
-      if (
-        !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(
-          encoded,
-        )
-      )
-        throw new Error("Invalid base64");
+      if (!validBase64(encoded)) throw new Error("Invalid base64");
       const data = Buffer.from(encoded, "base64");
       if (
         typeof message.size_bytes === "number" &&
