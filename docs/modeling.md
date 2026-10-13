@@ -1,8 +1,8 @@
 # 建模智能体
 
-支持单目标表格回归、二分类与多分类，复用实验历史、定向双角色 EDA、预算、隔离执行与交付链路。支持矩阵见下文；不含多标签、阈值搜索、概率校准或 Benchmark 适配。
+支持表格回归、二分类、多分类、有序类别、多目标二分类与前三候选输出，复用实验历史、定向双角色 EDA、预算及隔离执行。历史配置与新版基准配置按版本区分。
 
-建模基准变更正在接入 v2 通用目标协议与全指标计算，详见 [指标、预测语义和差分记录](modeling-metrics.md)。协议新增 ordinal/multilabel、逐目标类别/正类、等级坐标、前三候选；范围和未定义边界均由共享定义冻结。当前协议/可信评分测试通过，原生训练与基准执行接线尚未完成，以下既有 `run` 配置仍按原支持范围使用。
+建模基准使用 v2 通用目标协议与全指标计算，详见 [指标、预测语义和差分记录](modeling-metrics.md)。逐目标类别/正类、等级坐标、指标范围及未定义边界由共享定义冻结。新版原生训练、EDA 交接、冻结与预测已有合成 Docker 验收；统一基准批次、新版独立复现/测试评分及官方 system wrapper 仍在接入，状态见 [建模基准验收记录](modeling-benchmarks-validation.md)。
 
 以下入口只校验合成协议，不读模型配置、不启动训练或调用 API；输出 `scope=protocol-only`，不能代替数据/执行预检：
 
@@ -12,6 +12,33 @@ bun run modeling protocol --config configs/modeling/protocol-ranked.json
 ```
 
 所有目标与特征必须互斥，二元目标逐一指定正类；未知指标、错误参数/版本、空目标或非法等级映射都会拒绝。预测按 ID 对齐，概率不静默修正，多目标任一未定义导致聚合失败。旧 v1 数值和哈希继续保留，不原地迁移。
+
+## 基准数据的原生入口（任务 schema 4）
+
+`configs/modeling/benchmark-titanic.json` 使用准备清单 schema 3、目标协议 v2、stage 4、提示词 modeling-v8、父记录/交付 schema 5。`modeling-decision-v2` 与三种核心动作保持不变。模型和指标从已冻结的数据协议读取，不能在运行配置中改写。旧任务 schema 3、数据 schema 1/2 继续走原协议；下文历史示例中的字段与数值规则不变。
+
+先准备数据并检查配置；以下两个命令均不调用模型 API：
+
+```bash
+mkdir -p runs/modeling-benchmarks
+bun run evaluate prepare --config configs/evaluations/dsbench-modeling-prepare.json --out runs/modeling-benchmarks/titanic
+bun run modeling run --task configs/modeling/benchmark-titanic.json --preflight
+```
+
+镜像需由当前 `Dockerfile` 构建并具有 `org.statigent.modeling-stage=4` 标签。预检验证数据、逐目标类别覆盖、固定确认划分、资源预留和镜像能力；运行使用检查得到的不可变镜像 ID。准备成本、概览成本包含在父墙钟中，并保存明细。正式付费调用另行明确范围；本轮尚未执行真实模型基准验收。
+
+`delivery_mode` 必须显式为 `fit_only` 或 `fit_predict`。前者完成内部搜索、配置的确认和全训练拟合，输出 `status=model_frozen`、`delivery.status=pending_prediction`；准备数据可以完全没有测试分区。`modeling fit --task FILE` 显式选择该模式。后者由普通 `modeling run --task FILE` 在同一父时限和收尾预留内继续预测，成功后才输出 `completed`。最终拟合不读取预测分区；冻结后不再调用 LLM、调参或重新确认。
+
+冻结清单位于 `frozen/model.json`，引用原生阶段中的模型字节，保存候选代码、完整特征模式、协议与镜像身份。独立预测不会重新拟合；每次创建独立目录，保存请求、阶段、规范预测和墙钟成本：
+
+```bash
+bun run modeling predict --run PARENT_RUN --features-root runs/modeling-benchmarks/titanic --features final-prediction/test.csv --timeout-ms 30000
+bun run modeling inspect --run PARENT_RUN
+```
+
+预测输入必须使用准备后的列顺序、稳定 ID 和缺失值编码，包含全部允许特征且不含任何目标。新数据也必须遵守同一特征模式。坏输入、超时或取消留下失败记录，保留冻结模型，不回到搜索。模型只在 Docker 中加载；宿主校验和传送字节。预测失败后的父交付不标为完成。
+
+基础概览 v2 扫描内部拟合成员，保留完整特征描述文件；提示最多展示 128 列，优先展示 ID 和全部目标，并记录省略列数及原始列索引。宽表不删除训练特征，四方法获得同一概览。EDA 的 `source.json` v3 列出全部目标、独立概率列与可用训练诊断；数据和每份预测按 ID 关联，不能按行位置拼接。旧概览 v1 仍按原限制读取和检查。
 
 ## 研究方向与当前实现
 

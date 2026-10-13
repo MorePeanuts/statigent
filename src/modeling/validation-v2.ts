@@ -1,11 +1,49 @@
 import { describeFile } from "../evaluation/files";
 import { integer, keys, obj, str, strings } from "../models/validation";
 import { sha256 } from "../records/store";
-import { rowIds, type Table } from "./data";
+import { parseCsv, rowIds, type Table } from "./data";
 import type { DatasetV3 } from "./dataset-v3";
 import { byteOrder } from "./protocol";
 import { type ProtocolV2, validateProtocolV2 } from "./protocol-v2";
+import { selectFileV2 } from "./table-ops";
 import { derivedSeed, evaluation, type ValidationPlan } from "./validation";
+
+export async function validationPlanFromFilesV2(
+  sourceRoot: string,
+  dataset: DatasetV3,
+  mode: ValidationPlan["mode"],
+) {
+  const root = await realpath(
+    await mkdtemp(join(tmpdir(), "statigent-plan-v2-")),
+  );
+  try {
+    const members = await loadSearchMembersV2(sourceRoot, dataset);
+    const selected = await selectFileV2({
+      root,
+      source: {
+        ...dataset.training,
+        path: resolve(sourceRoot, dataset.training.path),
+      },
+      columns: [
+        dataset.protocol.id_column,
+        ...dataset.protocol.targets.map((t) => t.name),
+      ],
+      members: null,
+      limits: dataset.limits,
+      timeout_ms: 60000,
+    });
+    if (selected.file.bytes * 16 > dataset.limits.max_memory_bytes)
+      throw new Error("Validation metadata memory limit");
+    return createValidationPlanV2(
+      dataset,
+      parseCsv(await readFile(selected.file.path, "utf8")),
+      members,
+      mode,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
 
 export type MembersV2 = {
   train: string[];
@@ -198,3 +236,7 @@ export function createValidationPlanV2(
     ),
   };
 }
+
+import { mkdtemp, readFile, realpath, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";

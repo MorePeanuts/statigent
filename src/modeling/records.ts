@@ -10,6 +10,7 @@ import {
   action as newAction,
 } from "./actions-v3";
 import { inspectWorkflow } from "./audit-v4";
+import { inspectWorkflowV5 } from "./audit-v5";
 import {
   ledger,
   roleLedgers,
@@ -68,13 +69,15 @@ export class ModelingRecord {
       dirty = Bun.spawnSync(["git", "status", "--porcelain"]);
     const header = {
       schema_version:
-        obj(config.task ?? {}).schema_version === 3
-          ? 4
-          : obj(config.task ?? {}).schema_version === 2
-            ? 3
-            : config.protocol === undefined
-              ? 1
-              : 2,
+        obj(config.task ?? {}).schema_version === 4
+          ? 5
+          : obj(config.task ?? {}).schema_version === 3
+            ? 4
+            : obj(config.task ?? {}).schema_version === 2
+              ? 3
+              : config.protocol === undefined
+                ? 1
+                : 2,
       kind: "modeling",
       run_id: id,
       started_at: new Date().toISOString(),
@@ -161,7 +164,7 @@ export async function inspectModeling(directory: string) {
   const manifest = obj(JSON.parse(await readFile(path, "utf8")));
   if (
     typeof manifest.schema_version !== "number" ||
-    ![1, 2, 3, 4].includes(manifest.schema_version) ||
+    ![1, 2, 3, 4, 5].includes(manifest.schema_version) ||
     manifest.kind !== "modeling"
   )
     throw new Error("Unsupported modeling record");
@@ -212,11 +215,13 @@ export async function inspectModeling(directory: string) {
         throw new Error("Model visible context identity mismatch");
     }
   }
-  if (manifest.schema_version === 4)
+  if (manifest.schema_version === 4 || manifest.schema_version === 5)
     return {
       manifest,
       events,
-      ...(await inspectWorkflow(directory, manifest, events, payloads)),
+      ...(await (manifest.schema_version === 5
+        ? inspectWorkflowV5
+        : inspectWorkflow)(directory, manifest, events, payloads)),
     };
   const completed = new Set(
     events.filter((e) => e.type === "child_result").map((e) => e.child_id),

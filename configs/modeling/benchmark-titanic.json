@@ -1,0 +1,27 @@
+{
+  "schema_version": 4,
+  "delivery_mode": "fit_predict",
+  "method": "adaptive_eda",
+  "confirmation": { "mode": "none" },
+  "resource_version": "modeling-benchmark-development-v1",
+  "goal": "根据允许的训练数据和冻结指标建立可复现的预测流水线。按需要提出分析问题，保留有效验证结果，并显式结束搜索。所有预处理拟合均在流水线内部完成。",
+  "dataset_root": "runs/modeling-benchmarks/titanic",
+  "model_profile": "deepseek-flash",
+  "eda_profile": "deepseek-flash",
+  "image": "statigent-runtime:modeling-benchmarks",
+  "budget": {
+    "model_attempts": 40,
+    "total_tokens": 600000,
+    "task_timeout_ms": 900000,
+    "training_attempts": 4,
+    "final_training_attempts": 1,
+    "final_reserve_ms": 180000,
+    "fit_timeout_ms": 120000,
+    "predict_timeout_ms": 30000,
+    "eda_calls": 1,
+    "eda_executions": 10,
+    "eda_model_attempts": 20,
+    "eda_tokens": 400000,
+    "eda_timeout_ms": 300000
+  }
+}

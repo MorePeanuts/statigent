@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { constants } from "node:fs";
-import { chmod, copyFile, mkdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import { describeFile, verifyFiles } from "../evaluation/files";
+import { chmod, copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { relative, resolve } from "node:path";
+import { describeFile, regular, verifyFiles } from "../evaluation/files";
 import { command, commandEnvironment } from "../evaluation/process";
 import { integer, keys, obj, str } from "../models/validation";
 import { sha256 } from "../records/store";
@@ -10,6 +10,33 @@ import type { DatasetV3 } from "./dataset-v3";
 import { canonicalJson } from "./protocol-v2";
 import { selectFileV2 } from "./table-ops";
 import type { MembersV2 } from "./validation-v2";
+
+export async function recordedProfileV2(
+  root: string,
+  dataset: DatasetV3,
+  members: MembersV2,
+  value: unknown,
+) {
+  const request = obj(
+    JSON.parse(
+      await readFile(await regular(root, "basic-profile/request.json"), "utf8"),
+    ),
+  );
+  const input = obj(request.input),
+    path = relative(resolve(root), str(input.path, "profile input"));
+  if (!path.startsWith("basic-profile/selections/"))
+    throw new Error("Invalid profile snapshot path");
+  const snapshot = {
+    path,
+    bytes: integer(input.bytes, "snapshot bytes"),
+    sha256: str(input.sha256, "snapshot SHA256"),
+  };
+  await verifyFiles(root, [
+    snapshot,
+    { ...dataset.feature_schema, path: "basic-profile/features.json" },
+  ]);
+  return validateBasicProfileV2(value, dataset, members, snapshot.sha256);
+}
 
 export function validateBasicProfileV2(
   value: unknown,

@@ -9,11 +9,18 @@ import { readManifest, sha256 } from "../records/store";
 import { ledger, roleLedgers, validateHostAllocation } from "./budget";
 import { validateModelingTask } from "./config";
 import { datasetProtocol, validateDataset } from "./data";
+import { parseDatasetV3 } from "./dataset-v3";
 import type { AnalysisRecord } from "./eda";
 import type { Experiment, StageResult } from "./experiments";
 import { validateBasicProfile } from "./profile";
-import { better, validateScore } from "./protocol";
+import { type BasicProfileV2, recordedProfileV2 } from "./profile-v2";
 import { ValidationAudit } from "./validation-records";
+import {
+  betterVersioned,
+  type ModelingScore,
+  validateEvaluationScore,
+  validatePartitionScore,
+} from "./versioned-score";
 import {
   acceptAttachments,
   type CoreAction,
@@ -77,8 +84,14 @@ export async function inspectWorkflow(
 ) {
   const config = obj(manifest.config),
     task = validateModelingTask(config.task),
-    dataset = validateDataset(config.dataset),
-    protocol = datasetProtocol(dataset);
+    dataset =
+      manifest.schema_version === 5
+        ? parseDatasetV3(config.dataset)
+        : validateDataset(config.dataset),
+    protocol =
+      dataset.schema_version === 3
+        ? dataset.protocol
+        : datasetProtocol(dataset);
   same(config.protocol, protocol, "Record task protocol");
   same(
     obj(config.prompt).decision_interface,
@@ -86,15 +99,26 @@ export async function inspectWorkflow(
     "Decision interface",
   );
   const end = parseSearchEnd(manifest.search_end),
-    delivery = parseDeliveryState(manifest.delivery);
+    delivery = parseDeliveryState(
+      manifest.delivery,
+      manifest.schema_version === 5,
+    );
   if (manifest.status !== "running" && !end)
     throw new Error("Missing terminal search end");
   if ((manifest.status === "completed") !== (delivery.status === "completed"))
     throw new Error("Delivery completion mismatch");
+  if (
+    manifest.schema_version === 5 &&
+    (manifest.status === "model_frozen") !==
+      (delivery.status === "pending_prediction")
+  )
+    throw new Error("Frozen model delivery state mismatch");
   const audit = await ValidationAudit.create(directory, manifest);
+  const trainingFile =
+    dataset.schema_version === 3 ? dataset.training : dataset.files[0];
   const rawExperiments = list(manifest.experiments),
     rawAnalyses = list(manifest.analyses);
-  const experiments: Experiment[] = [],
+  const experiments: Experiment<ModelingScore>[] = [],
     analyses: AnalysisRecord[] = [],
     history: Notes[] = [];
   const intents = new Map<string, Record<string, unknown>>(),
@@ -106,9 +130,10 @@ export async function inspectWorkflow(
   const warnings: unknown[] = [],
     relationships: unknown[] = [],
     children: Record<string, unknown>[] = [];
-  let profile: ReturnType<typeof validateBasicProfile> | null = null,
+  let profile: ReturnType<typeof validateBasicProfile> | BasicProfileV2 | null =
+      null,
     profileSha = "",
-    best: Experiment | undefined,
+    best: Experiment<ModelingScore> | undefined,
     frozenSequence: number | null = null;
   let initial = false;
   if (manifest.basic_profile !== null) {
@@ -124,10 +149,18 @@ export async function inspectWorkflow(
         bytes: integer(f.bytes, "profile bytes"),
       },
     ]);
-    profile = validateBasicProfile(
-      JSON.parse(await readFile(await regular(directory, path), "utf8")),
-      dataset,
+    const profileValue = JSON.parse(
+      await readFile(await regular(directory, path), "utf8"),
     );
+    profile =
+      dataset.schema_version === 3
+        ? await recordedProfileV2(
+            directory,
+            dataset,
+            audit.plan.search.split,
+            profileValue,
+          )
+        : validateBasicProfile(profileValue, dataset);
     profileSha = str(f.sha256, "profile hash");
     same(saved.profile, profile, "Profile snapshot");
   }
@@ -368,7 +401,10 @@ export async function inspectWorkflow(
       seenExperiments.add(id);
       audit.result(event);
       if (!raw) {
-        if (manifest.status === "completed")
+        if (
+          manifest.status === "completed" ||
+          manifest.status === "model_frozen"
+        )
           throw new Error("Missing completed experiment");
         continue;
       }
@@ -380,7 +416,7 @@ export async function inspectWorkflow(
       if (!ev || (raw.status !== "completed" && raw.status !== "failed"))
         throw new Error("Invalid experiment facts");
       same(raw.evaluation, ev, "Evaluation snapshot");
-      const e: Experiment = {
+      const e: Experiment<ModelingScore> = {
         id,
         candidate_id: str(raw.candidate_id, "pipeline identity"),
         code: str(raw.code, "code"),
@@ -390,7 +426,7 @@ export async function inspectWorkflow(
         score:
           raw.score === null
             ? null
-            : validateScore(raw.score, protocol, ev.evaluation_id),
+            : validateEvaluationScore(raw.score, protocol, ev),
         fit: stage(raw.fit),
         predict: stage(raw.predict),
         final: raw.final === true,
@@ -421,7 +457,7 @@ export async function inspectWorkflow(
         const score =
           d.score === null
             ? null
-            : validateScore(
+            : validatePartitionScore(
                 d.score,
                 protocol,
                 sha256(
@@ -433,6 +469,7 @@ export async function inspectWorkflow(
                     }),
                   ),
                 ),
+                "search-training",
               );
         if (
           d.status === "available" &&
@@ -463,7 +500,7 @@ export async function inspectWorkflow(
         e.phase === "search" &&
         e.status === "completed" &&
         e.score &&
-        better(e.score, best?.score ?? null)
+        betterVersioned(e.score, best?.score ?? null)
       )
         best = e;
     } else if (event.type === "confirmation_result")
@@ -515,8 +552,8 @@ export async function inspectWorkflow(
         request: decision.core,
         execution_confirmed: raw.execution_confirmed === true,
       };
-      same(a.dataset_hash, dataset.files[0]?.sha256, "Analysis data");
-      same(a.split_hash, dataset.split.sha256, "Analysis split");
+      same(a.dataset_hash, trainingFile?.sha256, "Analysis data");
+      same(a.split_hash, audit.plan.search.split.sha256, "Analysis split");
       same(a.protocol_sha256, protocol.protocol_sha256, "Analysis protocol");
       if (raw.dispatch === "not_started") {
         same(raw.directory, null, "Unstarted directory");
@@ -615,7 +652,22 @@ export async function inspectWorkflow(
         );
         const input = obj(JSON.parse(source.toString()));
         same(input.protocol, protocol, "Analysis input protocol");
-        same(input.data, dataset.files[0], "Analysis input data");
+        same(
+          input.data,
+          dataset.schema_version === 3
+            ? { ...dataset.training, path: "train.csv" }
+            : trainingFile,
+          "Analysis input data",
+        );
+        if (dataset.schema_version === 3) {
+          same(input.version, 3, "Analysis input version");
+          same(input.targets, dataset.protocol.targets, "Analysis all targets");
+          same(
+            input.feature_schema,
+            { ...dataset.feature_schema, path: "features.json" },
+            "Analysis full features",
+          );
+        }
         a.source_experiments = list(input.sources).map((s) => ({
           experiment_id: str(s.experiment_id, "source experiment"),
           prediction_sha256: str(s.prediction_sha256, "prediction hash"),
@@ -728,7 +780,8 @@ export async function inspectWorkflow(
     "EDA executions",
   );
   if (
-    manifest.status === "completed" &&
+    (manifest.status === "completed" ||
+      (manifest.schema_version === 5 && manifest.status === "model_frozen")) &&
     (seenExperiments.size !== rawExperiments.length ||
       seenAnalyses.size !== rawAnalyses.length ||
       !audit.frozen)
@@ -744,7 +797,7 @@ export async function inspectWorkflow(
     candidate_control: "disabled" as const,
     knowledge_control: "disabled" as const,
     workflow_control: {
-      version: 4,
+      version: manifest.schema_version,
       notes: task.method === "collaborative" ? history : "disabled",
       relationships,
       warnings,

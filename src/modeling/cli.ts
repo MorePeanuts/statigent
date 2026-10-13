@@ -1,9 +1,11 @@
 import { resolve } from "node:path";
+import { describeFile } from "../evaluation/files";
 import { selectProfile } from "../models/config";
 import { obj } from "../models/validation";
 import { datasetProtocol, prepareDataset } from "./data";
 import { reproduce, scoreDelivery } from "./delivery";
 import { developmentGoal, developmentReport } from "./development";
+import { predictFrozenModel } from "./frozen-model";
 import {
   DEVELOPMENT_TASKS,
   modelingPreflight,
@@ -34,6 +36,45 @@ export function flags(
 }
 export async function modelingMain(args: string[]): Promise<unknown> {
   const command = args[0];
+  if (command === "predict") {
+    const f = flags(args.slice(1), [
+      "--run",
+      "--features-root",
+      "--features",
+      "--runs",
+      "--timeout-ms",
+    ]);
+    if (
+      !f["--run"] ||
+      !f["--features-root"] ||
+      !f["--features"] ||
+      !f["--timeout-ms"]
+    )
+      throw new Error(
+        "predict requires --run --features-root --features --timeout-ms",
+      );
+    const timeout = Number(f["--timeout-ms"]);
+    if (!Number.isSafeInteger(timeout) || timeout <= 0)
+      throw new Error("Invalid prediction timeout");
+    const inputRoot = resolve(f["--features-root"]),
+      file = await describeFile(inputRoot, f["--features"]);
+    const controller = new AbortController(),
+      stop = () => controller.abort();
+    process.on("SIGINT", stop);
+    process.on("SIGTERM", stop);
+    try {
+      return await predictFrozenModel({
+        frozenRoot: resolve(f["--run"]),
+        runRoot: resolve(f["--runs"] ?? "runs/modeling-predictions"),
+        features: { ...file, path: resolve(inputRoot, file.path) },
+        timeout_ms: timeout,
+        signal: controller.signal,
+      });
+    } finally {
+      process.off("SIGINT", stop);
+      process.off("SIGTERM", stop);
+    }
+  }
   if (command === "protocol") {
     const f = flags(args.slice(1), ["--config"]);
     if (!f["--config"]) throw new Error("protocol requires --config");
@@ -98,8 +139,10 @@ export async function modelingMain(args: string[]): Promise<unknown> {
       resolve(f["--runs"] ?? "runs/modeling-scores"),
     );
   }
-  if (command !== "run" && command !== "develop")
-    throw new Error("Expected protocol/prepare/run/inspect/reproduce/score");
+  if (command !== "run" && command !== "develop" && command !== "fit")
+    throw new Error(
+      "Expected protocol/prepare/run/fit/predict/inspect/reproduce/score",
+    );
   const preflight = args.includes("--preflight");
   if (args.filter((arg) => arg === "--preflight").length > 1)
     throw new Error("Duplicate preflight option");
@@ -130,6 +173,11 @@ export async function modelingMain(args: string[]): Promise<unknown> {
     taskPath = DEVELOPMENT_TASKS[taskPath as keyof typeof DEVELOPMENT_TASKS];
   }
   const raw = obj(await Bun.file(resolve(taskPath)).json());
+  if (command === "fit") {
+    if (raw.schema_version !== 4)
+      throw new Error("fit requires a modeling task v4");
+    raw.delivery_mode = "fit_only";
+  }
   if (f["--method"]) raw.method = f["--method"];
   const task = await taskWithResource(raw, f["--resource"]);
   if (f["--model"]) {
@@ -177,7 +225,7 @@ if (import.meta.main)
       const v = obj(x);
       if (
         typeof v.status === "string" &&
-        !["completed", "passed", "ready"].includes(v.status)
+        !["completed", "model_frozen", "passed", "ready"].includes(v.status)
       )
         process.exitCode = 1;
     })

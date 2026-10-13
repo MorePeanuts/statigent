@@ -375,7 +375,7 @@ export function parseSearchEnd(value: unknown): SearchEnd | null {
     throw new Error("Invalid search end kind");
   return { kind: x.kind, reason: str(x.reason, "search end reason") };
 }
-export function parseDeliveryState(value: unknown) {
+export function parseDeliveryState(value: unknown, allowPending = false) {
   const x = obj(value);
   keys(x, ["status", "artifact"]);
   if (
@@ -383,12 +383,14 @@ export function parseDeliveryState(value: unknown) {
     x.status !== "running" &&
     x.status !== "completed" &&
     x.status !== "failed" &&
-    x.status !== "cancelled"
+    x.status !== "cancelled" &&
+    !(allowPending && x.status === "pending_prediction")
   )
     throw new Error("Invalid delivery status");
   if (
     x.artifact === undefined ||
-    (x.status === "completed" && x.artifact === null)
+    ((x.status === "completed" || x.status === "pending_prediction") &&
+      x.artifact === null)
   )
     throw new Error("Missing delivery artifact state");
   if (x.artifact !== null) obj(x.artifact);

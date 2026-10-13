@@ -10,6 +10,7 @@ import { createBasicProfile } from "./profile";
 import { better } from "./protocol";
 import type { ModelingRecord } from "./records";
 import { runModelingSession } from "./run-session";
+import { type BenchmarkRuntimeOptions, runBenchmarkModeling } from "./run-v2";
 import { createValidationPlan } from "./validation";
 
 export interface ModelingOptions {
@@ -25,6 +26,7 @@ export interface ModelingOptions {
   delivery?: typeof deliver;
   createRecord?: typeof ModelingRecord.create;
   prepareProfile?: typeof createBasicProfile;
+  benchmark?: BenchmarkRuntimeOptions;
 }
 export async function runModeling(o: ModelingOptions) {
   const start = performance.now(),
@@ -33,6 +35,8 @@ export async function runModeling(o: ModelingOptions) {
     edaProfile = validateProfile(o.edaProfile);
   if (profile.id !== task.model_profile || edaProfile.id !== task.eda_profile)
     throw new Error("Profile/task mismatch");
+  if (task.schema_version === 4)
+    return runBenchmarkModeling({ ...o, task, start });
   const data = await loadDataset(task.dataset_root),
     protocol = datasetProtocol(data.dataset);
   const validationPlan = createValidationPlan(

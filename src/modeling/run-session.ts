@@ -43,6 +43,8 @@ import {
 } from "./workflow";
 
 export interface ModelingRuntime<S extends ModelingScore> {
+  completion?: "model_frozen" | "completed";
+  preparation?: unknown;
   dataset: unknown;
   protocol: ModelingProtocol;
   validationPlan: ValidationPlan;
@@ -84,6 +86,9 @@ export interface ModelingRuntime<S extends ModelingScore> {
     };
     signal: AbortSignal;
     remaining: () => number;
+    onFrozen: (value: unknown) => Promise<void>;
+    onPredictionStage: (id: string) => Promise<void>;
+    onPredictionResult: (value: unknown) => Promise<void>;
   }) => Promise<unknown>;
 }
 export interface SessionOptions {
@@ -155,6 +160,9 @@ export async function runModelingSession<S extends ModelingScore>(
       {
         task,
         dataset: runtime.dataset,
+        ...(runtime.preparation === undefined
+          ? {}
+          : { preparation: runtime.preparation }),
         protocol,
         validation_plan: validationPlan,
         validation_plan_sha256: contextIdentity(validationPlan).sha256,
@@ -189,6 +197,7 @@ export async function runModelingSession<S extends ModelingScore>(
   let deliveryStatus:
     | "not_started"
     | "running"
+    | "pending_prediction"
     | "completed"
     | "failed"
     | "cancelled" = "not_started";
@@ -466,11 +475,40 @@ export async function runModelingSession<S extends ModelingScore>(
       },
       signal,
       remaining,
+      onFrozen: async (value) => {
+        artifact = value;
+        await record.event("model_frozen", {}, value);
+        await record.save(state());
+      },
+      onPredictionStage: async (id) => {
+        await record.event("child_intent", {
+          child_id: id,
+          purpose: "frozen_prediction",
+        });
+      },
+      onPredictionResult: async (value) => {
+        await record.event("frozen_prediction_result", {}, value);
+        const prediction = obj(value);
+        if (prediction.stage !== null && prediction.stage !== undefined) {
+          const stage = obj(prediction.stage);
+          await record.event("child_result", {
+            child_id: stage.run_id,
+            status: stage.status,
+            purpose: "frozen_prediction",
+          });
+        }
+      },
     });
     checkExecution();
-    deliveryStatus = "completed";
-    status = "completed";
-    reason = "delivery_validated";
+    deliveryStatus =
+      runtime.completion === "model_frozen"
+        ? "pending_prediction"
+        : "completed";
+    status = runtime.completion ?? "completed";
+    reason =
+      runtime.completion === "model_frozen"
+        ? "model_frozen"
+        : "delivery_validated";
   };
   try {
     await record.event("run_started");
