@@ -28,6 +28,8 @@
 | 预测冻结与两基准注册 | 合成 DSBench/TabArena 批次真实 Docker 训练、预测、导出、inspect、定向清理和移走原生模型后的重评通过（28 项断言、69.12 秒）；26 个适配/CLI/记录/报告回归通过（177 项断言） | 两批次均无付费 API、未复用历史预测；实际 seed=42 派生自准备 seed=17。9 MiB 预测限额与 8 GiB 模型身份引用测试通过；篡改文件拒绝；真实数据与正式实验仍待后续验收 |
 | 真实 LLM、正式研究实验 | 未运行 | 后续需要明确任务、方法、模型和预算 |
 
+统一评测接入后的分析回归：`bun test tests/unit/evaluation-benchmark.test.ts tests/unit/evaluation-dsbench.test.ts tests/unit/evaluation-dacomp.test.ts tests/unit/evaluation-compat.test.ts tests/unit/evaluation-report.test.ts tests/unit/evaluation-cli.test.ts` 退出 0，20 例、135 项断言通过；包含三套分析协议、受控裁判、完整分母、v1 冻结交付重评及哈希保持。未调用真实 LLM。
+
 ## 数据规模检查
 
 命令：`bun run test:modeling:scale`。此次直接运行等价的

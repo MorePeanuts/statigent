@@ -8,6 +8,8 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | statigent-eda | text、report | unified（trajectory-v1） | 现有 model profile | Python 执行，非模型采样保证 | Docker | 请求日志与模型返回用量 |
 | container-command | text、report | none | 无模型，首版不联网 | 由协议提供 | Docker | 无模型调用时不适用 |
+| statigent-modeling | predictions | none | 同一 profile 供建模与子 EDA 使用 | 内部分割与实际拟合 | Docker | 只结算已审计原生父账 |
+| deterministic-modeling | predictions | none | 固定预处理和决策树，无付费 LLM | 内部分割与实际拟合 | Docker | 付费调用不适用，原生训练次数另记 |
 
 模型预算包含尝试次数、token 停止阈值；响应可能使 token 超出阈值，阈值不是账单硬上限。相同智能体可以注册多个配置分别比较。分析适配器接受 text/report；`statigent-modeling` 与 `deterministic-modeling` 接受 predictions。
 
@@ -54,6 +56,24 @@ bun run evaluate prepare --config configs/evaluations/dsbench-modeling-prepare.j
 | `dataset.json`、`preparation-cost.json` | 受信调度端使用的身份、限额、哈希及成本事实 |
 
 这些目录名不是安全沙箱。实际执行必须按阶段只挂载白名单文件，不能把准备根目录整体挂载给智能体。
+
+准备后的批次在 `benchmark.options` 显式声明 `prepared_root`、`datasets`（任务 ID 到相对准备目录的映射）和私有原始材料根 `data_root`。`benchmark.version` 必须等于该组准备数据的 `source_revision`，不能混用来源版本。两套基准分别建批次；TabArena 固定 r0f0。
+
+原生 agent 的 `options` 使用 `image`、`method`、`confirmation`、`resource_version`、`budget`、`limits`。四种方法为 `no_eda`、`initial_eda`、`adaptive_eda`、`collaborative`；确定性验收只接受 `no_eda`。`model_attempts`、`total_tokens`、`task_timeout_ms` 由统一父预算控制，不能在原生 options 中重复覆盖；输入发布及内部划分准备消耗剩余时间。确认/最终拟合预留不随余额缩小，余额不足时在首个模型请求前拒绝。子 EDA 已计入原生父账，批次不得再相加；未知用量阻止后续受预算约束派发。
+
+重复实验使用 `seed + repetition`。种子不等于准备种子时，只在运行目录派生内部划分，冻结外层成员和数据字节，记录 `dataset-seed-v1` 身份与独立准备耗时；显式内部划分保持原成员。若类别覆盖不满足协议则失败，不重新抽种子。关闭跨单元缓存，每个确定性单元也必须实际训练和预测。
+
+```bash
+# CONFIG 是显式选择上述准备目录、任务、agent、种子及有限预算的批次配置。
+bun run evaluate plan --config CONFIG
+bun run evaluate run --config CONFIG --root runs/evaluations
+bun run evaluate inspect EVALUATION_ID --root runs/evaluations
+bun run evaluate score EVALUATION_ID --root runs/evaluations
+```
+
+`plan` 只读校验准备数据和评分资源，不训练或调用模型。成功交付恰含 `predictions.csv`、`export.csv`、`prediction-manifest.json`（文件名由输出契约冻结）；模型保留在原生目录，清单记录模型、原生交付和预测哈希。受信导出器按发布行序还原 DSBench 列，TabArena 导出源行号及原尺度预测/正类概率/完整类别概率。文件缺失、超限、集合变化或篡改均拒绝。`score` 生成新的评分身份，读取冻结预测及私有标签/参考，不读取模型，不改变原交付及原评分。
+
+逐题原生值保留在 `score.details.native` 和 CSV 的 `native_value`，不跨任务平均异尺度指标。主汇总仅包含完成率及 DSBench RPG。执行失败计完成率 0、RPG 0；未运行或评分材料/计算错误使完整汇总为 null。RPG 不截断大于 1 的结果；TabArena 官方误差映射另列，固定官方环境差分是否实际执行须另看验收记录。
 
 ## 契约版本（现有评测 v2）
 
