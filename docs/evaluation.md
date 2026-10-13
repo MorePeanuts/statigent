@@ -69,11 +69,14 @@ bun run evaluate plan --config CONFIG
 bun run evaluate run --config CONFIG --root runs/evaluations
 bun run evaluate inspect EVALUATION_ID --root runs/evaluations
 bun run evaluate score EVALUATION_ID --root runs/evaluations
+bun run evaluate compare EVALUATION_ID --score-id SCORE_ID --root runs/evaluations
 ```
 
 `plan` 只读校验准备数据和评分资源，不训练或调用模型。成功交付恰含 `predictions.csv`、`export.csv`、`prediction-manifest.json`（文件名由输出契约冻结）；模型保留在原生目录，清单记录模型、原生交付和预测哈希。受信导出器按发布行序还原 DSBench 列，TabArena 导出源行号及原尺度预测/正类概率/完整类别概率。文件缺失、超限、集合变化或篡改均拒绝。`score` 生成新的评分身份，读取冻结预测及私有标签/参考，不读取模型，不改变原交付及原评分。
 
 逐题原生值保留在 `score.details.native` 和 CSV 的 `native_value`，不跨任务平均异尺度指标。主汇总仅包含完成率及 DSBench RPG。执行失败计完成率 0、RPG 0；未运行或评分材料/计算错误使完整汇总为 null。RPG 不截断大于 1 的结果；TabArena 官方误差映射另列，固定官方环境差分是否实际执行须另看验收记录。
+
+`compare` 是独立、零模型调用的配对导出入口，只读指定既有 `SCORE_ID`，在 `comparisons/<id>/` 写入 `pairs.json`、`pairs.csv`。按任务、配置、种子、重复保留所有计划行，包括失败及未运行；记录原评分文件哈希，不生成排行榜或启用 `cross_agent_summary`。搜索结束原因、交付/预测/独立复现状态、确认、预算、父账、墙钟和准备复用身份分列。报告生成不会执行独立复现，复现状态明确为 `not_run`，实际复现记录及额外成本须另行关联。
 
 ## 契约版本（现有评测 v2）
 
