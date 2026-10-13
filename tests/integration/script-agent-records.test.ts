@@ -157,3 +157,65 @@ test("legacy image replays through its original persistent entrypoint without mo
     "persistent-kernel",
   );
 }, 120000);
+
+test("script replay failure never borrows missing files from original artifacts", async () => {
+  const { ScriptSession } = await import("../../src/execution/script-session");
+  const { FakeScriptTransport } = await import("../helpers/script");
+  const { DEFAULT_LIMITS } = await import("../../src/execution/protocol");
+  const { RunRecorder } = await import("../../src/records/store");
+  const { exportNotebooks } = await import("../../src/records/notebook");
+  const { dockerCommand } = await import("../../src/execution/docker");
+  const root = await mkdtemp(resolve("runs/script-replay-missing-"));
+  const image =
+    process.env.STATIGENT_TEST_IMAGE ?? "statigent-runtime:fresh-script";
+  const info = JSON.parse(await dockerCommand(["image", "inspect", image]))[0];
+  // An intentionally synthetic success record isolates replay's dependency rule.
+  // Its artifact exists only in the original record, never in allowed inputs.
+  const config = {
+    backend: "fresh-script" as const,
+    run_id: "synthetic-original",
+    image,
+    input_root: resolve("tests/fixtures"),
+    inputs: [],
+    staging_root: join(root, "staging"),
+    seed: 42,
+    limits: DEFAULT_LIMITS,
+  };
+  const recorder = await RunRecorder.create({
+    runRoot: root,
+    runId: config.run_id,
+    config: { ...config },
+    image: { id: info.Id, platform: `${info.Os}/${info.Architecture}` },
+    inputs: [],
+    seed: 42,
+    environment: { fixture: "synthetic source for replay dependency failure" },
+  });
+  const session = await ScriptSession.create(
+    config,
+    recorder,
+    new FakeScriptTransport(),
+  );
+  await session.execute("print(open('original-only.txt').read())");
+  await recorder.onArtifact({
+    path: "original-only.txt",
+    mime_type: "text/plain",
+    data_base64: Buffer.from("must not be reused").toString("base64"),
+  });
+  await session.close();
+  recorder.manifest.image = {
+    id: info.Id,
+    platform: `${info.Os}/${info.Architecture}`,
+  };
+  await recorder.finish("completed");
+  await exportNotebooks(recorder.directory);
+  const before = await hashes(recorder.directory);
+  const replay = await replayRun(recorder.directory, root);
+  expect(replay.status).toBe("failed");
+  expect(replay.reasons.join()).toContain("original-only.txt");
+  expect(
+    (await readManifest(replay.directory ?? "")).artifacts.some(
+      (a) => a.source_path === "original-only.txt",
+    ),
+  ).toBe(false);
+  expect(await hashes(recorder.directory)).toEqual(before);
+}, 120000);
