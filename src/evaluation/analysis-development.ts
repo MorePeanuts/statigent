@@ -12,7 +12,7 @@ const AGENT = {
   model_profile: "deepseek-flash",
   require_seed: true,
 };
-// The agent reserves its 65536-token output limit before each request, so thresholds sit well above it.
+// 冻结的开发额度保持原值；请求输出上限可按真实剩余额度向下裁剪。
 const TASK_BUDGET = {
   timeout_ms: 600000,
   model_attempts: 12,

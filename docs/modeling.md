@@ -111,7 +111,7 @@ bun run test:smoke:modeling
 
 ## 每次 EDA 的申请、分配与消费
 
-`analyze` 必须包含正整数 `requested_budget:{task_timeout_ms,total_tokens,executions}` 和 `budget_reason`。例如 90,000 毫秒、100,000 token、3 次执行可用于一次聚焦残差检查；额度是否足够还取决于输入长度和模型最大输出，过小可能在模型调用预检时耗尽。
+`analyze` 必须包含正整数 `requested_budget:{task_timeout_ms,total_tokens,executions}` 和 `budget_reason`。例如 90,000 毫秒、100,000 token、3 次执行可用于一次聚焦残差检查；额度是否足够还取决于多轮输入长度与实际输出。模型请求会按剩余 token 额度向下裁剪输出上限，不强制每轮预留完整 profile 上限；过小的额度仍可能在输入预检或响应长度限制处失败，详见 [EDA 预算](agent.md)。
 
 实际额度逐项取申请、配置上限、父剩余量的最小值；时间还须扣除最终交付预留。模型尝试数由宿主按配置和父剩余量分配。`eda_executions` 是整个父任务累计上限，不会每次重置。任一必要维度为零则拒绝动作，超大申请则裁剪，并把 `requested/effective/remaining/limits/clipped` 返回建模智能体。
 

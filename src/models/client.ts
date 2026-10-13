@@ -185,6 +185,7 @@ export interface ModelClient {
     messages: Message[],
     tools: readonly unknown[],
     images?: ImageLimits,
+    maxOutputTokens?: number,
   ): string;
   send(
     body: string,
@@ -246,10 +247,14 @@ export class ChatClient implements ModelClient {
     messages: Message[],
     tools: readonly unknown[],
     images: ImageLimits = DEFAULT_IMAGE_LIMITS,
+    maxOutputTokens = this.profile.generation.max_output_tokens,
   ): string {
     const p = this.profile;
+    integer(maxOutputTokens, "max_output_tokens");
+    if (maxOutputTokens > p.generation.max_output_tokens)
+      throw new Error("max_output_tokens exceeds profile limit");
     const generation: Record<string, unknown> = {
-      max_tokens: p.generation.max_output_tokens,
+      max_tokens: maxOutputTokens,
     };
     if (p.provider === "deepseek") {
       generation.thinking = { type: p.generation.thinking };

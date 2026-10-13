@@ -14,6 +14,24 @@ import {
 } from "../../src/models/config";
 
 const profile = validateProfile(models[0]);
+test("per-request output limit is positive, capped by profile and does not mutate later calls", () => {
+  const client = new ChatClient(profile, { [profile.api_key_env]: "fake" });
+  expect(
+    JSON.parse(client.requestBody([], [], undefined, 8192)).max_tokens,
+  ).toBe(8192);
+  expect(JSON.parse(client.requestBody([], [])).max_tokens).toBe(
+    profile.generation.max_output_tokens,
+  );
+  for (const limit of [
+    0,
+    -1,
+    1.5,
+    NaN,
+    Infinity,
+    profile.generation.max_output_tokens + 1,
+  ])
+    expect(() => client.requestBody([], [], undefined, limit)).toThrow();
+});
 const response = (extra = {}) => ({
   id: "server-1",
   model: "returned-version",

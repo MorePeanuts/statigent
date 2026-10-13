@@ -25,6 +25,7 @@ import {
   call,
   fakeRuntime,
   finish,
+  lastFeedback,
   profile,
   reply,
   ScriptClient,
@@ -119,6 +120,76 @@ test("two delegated subtasks keep executor history and isolate planner messages 
       ).toBe(2);
     },
     { executions: 2 },
+  );
+});
+
+test("failed-cell evidence is corrected within a small shared token budget without extra execution", async () => {
+  await scenario(
+    (b, i) => {
+      if (i === 0)
+        return reply([
+          call("delegate_analysis", { task: "Check", constraints: [] }),
+        ]);
+      if (i === 1 || i === 2)
+        return reply([
+          call("execute_python", {
+            code: i === 1 ? "x=1" : "print(x); raise KeyError('age_bucket')",
+          }),
+        ]);
+      if (i === 3) {
+        expect(lastFeedback(b).evidence_refs).toEqual(["cell-1"]);
+        return reply([returned(b, ["cell-2"])]);
+      }
+      if (i === 4) {
+        const feedback = lastFeedback(b);
+        expect(feedback.invalid_evidence_refs).toEqual(["cell-2"]);
+        expect(feedback.valid_evidence_refs).toEqual(["cell-1"]);
+        expect(obj(feedback.remaining).executions).toBe(0);
+        expect(feedback.correction).toContain("unrelated valid IDs");
+        return reply([
+          returned(b, ["cell-1"], {
+            status: "partial",
+            diagnostic: "Failed computation omitted; no executions left",
+            limitations: ["Only the first computation is supported"],
+          }),
+        ]);
+      }
+      return reply([finish("cell-1")]);
+    },
+    async (r, client, runtime) => {
+      expect(r.status).toBe("completed");
+      expect(runtime.state.codes).toHaveLength(2);
+      expect(client.bodies).toHaveLength(6);
+      const events = await readEvents(r.directory);
+      const budgets = events.filter((e) => e.type === "agent_budget");
+      expect(budgets).toHaveLength(6);
+      for (const [i, body] of client.bodies.entries()) {
+        expect(Number(body.max_tokens)).toBeGreaterThan(0);
+        expect(Number(body.max_tokens)).toBeLessThan(
+          profile.generation.max_output_tokens,
+        );
+        expect(
+          Buffer.byteLength(JSON.stringify(body)) +
+            Number(body.max_tokens) +
+            i * 15,
+        ).toBeLessThanOrEqual(50000);
+        expect(budgets[i]?.max_output_tokens).toBe(body.max_tokens);
+        expect(budgets[i]?.configured_max_output_tokens).toBe(
+          profile.generation.max_output_tokens,
+        );
+      }
+      const manifest = await readManifest(r.directory);
+      expect(manifest.tokens).toMatchObject({ attempts: 6, total_tokens: 90 });
+      expect(manifest.collaboration?.roles.planner.tokens.total_tokens).toBe(
+        30,
+      );
+      expect(manifest.collaboration?.roles.executor.tokens.total_tokens).toBe(
+        60,
+      );
+      expect(manifest.collaboration?.subtasks[0]?.status).toBe("partial");
+    },
+    { executions: 2, total_tokens: 50000 },
+    [{}, { status: "error", partial_state_possible: true }],
   );
 });
 
