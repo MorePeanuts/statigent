@@ -93,4 +93,11 @@ uv run python benchmarks/download_xet_resumable.py
 
 DSBench 使用官方发布的预处理数据，TabArena-Lite 使用 OpenML 数据与固定划分；当前下载流程无需 Kaggle 账号或接受竞赛规则。两套建模基准均在本地评分。
 
+建模准备器另有锁定的 `data` 依赖组：`uv sync --frozen --group data` 安装
+`liac-arff==2.5.0`（保留名义字符串和缺失标记的 ARFF 解码）与
+`pyarrow==24.0.0`（Parquet 分批读取）。它与上面的历史下载校验环境独立，
+不引入 TabArena 官方训练依赖，也不加入默认 Docker 运行依赖。
+准备器按原始行号验证 r0f0 成员，写出 search、final-prediction、evaluator
+三个分区和来源映射；类别只从 TRAIN 成员确定。数据准备通过不代表模型运行验收通过。
+
 数据、上游代码、工具缓存及本机运行产物（进度、PID、错误记录、下载校验报告）已在本目录 `.gitignore` 中忽略；Git 保留文档、下载器、来源版本、任务选择清单和文件校验值。状态报告链接指向本地运行后生成的文件，新克隆的仓库中尚不存在。官方许可/说明随对应资源保存，不将第三方数据重新发布。
