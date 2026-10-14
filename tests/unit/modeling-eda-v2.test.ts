@@ -255,6 +255,15 @@ test("multi-target EDA preserves every target, phase and source through explore/
       expect(modelingPrompt(method, 2)).toContain(
         "at module level, not inside build_pipeline",
       );
+      expect(modelingPrompt(method, 2)).toContain(
+        "any unsigned 32-bit integer seed",
+      );
+      expect(modelingPrompt(method, 2)).toContain(
+        "(int(seed) * 10 + i) % (2**32)",
+      );
+      expect(modelingPrompt(method, 1)).not.toContain(
+        "any unsigned 32-bit integer seed",
+      );
     }
   } finally {
     await rm(root, { recursive: true, force: true });
