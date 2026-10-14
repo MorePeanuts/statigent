@@ -4,7 +4,7 @@
 
 ## 1. 方法来源、可选环境与计算镜像
 
-- [ ] 1.1 建立四种方法的版本化来源/配置 Schema 和清单，登记 local-method/upstream-adapted、论文、许可、提示与偏离；验证未知字段/未知方法被拒绝，默认矩阵只含已确认的三种分析和四种建模 baseline。
+- [x] 1.1 建立四种方法的版本化来源/配置 Schema 和清单，登记 local-method/upstream-adapted、论文、许可、提示与偏离；验证未知字段/未知方法被拒绝，默认矩阵只含已确认的三种分析和四种建模 baseline。
 - [ ] 1.2 固定官方 AutoGen 0.2 代版本及 DatawiseAgent commit，建立分别锁定的 uv 环境和源码身份校验；以无模型导入探针验证所需客户端、执行器和阶段接口，文档注明精确版本、安装入口及缺环境诊断。
 - [ ] 1.3 固定 AutoGluon 可选环境和 CPU 依赖，在独立环境以小型合成数据验证实际 fit/save/load/predict、有效预设及模型集合；提交锁文件和环境说明，不复用 TabArena 兼容环境的浮动训练配置。
 - [ ] 1.4 构建共同 CPU 计算镜像及 AutoGluon 镜像，锁定 sklearn/LightGBM/CatBoost/XGBoost 等实际依赖与镜像身份；执行无网络导入/训练探针，验证非 root、CPU/内存/写入限额，记录与各方法原环境的差异。
