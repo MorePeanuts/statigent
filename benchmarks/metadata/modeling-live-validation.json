@@ -1,0 +1,1654 @@
+{
+  "schema_version": 1,
+  "scope": "authorized-first-attempt-representative-modeling-live-smoke",
+  "model_profile": "deepseek-flash",
+  "research_experiment": false,
+  "automatic_retry": false,
+  "scopes": [
+    {
+      "name": "modeling-benchmark-live-smoke-v1",
+      "status": "incomplete",
+      "scope": {
+        "schema_version": 1,
+        "name": "modeling-benchmark-live-smoke-v1",
+        "config_files": [
+          "configs/evaluations/modeling-smoke/dsbench-modeling.json",
+          "configs/evaluations/modeling-smoke/tabarena-lite.json"
+        ],
+        "models_file": "configs/models.json",
+        "allowed_tasks": [
+          "dsbench-modeling/titanic",
+          "tabarena-lite/363612"
+        ],
+        "allowed_methods": [
+          "no_eda",
+          "collaborative"
+        ],
+        "model_profile": "deepseek-flash",
+        "seed": 17,
+        "resource_version": "modeling-benchmark-live-smoke-v1"
+      },
+      "scope_sha256": "9e22bf1d1da7fb16a8b68e87a53f4fe334ee62f07466891c0571cba3ab7db307",
+      "preflight_code": {
+        "commit": "5f7e25850b0cd3327801357e212c2bde5b8ad190",
+        "dirty": false,
+        "bun": "1.4.2"
+      },
+      "thresholds": {
+        "model_attempts": 48,
+        "total_tokens": 640000,
+        "timeout_ms": 2400000
+      },
+      "result": {
+        "path": "runs/modeling-live-smoke-v1/result.json",
+        "sha256": "d7b68082fb8631c7e2ac0399a3fef4179cfbdd454dab754ea2ec40a6f671b4d6"
+      }
+    },
+    {
+      "name": "modeling-benchmark-type-coverage-v1",
+      "status": "incomplete",
+      "scope": {
+        "schema_version": 1,
+        "name": "modeling-benchmark-type-coverage-v1",
+        "config_files": [
+          "configs/evaluations/modeling-smoke-type-coverage/dsbench-modeling.json",
+          "configs/evaluations/modeling-smoke-type-coverage/tabarena-lite.json"
+        ],
+        "models_file": "configs/models.json",
+        "allowed_tasks": [
+          "dsbench-modeling/playground-series-s3e9",
+          "dsbench-modeling/playground-series-s4e2",
+          "dsbench-modeling/playground-series-s3e5",
+          "dsbench-modeling/playground-series-s3e13",
+          "dsbench-modeling/playground-series-s3e18",
+          "dsbench-modeling/playground-series-s4e3",
+          "tabarena-lite/363621",
+          "tabarena-lite/363685"
+        ],
+        "allowed_methods": [
+          "no_eda",
+          "collaborative"
+        ],
+        "model_profile": "deepseek-flash",
+        "seed": 17,
+        "resource_version": "modeling-benchmark-live-smoke-v1"
+      },
+      "scope_sha256": "9b4342e079b7ce680a8ee7e7a8741512bb10fd5bde504e9a22057903df29a935",
+      "preflight_code": {
+        "commit": "7cf07e4d204232cd0e9fec536229b97bae97b09b",
+        "dirty": true,
+        "bun": "1.4.2"
+      },
+      "thresholds": {
+        "model_attempts": 192,
+        "total_tokens": 2560000,
+        "timeout_ms": 9600000
+      },
+      "result": {
+        "path": "runs/modeling-live-type-coverage-v1/result.json",
+        "sha256": "bcc38172ee1d408d5933e4d01a6698361c3efb0f99add114e80ff52465adda86"
+      }
+    }
+  ],
+  "totals": {
+    "planned": 20,
+    "recorded": 20,
+    "completed": 4,
+    "failed": 1,
+    "reproduced": 4,
+    "collaborative_covered": 0,
+    "model_attempts": 32,
+    "total_tokens": 403284,
+    "unknown_attempts": 1,
+    "wall_ms": 918993,
+    "scoring_ms": 4497,
+    "reproduction_ms": 39309.700584000035,
+    "training_attempts": 22,
+    "eda_calls": 1,
+    "currency_cost": "not_computed"
+  },
+  "coverage": [
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e9",
+      "type": "regression",
+      "methods": [
+        {
+          "method": "no_eda",
+          "status": "completed",
+          "reproduction": "passed",
+          "collaboration": "not_covered"
+        },
+        {
+          "method": "collaborative",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "titanic",
+      "type": "binary",
+      "methods": [
+        {
+          "method": "no_eda",
+          "status": "completed",
+          "reproduction": "passed",
+          "collaboration": "not_covered"
+        },
+        {
+          "method": "collaborative",
+          "status": "failed",
+          "reproduction": "not_run",
+          "collaboration": "not_covered"
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e2",
+      "type": "multiclass",
+      "methods": [
+        {
+          "method": "no_eda",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        },
+        {
+          "method": "collaborative",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e5",
+      "type": "ordinal",
+      "methods": [
+        {
+          "method": "no_eda",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        },
+        {
+          "method": "collaborative",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e13",
+      "type": "top3",
+      "methods": [
+        {
+          "method": "no_eda",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        },
+        {
+          "method": "collaborative",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e18",
+      "type": "two-target",
+      "methods": [
+        {
+          "method": "no_eda",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        },
+        {
+          "method": "collaborative",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e3",
+      "type": "seven-target",
+      "methods": [
+        {
+          "method": "no_eda",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        },
+        {
+          "method": "collaborative",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        }
+      ]
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363612",
+      "type": "regression",
+      "methods": [
+        {
+          "method": "no_eda",
+          "status": "completed",
+          "reproduction": "passed",
+          "collaboration": "not_covered"
+        },
+        {
+          "method": "collaborative",
+          "status": "completed",
+          "reproduction": "passed",
+          "collaboration": "not_covered"
+        }
+      ]
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363621",
+      "type": "binary",
+      "methods": [
+        {
+          "method": "no_eda",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        },
+        {
+          "method": "collaborative",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        }
+      ]
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363685",
+      "type": "multiclass",
+      "methods": [
+        {
+          "method": "no_eda",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        },
+        {
+          "method": "collaborative",
+          "status": "not_run",
+          "reproduction": "not_run",
+          "collaboration": "not_observed"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Representative types only, not all 103 candidates or every metric under a live agent.",
+    "First failures retained; no task replacement or automatic rerun.",
+    "Independent reproduction adds time but no fits or model calls.",
+    "Parent usage already includes child EDA; no double counting.",
+    "Known token and attempt totals are not a currency estimate.",
+    "Input data preparation was explicitly reused; original cost is in modeling-preparation-validation.json."
+  ],
+  "units": [
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "titanic",
+      "type": "binary",
+      "method": "no_eda",
+      "seed": 17,
+      "evaluation_id": "7565087f-fff5-4433-bb50-6927af69b8ee",
+      "unit_id": "unit-000001",
+      "score_id": "001217b7-5552-4024-b18a-f5900d69ab0f",
+      "report": {
+        "path": "runs/modeling-live-smoke-v1/evaluations/7565087f-fff5-4433-bb50-6927af69b8ee/scores/001217b7-5552-4024-b18a-f5900d69ab0f/report.json",
+        "sha256": "d2472d7afa75f2e4852de38551d31c2b5ba60c8323cf7d336843090fc2173242"
+      },
+      "native_record": {
+        "path": "runs/modeling-live-smoke-v1/evaluations/7565087f-fff5-4433-bb50-6927af69b8ee/native/unit-000001/b696d15e-98b3-477a-844d-bf9a19f1f6d6/modeling.json",
+        "sha256": "e343666ee0cc909b412543f93efde7252a56aaa78673572fe2d7f73aac19f183"
+      },
+      "code": {
+        "commit": "5f7e25850b0cd3327801357e212c2bde5b8ad190",
+        "dirty": false
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      },
+      "status": "completed",
+      "reason": "delivery_validated",
+      "scoring_status": "scored",
+      "native_metric": "accuracy-v1",
+      "native_value": 0.8212290502793296,
+      "native_components": [],
+      "rpg": 0.6444444444444444,
+      "completion": 1,
+      "search_end": {
+        "kind": "protected",
+        "reason": "token_preflight"
+      },
+      "delivery_status": "completed",
+      "prediction_status": "completed",
+      "trajectory": {
+        "search_end": {
+          "kind": "protected",
+          "reason": "token_preflight"
+        },
+        "delivery_status": "completed",
+        "completion": "protected",
+        "accounting": "known",
+        "collaboration": "not_covered",
+        "analysis_calls": 0,
+        "successful_analyses": 0,
+        "analysis_followups": [],
+        "analysis_experiment_links": [],
+        "analysis_ids": [],
+        "core_rejections": [
+          {
+            "sequence": 20,
+            "reason": "Error: Exactly one new tool call is required"
+          },
+          {
+            "sequence": 25,
+            "reason": "Error: Invalid code"
+          }
+        ],
+        "attachment_warnings": [],
+        "unproductive_executions": [],
+        "protection_reason": "token_preflight"
+      },
+      "native_identity": {
+        "run_id": "b696d15e-98b3-477a-844d-bf9a19f1f6d6",
+        "frozen_id": "8c4efcc89d0130f22274bd5ecb31db9c5a0cd1c84161565b3410778afe1536f3",
+        "sha256": "a387fa582f446085d89c94c6b0f51f8df10e81ef254b46a221cbabfefec23865",
+        "bytes": 112699,
+        "delivery_sha256": "1bef3817eb4f262e6ca65ae0ce441375996901a58fcb3cb4f757ae5624904a8c"
+      },
+      "prediction_files": [
+        {
+          "path": "export.csv",
+          "bytes": 1249,
+          "sha256": "fc72f843b4f83a60c93ae187374397a6c601ec0a441866deba6de713988b6751"
+        },
+        {
+          "path": "prediction-manifest.json",
+          "bytes": 3247,
+          "sha256": "b070e64b8ec5fdcd10a0062e2932557577d12f2516215d93b4fe22621f271b54"
+        },
+        {
+          "path": "predictions.csv",
+          "bytes": 2148,
+          "sha256": "3bb941a17fc3efb47998029b43aaeb120a34386d4435090fc45ebf91de2fbbea"
+        }
+      ],
+      "usage": {
+        "attempts": 6,
+        "total_tokens": 87221,
+        "unknown_attempts": 0,
+        "source": "measured",
+        "completeness": "complete",
+        "native": {
+          "tokens": {
+            "status": "known",
+            "input_tokens": 79494,
+            "output_tokens": 7727,
+            "total_tokens": 87221,
+            "attempts": 6,
+            "unknown_attempts": 0,
+            "elapsed_ms": 39319.507917,
+            "currency_cost": "not_computed"
+          },
+          "modeling": {
+            "status": "known",
+            "input_tokens": 79494,
+            "output_tokens": 7727,
+            "total_tokens": 87221,
+            "attempts": 6,
+            "unknown_attempts": 0,
+            "elapsed_ms": 39319.507917,
+            "currency_cost": "not_computed"
+          },
+          "children": {},
+          "training_attempts": 5,
+          "final_training_attempts": 1,
+          "confirmation_training_attempts": 0,
+          "eda_calls": 0,
+          "eda_executions": 0,
+          "remaining_ms": 433003,
+          "exploration_ms": 283003
+        }
+      },
+      "elapsed_ms": 168289,
+      "scoring_elapsed_ms": 1220,
+      "budget_status": "reduced",
+      "effective_budget": {
+        "timeout_ms": 599970,
+        "model_attempts": 12,
+        "total_tokens": 160000
+      },
+      "reproduction": {
+        "status": "passed",
+        "record": {
+          "path": "runs/modeling-live-smoke-v1/reproductions/d23a91c3-df7a-4f8e-b713-b9e802675af7/reproduction.json",
+          "sha256": "02e25136e531e06eade6c398e94d39c4d65be1d1e584852db44f30d8c31bd7d8"
+        },
+        "comparison": {
+          "matched": true,
+          "differences": [],
+          "rows": 179,
+          "protocol_sha256": "9661cc4c2d08615c15ba908598295de45f091685608b81a1eecf00d06f1c86af",
+          "reference_sha256": "3bb941a17fc3efb47998029b43aaeb120a34386d4435090fc45ebf91de2fbbea",
+          "actual_sha256": "3bb941a17fc3efb47998029b43aaeb120a34386d4435090fc45ebf91de2fbbea",
+          "tolerance": {
+            "atol": 1e-8,
+            "rtol": 0.000001
+          }
+        },
+        "elapsed_ms": 11050.723209000018,
+        "calls": {
+          "models": 0,
+          "fits": 0,
+          "predictions": 1
+        }
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "titanic",
+      "type": "binary",
+      "method": "collaborative",
+      "seed": 17,
+      "evaluation_id": "7565087f-fff5-4433-bb50-6927af69b8ee",
+      "unit_id": "unit-000002",
+      "score_id": "001217b7-5552-4024-b18a-f5900d69ab0f",
+      "report": {
+        "path": "runs/modeling-live-smoke-v1/evaluations/7565087f-fff5-4433-bb50-6927af69b8ee/scores/001217b7-5552-4024-b18a-f5900d69ab0f/report.json",
+        "sha256": "d2472d7afa75f2e4852de38551d31c2b5ba60c8323cf7d336843090fc2173242"
+      },
+      "native_record": {
+        "path": "runs/modeling-live-smoke-v1/evaluations/7565087f-fff5-4433-bb50-6927af69b8ee/native/unit-000002/2d0ec3ac-404a-4a59-b825-3c9489b061e5/modeling.json",
+        "sha256": "ce03009248b1c0078a5c9a5823f79c3a8650326223d8b62ed701cf097495d95e"
+      },
+      "code": {
+        "commit": "7cf07e4d204232cd0e9fec536229b97bae97b09b",
+        "dirty": false
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      },
+      "status": "failed",
+      "reason": "response_length",
+      "scoring_status": "scored",
+      "native_metric": "accuracy-v1",
+      "native_value": null,
+      "native_components": null,
+      "rpg": 0,
+      "completion": 0,
+      "search_end": null,
+      "delivery_status": "not_delivered",
+      "prediction_status": "not_delivered",
+      "trajectory": {
+        "search_end": {
+          "kind": "failed",
+          "reason": "response_length"
+        },
+        "delivery_status": "not_started",
+        "completion": "incomplete",
+        "accounting": "known",
+        "collaboration": "not_covered",
+        "analysis_calls": 0,
+        "successful_analyses": 0,
+        "analysis_followups": [],
+        "analysis_experiment_links": [],
+        "analysis_ids": [],
+        "core_rejections": [
+          {
+            "sequence": 20,
+            "reason": "Error: Exactly one new tool call is required"
+          }
+        ],
+        "attachment_warnings": [],
+        "unproductive_executions": [],
+        "protection_reason": null
+      },
+      "native_identity": null,
+      "prediction_files": [],
+      "usage": {
+        "attempts": 5,
+        "total_tokens": 97996,
+        "unknown_attempts": 0,
+        "source": "measured",
+        "completeness": "complete",
+        "native": {
+          "tokens": {
+            "status": "known",
+            "input_tokens": 86092,
+            "output_tokens": 11904,
+            "total_tokens": 97996,
+            "attempts": 5,
+            "unknown_attempts": 0,
+            "elapsed_ms": 58075.0673329999,
+            "currency_cost": "not_computed"
+          },
+          "modeling": {
+            "status": "known",
+            "input_tokens": 86092,
+            "output_tokens": 11904,
+            "total_tokens": 97996,
+            "attempts": 5,
+            "unknown_attempts": 0,
+            "elapsed_ms": 58075.0673329999,
+            "currency_cost": "not_computed"
+          },
+          "children": {},
+          "training_attempts": 3,
+          "final_training_attempts": 0,
+          "confirmation_training_attempts": 0,
+          "eda_calls": 0,
+          "eda_executions": 0,
+          "remaining_ms": 454417,
+          "exploration_ms": 304417
+        }
+      },
+      "elapsed_ms": 145752,
+      "scoring_elapsed_ms": 98,
+      "budget_status": "reduced",
+      "effective_budget": {
+        "timeout_ms": 599975,
+        "model_attempts": 12,
+        "total_tokens": 160000
+      },
+      "reproduction": {
+        "status": "not_run",
+        "reason": "no_complete_delivery"
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363612",
+      "type": "regression",
+      "method": "no_eda",
+      "seed": 17,
+      "evaluation_id": "512a285e-4c11-4a2c-af5c-8513c761cf2b",
+      "unit_id": "unit-000001",
+      "score_id": "be6b0504-69b0-4d67-9f84-62bb446dcee0",
+      "report": {
+        "path": "runs/modeling-live-smoke-v1/evaluations/512a285e-4c11-4a2c-af5c-8513c761cf2b/scores/be6b0504-69b0-4d67-9f84-62bb446dcee0/report.json",
+        "sha256": "f0fc2391e9f0001a02f619db9cf157cc7b82f51e8afe8f95cdca9a095d3cdadd"
+      },
+      "native_record": {
+        "path": "runs/modeling-live-smoke-v1/evaluations/512a285e-4c11-4a2c-af5c-8513c761cf2b/native/unit-000001/456586c4-db80-4612-8965-2a1612094114/modeling.json",
+        "sha256": "9a8eeec22bcf409a564b4a7d6432b58af13a04c177b6bd52b6e80d4b685fe8b8"
+      },
+      "code": {
+        "commit": "7cf07e4d204232cd0e9fec536229b97bae97b09b",
+        "dirty": false
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      },
+      "status": "completed",
+      "reason": "delivery_validated",
+      "scoring_status": "scored",
+      "native_metric": "rmse-v1",
+      "native_value": 1.5840379062286234,
+      "native_components": [],
+      "rpg": null,
+      "completion": 1,
+      "search_end": {
+        "kind": "protected",
+        "reason": "token_preflight"
+      },
+      "delivery_status": "completed",
+      "prediction_status": "completed",
+      "trajectory": {
+        "search_end": {
+          "kind": "protected",
+          "reason": "token_preflight"
+        },
+        "delivery_status": "completed",
+        "completion": "protected",
+        "accounting": "known",
+        "collaboration": "not_covered",
+        "analysis_calls": 0,
+        "successful_analyses": 0,
+        "analysis_followups": [],
+        "analysis_experiment_links": [],
+        "analysis_ids": [],
+        "core_rejections": [],
+        "attachment_warnings": [],
+        "unproductive_executions": [
+          {
+            "id": "1a4b63d5-2def-431b-b8e4-38025106a64c",
+            "status": "failed",
+            "reason": "timed_out:"
+          }
+        ],
+        "protection_reason": "token_preflight"
+      },
+      "native_identity": {
+        "run_id": "456586c4-db80-4612-8965-2a1612094114",
+        "frozen_id": "be02838e40c3378a9b15227baaadc00b51725d034fdfd8ce5301ed34066caad6",
+        "sha256": "7fc3a2c2ca60b04bfd62857d51c2a282dfed78ab0e230551eb8ada8b518753dc",
+        "bytes": 10516953,
+        "delivery_sha256": "bd611f6e4e2b35e716604f3ef37e872260000f4d882bacd8dd856a90ac71e5ab"
+      },
+      "prediction_files": [
+        {
+          "path": "export.csv",
+          "bytes": 12083,
+          "sha256": "4c16077f725af171018647a152142382812eb956c84a54f50a5b0f92d68e1cd8"
+        },
+        {
+          "path": "prediction-manifest.json",
+          "bytes": 3297,
+          "sha256": "f3b3a6d0f3190f24425606698f922d91578b071d22e91c0a663cbac5f8e6bf16"
+        },
+        {
+          "path": "predictions.csv",
+          "bytes": 18588,
+          "sha256": "2183f01a6b632707db015a0fbd3def87a73bf3a7c9bdad7d815c9fe14a434021"
+        }
+      ],
+      "usage": {
+        "attempts": 6,
+        "total_tokens": 95676,
+        "unknown_attempts": 0,
+        "source": "measured",
+        "completeness": "complete",
+        "native": {
+          "tokens": {
+            "status": "known",
+            "input_tokens": 83814,
+            "output_tokens": 11862,
+            "total_tokens": 95676,
+            "attempts": 6,
+            "unknown_attempts": 0,
+            "elapsed_ms": 65568.44804199977,
+            "currency_cost": "not_computed"
+          },
+          "modeling": {
+            "status": "known",
+            "input_tokens": 83814,
+            "output_tokens": 11862,
+            "total_tokens": 95676,
+            "attempts": 6,
+            "unknown_attempts": 0,
+            "elapsed_ms": 65568.44804199977,
+            "currency_cost": "not_computed"
+          },
+          "children": {},
+          "training_attempts": 7,
+          "final_training_attempts": 1,
+          "confirmation_training_attempts": 0,
+          "eda_calls": 0,
+          "eda_executions": 0,
+          "remaining_ms": 247956,
+          "exploration_ms": 97956
+        }
+      },
+      "elapsed_ms": 353349,
+      "scoring_elapsed_ms": 982,
+      "budget_status": "reduced",
+      "effective_budget": {
+        "timeout_ms": 599975,
+        "model_attempts": 12,
+        "total_tokens": 160000
+      },
+      "reproduction": {
+        "status": "passed",
+        "record": {
+          "path": "runs/modeling-live-smoke-v1/reproductions/9b784770-88d1-4b7d-a9b8-955c6a0f7e87/reproduction.json",
+          "sha256": "e4c12de109be78202462b16c52b44218d061ff131b9890be5d194509d08e7131"
+        },
+        "comparison": {
+          "matched": true,
+          "differences": [],
+          "rows": 501,
+          "protocol_sha256": "9b388038f8f19bd179ef6d0db0aa54e5594eed4d64f2e4bfc4eb6752497b06f3",
+          "reference_sha256": "2183f01a6b632707db015a0fbd3def87a73bf3a7c9bdad7d815c9fe14a434021",
+          "actual_sha256": "2183f01a6b632707db015a0fbd3def87a73bf3a7c9bdad7d815c9fe14a434021",
+          "tolerance": {
+            "atol": 1e-8,
+            "rtol": 0.000001
+          }
+        },
+        "elapsed_ms": 9624.329499999993,
+        "calls": {
+          "models": 0,
+          "fits": 0,
+          "predictions": 1
+        }
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363612",
+      "type": "regression",
+      "method": "collaborative",
+      "seed": 17,
+      "evaluation_id": "512a285e-4c11-4a2c-af5c-8513c761cf2b",
+      "unit_id": "unit-000002",
+      "score_id": "be6b0504-69b0-4d67-9f84-62bb446dcee0",
+      "report": {
+        "path": "runs/modeling-live-smoke-v1/evaluations/512a285e-4c11-4a2c-af5c-8513c761cf2b/scores/be6b0504-69b0-4d67-9f84-62bb446dcee0/report.json",
+        "sha256": "f0fc2391e9f0001a02f619db9cf157cc7b82f51e8afe8f95cdca9a095d3cdadd"
+      },
+      "native_record": {
+        "path": "runs/modeling-live-smoke-v1/evaluations/512a285e-4c11-4a2c-af5c-8513c761cf2b/native/unit-000002/f5691c99-a508-4fbc-8958-48ec543fac03/modeling.json",
+        "sha256": "f8139723c012166fd12eb7372090ccf5cbe437142dc0bc334dc5bdfd427216df"
+      },
+      "code": {
+        "commit": "7cf07e4d204232cd0e9fec536229b97bae97b09b",
+        "dirty": false
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      },
+      "status": "completed",
+      "reason": "delivery_validated",
+      "scoring_status": "scored",
+      "native_metric": "rmse-v1",
+      "native_value": 1.5285946026271398,
+      "native_components": [],
+      "rpg": null,
+      "completion": 1,
+      "search_end": {
+        "kind": "protected",
+        "reason": "token_preflight"
+      },
+      "delivery_status": "completed",
+      "prediction_status": "completed",
+      "trajectory": {
+        "search_end": {
+          "kind": "protected",
+          "reason": "token_preflight"
+        },
+        "delivery_status": "completed",
+        "completion": "protected",
+        "accounting": "known",
+        "collaboration": "not_covered",
+        "analysis_calls": 1,
+        "successful_analyses": 1,
+        "analysis_followups": [],
+        "analysis_experiment_links": [],
+        "analysis_ids": [],
+        "core_rejections": [
+          {
+            "sequence": 20,
+            "reason": "Error: Invalid code"
+          },
+          {
+            "sequence": 45,
+            "reason": "Error: Exactly one new tool call is required"
+          }
+        ],
+        "attachment_warnings": [],
+        "unproductive_executions": [],
+        "protection_reason": "token_preflight"
+      },
+      "native_identity": {
+        "run_id": "f5691c99-a508-4fbc-8958-48ec543fac03",
+        "frozen_id": "bda81ae47392839ab6f1e235e1925c064ef2fd3231ac062d8b90f765062b5702",
+        "sha256": "9fefc643ad03b261d3bbf29351554e2e71f942f57b1fc61d2a5a34bac00e4e3e",
+        "bytes": 1265367,
+        "delivery_sha256": "c3afe2ac12a2f777a037093073cde7da983de4c6c9f61fc001066528d041f520"
+      },
+      "prediction_files": [
+        {
+          "path": "export.csv",
+          "bytes": 12110,
+          "sha256": "34bec3ff753a8f93db0e8497c5587f292dc2ff613e5092ff35dd782f5ba6c082"
+        },
+        {
+          "path": "prediction-manifest.json",
+          "bytes": 3517,
+          "sha256": "fe51f48e934066b15eecbfe71f889faa6bf86213a92aa60e60845966d4ef3dcc"
+        },
+        {
+          "path": "predictions.csv",
+          "bytes": 18615,
+          "sha256": "1de2c900e66054527eafd702802dde56a4b357579a5383c783094244929a0296"
+        }
+      ],
+      "usage": {
+        "attempts": 11,
+        "total_tokens": 94505,
+        "unknown_attempts": 0,
+        "source": "measured",
+        "completeness": "complete",
+        "native": {
+          "tokens": {
+            "status": "known",
+            "input_tokens": 81642,
+            "output_tokens": 12863,
+            "total_tokens": 94505,
+            "attempts": 11,
+            "unknown_attempts": 0,
+            "elapsed_ms": 74626.6756249998,
+            "currency_cost": "not_computed"
+          },
+          "modeling": {
+            "status": "known",
+            "input_tokens": 54301,
+            "output_tokens": 7356,
+            "total_tokens": 61657,
+            "attempts": 5,
+            "unknown_attempts": 0,
+            "elapsed_ms": 43712.9197079998,
+            "currency_cost": "not_computed"
+          },
+          "children": {
+            "6ad9eedf-a8c3-45b5-8c91-ea58e6d039ad": {
+              "status": "known",
+              "input_tokens": 27341,
+              "output_tokens": 5507,
+              "total_tokens": 32848,
+              "attempts": 6,
+              "unknown_attempts": 0,
+              "elapsed_ms": 30913.755917000002,
+              "currency_cost": "not_computed"
+            }
+          },
+          "training_attempts": 3,
+          "final_training_attempts": 1,
+          "confirmation_training_attempts": 0,
+          "eda_calls": 1,
+          "eda_executions": 3,
+          "remaining_ms": 444123,
+          "exploration_ms": 294123
+        }
+      },
+      "elapsed_ms": 157126,
+      "scoring_elapsed_ms": 1042,
+      "budget_status": "reduced",
+      "effective_budget": {
+        "timeout_ms": 599978,
+        "model_attempts": 12,
+        "total_tokens": 160000
+      },
+      "reproduction": {
+        "status": "passed",
+        "record": {
+          "path": "runs/modeling-live-smoke-v1/reproductions/0f9734bf-58ef-468d-8aaa-739019302ad5/reproduction.json",
+          "sha256": "0728e17a1157e659f643ae3fa3a0f108dd39bfaff2e2efd74785a9b952246d27"
+        },
+        "comparison": {
+          "matched": true,
+          "differences": [],
+          "rows": 501,
+          "protocol_sha256": "9b388038f8f19bd179ef6d0db0aa54e5594eed4d64f2e4bfc4eb6752497b06f3",
+          "reference_sha256": "1de2c900e66054527eafd702802dde56a4b357579a5383c783094244929a0296",
+          "actual_sha256": "1de2c900e66054527eafd702802dde56a4b357579a5383c783094244929a0296",
+          "tolerance": {
+            "atol": 1e-8,
+            "rtol": 0.000001
+          }
+        },
+        "elapsed_ms": 9436.431417000014,
+        "calls": {
+          "models": 0,
+          "fits": 0,
+          "predictions": 1
+        }
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e9",
+      "type": "regression",
+      "method": "no_eda",
+      "seed": 17,
+      "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+      "unit_id": "unit-000001",
+      "score_id": "3eb10cf4-4c70-451a-9eaa-32c12eabda01",
+      "report": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/scores/3eb10cf4-4c70-451a-9eaa-32c12eabda01/report.json",
+        "sha256": "d5538cb8dc7232d94e82b82a79337c1d54502b77d7842df0e5acbc0b4a76ce4a"
+      },
+      "native_record": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/native/unit-000001/eb8d80cd-700f-4c25-9bb2-e759aa2c7544/modeling.json",
+        "sha256": "b5370a6332527f41e5f13e09437b9e018cb13b298ec0451ba5ad12bf935a435b"
+      },
+      "code": {
+        "commit": "7cf07e4d204232cd0e9fec536229b97bae97b09b",
+        "dirty": true
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      },
+      "status": "completed",
+      "reason": "delivery_validated",
+      "scoring_status": "scored",
+      "native_metric": "rmse-v1",
+      "native_value": 12.826216060280018,
+      "native_components": [],
+      "rpg": 0.22303976672657802,
+      "completion": 1,
+      "search_end": {
+        "kind": "protected",
+        "reason": "accounting_incomplete"
+      },
+      "delivery_status": "completed",
+      "prediction_status": "completed",
+      "trajectory": {
+        "search_end": {
+          "kind": "protected",
+          "reason": "accounting_incomplete"
+        },
+        "delivery_status": "completed",
+        "completion": "protected",
+        "accounting": "unknown",
+        "collaboration": "not_covered",
+        "analysis_calls": 0,
+        "successful_analyses": 0,
+        "analysis_followups": [],
+        "analysis_experiment_links": [],
+        "analysis_ids": [],
+        "core_rejections": [],
+        "attachment_warnings": [],
+        "unproductive_executions": [
+          {
+            "id": "728b2547-7172-4c11-bfcb-e9a7baa1e088",
+            "status": "failed",
+            "reason": "error:No module named 'lightgbm'"
+          },
+          {
+            "id": "4bd80f9b-7677-4ee1-a32e-d5e701fb9693",
+            "status": "failed",
+            "reason": "error:Can't pickle <class 'candidate.build_pipeline.<locals>.FE'>: it's not found as candidate.build_pipeline.<locals>.FE"
+          }
+        ],
+        "protection_reason": "accounting_incomplete"
+      },
+      "native_identity": {
+        "run_id": "eb8d80cd-700f-4c25-9bb2-e759aa2c7544",
+        "frozen_id": "f4ba4e2256e2f99ac0475a6b716672d3bcb3106ede0f376b789fff695030d3bd",
+        "sha256": "babcefe9afeea1cedbee500c5aba7fd24157841cd065d281c4ad6d26350512f9",
+        "bytes": 4363111,
+        "delivery_sha256": "24f81b2568646d4a9fb253a452c1514033841e5f7636ce8de88fa0617dec246f"
+      },
+      "prediction_files": [
+        {
+          "path": "export.csv",
+          "bytes": 26155,
+          "sha256": "016ab0f63ea3f9608b5d351f403960d51d02737073f04e666f2ae1351d6f35cf"
+        },
+        {
+          "path": "prediction-manifest.json",
+          "bytes": 3226,
+          "sha256": "9383c3fefbf9d636f245e833517eb4977dbe4e1c7c8ed5368ba3f1b5f1f95d1f"
+        },
+        {
+          "path": "predictions.csv",
+          "bytes": 31578,
+          "sha256": "46dd046c520c8b9650ff41af3bc609c0e34716772a8338133bda2976f615357e"
+        }
+      ],
+      "usage": {
+        "attempts": 4,
+        "total_tokens": 27886,
+        "unknown_attempts": 1,
+        "source": "unknown",
+        "completeness": "unknown",
+        "native": {
+          "tokens": {
+            "status": "unknown",
+            "input_tokens": 23696,
+            "output_tokens": 4190,
+            "total_tokens": 27886,
+            "attempts": 4,
+            "unknown_attempts": 1,
+            "elapsed_ms": 20879.982165999943,
+            "currency_cost": "not_computed"
+          },
+          "modeling": {
+            "status": "unknown",
+            "input_tokens": 23696,
+            "output_tokens": 4190,
+            "total_tokens": 27886,
+            "attempts": 4,
+            "unknown_attempts": 1,
+            "elapsed_ms": 20879.982165999943,
+            "currency_cost": "not_computed"
+          },
+          "children": {},
+          "training_attempts": 4,
+          "final_training_attempts": 1,
+          "confirmation_training_attempts": 0,
+          "eda_calls": 0,
+          "eda_executions": 0,
+          "remaining_ms": 507197,
+          "exploration_ms": 357197
+        }
+      },
+      "elapsed_ms": 94477,
+      "scoring_elapsed_ms": 1155,
+      "budget_status": "unknown",
+      "effective_budget": {
+        "timeout_ms": 599973,
+        "model_attempts": 12,
+        "total_tokens": 160000
+      },
+      "reproduction": {
+        "status": "passed",
+        "record": {
+          "path": "runs/modeling-live-type-coverage-v1/reproductions/c41785d2-4878-4dd7-abf9-97fc240811c6/reproduction.json",
+          "sha256": "4e2688d4674faa04b45999e3e3b1cde10fe33204896bb1818ddd4944a20b6f99"
+        },
+        "comparison": {
+          "matched": true,
+          "differences": [],
+          "rows": 1082,
+          "protocol_sha256": "6a722e0e8e5048ae21f0e6315c6678ed5888d882b34971b958004cb72822117c",
+          "reference_sha256": "46dd046c520c8b9650ff41af3bc609c0e34716772a8338133bda2976f615357e",
+          "actual_sha256": "46dd046c520c8b9650ff41af3bc609c0e34716772a8338133bda2976f615357e",
+          "tolerance": {
+            "atol": 1e-8,
+            "rtol": 0.000001
+          }
+        },
+        "elapsed_ms": 9198.21645800001,
+        "calls": {
+          "models": 0,
+          "fits": 0,
+          "predictions": 1
+        }
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e2",
+      "type": "multiclass",
+      "method": "no_eda",
+      "seed": 17,
+      "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+      "unit_id": "unit-000003",
+      "score_id": "3eb10cf4-4c70-451a-9eaa-32c12eabda01",
+      "report": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/scores/3eb10cf4-4c70-451a-9eaa-32c12eabda01/report.json",
+        "sha256": "d5538cb8dc7232d94e82b82a79337c1d54502b77d7842df0e5acbc0b4a76ce4a"
+      },
+      "native_record": null,
+      "status": "not_run",
+      "reason": "unknown_model_usage",
+      "scoring_status": "pending",
+      "native_metric": null,
+      "native_value": null,
+      "native_components": null,
+      "rpg": null,
+      "search_end": null,
+      "delivery_status": "not_run",
+      "prediction_status": "not_run",
+      "trajectory": null,
+      "native_identity": null,
+      "prediction_files": [],
+      "usage": {
+        "attempts": null,
+        "total_tokens": null,
+        "unknown_attempts": null,
+        "source": "unknown",
+        "completeness": "unknown",
+        "native": null
+      },
+      "elapsed_ms": 0,
+      "scoring_elapsed_ms": null,
+      "budget_status": "within",
+      "effective_budget": null,
+      "reproduction": {
+        "status": "not_run",
+        "reason": "no_complete_delivery"
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e5",
+      "type": "ordinal",
+      "method": "no_eda",
+      "seed": 17,
+      "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+      "unit_id": "unit-000005",
+      "score_id": "3eb10cf4-4c70-451a-9eaa-32c12eabda01",
+      "report": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/scores/3eb10cf4-4c70-451a-9eaa-32c12eabda01/report.json",
+        "sha256": "d5538cb8dc7232d94e82b82a79337c1d54502b77d7842df0e5acbc0b4a76ce4a"
+      },
+      "native_record": null,
+      "status": "not_run",
+      "reason": "unknown_model_usage",
+      "scoring_status": "pending",
+      "native_metric": null,
+      "native_value": null,
+      "native_components": null,
+      "rpg": null,
+      "search_end": null,
+      "delivery_status": "not_run",
+      "prediction_status": "not_run",
+      "trajectory": null,
+      "native_identity": null,
+      "prediction_files": [],
+      "usage": {
+        "attempts": null,
+        "total_tokens": null,
+        "unknown_attempts": null,
+        "source": "unknown",
+        "completeness": "unknown",
+        "native": null
+      },
+      "elapsed_ms": 0,
+      "scoring_elapsed_ms": null,
+      "budget_status": "within",
+      "effective_budget": null,
+      "reproduction": {
+        "status": "not_run",
+        "reason": "no_complete_delivery"
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e13",
+      "type": "top3",
+      "method": "no_eda",
+      "seed": 17,
+      "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+      "unit_id": "unit-000007",
+      "score_id": "3eb10cf4-4c70-451a-9eaa-32c12eabda01",
+      "report": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/scores/3eb10cf4-4c70-451a-9eaa-32c12eabda01/report.json",
+        "sha256": "d5538cb8dc7232d94e82b82a79337c1d54502b77d7842df0e5acbc0b4a76ce4a"
+      },
+      "native_record": null,
+      "status": "not_run",
+      "reason": "unknown_model_usage",
+      "scoring_status": "pending",
+      "native_metric": null,
+      "native_value": null,
+      "native_components": null,
+      "rpg": null,
+      "search_end": null,
+      "delivery_status": "not_run",
+      "prediction_status": "not_run",
+      "trajectory": null,
+      "native_identity": null,
+      "prediction_files": [],
+      "usage": {
+        "attempts": null,
+        "total_tokens": null,
+        "unknown_attempts": null,
+        "source": "unknown",
+        "completeness": "unknown",
+        "native": null
+      },
+      "elapsed_ms": 0,
+      "scoring_elapsed_ms": null,
+      "budget_status": "within",
+      "effective_budget": null,
+      "reproduction": {
+        "status": "not_run",
+        "reason": "no_complete_delivery"
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e18",
+      "type": "two-target",
+      "method": "no_eda",
+      "seed": 17,
+      "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+      "unit_id": "unit-000009",
+      "score_id": "3eb10cf4-4c70-451a-9eaa-32c12eabda01",
+      "report": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/scores/3eb10cf4-4c70-451a-9eaa-32c12eabda01/report.json",
+        "sha256": "d5538cb8dc7232d94e82b82a79337c1d54502b77d7842df0e5acbc0b4a76ce4a"
+      },
+      "native_record": null,
+      "status": "not_run",
+      "reason": "unknown_model_usage",
+      "scoring_status": "pending",
+      "native_metric": null,
+      "native_value": null,
+      "native_components": null,
+      "rpg": null,
+      "search_end": null,
+      "delivery_status": "not_run",
+      "prediction_status": "not_run",
+      "trajectory": null,
+      "native_identity": null,
+      "prediction_files": [],
+      "usage": {
+        "attempts": null,
+        "total_tokens": null,
+        "unknown_attempts": null,
+        "source": "unknown",
+        "completeness": "unknown",
+        "native": null
+      },
+      "elapsed_ms": 0,
+      "scoring_elapsed_ms": null,
+      "budget_status": "within",
+      "effective_budget": null,
+      "reproduction": {
+        "status": "not_run",
+        "reason": "no_complete_delivery"
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e3",
+      "type": "seven-target",
+      "method": "no_eda",
+      "seed": 17,
+      "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+      "unit_id": "unit-000011",
+      "score_id": "3eb10cf4-4c70-451a-9eaa-32c12eabda01",
+      "report": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/scores/3eb10cf4-4c70-451a-9eaa-32c12eabda01/report.json",
+        "sha256": "d5538cb8dc7232d94e82b82a79337c1d54502b77d7842df0e5acbc0b4a76ce4a"
+      },
+      "native_record": null,
+      "status": "not_run",
+      "reason": "unknown_model_usage",
+      "scoring_status": "pending",
+      "native_metric": null,
+      "native_value": null,
+      "native_components": null,
+      "rpg": null,
+      "search_end": null,
+      "delivery_status": "not_run",
+      "prediction_status": "not_run",
+      "trajectory": null,
+      "native_identity": null,
+      "prediction_files": [],
+      "usage": {
+        "attempts": null,
+        "total_tokens": null,
+        "unknown_attempts": null,
+        "source": "unknown",
+        "completeness": "unknown",
+        "native": null
+      },
+      "elapsed_ms": 0,
+      "scoring_elapsed_ms": null,
+      "budget_status": "within",
+      "effective_budget": null,
+      "reproduction": {
+        "status": "not_run",
+        "reason": "no_complete_delivery"
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e9",
+      "type": "regression",
+      "method": "collaborative",
+      "seed": 17,
+      "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+      "unit_id": "unit-000002",
+      "score_id": "3eb10cf4-4c70-451a-9eaa-32c12eabda01",
+      "report": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/scores/3eb10cf4-4c70-451a-9eaa-32c12eabda01/report.json",
+        "sha256": "d5538cb8dc7232d94e82b82a79337c1d54502b77d7842df0e5acbc0b4a76ce4a"
+      },
+      "native_record": null,
+      "status": "not_run",
+      "reason": "unknown_model_usage",
+      "scoring_status": "pending",
+      "native_metric": null,
+      "native_value": null,
+      "native_components": null,
+      "rpg": null,
+      "search_end": null,
+      "delivery_status": "not_run",
+      "prediction_status": "not_run",
+      "trajectory": null,
+      "native_identity": null,
+      "prediction_files": [],
+      "usage": {
+        "attempts": null,
+        "total_tokens": null,
+        "unknown_attempts": null,
+        "source": "unknown",
+        "completeness": "unknown",
+        "native": null
+      },
+      "elapsed_ms": 0,
+      "scoring_elapsed_ms": null,
+      "budget_status": "within",
+      "effective_budget": null,
+      "reproduction": {
+        "status": "not_run",
+        "reason": "no_complete_delivery"
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e2",
+      "type": "multiclass",
+      "method": "collaborative",
+      "seed": 17,
+      "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+      "unit_id": "unit-000004",
+      "score_id": "3eb10cf4-4c70-451a-9eaa-32c12eabda01",
+      "report": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/scores/3eb10cf4-4c70-451a-9eaa-32c12eabda01/report.json",
+        "sha256": "d5538cb8dc7232d94e82b82a79337c1d54502b77d7842df0e5acbc0b4a76ce4a"
+      },
+      "native_record": null,
+      "status": "not_run",
+      "reason": "unknown_model_usage",
+      "scoring_status": "pending",
+      "native_metric": null,
+      "native_value": null,
+      "native_components": null,
+      "rpg": null,
+      "search_end": null,
+      "delivery_status": "not_run",
+      "prediction_status": "not_run",
+      "trajectory": null,
+      "native_identity": null,
+      "prediction_files": [],
+      "usage": {
+        "attempts": null,
+        "total_tokens": null,
+        "unknown_attempts": null,
+        "source": "unknown",
+        "completeness": "unknown",
+        "native": null
+      },
+      "elapsed_ms": 0,
+      "scoring_elapsed_ms": null,
+      "budget_status": "within",
+      "effective_budget": null,
+      "reproduction": {
+        "status": "not_run",
+        "reason": "no_complete_delivery"
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e5",
+      "type": "ordinal",
+      "method": "collaborative",
+      "seed": 17,
+      "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+      "unit_id": "unit-000006",
+      "score_id": "3eb10cf4-4c70-451a-9eaa-32c12eabda01",
+      "report": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/scores/3eb10cf4-4c70-451a-9eaa-32c12eabda01/report.json",
+        "sha256": "d5538cb8dc7232d94e82b82a79337c1d54502b77d7842df0e5acbc0b4a76ce4a"
+      },
+      "native_record": null,
+      "status": "not_run",
+      "reason": "unknown_model_usage",
+      "scoring_status": "pending",
+      "native_metric": null,
+      "native_value": null,
+      "native_components": null,
+      "rpg": null,
+      "search_end": null,
+      "delivery_status": "not_run",
+      "prediction_status": "not_run",
+      "trajectory": null,
+      "native_identity": null,
+      "prediction_files": [],
+      "usage": {
+        "attempts": null,
+        "total_tokens": null,
+        "unknown_attempts": null,
+        "source": "unknown",
+        "completeness": "unknown",
+        "native": null
+      },
+      "elapsed_ms": 0,
+      "scoring_elapsed_ms": null,
+      "budget_status": "within",
+      "effective_budget": null,
+      "reproduction": {
+        "status": "not_run",
+        "reason": "no_complete_delivery"
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e13",
+      "type": "top3",
+      "method": "collaborative",
+      "seed": 17,
+      "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+      "unit_id": "unit-000008",
+      "score_id": "3eb10cf4-4c70-451a-9eaa-32c12eabda01",
+      "report": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/scores/3eb10cf4-4c70-451a-9eaa-32c12eabda01/report.json",
+        "sha256": "d5538cb8dc7232d94e82b82a79337c1d54502b77d7842df0e5acbc0b4a76ce4a"
+      },
+      "native_record": null,
+      "status": "not_run",
+      "reason": "unknown_model_usage",
+      "scoring_status": "pending",
+      "native_metric": null,
+      "native_value": null,
+      "native_components": null,
+      "rpg": null,
+      "search_end": null,
+      "delivery_status": "not_run",
+      "prediction_status": "not_run",
+      "trajectory": null,
+      "native_identity": null,
+      "prediction_files": [],
+      "usage": {
+        "attempts": null,
+        "total_tokens": null,
+        "unknown_attempts": null,
+        "source": "unknown",
+        "completeness": "unknown",
+        "native": null
+      },
+      "elapsed_ms": 0,
+      "scoring_elapsed_ms": null,
+      "budget_status": "within",
+      "effective_budget": null,
+      "reproduction": {
+        "status": "not_run",
+        "reason": "no_complete_delivery"
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e18",
+      "type": "two-target",
+      "method": "collaborative",
+      "seed": 17,
+      "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+      "unit_id": "unit-000010",
+      "score_id": "3eb10cf4-4c70-451a-9eaa-32c12eabda01",
+      "report": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/scores/3eb10cf4-4c70-451a-9eaa-32c12eabda01/report.json",
+        "sha256": "d5538cb8dc7232d94e82b82a79337c1d54502b77d7842df0e5acbc0b4a76ce4a"
+      },
+      "native_record": null,
+      "status": "not_run",
+      "reason": "unknown_model_usage",
+      "scoring_status": "pending",
+      "native_metric": null,
+      "native_value": null,
+      "native_components": null,
+      "rpg": null,
+      "search_end": null,
+      "delivery_status": "not_run",
+      "prediction_status": "not_run",
+      "trajectory": null,
+      "native_identity": null,
+      "prediction_files": [],
+      "usage": {
+        "attempts": null,
+        "total_tokens": null,
+        "unknown_attempts": null,
+        "source": "unknown",
+        "completeness": "unknown",
+        "native": null
+      },
+      "elapsed_ms": 0,
+      "scoring_elapsed_ms": null,
+      "budget_status": "within",
+      "effective_budget": null,
+      "reproduction": {
+        "status": "not_run",
+        "reason": "no_complete_delivery"
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e3",
+      "type": "seven-target",
+      "method": "collaborative",
+      "seed": 17,
+      "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+      "unit_id": "unit-000012",
+      "score_id": "3eb10cf4-4c70-451a-9eaa-32c12eabda01",
+      "report": {
+        "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/scores/3eb10cf4-4c70-451a-9eaa-32c12eabda01/report.json",
+        "sha256": "d5538cb8dc7232d94e82b82a79337c1d54502b77d7842df0e5acbc0b4a76ce4a"
+      },
+      "native_record": null,
+      "status": "not_run",
+      "reason": "unknown_model_usage",
+      "scoring_status": "pending",
+      "native_metric": null,
+      "native_value": null,
+      "native_components": null,
+      "rpg": null,
+      "search_end": null,
+      "delivery_status": "not_run",
+      "prediction_status": "not_run",
+      "trajectory": null,
+      "native_identity": null,
+      "prediction_files": [],
+      "usage": {
+        "attempts": null,
+        "total_tokens": null,
+        "unknown_attempts": null,
+        "source": "unknown",
+        "completeness": "unknown",
+        "native": null
+      },
+      "elapsed_ms": 0,
+      "scoring_elapsed_ms": null,
+      "budget_status": "within",
+      "effective_budget": null,
+      "reproduction": {
+        "status": "not_run",
+        "reason": "no_complete_delivery"
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363621",
+      "type": "binary",
+      "method": "no_eda",
+      "seed": 17,
+      "status": "not_run",
+      "reason": "unsettled_prior_batch",
+      "reproduction": {
+        "status": "not_run",
+        "reason": "unsettled_prior_batch"
+      }
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363621",
+      "type": "binary",
+      "method": "collaborative",
+      "seed": 17,
+      "status": "not_run",
+      "reason": "unsettled_prior_batch",
+      "reproduction": {
+        "status": "not_run",
+        "reason": "unsettled_prior_batch"
+      }
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363685",
+      "type": "multiclass",
+      "method": "no_eda",
+      "seed": 17,
+      "status": "not_run",
+      "reason": "unsettled_prior_batch",
+      "reproduction": {
+        "status": "not_run",
+        "reason": "unsettled_prior_batch"
+      }
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363685",
+      "type": "multiclass",
+      "method": "collaborative",
+      "seed": 17,
+      "status": "not_run",
+      "reason": "unsettled_prior_batch",
+      "reproduction": {
+        "status": "not_run",
+        "reason": "unsettled_prior_batch"
+      }
+    }
+  ]
+}

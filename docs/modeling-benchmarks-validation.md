@@ -90,3 +90,11 @@ TS 只传文件描述符；Python 流式准备和验证特征表。排名评分�
 最终 Docker 命令 `MODELING_TEST_IMAGE=statigent-runtime:modeling-benchmarks UV_CACHE_DIR=/private/tmp/statigent-uv-cache bun test tests/integration/evaluation-modeling-batch.test.ts tests/integration/evaluation-modeling-isolation.test.ts tests/integration/modeling-frozen-v2.test.ts` 退出 0，4 例、101 项断言通过（242.52 秒）：覆盖五阶段隔离、两种交付模式、确认、独立冻结预测、取消/超时、两基准批次、移走模型后的重评及篡改拒绝，全部使用受控决策、零付费 API。此前额外目标/多方法/复现的 Docker 证据保留在本页，不把本次 4 例冒充所有集成测试的重新运行。
 
 `openspec validate add-modeling-benchmarks --strict`、`git diff --check` 均退出 0。最终命令、退出码、日志哈希及新旧历史索引见 [检查汇总](../benchmarks/metadata/modeling-final-checks.json)。软件接入和约定的零 LLM 验收完成；真实付费验收保持未运行，正式研究集合与实验不在本轮执行范围。
+
+## 真实模型首次运行与受限续跑（2026-10-14）
+
+用户批准固定 10 题 × no_eda/collaborative，共 20 单元；首批 4 次之后另批准 16 次补齐类型。实际首批 4 次中 3 次交付、评分及独立预测复现通过；Titanic 协同组在第三个成功训练后收到 `response_length`，未交付。最后一轮实际输出限额为 954 token，这是剩余预算动态缩减后的值，不是 profile 固定 65,536；首次失败不覆盖、不重跑。TabArena 回归协同组完成一次 EDA，但之后仅最终拟合，没有新搜索训练，协同覆盖仍为 not_covered。
+
+追加批次首个 s3e9 无协同单元完成保护交付及复现，但一次约 137 ms 的请求返回 `transport_or_protocol_failure`，没有 usage。父账有 1 次未知消费，调度器按协议停止剩余 15 次。此时共实际执行 5 次，交付/复现通过 4 次，失败 1 次；已知 token 小计 403,284、模型尝试 32 次（含未知的一次），不能将已知小计当作总账单。汇总见 [首次运行索引](../benchmarks/metadata/modeling-live-validation.json)，完整记录在 `runs/modeling-live-smoke-v1` 与 `runs/modeling-live-type-coverage-v1`。
+
+用户随后明确批准保留未知账目，并继续尚未运行的 15 次。两份独立 scope 位于 `configs/evaluations/modeling-smoke-resume-v1/`，分别是其余类型 14 次和 s3e9 协同 1 次，零调用预检均通过；不重跑前 5 次，不增加原单项预算（每次 12 调用、160,000 token、600 秒）。原批次及其 not_run 状态保持不变，新运行使用独立身份关联。原未知用量不能因后续成功而改写为已知。任务 9.2 保持未完成，当前不能断言各类型都已跑通。
