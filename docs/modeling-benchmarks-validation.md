@@ -2,6 +2,8 @@
 
 本记录随 `add-modeling-benchmarks` 实施更新。软件模块、真实数据准备、真实智能体验收和正式实验分列；全指标软件覆盖不等于完整基准已完成真实实验。
 
+2026-10-14：48/48 项任务完成，七份 delta spec 已同步主规格，变更已[归档](../openspec/changes/archive/2026-10-14-add-modeling-benchmarks/)。全部 15 份主规格严格校验通过。归档保留首次失败、未知用量和实际协同路径覆盖等验收事实；collaborative 按需调用 EDA，未调用不表示违反方法配置，路径覆盖与任务交付分别报告。正式研究实验尚未运行。
+
 ## 当前证据（2026-10-14）
 
 | 层次 | 实际结果 | 边界 |
@@ -84,7 +86,7 @@ TS 只传文件描述符；Python 流式准备和验证特征表。排名评分�
 
 实际 schema 1–4 各一份历史建模记录再次 `inspectModeling` 通过，逐文件递归摘要前后相同；本轮摘要算法及结果保存在 `runs/modeling-history-final-v1-v4-check.json`，历史状态（成功或失败）未改写。旧分析协议的计划、受控评分和冻结重评兼容包含在全仓检查中，并有前述 20 项专项回归。完整旧付费批次没有重跑。
 
-自审核对七份 delta spec 的协议、阶段隔离、目标/指标、预算、记录兼容、官方接口及分层验收场景，证据分别对应 `tests/unit/evaluation-*`、`tests/unit/modeling-*`、`tests/python/test_modeling_*`、`tests/python/test_tabarena_*` 和本页 Docker/真实任务索引。仅跟踪代码、配置、锁文件、合成夹具和汇总索引；真实数据、模型、答案、完整轨迹及本机缓存均未纳入提交。主规格尚未同步、变更尚未归档；本阶段尚未执行任务 9.2，后续实际结果见文末，正式研究实验未启动。
+自审核对七份 delta spec 的协议、阶段隔离、目标/指标、预算、记录兼容、官方接口及分层验收场景，证据分别对应 `tests/unit/evaluation-*`、`tests/unit/modeling-*`、`tests/python/test_modeling_*`、`tests/python/test_tabarena_*` 和本页 Docker/真实任务索引。仅跟踪代码、配置、锁文件、合成夹具和汇总索引；真实数据、模型、答案、完整轨迹及本机缓存均未纳入提交。本阶段主规格尚未同步、变更尚未归档，任务 9.2 尚未执行，后续实际结果见文末，正式研究实验未启动。
 
 另对本地既有 InfiAgent v1、synthetic-sum v1、DSBench-Analysis v2、DAComp-DA v2 四份批次执行只读 inspect，均通过且目录摘要前后相同。v1 只在内存解释为兼容结构，原清单仍为 v1；没有调用评委或改写评分。索引 `runs/evaluation-history-final-v1-v2-check.json` 分列原始版本与解码版本。
 
