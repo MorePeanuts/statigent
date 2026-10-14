@@ -316,23 +316,41 @@ export async function inspectWorkflow(
           obj(manifest.usage).tokens,
           "Protected accounting snapshot",
         );
+        const lastDecision = events
+          .filter(
+            (e) =>
+              Number(e.sequence) < seq &&
+              [
+                "model_request",
+                "model_response",
+                "model_failure",
+                "action_accepted",
+              ].includes(String(e.type)),
+          )
+          .at(-1);
+        const truncatedResponse =
+          lastDecision?.type === "model_response" &&
+          obj(payloads.get(Number(lastDecision.sequence))).finish_reason ===
+            "length";
         const cause =
           trigger.reason === "accounting_incomplete"
             ? costs.status === "unknown"
-            : trigger.reason === "model_attempts"
-              ? costs.attempts >= task.budget.model_attempts
-              : trigger.reason === "token_threshold"
-                ? costs.total_tokens >= task.budget.total_tokens
-                : trigger.reason === "token_preflight"
-                  ? costs.total_tokens + requestBytes >=
-                    task.budget.total_tokens
-                  : trigger.reason === "request_size_limit"
-                    ? requestBytes > task.budget.max_request_bytes
-                    : trigger.reason === "action_corrections"
-                      ? errors > task.budget.action_corrections
-                      : trigger.reason === "exploration_reserve"
-                        ? remaining <= task.budget.final_reserve_ms
-                        : false;
+            : trigger.reason === "response_length"
+              ? costs.status === "known" && truncatedResponse
+              : trigger.reason === "model_attempts"
+                ? costs.attempts >= task.budget.model_attempts
+                : trigger.reason === "token_threshold"
+                  ? costs.total_tokens >= task.budget.total_tokens
+                  : trigger.reason === "token_preflight"
+                    ? costs.total_tokens + requestBytes >=
+                      task.budget.total_tokens
+                    : trigger.reason === "request_size_limit"
+                      ? requestBytes > task.budget.max_request_bytes
+                      : trigger.reason === "action_corrections"
+                        ? errors > task.budget.action_corrections
+                        : trigger.reason === "exploration_reserve"
+                          ? remaining <= task.budget.final_reserve_ms
+                          : false;
         if (!cause || remaining <= 0)
           throw new Error("Unsubstantiated protection trigger");
         same(event.origin, "host_protection", "Protected origin");
@@ -343,6 +361,7 @@ export async function inspectWorkflow(
             "model_attempts",
             "token_threshold",
             "token_preflight",
+            "response_length",
             "request_size_limit",
             "action_corrections",
             "exploration_reserve",

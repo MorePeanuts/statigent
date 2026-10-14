@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "scope": "offline-real-smoke-regression-fixes",
+  "base_commit": "758ac89",
+  "validation_worktree": "/private/tmp/statigent-smoke-fixes",
+  "paid_model_calls": 0,
+  "checks": [
+    {
+      "command": "bun run check",
+      "exit_code": 0,
+      "typescript_tests": 367,
+      "assertions": 2704,
+      "python_tests": 216,
+      "python_deselected": 153,
+      "log": {
+        "path": "runs/modeling-benchmarks-validation/smoke-fixes/check.log",
+        "sha256": "d73e102e70d2a67f3ad5285a36da006b483cb9d6348ff41c726cecb04c5198de"
+      }
+    },
+    {
+      "command": "bun test tests/integration/modeling-length-v2.test.ts",
+      "exit_code": 0,
+      "tests": 1,
+      "assertions": 9,
+      "elapsed_ms": 78352.4,
+      "log": {
+        "path": "runs/modeling-benchmarks-validation/smoke-fixes/docker.log",
+        "sha256": "5ea7487510f1b0d88f63a8b582ea7f724b0b5b38adca335f6f650689e92ed366"
+      }
+    },
+    {
+      "command": "bun test tests/unit/modeling-eda-v2.test.ts",
+      "exit_code": 0,
+      "tests": 1,
+      "assertions": 71,
+      "elapsed_ms": 7717.71,
+      "log": {
+        "path": "runs/modeling-benchmarks-validation/smoke-fixes/prompt-check.log",
+        "sha256": "5c13ad91bee53b818767db821a560a39024547fd560a691f9147ab08b3ca498f"
+      }
+    },
+    {
+      "command": "inspect historical modeling schemas 1–4",
+      "exit_code": 0,
+      "unchanged": true,
+      "log": {
+        "path": "runs/modeling-benchmarks-validation/smoke-fixes/history.log",
+        "sha256": "e9ec26d5707e080ae337a80bde6313a79bfd6d21e8bc6a152a0a553ce0c31743"
+      }
+    }
+  ],
+  "native_results": [
+    {
+      "path": "/private/tmp/statigent-smoke-fixes/runs/integration-modeling-length-v2/f7c01cf6-6425-4bd9-88a3-6618e46bc199/cb0b09d8-932d-4fe7-adcc-ec1285e1e0ec/modeling.json",
+      "run_id": "cb0b09d8-932d-4fe7-adcc-ec1285e1e0ec",
+      "status": "completed",
+      "search_end": {
+        "kind": "protected",
+        "reason": "response_length"
+      },
+      "confirmation": "complete",
+      "usage": {
+        "tokens": {
+          "status": "known",
+          "input_tokens": 20,
+          "output_tokens": 10,
+          "total_tokens": 30,
+          "attempts": 2,
+          "unknown_attempts": 0,
+          "elapsed_ms": 2,
+          "currency_cost": "not_computed"
+        },
+        "modeling": {
+          "status": "known",
+          "input_tokens": 20,
+          "output_tokens": 10,
+          "total_tokens": 30,
+          "attempts": 2,
+          "unknown_attempts": 0,
+          "elapsed_ms": 2,
+          "currency_cost": "not_computed"
+        },
+        "children": {},
+        "training_attempts": 4,
+        "final_training_attempts": 1,
+        "confirmation_training_attempts": 2,
+        "eda_calls": 0,
+        "eda_executions": 0,
+        "remaining_ms": 1130273,
+        "exploration_ms": 380273
+      },
+      "code": {
+        "commit": "758ac892bfbed7702f1da14f4312d6bed6ad2ff9",
+        "dirty": true
+      }
+    }
+  ],
+  "history": "runs/modeling-history-smoke-fixes-v1-v4-check.json",
+  "limitations": [
+    "Live first attempts continue on their original frozen version; these checks do not convert historical failures to success.",
+    "Full check preceded the final classifier-interface wording; its follow-up prompt regression passed.",
+    "The first sandboxed test invocation failed in uv system configuration; final offline tests used the approved execution environment."
+  ]
+}

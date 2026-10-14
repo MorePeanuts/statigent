@@ -239,6 +239,22 @@ test("multi-target EDA preserves every target, phase and source through explore/
       ).toBe(true);
       expect(modelingPrompt(method, 2)).toContain("ALL target names");
       expect(modelingPrompt(method, 2)).toContain("class indices");
+      expect(modelingPrompt(method, 2)).toContain(
+        "Single-target classifiers must expose classes_",
+      );
+      expect(modelingPrompt(method, 2)).toContain(
+        "predict returns encoded integer indices",
+      );
+      expect(modelingPrompt(method, 2)).toContain(
+        "Available: pandas, numpy, scipy, scikit-learn, joblib",
+      );
+      expect(modelingPrompt(method, 2)).toContain(
+        "No network/package installation",
+      );
+      expect(modelingPrompt(method, 2)).toContain("NEW container");
+      expect(modelingPrompt(method, 2)).toContain(
+        "at module level, not inside build_pipeline",
+      );
     }
   } finally {
     await rm(root, { recursive: true, force: true });

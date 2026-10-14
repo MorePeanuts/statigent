@@ -15,7 +15,7 @@ bun run modeling protocol --config configs/modeling/protocol-ranked.json
 
 ## 基准数据的原生入口（任务 schema 4）
 
-`configs/modeling/benchmark-titanic.json` 使用准备清单 schema 3、目标协议 v2、stage 4、提示词 modeling-v8、父记录/交付 schema 5。`modeling-decision-v2` 与三种核心动作保持不变。模型和指标从已冻结的数据协议读取，不能在运行配置中改写。旧任务 schema 3、数据 schema 1/2 继续走原协议；下文历史示例中的字段与数值规则不变。
+`configs/modeling/benchmark-titanic.json` 使用准备清单 schema 3、目标协议 v2、stage 4、提示词 modeling-v9、父记录/交付 schema 5。`modeling-decision-v2` 与三种核心动作保持不变。v9 补回已安装库、无网络安装、独立预测进程及模块级可序列化自定义类约束；四方法共享，不规定模型家族或 EDA 次数。模型和指标从已冻结的数据协议读取，不能在运行配置中改写。旧任务 schema 3、数据 schema 1/2 继续走原协议；下文历史示例中的字段与数值规则不变。
 
 先准备数据并检查配置；以下两个命令均不调用模型 API：
 
@@ -25,7 +25,7 @@ bun run evaluate prepare --config configs/evaluations/dsbench-modeling-prepare.j
 bun run modeling run --task configs/modeling/benchmark-titanic.json --preflight
 ```
 
-镜像需由当前 `Dockerfile` 构建并具有 `org.statigent.modeling-stage=4` 标签。预检验证数据、逐目标类别覆盖、固定确认划分、资源预留和镜像能力；运行使用检查得到的不可变镜像 ID。准备成本、概览成本包含在父墙钟中，并保存明细。正式付费调用另行明确范围；本轮尚未执行真实模型基准验收。
+镜像需由当前 `Dockerfile` 构建并具有 `org.statigent.modeling-stage=4` 标签。预检验证数据、逐目标类别覆盖、固定确认划分、资源预留和镜像能力；运行使用检查得到的不可变镜像 ID。准备成本、概览成本包含在父墙钟中，并保存明细。真实模型开发冒烟已按批准范围启动，首次运行、失败及续跑证据见 [验收记录](modeling-benchmarks-validation.md)；不据此推定正式实验已通过。
 
 `delivery_mode` 必须显式为 `fit_only` 或 `fit_predict`。前者完成内部搜索、配置的确认和全训练拟合，输出 `status=model_frozen`、`delivery.status=pending_prediction`；准备数据可以完全没有测试分区。`modeling fit --task FILE` 显式选择该模式。后者由普通 `modeling run --task FILE` 在同一父时限和收尾预留内继续预测，成功后才输出 `completed`。最终拟合不读取预测分区；冻结后不再调用 LLM、调参或重新确认。
 
@@ -52,7 +52,7 @@ bun run modeling score --run PARENT_RUN --labels-root runs/modeling-benchmarks/t
 
 `score` 只核对冻结身份、公开预测输入、预测字节和指定标签，不打开模型文件或训练阶段目录；测试分区拥有独立 evaluation_id，不参与搜索排名。多目标分数保留按协议排序的每目标 ROC AUC 和均值，错误目标、错误聚合或协议身份会被拒绝。序数类别、前三候选和七目标的实际 Docker 测试见 `tests/integration/modeling-reproduction-v2.test.ts`。inspect 继续只读支持父记录 schema 1–4；schema 5 额外检查原生阶段、冻结及预测事件和身份，不向历史记录补造新字段。
 
-TabArena 使用同一 fit-only 与冻结预测接口，薄 Python wrapper 通过有界 Bun 桥接调用原生父循环。官方 CPU/内存/训练时限映射到任务限制，预测拥有独立时限；standalone 仍由一个父预算覆盖 fit→predict。安装、零 LLM 示例、类别顺序和 cleanup 语义见 [官方 system 兼容环境](../environments/tabarena/README.md)。合成官方调用及 3 项真实 r0f0 验证均已通过；付费智能体验收尚未执行。
+TabArena 使用同一 fit-only 与冻结预测接口，薄 Python wrapper 通过有界 Bun 桥接调用原生父循环。官方 CPU/内存/训练时限映射到任务限制，预测拥有独立时限；standalone 仍由一个父预算覆盖 fit→predict。安装、零 LLM 示例、类别顺序和 cleanup 语义见 [官方 system 兼容环境](../environments/tabarena/README.md)。合成官方调用及 3 项真实 r0f0 验证均已通过；付费智能体首次矩阵的当前状态见 [验收记录](modeling-benchmarks-validation.md)。
 
 ## 研究方向与当前实现
 
@@ -124,6 +124,8 @@ bun run modeling prepare --config configs/modeling/synthetic-prepare.json --out 
 父运行保存 modeling.json、追加 events.jsonl 和有界 payloads，关联训练、辅助诊断及 EDA 子运行。`bun run modeling inspect --run RUN_DIRECTORY` 重演动作、实验关系、笔记、警告、评价和确认排名，列出未确认调用。原 EDA 的 manifest.json 与 Notebook 协议不变。
 
 总调用和 token 包含建模及 EDA 全部角色与重试，子消费按身份只结算一次。未知用量保持 unknown 并停止新增 LLM。若已有可信搜索最佳、执行与清理明确、记录可写、未取消且确认和最终拟合预留足够，可无 LLM 进入原确定性收尾。普通已确认训练/EDA 失败可返回诊断继续决策；取消、总时限、记录失败、完整性故障或未知执行/清理均停止新执行。
+
+已知用量的模型响应若以 `length` 结束，丢弃截断内容；已有可信候选且仍满足原保护条件时，以 `protected/response_length` 进入相同的确认、最终拟合和预测，不追加模型调用。审计核对最后一条未被接受为动作的保存响应确实为截断；内容过滤、无候选、取消及执行不完整不借此收尾。
 
 纠错策略 `consecutive-unproductive-v2`：核心拒绝、不可派发请求和失败执行累计，成功分析或有效搜索分数重置，附加警告不计入。达到保护边界后按交付资格收尾或保留失败。不自动重试未知请求，不请求另一个模型补写完成。
 

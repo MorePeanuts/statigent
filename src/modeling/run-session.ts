@@ -107,6 +107,7 @@ const protectedReasons = new Set([
   "model_attempts",
   "token_threshold",
   "token_preflight",
+  "response_length",
   "request_size_limit",
   "action_corrections",
   "exploration_reserve",

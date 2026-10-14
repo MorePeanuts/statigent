@@ -26,7 +26,8 @@
 | 阶段输入发布与 Docker 隔离 | 初始 EDA、搜索、两次确认、最终拟合与延迟发布预测完整通过（23 项断言、58.81 秒）；测试特征提前访问、私有标签、仓库及宿主哨兵环境均不可见，来源哈希不变 | 21 个数据加载用例、18 个评测回归同时通过；运行索引 `runs/evaluation-modeling-isolation/7ec3745d-801a-496c-8869-754cd4d7e742`，零真实 LLM |
 | 原生评测预算及重复种子 | 9 个适配/批次回归通过（82 项断言）；3 个 Python 派生划分检查通过 | 四方法共用父预算，子 EDA 不重复结算；未知用量停止后续派发，预留不足零模型调用；派生种子保持外层成员/特征/标签身份，记录独立准备开销；基准注册与交付冻结已完成，见后续行 |
 | 预测冻结与两基准注册 | 合成 DSBench/TabArena 批次真实 Docker 训练、预测、导出、inspect、定向清理和移走原生模型后的重评通过（28 项断言、69.12 秒）；26 个适配/CLI/记录/报告回归通过（177 项断言） | 两批次均无付费 API、未复用历史预测；实际 seed=42 派生自准备 seed=17。9 MiB 预测限额与 8 GiB 模型身份引用测试通过；篡改文件拒绝；真实数据确定性验收已通过；正式实验未运行 |
-| 真实 LLM、正式研究实验 | 未运行 | 后续需要明确任务、方法、模型和预算 |
+| 真实 LLM 开发验收 | 已按批准的 20 单元代表矩阵启动，首次失败保留，受限续跑中 | 逐项状态与未知账目见下文及首次运行索引；当前尚未通过完整验收 |
+| 正式研究实验 | 未运行 | 正式任务集合、重复与排除规则、方法和预算仍需冻结 |
 
 评分和比较补充验收：8 个报告/CLI 回归通过（72 项断言），包括最小化 MAE=1、RPG=1.125 与失败后的固定分母均值 0.5625，未运行或评分失败导致完整汇总为空、配对行不丢失；这些数值均为合成夹具。`uv run --no-sync pytest -q -m upstream tests/python/test_tabarena_metrics_upstream.py` 退出 0，4 项通过（6.65 秒）；三种冻结预测在固定官方环境实际调用评分，核对 r0f0、发布行序、原始类别/正类和误差映射，零模型/训练调用。软件配对导出不运行复现，不自动把其状态改成通过。
 
@@ -69,11 +70,11 @@ TS 只传文件描述符；Python 流式准备和验证特征表。排名评分�
 
 固定官方可选环境对 363612、363621、363685 三个真实 r0f0 任务分别调用实际 `StatigentSystem`，每项 fit 一次、predict 两次：全部通过来源成员、DataFrame 索引、原始类别次序、冻结模型哈希、重复预测一致性及同预测官方指标比较。合计 6 次底层拟合和 6 次预测，零 LLM。复现入口为 `PYTHONPATH=python uv run --project environments/tabarena --frozen --offline python -m statigent_benchmarks.tabarena_real_system --prepared PREPARED_DIRECTORY --config CONFIG --runs NEW_ROOT`；配置与详细记录保存在 `runs/tabarena-system-real-v1`。
 
-可提交的逐项指标、代码/环境、成本、哈希和本地记录索引见 [真实数据验收汇总](../benchmarks/metadata/modeling-real-validation.json)。数据准备成本见独立准备汇总；已准备数据被显式复用，不能计作免费准备。上述任务均已开发暴露，只证明软件链路，不构成智能体效果或正式论文成绩。真实 LLM 验收尚未执行，正式任务资格、时间语义、来源重叠及正式预算仍需另行冻结。
+可提交的逐项指标、代码/环境、成本、哈希和本地记录索引见 [真实数据验收汇总](../benchmarks/metadata/modeling-real-validation.json)。数据准备成本见独立准备汇总；已准备数据被显式复用，不能计作免费准备。上述任务均已开发暴露，只证明软件链路，不构成智能体效果或正式论文成绩。以上确定性验收不含真实 LLM；后续付费首次运行见下文。正式任务资格、时间语义、来源重叠及正式预算仍需另行冻结。
 
 ## 真实模型入口
 
-独立 `test:smoke:modeling-benchmarks` 的默认帮助、只读预检、显式授权门槛、范围漂移拒绝、失败保留和已有目录拒绝通过；与 schema 5 轨迹回归合计 4 例、22 项断言，退出 0。固定四单元 scope 的真实数据预检退出 0，48 次调用、640,000 token、2,400 秒为两批合计阈值，预检实际模型/训练调用均为零。预检不检查外部凭据或启动镜像。配置位于 `configs/evaluations/modeling-smoke/`，执行方式与限制见 [评测说明](evaluation.md)。实际付费验收尚未运行，等待任务 9.2 要求的范围确认；入口完成不等于真实验收通过。
+独立 `test:smoke:modeling-benchmarks` 的默认帮助、只读预检、显式授权门槛、范围漂移拒绝、失败保留和已有目录拒绝通过；与 schema 5 轨迹回归合计 4 例、22 项断言，退出 0。固定四单元 scope 的真实数据预检退出 0，48 次调用、640,000 token、2,400 秒为两批合计阈值，预检实际模型/训练调用均为零。预检不检查外部凭据或启动镜像。配置位于 `configs/evaluations/modeling-smoke/`，执行方式与限制见 [评测说明](evaluation.md)。该入口验收阶段尚未付费调用；后续批准范围及首次执行结果见下文，入口完成不等于真实验收通过。
 
 ## 最终集成检查与范围自审
 
@@ -89,7 +90,7 @@ TS 只传文件描述符；Python 流式准备和验证特征表。排名评分�
 
 最终 Docker 命令 `MODELING_TEST_IMAGE=statigent-runtime:modeling-benchmarks UV_CACHE_DIR=/private/tmp/statigent-uv-cache bun test tests/integration/evaluation-modeling-batch.test.ts tests/integration/evaluation-modeling-isolation.test.ts tests/integration/modeling-frozen-v2.test.ts` 退出 0，4 例、101 项断言通过（242.52 秒）：覆盖五阶段隔离、两种交付模式、确认、独立冻结预测、取消/超时、两基准批次、移走模型后的重评及篡改拒绝，全部使用受控决策、零付费 API。此前额外目标/多方法/复现的 Docker 证据保留在本页，不把本次 4 例冒充所有集成测试的重新运行。
 
-`openspec validate add-modeling-benchmarks --strict`、`git diff --check` 均退出 0。最终命令、退出码、日志哈希及新旧历史索引见 [检查汇总](../benchmarks/metadata/modeling-final-checks.json)。软件接入和约定的零 LLM 验收完成；真实付费验收保持未运行，正式研究集合与实验不在本轮执行范围。
+`openspec validate add-modeling-benchmarks --strict`、`git diff --check` 均退出 0。最终命令、退出码、日志哈希及新旧历史索引见 [检查汇总](../benchmarks/metadata/modeling-final-checks.json)。软件接入和约定的零 LLM 验收完成；之后启动的真实付费首次验收见下文，正式研究集合与实验不在本轮执行范围。
 
 ## 真实模型首次运行与受限续跑（2026-10-14）
 
@@ -98,3 +99,9 @@ TS 只传文件描述符；Python 流式准备和验证特征表。排名评分�
 追加批次首个 s3e9 无协同单元完成保护交付及复现，但一次约 137 ms 的请求返回 `transport_or_protocol_failure`，没有 usage。父账有 1 次未知消费，调度器按协议停止剩余 15 次。此时共实际执行 5 次，交付/复现通过 4 次，失败 1 次；已知 token 小计 403,284、模型尝试 32 次（含未知的一次），不能将已知小计当作总账单。汇总见 [首次运行索引](../benchmarks/metadata/modeling-live-validation.json)，完整记录在 `runs/modeling-live-smoke-v1` 与 `runs/modeling-live-type-coverage-v1`。
 
 用户随后明确批准保留未知账目，并继续尚未运行的 15 次。两份独立 scope 位于 `configs/evaluations/modeling-smoke-resume-v1/`，分别是其余类型 14 次和 s3e9 协同 1 次，零调用预检均通过；不重跑前 5 次，不增加原单项预算（每次 12 调用、160,000 token、600 秒）。原批次及其 not_run 状态保持不变，新运行使用独立身份关联。原未知用量不能因后续成功而改写为已知。任务 9.2 保持未完成，当前不能断言各类型都已跑通。
+
+## 首次运行缺陷修复
+
+首次轨迹暴露新版提示词遗漏已安装库、独立预测进程与序列化约束，以及自定义分类器缺少 `classes_`。提示词 v9 补充这些通用执行契约、整数类别输出与概率列顺序；不增加库、不规定模型家族或 EDA 次数。已有可信候选后的 `response_length` 现在进入可审计的保护收尾，仍丢弃截断动作并执行原配置的确认和最终交付。无候选、内容过滤、取消及执行/清理不完整仍不能借此交付；原失败记录不改写。
+
+修复在独立工作副本验证，首次矩阵继续使用原版本。`bun run check` 退出 0：367 个 TypeScript 用例、2,704 项断言及 216 个 Python 用例通过；补充分类接口文字后，四方法提示词与多目标交接回归通过（71 项断言）。新增真实 Docker 回归通过（78.35 秒），覆盖截断后两次确认、最终拟合、预测与独立预测复现，模型响应受控、零付费 API。旧 schema 1–4 各一份真实记录只读审计通过，递归文件摘要不变；OpenSpec strict 与 diff 检查通过。日志与实际运行身份见 [修复验收索引](../benchmarks/metadata/modeling-smoke-fixes-validation.json)。这部分证明修复的软件行为，不代表修复版本已经完成真实模型复测。
