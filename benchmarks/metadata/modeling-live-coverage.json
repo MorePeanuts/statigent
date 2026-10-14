@@ -1,0 +1,982 @@
+{
+  "schema_version": 1,
+  "scope": "development-task-type-and-method-delivery-evidence",
+  "research_experiment": false,
+  "pooled_performance_evaluation": false,
+  "first_attempts": {
+    "path": "benchmarks/metadata/modeling-live-validation.json",
+    "sha256": "b18649ad10114b663fd958f14556382b61f3203df5c256031a4d21b0b2707c54"
+  },
+  "retests": {
+    "path": "benchmarks/metadata/modeling-retest-validation.json",
+    "sha256": "dea33e6fc69904952c600e766b79101a9193ecbe1672454bb8ec00aa5db3cd36"
+  },
+  "coverage": [
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e9",
+      "type": "regression",
+      "methods": [
+        {
+          "method": "no_eda",
+          "first": {
+            "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/native/unit-000001/eb8d80cd-700f-4c25-9bb2-e759aa2c7544/modeling.json",
+              "sha256": "b5370a6332527f41e5f13e09437b9e018cb13b298ec0451ba5ad12bf935a435b"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "unknown",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-type-coverage-v1/evaluations/5d0cea3f-1dd8-42dd-a28d-6ff37f2c68fa/native/unit-000001/eb8d80cd-700f-4c25-9bb2-e759aa2c7544/modeling.json",
+              "sha256": "b5370a6332527f41e5f13e09437b9e018cb13b298ec0451ba5ad12bf935a435b"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "unknown",
+            "collaboration": "not_covered"
+          }
+        },
+        {
+          "method": "collaborative",
+          "first": {
+            "evaluation_id": "96be0f58-ad20-4dd6-9214-cab61240472e",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-collaborative-v1/evaluations/96be0f58-ad20-4dd6-9214-cab61240472e/native/unit-000001/f2d63640-4d55-4aca-aeab-b8291f75e546/modeling.json",
+              "sha256": "9dec3fd181b144ee0d60f6a6c374a65598041b2125936606d19e81e0ab09bd2c"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "96be0f58-ad20-4dd6-9214-cab61240472e",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-collaborative-v1/evaluations/96be0f58-ad20-4dd6-9214-cab61240472e/native/unit-000001/f2d63640-4d55-4aca-aeab-b8291f75e546/modeling.json",
+              "sha256": "9dec3fd181b144ee0d60f6a6c374a65598041b2125936606d19e81e0ab09bd2c"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "titanic",
+      "type": "binary",
+      "methods": [
+        {
+          "method": "no_eda",
+          "first": {
+            "evaluation_id": "7565087f-fff5-4433-bb50-6927af69b8ee",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-smoke-v1/evaluations/7565087f-fff5-4433-bb50-6927af69b8ee/native/unit-000001/b696d15e-98b3-477a-844d-bf9a19f1f6d6/modeling.json",
+              "sha256": "e343666ee0cc909b412543f93efde7252a56aaa78673572fe2d7f73aac19f183"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "7565087f-fff5-4433-bb50-6927af69b8ee",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-smoke-v1/evaluations/7565087f-fff5-4433-bb50-6927af69b8ee/native/unit-000001/b696d15e-98b3-477a-844d-bf9a19f1f6d6/modeling.json",
+              "sha256": "e343666ee0cc909b412543f93efde7252a56aaa78673572fe2d7f73aac19f183"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        },
+        {
+          "method": "collaborative",
+          "first": {
+            "evaluation_id": "7565087f-fff5-4433-bb50-6927af69b8ee",
+            "unit_id": "unit-000002",
+            "native_record": {
+              "path": "runs/modeling-live-smoke-v1/evaluations/7565087f-fff5-4433-bb50-6927af69b8ee/native/unit-000002/2d0ec3ac-404a-4a59-b825-3c9489b061e5/modeling.json",
+              "sha256": "ce03009248b1c0078a5c9a5823f79c3a8650326223d8b62ed701cf097495d95e"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "failed",
+            "reproduction": "not_run",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [
+            {
+              "evaluation_id": "b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4",
+              "unit_id": "unit-000002",
+              "native_record": {
+                "path": "runs/modeling-live-repair-collaborative-v1/evaluations/b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4/native/unit-000002/2169488a-858b-40ed-bdc3-03d52412500d/modeling.json",
+                "sha256": "a2d9744a0086a1afb2c89bff47b1aba2928eece24e17415f6eb176975a58a66e"
+              },
+              "prompt": {
+                "decision_interface": "modeling-decision-v2",
+                "correction_policy": "consecutive-unproductive-v2",
+                "version": "modeling-v9",
+                "sha256": "f810a3708c4e0e788de7b32dfe084cd0a6d67375008d60b57a82b8aee47beb26"
+              },
+              "status": "completed",
+              "reproduction": "passed",
+              "accounting": "known",
+              "collaboration": "not_covered"
+            }
+          ],
+          "latest": {
+            "evaluation_id": "b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4",
+            "unit_id": "unit-000002",
+            "native_record": {
+              "path": "runs/modeling-live-repair-collaborative-v1/evaluations/b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4/native/unit-000002/2169488a-858b-40ed-bdc3-03d52412500d/modeling.json",
+              "sha256": "a2d9744a0086a1afb2c89bff47b1aba2928eece24e17415f6eb176975a58a66e"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v9",
+              "sha256": "f810a3708c4e0e788de7b32dfe084cd0a6d67375008d60b57a82b8aee47beb26"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e2",
+      "type": "multiclass",
+      "methods": [
+        {
+          "method": "no_eda",
+          "first": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000001/0ded932c-7fc9-4017-8e4c-482795f5af1a/modeling.json",
+              "sha256": "ad09432754f6f1a0c8a75c8dbbb42c0915d4c656344f5e1e8ffd1d943c0435ed"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000001/0ded932c-7fc9-4017-8e4c-482795f5af1a/modeling.json",
+              "sha256": "ad09432754f6f1a0c8a75c8dbbb42c0915d4c656344f5e1e8ffd1d943c0435ed"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        },
+        {
+          "method": "collaborative",
+          "first": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000002",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000002/5587d2e5-f0c0-4550-8b0b-e83ffe8bb1e1/modeling.json",
+              "sha256": "259e0f8774bcc9b95b8ac68900432e65427607d8a3cd27cf46f2bcc2e94a5501"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000002",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000002/5587d2e5-f0c0-4550-8b0b-e83ffe8bb1e1/modeling.json",
+              "sha256": "259e0f8774bcc9b95b8ac68900432e65427607d8a3cd27cf46f2bcc2e94a5501"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e5",
+      "type": "ordinal",
+      "methods": [
+        {
+          "method": "no_eda",
+          "first": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000003",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000003/afac8f69-8f47-46ce-b4dc-15136e2ad3ab/modeling.json",
+              "sha256": "8621a75585e4689abc8ce36f0dc92b2f1e43c01713b0c18ade62240bc5129361"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000003",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000003/afac8f69-8f47-46ce-b4dc-15136e2ad3ab/modeling.json",
+              "sha256": "8621a75585e4689abc8ce36f0dc92b2f1e43c01713b0c18ade62240bc5129361"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        },
+        {
+          "method": "collaborative",
+          "first": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000004",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000004/ef341fba-5a27-4f74-9ad4-a6cd902b1e93/modeling.json",
+              "sha256": "a0cb5c6baa263b8dd57575957d2164fdc55b3b6c7224a3a03678c838261374d0"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "failed",
+            "reproduction": "not_run",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [
+            {
+              "evaluation_id": "b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4",
+              "unit_id": "unit-000001",
+              "native_record": {
+                "path": "runs/modeling-live-repair-collaborative-v1/evaluations/b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4/native/unit-000001/ce22671a-4028-4508-b4f3-37bbf2ab6e83/modeling.json",
+                "sha256": "3ef7f571dfd1ead68bf618e08c8db5d6a0e7e208155d3e13ae86bca6ecc4c4c1"
+              },
+              "prompt": {
+                "decision_interface": "modeling-decision-v2",
+                "correction_policy": "consecutive-unproductive-v2",
+                "version": "modeling-v9",
+                "sha256": "f810a3708c4e0e788de7b32dfe084cd0a6d67375008d60b57a82b8aee47beb26"
+              },
+              "status": "completed",
+              "reproduction": "passed",
+              "accounting": "known",
+              "collaboration": "not_covered"
+            }
+          ],
+          "latest": {
+            "evaluation_id": "b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-repair-collaborative-v1/evaluations/b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4/native/unit-000001/ce22671a-4028-4508-b4f3-37bbf2ab6e83/modeling.json",
+              "sha256": "3ef7f571dfd1ead68bf618e08c8db5d6a0e7e208155d3e13ae86bca6ecc4c4c1"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v9",
+              "sha256": "f810a3708c4e0e788de7b32dfe084cd0a6d67375008d60b57a82b8aee47beb26"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e13",
+      "type": "top3",
+      "methods": [
+        {
+          "method": "no_eda",
+          "first": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000005",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000005/3a85f5cd-fc7a-4303-a755-78074834592d/modeling.json",
+              "sha256": "8a8961b4bb147dd6428235b53336cf20bc25ca3727a8f586237adb4ab29679a3"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "failed",
+            "reproduction": "not_run",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [
+            {
+              "evaluation_id": "8f5e8eac-3e93-4064-982d-d57916fa4c8f",
+              "unit_id": "unit-000001",
+              "native_record": {
+                "path": "runs/modeling-live-repair-no_eda-v1/evaluations/8f5e8eac-3e93-4064-982d-d57916fa4c8f/native/unit-000001/f2d201ff-3d38-4eee-8742-c6bd0189ebb7/modeling.json",
+                "sha256": "0e1b0e115e5d784a24c987b4925dc815db23094e70190427a1cb19a4d541de3a"
+              },
+              "prompt": {
+                "decision_interface": "modeling-decision-v2",
+                "correction_policy": "consecutive-unproductive-v2",
+                "version": "modeling-v9",
+                "sha256": "357610c04c02327ac6d55b59653ad008e25c76d9a8444856052699fc82320df9"
+              },
+              "status": "completed",
+              "reproduction": "passed",
+              "accounting": "known",
+              "collaboration": "not_covered"
+            }
+          ],
+          "latest": {
+            "evaluation_id": "8f5e8eac-3e93-4064-982d-d57916fa4c8f",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-repair-no_eda-v1/evaluations/8f5e8eac-3e93-4064-982d-d57916fa4c8f/native/unit-000001/f2d201ff-3d38-4eee-8742-c6bd0189ebb7/modeling.json",
+              "sha256": "0e1b0e115e5d784a24c987b4925dc815db23094e70190427a1cb19a4d541de3a"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v9",
+              "sha256": "357610c04c02327ac6d55b59653ad008e25c76d9a8444856052699fc82320df9"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        },
+        {
+          "method": "collaborative",
+          "first": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000006",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000006/d1f74af3-acd2-4ac1-bfa0-3016ce12db9f/modeling.json",
+              "sha256": "c196680f83088f6ccaeeaf0fd3bf6fe9d70733a7bc28cc7f529ac1c0a22a5535"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000006",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000006/d1f74af3-acd2-4ac1-bfa0-3016ce12db9f/modeling.json",
+              "sha256": "c196680f83088f6ccaeeaf0fd3bf6fe9d70733a7bc28cc7f529ac1c0a22a5535"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e18",
+      "type": "two-target",
+      "methods": [
+        {
+          "method": "no_eda",
+          "first": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000007",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000007/a296ba16-103b-4257-b2d1-385db7592db6/modeling.json",
+              "sha256": "aa499d842f0846c5f193cc62e5d43e7fbb2f7d0f052c5cb93e34cb4b26014d2d"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "failed",
+            "reproduction": "not_run",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [
+            {
+              "evaluation_id": "8f5e8eac-3e93-4064-982d-d57916fa4c8f",
+              "unit_id": "unit-000002",
+              "native_record": {
+                "path": "runs/modeling-live-repair-no_eda-v1/evaluations/8f5e8eac-3e93-4064-982d-d57916fa4c8f/native/unit-000002/3dce06ea-6188-4dc1-a78f-2b5ba86849a5/modeling.json",
+                "sha256": "2d49ca9dad682ba7346fe328b61d34fe96676e448f79be8beb8a0ea24daba996"
+              },
+              "prompt": {
+                "decision_interface": "modeling-decision-v2",
+                "correction_policy": "consecutive-unproductive-v2",
+                "version": "modeling-v9",
+                "sha256": "357610c04c02327ac6d55b59653ad008e25c76d9a8444856052699fc82320df9"
+              },
+              "status": "completed",
+              "reproduction": "passed",
+              "accounting": "known",
+              "collaboration": "not_covered"
+            }
+          ],
+          "latest": {
+            "evaluation_id": "8f5e8eac-3e93-4064-982d-d57916fa4c8f",
+            "unit_id": "unit-000002",
+            "native_record": {
+              "path": "runs/modeling-live-repair-no_eda-v1/evaluations/8f5e8eac-3e93-4064-982d-d57916fa4c8f/native/unit-000002/3dce06ea-6188-4dc1-a78f-2b5ba86849a5/modeling.json",
+              "sha256": "2d49ca9dad682ba7346fe328b61d34fe96676e448f79be8beb8a0ea24daba996"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v9",
+              "sha256": "357610c04c02327ac6d55b59653ad008e25c76d9a8444856052699fc82320df9"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        },
+        {
+          "method": "collaborative",
+          "first": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000008",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000008/24074575-c7a0-4fc5-ae30-d9dbf7b356c2/modeling.json",
+              "sha256": "3f7a8b4b3ff6b1a1de1ff4684944f01bf79dadd16878deb53d381c09d8a0655b"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000008",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000008/24074575-c7a0-4fc5-ae30-d9dbf7b356c2/modeling.json",
+              "sha256": "3f7a8b4b3ff6b1a1de1ff4684944f01bf79dadd16878deb53d381c09d8a0655b"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e3",
+      "type": "seven-target",
+      "methods": [
+        {
+          "method": "no_eda",
+          "first": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000009",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000009/1c410d5f-df45-4a94-b918-7281bb931542/modeling.json",
+              "sha256": "61b5cb98fc07e81815868a37d4db43e1aed8a704316cf9d4135cc8a19bc3b936"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000009",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000009/1c410d5f-df45-4a94-b918-7281bb931542/modeling.json",
+              "sha256": "61b5cb98fc07e81815868a37d4db43e1aed8a704316cf9d4135cc8a19bc3b936"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        },
+        {
+          "method": "collaborative",
+          "first": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000010",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000010/55e9cc57-fee7-4234-91f4-8f2af511a310/modeling.json",
+              "sha256": "b8d53edb4f89c70638d324f5ef13b632385c6eb8321f4168961e76d2f0d63494"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+            "unit_id": "unit-000010",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/36b7bdfa-9785-446e-942c-7172c87b93ce/native/unit-000010/55e9cc57-fee7-4234-91f4-8f2af511a310/modeling.json",
+              "sha256": "b8d53edb4f89c70638d324f5ef13b632385c6eb8321f4168961e76d2f0d63494"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        }
+      ]
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363612",
+      "type": "regression",
+      "methods": [
+        {
+          "method": "no_eda",
+          "first": {
+            "evaluation_id": "512a285e-4c11-4a2c-af5c-8513c761cf2b",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-smoke-v1/evaluations/512a285e-4c11-4a2c-af5c-8513c761cf2b/native/unit-000001/456586c4-db80-4612-8965-2a1612094114/modeling.json",
+              "sha256": "9a8eeec22bcf409a564b4a7d6432b58af13a04c177b6bd52b6e80d4b685fe8b8"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "512a285e-4c11-4a2c-af5c-8513c761cf2b",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-smoke-v1/evaluations/512a285e-4c11-4a2c-af5c-8513c761cf2b/native/unit-000001/456586c4-db80-4612-8965-2a1612094114/modeling.json",
+              "sha256": "9a8eeec22bcf409a564b4a7d6432b58af13a04c177b6bd52b6e80d4b685fe8b8"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        },
+        {
+          "method": "collaborative",
+          "first": {
+            "evaluation_id": "512a285e-4c11-4a2c-af5c-8513c761cf2b",
+            "unit_id": "unit-000002",
+            "native_record": {
+              "path": "runs/modeling-live-smoke-v1/evaluations/512a285e-4c11-4a2c-af5c-8513c761cf2b/native/unit-000002/f5691c99-a508-4fbc-8958-48ec543fac03/modeling.json",
+              "sha256": "f8139723c012166fd12eb7372090ccf5cbe437142dc0bc334dc5bdfd427216df"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "512a285e-4c11-4a2c-af5c-8513c761cf2b",
+            "unit_id": "unit-000002",
+            "native_record": {
+              "path": "runs/modeling-live-smoke-v1/evaluations/512a285e-4c11-4a2c-af5c-8513c761cf2b/native/unit-000002/f5691c99-a508-4fbc-8958-48ec543fac03/modeling.json",
+              "sha256": "f8139723c012166fd12eb7372090ccf5cbe437142dc0bc334dc5bdfd427216df"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        }
+      ]
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363621",
+      "type": "binary",
+      "methods": [
+        {
+          "method": "no_eda",
+          "first": {
+            "evaluation_id": "bd5d6a1d-faad-4ee0-aac1-b5948c87ce93",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/bd5d6a1d-faad-4ee0-aac1-b5948c87ce93/native/unit-000001/387cbe51-b470-4ac1-bb81-364be16f7baa/modeling.json",
+              "sha256": "642ec39f9727c2c664bc8d80a709121dbdc17285a834c9872cb691437cccba1f"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "bd5d6a1d-faad-4ee0-aac1-b5948c87ce93",
+            "unit_id": "unit-000001",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/bd5d6a1d-faad-4ee0-aac1-b5948c87ce93/native/unit-000001/387cbe51-b470-4ac1-bb81-364be16f7baa/modeling.json",
+              "sha256": "642ec39f9727c2c664bc8d80a709121dbdc17285a834c9872cb691437cccba1f"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        },
+        {
+          "method": "collaborative",
+          "first": {
+            "evaluation_id": "bd5d6a1d-faad-4ee0-aac1-b5948c87ce93",
+            "unit_id": "unit-000002",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/bd5d6a1d-faad-4ee0-aac1-b5948c87ce93/native/unit-000002/fd2fa119-51bd-4262-83cb-0d63d2b47c79/modeling.json",
+              "sha256": "09ba855e50b7bb2e0277e5b70db2347723180a4ea64b75fd581ca9c9a4d0a001"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "bd5d6a1d-faad-4ee0-aac1-b5948c87ce93",
+            "unit_id": "unit-000002",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/bd5d6a1d-faad-4ee0-aac1-b5948c87ce93/native/unit-000002/fd2fa119-51bd-4262-83cb-0d63d2b47c79/modeling.json",
+              "sha256": "09ba855e50b7bb2e0277e5b70db2347723180a4ea64b75fd581ca9c9a4d0a001"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "covered"
+          }
+        }
+      ]
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363685",
+      "type": "multiclass",
+      "methods": [
+        {
+          "method": "no_eda",
+          "first": {
+            "evaluation_id": "bd5d6a1d-faad-4ee0-aac1-b5948c87ce93",
+            "unit_id": "unit-000003",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/bd5d6a1d-faad-4ee0-aac1-b5948c87ce93/native/unit-000003/ccb81047-7de1-4622-938f-da2583fc1823/modeling.json",
+              "sha256": "baf4d7d8d7a9b3652c69e185f0bdd973c9ef17b07344ef4ff2052fee1c134532"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "bd5d6a1d-faad-4ee0-aac1-b5948c87ce93",
+            "unit_id": "unit-000003",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/bd5d6a1d-faad-4ee0-aac1-b5948c87ce93/native/unit-000003/ccb81047-7de1-4622-938f-da2583fc1823/modeling.json",
+              "sha256": "baf4d7d8d7a9b3652c69e185f0bdd973c9ef17b07344ef4ff2052fee1c134532"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "264fd95a2a7526a3f329d42d5cd9585ecd4d8fa5435e9617e4670879206580a1"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "not_covered"
+          }
+        },
+        {
+          "method": "collaborative",
+          "first": {
+            "evaluation_id": "bd5d6a1d-faad-4ee0-aac1-b5948c87ce93",
+            "unit_id": "unit-000004",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/bd5d6a1d-faad-4ee0-aac1-b5948c87ce93/native/unit-000004/162aa4ae-ebba-4c51-bfcd-3ac2f2678eb8/modeling.json",
+              "sha256": "471d301d0001df9d5912f3d382613a6d390a02f52a518a5190f0f28e38c21578"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "covered"
+          },
+          "retests": [],
+          "latest": {
+            "evaluation_id": "bd5d6a1d-faad-4ee0-aac1-b5948c87ce93",
+            "unit_id": "unit-000004",
+            "native_record": {
+              "path": "runs/modeling-live-resume-pending-types-v1/evaluations/bd5d6a1d-faad-4ee0-aac1-b5948c87ce93/native/unit-000004/162aa4ae-ebba-4c51-bfcd-3ac2f2678eb8/modeling.json",
+              "sha256": "471d301d0001df9d5912f3d382613a6d390a02f52a518a5190f0f28e38c21578"
+            },
+            "prompt": {
+              "decision_interface": "modeling-decision-v2",
+              "correction_policy": "consecutive-unproductive-v2",
+              "version": "modeling-v8",
+              "sha256": "2959a274f98f90942e7d6ba6194f5f6938e186bd1e48dbb19b7477e48e9bd9f4"
+            },
+            "status": "completed",
+            "reproduction": "passed",
+            "accounting": "known",
+            "collaboration": "covered"
+          }
+        }
+      ]
+    }
+  ],
+  "latest_evidence": {
+    "planned": 20,
+    "delivered": 20,
+    "reproduced": 20,
+    "known_accounting": 19,
+    "collaborative_covered": 2
+  },
+  "all_recorded_consumption": {
+    "model_attempts": 153,
+    "known_token_subtotal": 2084619,
+    "unknown_attempts": 1,
+    "training_attempts": 117,
+    "eda_calls": 5,
+    "currency_cost": "not_computed"
+  },
+  "limitations": [
+    "Latest evidence mixes first attempts and explicit repair runs with their actual prompt versions; it is not a single comparative experiment.",
+    "Original failures and unknown consumption remain in first-attempt accounting; no historical success rate is rewritten.",
+    "Task-type delivery does not require forcing EDA on every natural decision path."
+  ]
+}

@@ -42,6 +42,18 @@ TabArena 保留官方原始数据与 Lite 索引。APSFailure（OpenML dataset 4
 
 DSBench 的原始题面/评分脚本可能使用作者本机路径，旧题面中的 Kaggle 行数也可能与本地重划分数据不同。源码按固定版本保存，后续适配时应明确路径、样本 ID 和输出格式；不能把“已下载”称为“已可直接完整评测”。
 
+## 建模候选静态审计
+
+新增 [103 项版本化目录](metadata/modeling-task-catalog.json)，逐项分开记录研究资格、适配状态及 preflight/deterministic/live 验收。DSBench 的实际指标、目标、额外标签排除、样本身份与预测导出列见 [52 项审计矩阵](../docs/modeling-dsbench-audit.md)。RPG 只读取已冻结的 104 个参考成员，不解包、不执行参考文本；评分依赖和成员哈希见 [来源清单](../src/evaluation/benchmarks/modeling/dsbench-references.json)。
+
+```bash
+bun run evaluate audit --output runs/modeling-benchmarks-validation/candidate-audit.json
+```
+
+先创建报告父目录；输出文件必须不存在。此命令只读本地来源，缺文件时报错，不下载、不调用模型、不训练。2026-10-14 首次执行覆盖全部 103 项：文件身份均通过，52 项 CSV 列/行数/身份与参考可读性检查通过，51 项 OpenML 版本及 r0f0 覆盖检查通过；约 49 秒。TabArena 原始 ARFF/Parquet 完整解码、内部划分、运行资源及真实训练另行验收，不能由此次静态报告推定通过。报告留在忽略 Git 的运行目录。
+
+TabArena 官方代码和指标环境单独锁定，安装及接口探针说明见 [可选兼容环境](../environments/tabarena/README.md)。官方接口探针通过与 Statigent system 桥接接通是不同状态。当前所有任务仍保留研究资格待审计状态；已暴露的 s3e9、潜在数据同源关系及带日期/周语义的任务均保留问题，不自动放入正式清单。
+
 ## 来源与复现
 
 `metadata/revisions.json` 固定 Hugging Face 数据版本；GitHub tree 文件固定评分代码 commit；逐文件清单保存源 URL、字节数与 SHA-256。DSBench 压缩包成员另做 CRC32 校验，DAComp 与 Hugging Face 官方 LFS SHA-256 比对。OpenML 保存 task ID、dataset ID、dataset version 及本地文件校验值。ARFF 与官方 MD5 比对；Parquet 的来源及校验值见相应任务目录的 `parquet-source.json`。下载完成后以 `metadata/download-status.json` 为实际状态。
@@ -80,5 +92,12 @@ uv run python benchmarks/download_xet_resumable.py
 可再次独立核验：`uv run --python benchmarks/.venv/bin/python python benchmarks/verify.py`。本次下载协调器已完成并退出；`metadata/active-jobs.json` 与 PID 文件仅记录本机此次作业，不代表仍有下载进程运行。
 
 DSBench 使用官方发布的预处理数据，TabArena-Lite 使用 OpenML 数据与固定划分；当前下载流程无需 Kaggle 账号或接受竞赛规则。两套建模基准均在本地评分。
+
+建模准备器另有锁定的 `data` 依赖组：`uv sync --frozen --group data` 安装
+`liac-arff==2.5.0`（保留名义字符串和缺失标记的 ARFF 解码）与
+`pyarrow==24.0.0`（Parquet 分批读取）。它与上面的历史下载校验环境独立，
+不引入 TabArena 官方训练依赖，也不加入默认 Docker 运行依赖。
+准备器按原始行号验证 r0f0 成员，写出 search、final-prediction、evaluator
+三个分区和来源映射；类别只从 TRAIN 成员确定。数据准备通过不代表模型运行验收通过。
 
 数据、上游代码、工具缓存及本机运行产物（进度、PID、错误记录、下载校验报告）已在本目录 `.gitignore` 中忽略；Git 保留文档、下载器、来源版本、任务选择清单和文件校验值。状态报告链接指向本地运行后生成的文件，新克隆的仓库中尚不存在。官方许可/说明随对应资源保存，不将第三方数据重新发布。

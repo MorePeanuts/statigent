@@ -10,7 +10,9 @@ from pathlib import Path
 import numpy as np
 from sklearn.metrics import roc_auc_score
 
+from statigent_modeling.metrics_v2 import InvalidPredictions as InvalidPredictionsV2
 from statigent_modeling.protocol import probabilities, validate_protocol
+from statigent_modeling.scoring_v2 import score_v2
 
 
 class InvalidPredictions(ValueError):
@@ -135,15 +137,25 @@ def main():
         if len(raw) > 1024 * 1024:
             raise ValueError("Request too large")
         request = json.loads(raw)
-        result = {"ok": True, "score": score(request)}
+        result = {
+            "ok": True,
+            "score": score_v2(request)
+            if isinstance(request, dict) and request.get("version") == 2
+            else score(request),
+        }
     except Exception as e:
         result = {
             "ok": False,
             "error": {
                 "kind": "invalid_predictions"
-                if isinstance(e, InvalidPredictions)
+                if isinstance(e, (InvalidPredictions, InvalidPredictionsV2))
                 else "scoring_failure",
                 "message": str(e)[:4096],
+                **(
+                    {"diagnostics": e.diagnostics}
+                    if getattr(e, "diagnostics", None) is not None
+                    else {}
+                ),
             },
         }
     identity = request if isinstance(request, dict) else {}
@@ -151,7 +163,7 @@ def main():
     print(
         json.dumps(
             {
-                "version": 1,
+                "version": 2 if identity.get("version") == 2 else 1,
                 "request_id": identity.get("request_id"),
                 "protocol_sha256": protocol.get("protocol_sha256")
                 if isinstance(protocol, dict)

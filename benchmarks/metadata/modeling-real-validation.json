@@ -1,0 +1,1490 @@
+{
+  "schema_version": 1,
+  "scope": "fixed-development-real-data-zero-LLM",
+  "research_experiment": false,
+  "automatic_retry": false,
+  "image": "sha256:74e2d6be21f7f304fe7a0fd14a8e102b35de2de10a79aef12bcec6c778273de3",
+  "hardware": {
+    "platform": "linux/arm64",
+    "runtime": "Docker via OrbStack",
+    "cpus": 1,
+    "memory_bytes": 2147483648
+  },
+  "cost": {
+    "paid_model_calls": 0,
+    "tokens": 0,
+    "training_attempts": 20,
+    "independent_prediction_calls": 10,
+    "independent_prediction_elapsed_ms": 67827.476166,
+    "official_training_attempts": 6,
+    "official_prediction_calls": 6,
+    "preparation": "See modeling-preparation-validation.json; reused explicitly, not free preparation."
+  },
+  "limitations": [
+    "All tasks are development-exposed; no formal task eligibility or effect claim.",
+    "Ten deterministic tasks do not measure autonomous live-model quality.",
+    "Currency cost is zero for API calls; local hardware costs are not priced.",
+    "Reports predate independent reproduction; separate immutable reproduction identities are linked here."
+  ],
+  "batches": [
+    {
+      "benchmark": "dsbench-modeling",
+      "evaluation_id": "1eaef384-6cf5-4120-94db-d263a2687753",
+      "score_id": "3b33cea3-c6db-4637-a801-75dc38ce6f0e",
+      "source": {
+        "path": "runs/modeling-real-deterministic-v1/1eaef384-6cf5-4120-94db-d263a2687753/scores/3b33cea3-c6db-4637-a801-75dc38ce6f0e/report.json",
+        "sha256": "5d740f4190a3792b1f9e7a33aac9b963a3258aa11878da1df3849b4efba0df5b"
+      },
+      "code": {
+        "commit": "9fabb93e9ad7bc4e91851f384eb468d6cb26f0cb",
+        "dirty": true,
+        "bun": "1.4.2",
+        "uv": "uv 0.8.22 (ade2bdbd2 2025-09-23)",
+        "python": "Python 3.12.9",
+        "docker": "29.4.0",
+        "locks": {
+          "bun.lock": "442627526785d162a9f0aea6b033b686d041cbc5153389dd7c907877d4f4e88e",
+          "uv.lock": "1a4f4cc049f6c3eb673e781030ea84d577eb794eb2d37e5ff40dfb74379312ef"
+        },
+        "platform": "darwin",
+        "release": "24.6.0",
+        "cpu": "Apple M1 Pro",
+        "cpu_count": 8,
+        "memory_bytes": 17179869184
+      },
+      "config": "configs/evaluations/modeling-development/dsbench-modeling-deterministic.json",
+      "tasks": [
+        {
+          "task_id": "playground-series-s3e9",
+          "unit_id": "unit-000001",
+          "seed": 17,
+          "method": "no_eda",
+          "execution_status": "completed",
+          "scoring_status": "scored",
+          "native_metric": "rmse-v1",
+          "native_value": 12.773504120786644,
+          "native_direction": "minimize",
+          "native_components": [],
+          "rpg": 0.22623284258095222,
+          "elapsed_ms": 34971,
+          "scoring_elapsed_ms": 946,
+          "native_usage": {
+            "tokens": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "modeling": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "children": {},
+            "training_attempts": 2,
+            "final_training_attempts": 1,
+            "confirmation_training_attempts": 0,
+            "eda_calls": 0,
+            "eda_executions": 0,
+            "remaining_ms": 866200,
+            "exploration_ms": 416200
+          },
+          "live_llm_calls": 0,
+          "controlled_decisions": 2,
+          "prediction_files": [
+            {
+              "path": "export.csv",
+              "bytes": 25448,
+              "sha256": "ff62c4ed273591a12fba1e37b8ce88d06643751a7d474db4e4c588c7f5fe3494"
+            },
+            {
+              "path": "prediction-manifest.json",
+              "bytes": 3170,
+              "sha256": "de707e4a3dd33910762a5444aab410bf3ed9e6f2205f1501919f62575db9b5c7"
+            },
+            {
+              "path": "predictions.csv",
+              "bytes": 30871,
+              "sha256": "981e6e0510558cbe6e3a2d4e5ec22b4d959aba305363bd023b0ecb04d3fe8b4e"
+            }
+          ],
+          "native_identity": {
+            "run_id": "ac3d2237-ff9d-4da8-ae12-dafd796b1717",
+            "frozen_id": "05f486a677fae2c2e2f7b86a0a44f65e5b9d3404af7ef2d8576ee073ec5aac29",
+            "sha256": "0d87fe10e880e3316783deb0433435fbe9e66068be6eb6f3cef56e372cfd73da",
+            "bytes": 11297,
+            "delivery_sha256": "b87fc350477f57d956f19389337de11e9d074b2184302ae93605d599a4579a40"
+          },
+          "reproduction": {
+            "status": "passed",
+            "record": {
+              "path": "runs/modeling-real-deterministic-v1/reproductions/d1aa7e69-19ff-42db-aa01-0e28d211f8ec/reproduction.json",
+              "sha256": "81649d23fd9c358b4f088bf85a39d5b7d6bd6601b54ed99271812a15e66e140f"
+            },
+            "comparison": {
+              "matched": true,
+              "differences": [],
+              "rows": 1082,
+              "protocol_sha256": "6a722e0e8e5048ae21f0e6315c6678ed5888d882b34971b958004cb72822117c",
+              "reference_sha256": "981e6e0510558cbe6e3a2d4e5ec22b4d959aba305363bd023b0ecb04d3fe8b4e",
+              "actual_sha256": "981e6e0510558cbe6e3a2d4e5ec22b4d959aba305363bd023b0ecb04d3fe8b4e",
+              "tolerance": {
+                "atol": 1e-8,
+                "rtol": 0.000001
+              }
+            },
+            "elapsed_ms": 7821.158625,
+            "calls": {
+              "models": 0,
+              "fits": 0,
+              "predictions": 1
+            }
+          }
+        },
+        {
+          "task_id": "titanic",
+          "unit_id": "unit-000002",
+          "seed": 17,
+          "method": "no_eda",
+          "execution_status": "completed",
+          "scoring_status": "scored",
+          "native_metric": "accuracy-v1",
+          "native_value": 0.8156424581005587,
+          "native_direction": "maximize",
+          "native_components": [],
+          "rpg": 0.6333333333333334,
+          "elapsed_ms": 32676,
+          "scoring_elapsed_ms": 981,
+          "native_usage": {
+            "tokens": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "modeling": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "children": {},
+            "training_attempts": 2,
+            "final_training_attempts": 1,
+            "confirmation_training_attempts": 0,
+            "eda_calls": 0,
+            "eda_executions": 0,
+            "remaining_ms": 868300,
+            "exploration_ms": 418300
+          },
+          "live_llm_calls": 0,
+          "controlled_decisions": 2,
+          "prediction_files": [
+            {
+              "path": "export.csv",
+              "bytes": 1249,
+              "sha256": "05d8e2c63f7407cc247247ae9623016748e6e0b25c7dcb06f8cba6200f8ba93a"
+            },
+            {
+              "path": "prediction-manifest.json",
+              "bytes": 3088,
+              "sha256": "788bdf47a33233b044986fc40a9659d68c899c39bb3f4a6087119b435470ba49"
+            },
+            {
+              "path": "predictions.csv",
+              "bytes": 2148,
+              "sha256": "65ff71dddce97b9b998ec19c4562c46cff2750efa47b222780aebfaf2bb3b7b6"
+            }
+          ],
+          "native_identity": {
+            "run_id": "9739dc72-0112-4df7-8986-6b1a74a40425",
+            "frozen_id": "a3771a94c3730e73784ff7809dc4bf421cb15050a9689dc98c084c2fc23d9b15",
+            "sha256": "d405cab35f1571f55d63ab000bb21ae779e3f122cbf35ae3dd2cfe9d4ca80d21",
+            "bytes": 17317,
+            "delivery_sha256": "726a0dc85dd487526a013e222947a04a224b60ca9af9d9c05817b4ab863d98b6"
+          },
+          "reproduction": {
+            "status": "passed",
+            "record": {
+              "path": "runs/modeling-real-deterministic-v1/reproductions/40993764-ed27-4354-b879-3faf2f2873db/reproduction.json",
+              "sha256": "cab7a241efe9262e52142c68d1a03066bfe3243e26c9501f4579d523d850f824"
+            },
+            "comparison": {
+              "matched": true,
+              "differences": [],
+              "rows": 179,
+              "protocol_sha256": "9661cc4c2d08615c15ba908598295de45f091685608b81a1eecf00d06f1c86af",
+              "reference_sha256": "65ff71dddce97b9b998ec19c4562c46cff2750efa47b222780aebfaf2bb3b7b6",
+              "actual_sha256": "65ff71dddce97b9b998ec19c4562c46cff2750efa47b222780aebfaf2bb3b7b6",
+              "tolerance": {
+                "atol": 1e-8,
+                "rtol": 0.000001
+              }
+            },
+            "elapsed_ms": 6513.534875,
+            "calls": {
+              "models": 0,
+              "fits": 0,
+              "predictions": 1
+            }
+          }
+        },
+        {
+          "task_id": "playground-series-s4e2",
+          "unit_id": "unit-000003",
+          "seed": 17,
+          "method": "no_eda",
+          "execution_status": "completed",
+          "scoring_status": "scored",
+          "native_metric": "accuracy-v1",
+          "native_value": 0.8730732177263969,
+          "native_direction": "maximize",
+          "native_components": [],
+          "rpg": 0.8505388542257516,
+          "elapsed_ms": 35908,
+          "scoring_elapsed_ms": 905,
+          "native_usage": {
+            "tokens": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "modeling": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "children": {},
+            "training_attempts": 2,
+            "final_training_attempts": 1,
+            "confirmation_training_attempts": 0,
+            "eda_calls": 0,
+            "eda_executions": 0,
+            "remaining_ms": 865951,
+            "exploration_ms": 415951
+          },
+          "live_llm_calls": 0,
+          "controlled_decisions": 2,
+          "prediction_files": [
+            {
+              "path": "export.csv",
+              "bytes": 98162,
+              "sha256": "546123f6b65324d087c9c7d8d7a3a480c8ddb924deb1cfb2a53e7eb734d92311"
+            },
+            {
+              "path": "prediction-manifest.json",
+              "bytes": 3306,
+              "sha256": "689613eccdf56d02d401a1d98500190ae04a27fbba6ee575477b64bc091ed041"
+            },
+            {
+              "path": "predictions.csv",
+              "bytes": 118933,
+              "sha256": "740f4e312f498b59b16b09fbf7f76151601ff24b2bde020bd40926e01c409811"
+            }
+          ],
+          "native_identity": {
+            "run_id": "ac5d8832-a196-434d-b43b-c8429e50cf04",
+            "frozen_id": "da95cb900955a42d3c1ede964f1cea476a060de62cc770e8b71f56c571c46c4d",
+            "sha256": "acde73d3567c6b22acb19f7987ddec050e8797b8e34fada5753fc652e9616d8e",
+            "bytes": 15290,
+            "delivery_sha256": "313229f2938070224bc7fb167aa37fd07bb609bb36a2225f25b486eacb9075c6"
+          },
+          "reproduction": {
+            "status": "passed",
+            "record": {
+              "path": "runs/modeling-real-deterministic-v1/reproductions/e9456d38-19d1-4c75-8140-edbd32e5bba7/reproduction.json",
+              "sha256": "1e94c7722bf7c981fc09653688e3e7d03cda958847f4a918febe0c63cba66537"
+            },
+            "comparison": {
+              "matched": true,
+              "differences": [],
+              "rows": 4152,
+              "protocol_sha256": "64897ea8a88bacf39ec71de763e26a8471c926cd01ece2d74aeb67f057b6268f",
+              "reference_sha256": "740f4e312f498b59b16b09fbf7f76151601ff24b2bde020bd40926e01c409811",
+              "actual_sha256": "740f4e312f498b59b16b09fbf7f76151601ff24b2bde020bd40926e01c409811",
+              "tolerance": {
+                "atol": 1e-8,
+                "rtol": 0.000001
+              }
+            },
+            "elapsed_ms": 6825.236875000002,
+            "calls": {
+              "models": 0,
+              "fits": 0,
+              "predictions": 1
+            }
+          }
+        },
+        {
+          "task_id": "playground-series-s3e5",
+          "unit_id": "unit-000004",
+          "seed": 17,
+          "method": "no_eda",
+          "execution_status": "completed",
+          "scoring_status": "scored",
+          "native_metric": "quadratic-kappa-ds10-v1",
+          "native_value": 0.3420924967658473,
+          "native_direction": "maximize",
+          "native_components": [],
+          "rpg": 0.3420924967658473,
+          "elapsed_ms": 32552,
+          "scoring_elapsed_ms": 950,
+          "native_usage": {
+            "tokens": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "modeling": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "children": {},
+            "training_attempts": 2,
+            "final_training_attempts": 1,
+            "confirmation_training_attempts": 0,
+            "eda_calls": 0,
+            "eda_executions": 0,
+            "remaining_ms": 868472,
+            "exploration_ms": 418472
+          },
+          "live_llm_calls": 0,
+          "controlled_decisions": 2,
+          "prediction_files": [
+            {
+              "path": "export.csv",
+              "bytes": 3078,
+              "sha256": "c4653d56ae142b38c69a7d4e7a8782f2432e26d2778e813ac00e83036ee73d3f"
+            },
+            {
+              "path": "prediction-manifest.json",
+              "bytes": 3242,
+              "sha256": "84dfe47b07eb3facdf165ea2b6a7129b27acc145348149ec3575f467ea2d7eea"
+            },
+            {
+              "path": "predictions.csv",
+              "bytes": 5152,
+              "sha256": "11bae15fcc2ad29fb69250d28aacabd056f9e2a29593bcfd046dcbd66829059c"
+            }
+          ],
+          "native_identity": {
+            "run_id": "0e3f43d8-5e58-4037-b517-a89235855447",
+            "frozen_id": "63c722217097d9156e3e5dbf5f143b7b8736a6287d3ab1c39c6d489ad930e308",
+            "sha256": "7ff9a33382706be2659cc2833d01af16e3e8646cf336713021937f02882ad913",
+            "bytes": 9579,
+            "delivery_sha256": "382619577e6910641284200825693371143f9072aaa465d92cf74fbb3c10b0ed"
+          },
+          "reproduction": {
+            "status": "passed",
+            "record": {
+              "path": "runs/modeling-real-deterministic-v1/reproductions/b1f3757d-4a9c-42e1-bf8f-32b3f5e6b6ff/reproduction.json",
+              "sha256": "f351a930e2492f3acde8e28150183c5532361aa9c376053d3b7dea13ef222afe"
+            },
+            "comparison": {
+              "matched": true,
+              "differences": [],
+              "rows": 412,
+              "protocol_sha256": "e31ed68e14fdfc3911db4ee793133f0efb523b3520dbbb1deda8c32d559e2280",
+              "reference_sha256": "11bae15fcc2ad29fb69250d28aacabd056f9e2a29593bcfd046dcbd66829059c",
+              "actual_sha256": "11bae15fcc2ad29fb69250d28aacabd056f9e2a29593bcfd046dcbd66829059c",
+              "tolerance": {
+                "atol": 1e-8,
+                "rtol": 0.000001
+              }
+            },
+            "elapsed_ms": 6630.836916,
+            "calls": {
+              "models": 0,
+              "fits": 0,
+              "predictions": 1
+            }
+          }
+        },
+        {
+          "task_id": "playground-series-s3e13",
+          "unit_id": "unit-000005",
+          "seed": 17,
+          "method": "no_eda",
+          "execution_status": "completed",
+          "scoring_status": "scored",
+          "native_metric": "top3-hit-ds-v1",
+          "native_value": 0.352112676056338,
+          "native_direction": "maximize",
+          "native_components": [],
+          "rpg": 0.352112676056338,
+          "elapsed_ms": 32747,
+          "scoring_elapsed_ms": 911,
+          "native_usage": {
+            "tokens": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "modeling": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "children": {},
+            "training_attempts": 2,
+            "final_training_attempts": 1,
+            "confirmation_training_attempts": 0,
+            "eda_calls": 0,
+            "eda_executions": 0,
+            "remaining_ms": 868170,
+            "exploration_ms": 418170
+          },
+          "live_llm_calls": 0,
+          "controlled_decisions": 2,
+          "prediction_files": [
+            {
+              "path": "export.csv",
+              "bytes": 5889,
+              "sha256": "bd609399d6a3e0c9db027e1f4fb44305dca9a89bfbdf14309b1971170f038416"
+            },
+            {
+              "path": "prediction-manifest.json",
+              "bytes": 4285,
+              "sha256": "c297e55b476a20389316a5f0c5b37b5e6da3defa3c59cfb11d0ea3c744f383fc"
+            },
+            {
+              "path": "predictions.csv",
+              "bytes": 18706,
+              "sha256": "783f85f50a70dc5a0d4afdff1edf20f1a1b09c3b4a52f05a8464d2218bf1176c"
+            }
+          ],
+          "native_identity": {
+            "run_id": "ddf03d20-2cef-4c90-bd78-ae7bb06d04fb",
+            "frozen_id": "5b54163051d8cce981aad58b6ec7b91c4afbd258eb1ab611c5d13dc6fab54ac7",
+            "sha256": "90f77f3087ac5ff0f19d399bcfcf2626dfece865e37e7bc3d7be78ca684f58ca",
+            "bytes": 10249,
+            "delivery_sha256": "a0915ee092ac8be9f45adaa50b8f80d0b3439be73fc6755907ec60ae88f57e44"
+          },
+          "reproduction": {
+            "status": "passed",
+            "record": {
+              "path": "runs/modeling-real-deterministic-v1/reproductions/bab2ffd2-80e7-415a-956a-9b511c023f46/reproduction.json",
+              "sha256": "cf6778e88a13c064aef270db0eaba73c46d7496c9487646f42a2587597a4ad56"
+            },
+            "comparison": {
+              "matched": true,
+              "differences": [],
+              "rows": 142,
+              "protocol_sha256": "936cd178033f084ddc4db8bb9e90248cc8aea39162a1bf3ed1512b8e01a71144",
+              "reference_sha256": "783f85f50a70dc5a0d4afdff1edf20f1a1b09c3b4a52f05a8464d2218bf1176c",
+              "actual_sha256": "783f85f50a70dc5a0d4afdff1edf20f1a1b09c3b4a52f05a8464d2218bf1176c",
+              "tolerance": {
+                "atol": 1e-8,
+                "rtol": 0.000001
+              }
+            },
+            "elapsed_ms": 6635.706374999998,
+            "calls": {
+              "models": 0,
+              "fits": 0,
+              "predictions": 1
+            }
+          }
+        },
+        {
+          "task_id": "playground-series-s3e18",
+          "unit_id": "unit-000006",
+          "seed": 17,
+          "method": "no_eda",
+          "execution_status": "completed",
+          "scoring_status": "scored",
+          "native_metric": "mean-target-auc-v1",
+          "native_value": 0.5988275421516938,
+          "native_direction": "maximize",
+          "native_components": [
+            {
+              "target": "EC1",
+              "metric": "roc-auc-v1",
+              "value": 0.63290559780104,
+              "error": null
+            },
+            {
+              "target": "EC2",
+              "metric": "roc-auc-v1",
+              "value": 0.5647494865023475,
+              "error": null
+            }
+          ],
+          "rpg": 0.19765508430338752,
+          "elapsed_ms": 36527,
+          "scoring_elapsed_ms": 981,
+          "native_usage": {
+            "tokens": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "modeling": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "children": {},
+            "training_attempts": 2,
+            "final_training_attempts": 1,
+            "confirmation_training_attempts": 0,
+            "eda_calls": 0,
+            "eda_executions": 0,
+            "remaining_ms": 865356,
+            "exploration_ms": 415356
+          },
+          "live_llm_calls": 0,
+          "controlled_decisions": 2,
+          "prediction_files": [
+            {
+              "path": "export.csv",
+              "bytes": 126106,
+              "sha256": "567ca271bdf6f62cfedcc5d6bd891092d8d6181659c90786fcc833f1f663adf2"
+            },
+            {
+              "path": "prediction-manifest.json",
+              "bytes": 3706,
+              "sha256": "557f41793ed22815fa375d2dce818e7ef0066a71e1a0b3471336f8935c2b8d46"
+            },
+            {
+              "path": "predictions.csv",
+              "bytes": 263964,
+              "sha256": "6c22bc7eb8b1c4c3e14dba7133d98dbec4e247254f102b785023e678f7cc865c"
+            }
+          ],
+          "native_identity": {
+            "run_id": "893c8253-efbe-402d-9c57-4893369710f9",
+            "frozen_id": "0c378e14d4cac91c6ffe9190a2dd79e75161992180945dcf084d5dfcf7f2c11f",
+            "sha256": "6353b189dd8439034692a5928d90ec2b08666590862853798cadf4af2ca5c532",
+            "bytes": 17614,
+            "delivery_sha256": "971dcc2416693d98d7f385adb44e076ed98dc2da6868796e5358a4cd519ddcaa"
+          },
+          "reproduction": {
+            "status": "passed",
+            "record": {
+              "path": "runs/modeling-real-deterministic-v1/reproductions/b112519e-29d0-441e-b5f4-1cdbe3e8c077/reproduction.json",
+              "sha256": "2986fb84de317696b2f0e39ef300d95e5c03ff2747db917549a0c8b23e1d8771"
+            },
+            "comparison": {
+              "matched": true,
+              "differences": [],
+              "rows": 2968,
+              "protocol_sha256": "8db48d8d5283802bd7099accaf0aa11b18fc92199ecb16eb4b7dea33dc2ad849",
+              "reference_sha256": "6c22bc7eb8b1c4c3e14dba7133d98dbec4e247254f102b785023e678f7cc865c",
+              "actual_sha256": "6c22bc7eb8b1c4c3e14dba7133d98dbec4e247254f102b785023e678f7cc865c",
+              "tolerance": {
+                "atol": 1e-8,
+                "rtol": 0.000001
+              }
+            },
+            "elapsed_ms": 6826.666417,
+            "calls": {
+              "models": 0,
+              "fits": 0,
+              "predictions": 1
+            }
+          }
+        },
+        {
+          "task_id": "playground-series-s4e3",
+          "unit_id": "unit-000007",
+          "seed": 17,
+          "method": "no_eda",
+          "execution_status": "completed",
+          "scoring_status": "scored",
+          "native_metric": "mean-target-auc-v1",
+          "native_value": 0.8057866509209847,
+          "native_direction": "maximize",
+          "native_components": [
+            {
+              "target": "Pastry",
+              "metric": "roc-auc-v1",
+              "value": 0.8110227175760917,
+              "error": null
+            },
+            {
+              "target": "Z_Scratch",
+              "metric": "roc-auc-v1",
+              "value": 0.9011683473810957,
+              "error": null
+            },
+            {
+              "target": "K_Scatch",
+              "metric": "roc-auc-v1",
+              "value": 0.9411961785944157,
+              "error": null
+            },
+            {
+              "target": "Stains",
+              "metric": "roc-auc-v1",
+              "value": 0.8336645299145299,
+              "error": null
+            },
+            {
+              "target": "Dirtiness",
+              "metric": "roc-auc-v1",
+              "value": 0.7221554543605151,
+              "error": null
+            },
+            {
+              "target": "Bumps",
+              "metric": "roc-auc-v1",
+              "value": 0.761137210462505,
+              "error": null
+            },
+            {
+              "target": "Other_Faults",
+              "metric": "roc-auc-v1",
+              "value": 0.6701621181577387,
+              "error": null
+            }
+          ],
+          "rpg": 0.6115733018419693,
+          "elapsed_ms": 40485,
+          "scoring_elapsed_ms": 1051,
+          "native_usage": {
+            "tokens": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "modeling": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "children": {},
+            "training_attempts": 2,
+            "final_training_attempts": 1,
+            "confirmation_training_attempts": 0,
+            "eda_calls": 0,
+            "eda_executions": 0,
+            "remaining_ms": 861951,
+            "exploration_ms": 411951
+          },
+          "live_llm_calls": 0,
+          "controlled_decisions": 2,
+          "prediction_files": [
+            {
+              "path": "export.csv",
+              "bytes": 524546,
+              "sha256": "02af37bd6bbb49b7097a4b2ed25f229013e5173fa3f74ff5d7c0ec8d2e0691f4"
+            },
+            {
+              "path": "prediction-manifest.json",
+              "bytes": 4830,
+              "sha256": "5455d5c58a2219a1f48fb70f9a87ddf48fd60b287b4919a04385f93463d36cb8"
+            },
+            {
+              "path": "predictions.csv",
+              "bytes": 1053094,
+              "sha256": "4d0ce8502fd0402271ce0ec9116baf35415238e38e94a10e5ad59c03393dba71"
+            }
+          ],
+          "native_identity": {
+            "run_id": "00ae7ef1-5b73-466f-bcc8-26fe3de18989",
+            "frozen_id": "dfeb319341ef6a4b6e7d2aa9575dac4356545dbd5b0635e0e5aadddb9b1d20ed",
+            "sha256": "5683bf4cf09c6fe58416956eae4e8bdede9e48639ff732700d08e4853276f11e",
+            "bytes": 46072,
+            "delivery_sha256": "517abf66b9032607d5ddc444e21a50a99eeb775bbe70d91ad20a6549db88f555"
+          },
+          "reproduction": {
+            "status": "passed",
+            "record": {
+              "path": "runs/modeling-real-deterministic-v1/reproductions/38132a1e-a9ef-43f4-8636-f9d4e20ce02c/reproduction.json",
+              "sha256": "8387aff78b9d15a2e7ac0117eadffb769efb0adad6c7f7255eafc981deede2f4"
+            },
+            "comparison": {
+              "matched": true,
+              "differences": [],
+              "rows": 3844,
+              "protocol_sha256": "b11c10d2d74dffb9a952610c95f3a6d69d6dbd93c981ea6354e86b93bafa6fe7",
+              "reference_sha256": "4d0ce8502fd0402271ce0ec9116baf35415238e38e94a10e5ad59c03393dba71",
+              "actual_sha256": "4d0ce8502fd0402271ce0ec9116baf35415238e38e94a10e5ad59c03393dba71",
+              "tolerance": {
+                "atol": 1e-8,
+                "rtol": 0.000001
+              }
+            },
+            "elapsed_ms": 6985.907082999998,
+            "calls": {
+              "models": 0,
+              "fits": 0,
+              "predictions": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "evaluation_id": "8ea72dcb-1c0f-4eb7-8a42-a2a2af4e7033",
+      "score_id": "9f6baf5c-5441-4489-9b45-3e1470b15b25",
+      "source": {
+        "path": "runs/modeling-real-deterministic-v1/8ea72dcb-1c0f-4eb7-8a42-a2a2af4e7033/scores/9f6baf5c-5441-4489-9b45-3e1470b15b25/report.json",
+        "sha256": "dfd5975a41785623d41e8d6b44639e6fa983248922f8488c3ead55219a98cd68"
+      },
+      "code": {
+        "commit": "5bc2a52cb283afc397366806b8945609cbaaba1f",
+        "dirty": false,
+        "bun": "1.4.2",
+        "uv": "uv 0.8.22 (ade2bdbd2 2025-09-23)",
+        "python": "Python 3.12.9",
+        "docker": "29.4.0",
+        "locks": {
+          "bun.lock": "442627526785d162a9f0aea6b033b686d041cbc5153389dd7c907877d4f4e88e",
+          "uv.lock": "1a4f4cc049f6c3eb673e781030ea84d577eb794eb2d37e5ff40dfb74379312ef"
+        },
+        "platform": "darwin",
+        "release": "24.6.0",
+        "cpu": "Apple M1 Pro",
+        "cpu_count": 8,
+        "memory_bytes": 17179869184
+      },
+      "config": "configs/evaluations/modeling-development/tabarena-lite-deterministic.json",
+      "tasks": [
+        {
+          "task_id": "363612",
+          "unit_id": "unit-000001",
+          "seed": 17,
+          "method": "no_eda",
+          "execution_status": "completed",
+          "scoring_status": "scored",
+          "native_metric": "rmse-v1",
+          "native_value": 3.671432014924066,
+          "native_direction": "minimize",
+          "native_components": [],
+          "rpg": null,
+          "elapsed_ms": 32307,
+          "scoring_elapsed_ms": 849,
+          "native_usage": {
+            "tokens": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "modeling": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "children": {},
+            "training_attempts": 2,
+            "final_training_attempts": 1,
+            "confirmation_training_attempts": 0,
+            "eda_calls": 0,
+            "eda_executions": 0,
+            "remaining_ms": 868662,
+            "exploration_ms": 418662
+          },
+          "live_llm_calls": 0,
+          "controlled_decisions": 2,
+          "prediction_files": [
+            {
+              "path": "export.csv",
+              "bytes": 10172,
+              "sha256": "73836d608956e305bdea1305b321557cb923e784ded3aab812a8110572447fe8"
+            },
+            {
+              "path": "prediction-manifest.json",
+              "bytes": 3124,
+              "sha256": "c2f82792add2c77f45253a43448b8fae81f8436b12969729c47f4d82ab7a1575"
+            },
+            {
+              "path": "predictions.csv",
+              "bytes": 16677,
+              "sha256": "42468aec5ee2432e7ffe3e7097d9b329bdfa24ba29a211d7ac79a3e49296495c"
+            }
+          ],
+          "native_identity": {
+            "run_id": "545683ee-5a69-474e-8aaf-2ea86d2de64a",
+            "frozen_id": "7b20c50e82a46ea05297cd9bf2b9db36e4be6ba522aa825a9e96bbaba049f5b8",
+            "sha256": "9abad1b0317580698faf490a54933762163c5d60eae6bc170bf88efe8f904241",
+            "bytes": 10489,
+            "delivery_sha256": "3d51110535b062f6bac53f2b6867a9dde60cc249305e44745daef9381721d3ee"
+          },
+          "reproduction": {
+            "status": "passed",
+            "record": {
+              "path": "runs/modeling-real-deterministic-v1/reproductions/0284343c-7430-4178-b40f-cc013f2e7003/reproduction.json",
+              "sha256": "9c744188c0811b2ec8dc7796a6bf0dd782aa558d67a7d157e0d097d29981d208"
+            },
+            "comparison": {
+              "matched": true,
+              "differences": [],
+              "rows": 501,
+              "protocol_sha256": "9b388038f8f19bd179ef6d0db0aa54e5594eed4d64f2e4bfc4eb6752497b06f3",
+              "reference_sha256": "42468aec5ee2432e7ffe3e7097d9b329bdfa24ba29a211d7ac79a3e49296495c",
+              "actual_sha256": "42468aec5ee2432e7ffe3e7097d9b329bdfa24ba29a211d7ac79a3e49296495c",
+              "tolerance": {
+                "atol": 1e-8,
+                "rtol": 0.000001
+              }
+            },
+            "elapsed_ms": 6517.278124999997,
+            "calls": {
+              "models": 0,
+              "fits": 0,
+              "predictions": 1
+            }
+          }
+        },
+        {
+          "task_id": "363621",
+          "unit_id": "unit-000002",
+          "seed": 17,
+          "method": "no_eda",
+          "execution_status": "completed",
+          "scoring_status": "scored",
+          "native_metric": "roc-auc-v1",
+          "native_value": 0.6578508771929825,
+          "native_direction": "maximize",
+          "native_components": [],
+          "rpg": null,
+          "elapsed_ms": 32429,
+          "scoring_elapsed_ms": 802,
+          "native_usage": {
+            "tokens": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "modeling": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "children": {},
+            "training_attempts": 2,
+            "final_training_attempts": 1,
+            "confirmation_training_attempts": 0,
+            "eda_calls": 0,
+            "eda_executions": 0,
+            "remaining_ms": 868508,
+            "exploration_ms": 418508
+          },
+          "live_llm_calls": 0,
+          "controlled_decisions": 2,
+          "prediction_files": [
+            {
+              "path": "export.csv",
+              "bytes": 4135,
+              "sha256": "51344220492e9867615ac35724b34ea0247445bf9220c3a795eebe7409bb6254"
+            },
+            {
+              "path": "prediction-manifest.json",
+              "bytes": 3201,
+              "sha256": "3ccb49a9ba7c1b17667a06037db6b1a47aabeb2f19e3cddecc8d97c1ed2cae34"
+            },
+            {
+              "path": "predictions.csv",
+              "bytes": 11069,
+              "sha256": "3fa43de764d1f3d7c7e3cd4a955c47b075a85f8d2c9d764a51e5ba314e996baa"
+            }
+          ],
+          "native_identity": {
+            "run_id": "b7cf6351-8707-4d3a-a76d-ff6517e8e019",
+            "frozen_id": "d3639f936043d472e6693328dec738e6594196cbb62a6df784187ad1c47b5252",
+            "sha256": "70cea00ed9b58686831ef349e39ea8982af9aa2921822c770d1fb449f824a7a3",
+            "bytes": 4633,
+            "delivery_sha256": "e96107f8cbabcf7fb0d88e44d603326c134b1143b5c850e4c914d04713a63d59"
+          },
+          "reproduction": {
+            "status": "passed",
+            "record": {
+              "path": "runs/modeling-real-deterministic-v1/reproductions/7cd6a434-46a9-4bc3-a05a-0b841e9d097d/reproduction.json",
+              "sha256": "70a99d77caa8272471672e29667fdd3e1a0ae12e54611090eddaa3889bfb529d"
+            },
+            "comparison": {
+              "matched": true,
+              "differences": [],
+              "rows": 250,
+              "protocol_sha256": "15301b9f68ec99c320a94e964e16c0728477ddb12136a7c5708fa2e5c8eff598",
+              "reference_sha256": "3fa43de764d1f3d7c7e3cd4a955c47b075a85f8d2c9d764a51e5ba314e996baa",
+              "actual_sha256": "3fa43de764d1f3d7c7e3cd4a955c47b075a85f8d2c9d764a51e5ba314e996baa",
+              "tolerance": {
+                "atol": 1e-8,
+                "rtol": 0.000001
+              }
+            },
+            "elapsed_ms": 6478.713791999995,
+            "calls": {
+              "models": 0,
+              "fits": 0,
+              "predictions": 1
+            }
+          }
+        },
+        {
+          "task_id": "363685",
+          "unit_id": "unit-000003",
+          "seed": 17,
+          "method": "no_eda",
+          "execution_status": "completed",
+          "scoring_status": "scored",
+          "native_metric": "log-loss-sklearn-v1",
+          "native_value": 0.7962552653058909,
+          "native_direction": "minimize",
+          "native_components": [],
+          "rpg": null,
+          "elapsed_ms": 31619,
+          "scoring_elapsed_ms": 777,
+          "native_usage": {
+            "tokens": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "modeling": {
+              "status": "known",
+              "input_tokens": 0,
+              "output_tokens": 0,
+              "total_tokens": 0,
+              "attempts": 2,
+              "unknown_attempts": 0,
+              "elapsed_ms": 0,
+              "currency_cost": "not_computed"
+            },
+            "children": {},
+            "training_attempts": 2,
+            "final_training_attempts": 1,
+            "confirmation_training_attempts": 0,
+            "eda_calls": 0,
+            "eda_executions": 0,
+            "remaining_ms": 869283,
+            "exploration_ms": 419283
+          },
+          "live_llm_calls": 0,
+          "controlled_decisions": 2,
+          "prediction_files": [
+            {
+              "path": "export.csv",
+              "bytes": 12685,
+              "sha256": "96d020caf20652aade24898b1a56d13b2a662996ab3a996896427a39d991099d"
+            },
+            {
+              "path": "prediction-manifest.json",
+              "bytes": 3249,
+              "sha256": "524de7ea9c25e78539dc4f3acd134c3f490ee2038cd6155b6ee03b31856b6434"
+            },
+            {
+              "path": "predictions.csv",
+              "bytes": 20241,
+              "sha256": "7e2a967ef74c2676350fcc9ddb867a785a2674fa9f809eb0e5440270611e17d4"
+            }
+          ],
+          "native_identity": {
+            "run_id": "3bb114e1-bd76-48fc-b85a-687307677432",
+            "frozen_id": "f62175fc422cdc51ca17801d2a70a7d49bf4642cb7d56d9550a613cc01de1c64",
+            "sha256": "741855162f1993ce3569ebe5a4d6c04d045f6a99831f71d76f95ff4e198f3bae",
+            "bytes": 5044,
+            "delivery_sha256": "27fe10e0bead665ef1c87d85876801ba85a2421d9cbd89c4d631a28237c24e1a"
+          },
+          "reproduction": {
+            "status": "passed",
+            "record": {
+              "path": "runs/modeling-real-deterministic-v1/reproductions/b7e0b0ad-be7b-424b-9054-082e43bc4d8c/reproduction.json",
+              "sha256": "6b3fa921745bf83d384412b02f5fe18bbe9ca88c0931ba03a2bb9e8af5ff58bb"
+            },
+            "comparison": {
+              "matched": true,
+              "differences": [],
+              "rows": 338,
+              "protocol_sha256": "2efcd428e5187e5b1a99be7ae48fe548d4319de7eb2cbc641864e448e74cf5f9",
+              "reference_sha256": "7e2a967ef74c2676350fcc9ddb867a785a2674fa9f809eb0e5440270611e17d4",
+              "actual_sha256": "7e2a967ef74c2676350fcc9ddb867a785a2674fa9f809eb0e5440270611e17d4",
+              "tolerance": {
+                "atol": 1e-8,
+                "rtol": 0.000001
+              }
+            },
+            "elapsed_ms": 6592.437082999997,
+            "calls": {
+              "models": 0,
+              "fits": 0,
+              "predictions": 1
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "official_system": [
+    {
+      "task_id": "363612",
+      "status": "passed",
+      "source": {
+        "path": "runs/tabarena-system-real-v1/b2fc9eaa-df38-42d0-8615-ba9aa6ec7fe8/real-system-verification.json",
+        "sha256": "8c9da61589798dec82f8089ba2cea3f98833d195718c4b5d95279be8cb1d9d3b"
+      },
+      "input_members": {
+        "path": "runs/tabarena-system-real-v1/b2fc9eaa-df38-42d0-8615-ba9aa6ec7fe8/input-members.json",
+        "sha256": "1acbc96fdf671a61de5619b6af88962c06351c98017d4954e4b0aea00768a251"
+      },
+      "source_dataset_sha256": "8c269f446fa104137e1d8ffd1109b23d843249af8865f400555420a15fffaa39",
+      "openml": {
+        "dataset_id": "46904",
+        "fold": 0,
+        "repeat": 0,
+        "version": 9
+      },
+      "seed": 17,
+      "fit": {
+        "result": {
+          "run_id": "d2443759-960a-4865-ae34-24e31c2d6e73",
+          "directory": "runs/tabarena-system-real-v1/b2fc9eaa-df38-42d0-8615-ba9aa6ec7fe8/native/d2443759-960a-4865-ae34-24e31c2d6e73",
+          "status": "model_frozen",
+          "reason": "model_frozen",
+          "best_experiment_id": "46d8d3c0-8e02-408b-95a1-bc6ef3ea29c8",
+          "record_error": false
+        },
+        "frozen_id": "1f837ff5797b04f8dabff6bb28474cd5eeab683d7423cc499ea43dcd719fb6e0",
+        "mode": "deterministic",
+        "live_llm_calls": 0,
+        "controlled_decisions": 2
+      },
+      "training_attempts": 2,
+      "prediction_calls": [
+        {
+          "run_id": "788bd7a2-7871-4a7f-89df-28c83cf5a8ab",
+          "status": "completed",
+          "elapsed_ms": 6113.690584,
+          "calls": {
+            "models": 0,
+            "fits": 0,
+            "predictions": 1
+          },
+          "sha256": "bea3fc7589702e2aef78f4415b2e4f585e9f7a2782fec6e736bff2637fda0a33"
+        },
+        {
+          "run_id": "9476aff3-57d3-4c0c-a2d0-e6dd5d47bc51",
+          "status": "completed",
+          "elapsed_ms": 6085.795208,
+          "calls": {
+            "models": 0,
+            "fits": 0,
+            "predictions": 1
+          },
+          "sha256": "bea3fc7589702e2aef78f4415b2e4f585e9f7a2782fec6e736bff2637fda0a33"
+        }
+      ],
+      "native_score": {
+        "metric": "rmse-v1",
+        "direction": "minimize",
+        "value": 3.6900666193145955,
+        "protocol_sha256": "9b388038f8f19bd179ef6d0db0aa54e5594eed4d64f2e4bfc4eb6752497b06f3",
+        "scoring_version": "tabular-metrics-v2",
+        "metric_definition_sha256": "8c665f8b664f1c94ec1c9e7a8f528cacbdb08910f0204653f344f5f5e8462ed9",
+        "evaluation_id": "c4784ce4b00ffa2bc5dd560662364e0936d4f2580a869ae161eaf6943da9bbd8",
+        "partition": "test",
+        "components": []
+      },
+      "official": {
+        "status": "passed",
+        "scope": "official-frozen-prediction-differential",
+        "dataset_sha256": "8c269f446fa104137e1d8ffd1109b23d843249af8865f400555420a15fffaa39",
+        "task_id": "363612",
+        "openml": {
+          "dataset_id": "46904",
+          "fold": 0,
+          "repeat": 0,
+          "version": 9
+        },
+        "predictions": {
+          "path": "runs/tabarena-system-real-v1/b2fc9eaa-df38-42d0-8615-ba9aa6ec7fe8/canonical-predictions.csv",
+          "bytes": 16891,
+          "sha256": "7457a18c5a598e000ae2594a8493fe6bca96cdde346d7cb5c934044b5253189a"
+        },
+        "labels_sha256": "181a305468c48c2773f19def218ed46bef0e0e1d3fd6f4b743a91c8377641d8c",
+        "native_value": 3.6900666193145955,
+        "official_error": 3.6900666193145955,
+        "metric": "rmse",
+        "canonical_classes": [],
+        "original_classes": [],
+        "code_commit": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+        "environment_lock_sha256": "e855c9fae096dcf6eb8e6cbcc88db05ad72fb8d0eb8fff092d464636534acd46",
+        "dependencies": {
+          "tabarena": "0.1.0",
+          "bencheval": "0.1.0",
+          "autogluon.core": "1.6.4b20261013",
+          "numpy": "2.5.4",
+          "pandas": "2.3.3",
+          "scikit-learn": "1.9.1",
+          "scipy": "1.18.1"
+        },
+        "calls": {
+          "models": 0,
+          "fits": 0
+        },
+        "elapsed_ms": 118.84354200446978
+      },
+      "reproduction": "two-independent-predict-calls-identical",
+      "elapsed_ms": 39573.53570900159,
+      "code": {
+        "commit": "5bc2a52cb283afc397366806b8945609cbaaba1f",
+        "dirty": false
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      }
+    },
+    {
+      "task_id": "363621",
+      "status": "passed",
+      "source": {
+        "path": "runs/tabarena-system-real-v1/8e821f5c-875e-4ce6-bc6d-6e8cb608a5e9/real-system-verification.json",
+        "sha256": "9aafc5486e06af22a12b1a2cfbdbe17c18e9034b89931a278d59468e2d4388b8"
+      },
+      "input_members": {
+        "path": "runs/tabarena-system-real-v1/8e821f5c-875e-4ce6-bc6d-6e8cb608a5e9/input-members.json",
+        "sha256": "3629c8d1fe4e8f4d10adfda569f932a80b701b6f72929f8f6e13f5dfddbc41eb"
+      },
+      "source_dataset_sha256": "28c9b0a3effb895cd986866895761b183a6897c06fd8a7d617b5f1d8cbc33d74",
+      "openml": {
+        "dataset_id": "46913",
+        "fold": 0,
+        "repeat": 0,
+        "version": 2
+      },
+      "seed": 17,
+      "fit": {
+        "result": {
+          "run_id": "d1d2e073-a915-4bd4-b175-ef06aee98857",
+          "directory": "runs/tabarena-system-real-v1/8e821f5c-875e-4ce6-bc6d-6e8cb608a5e9/native/d1d2e073-a915-4bd4-b175-ef06aee98857",
+          "status": "model_frozen",
+          "reason": "model_frozen",
+          "best_experiment_id": "76a3d9e3-8de2-43a5-a253-3160c742db79",
+          "record_error": false
+        },
+        "frozen_id": "1cb787bb10833bb4ff52c51366de39b08c71e6f5b380dd50c2dfb81e84020063",
+        "mode": "deterministic",
+        "live_llm_calls": 0,
+        "controlled_decisions": 2
+      },
+      "training_attempts": 2,
+      "prediction_calls": [
+        {
+          "run_id": "3de66512-fe4a-47a9-b950-b175f8205670",
+          "status": "completed",
+          "elapsed_ms": 6086.663292,
+          "calls": {
+            "models": 0,
+            "fits": 0,
+            "predictions": 1
+          },
+          "sha256": "1cc0283bd69eb3ce7a07496a0db54661097391f055612bec72d41b68e565f0a5"
+        },
+        {
+          "run_id": "89866eee-cc39-493f-9658-fe98327c411a",
+          "status": "completed",
+          "elapsed_ms": 6047.788375,
+          "calls": {
+            "models": 0,
+            "fits": 0,
+            "predictions": 1
+          },
+          "sha256": "1cc0283bd69eb3ce7a07496a0db54661097391f055612bec72d41b68e565f0a5"
+        }
+      ],
+      "native_score": {
+        "metric": "roc-auc-v1",
+        "direction": "maximize",
+        "value": 0.6578508771929825,
+        "protocol_sha256": "15301b9f68ec99c320a94e964e16c0728477ddb12136a7c5708fa2e5c8eff598",
+        "scoring_version": "tabular-metrics-v2",
+        "metric_definition_sha256": "9714a95b3c631eb150a129236c12284c2cce0fec4f8a74a2a0b78a59dd13302c",
+        "evaluation_id": "796fcb1018d6b8a0d589d6521068c6d7411becf9d80e8ba886728d23760c2fe1",
+        "partition": "test",
+        "components": []
+      },
+      "official": {
+        "status": "passed",
+        "scope": "official-frozen-prediction-differential",
+        "dataset_sha256": "28c9b0a3effb895cd986866895761b183a6897c06fd8a7d617b5f1d8cbc33d74",
+        "task_id": "363621",
+        "openml": {
+          "dataset_id": "46913",
+          "fold": 0,
+          "repeat": 0,
+          "version": 2
+        },
+        "predictions": {
+          "path": "runs/tabarena-system-real-v1/8e821f5c-875e-4ce6-bc6d-6e8cb608a5e9/canonical-predictions.csv",
+          "bytes": 11069,
+          "sha256": "3fa43de764d1f3d7c7e3cd4a955c47b075a85f8d2c9d764a51e5ba314e996baa"
+        },
+        "labels_sha256": "5090bd5d26179990d2d3a462fb0d44c6c273437070448d8cb99b0b5634089d98",
+        "native_value": 0.6578508771929825,
+        "official_error": 0.3421491228070175,
+        "metric": "roc_auc",
+        "canonical_classes": [
+          "No",
+          "Yes"
+        ],
+        "original_classes": [
+          "No",
+          "Yes"
+        ],
+        "code_commit": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+        "environment_lock_sha256": "e855c9fae096dcf6eb8e6cbcc88db05ad72fb8d0eb8fff092d464636534acd46",
+        "dependencies": {
+          "tabarena": "0.1.0",
+          "bencheval": "0.1.0",
+          "autogluon.core": "1.6.4b20261013",
+          "numpy": "2.5.4",
+          "pandas": "2.3.3",
+          "scikit-learn": "1.9.1",
+          "scipy": "1.18.1"
+        },
+        "calls": {
+          "models": 0,
+          "fits": 0
+        },
+        "elapsed_ms": 53.207999968435615
+      },
+      "reproduction": "two-independent-predict-calls-identical",
+      "elapsed_ms": 38801.34220799664,
+      "code": {
+        "commit": "5bc2a52cb283afc397366806b8945609cbaaba1f",
+        "dirty": false
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      }
+    },
+    {
+      "task_id": "363685",
+      "status": "passed",
+      "source": {
+        "path": "runs/tabarena-system-real-v1/72cd12fe-a76f-405f-8513-460990be953e/real-system-verification.json",
+        "sha256": "93aa1afc8b4ee2b7b178607c524cd791fea5b8373e40e5844d07192342b19c8d"
+      },
+      "input_members": {
+        "path": "runs/tabarena-system-real-v1/72cd12fe-a76f-405f-8513-460990be953e/input-members.json",
+        "sha256": "7a7d9477e7594eb25e7b4b502745f33671ba633d59d7a0ae45786a1b4cc1cb26"
+      },
+      "source_dataset_sha256": "5300c3efc6c34a28be8d8e58f97e087db7361e647d073a90e842c9e4596e3e02",
+      "openml": {
+        "dataset_id": "46941",
+        "fold": 0,
+        "repeat": 0,
+        "version": 3
+      },
+      "seed": 17,
+      "fit": {
+        "result": {
+          "run_id": "bc2239de-d501-44e4-9bea-a18fb3cd4203",
+          "directory": "runs/tabarena-system-real-v1/72cd12fe-a76f-405f-8513-460990be953e/native/bc2239de-d501-44e4-9bea-a18fb3cd4203",
+          "status": "model_frozen",
+          "reason": "model_frozen",
+          "best_experiment_id": "84619cc3-35ab-4f70-8ffa-77abd27c92ba",
+          "record_error": false
+        },
+        "frozen_id": "5f818eb936dec44df385176ee74527c04a6332566723108053dcf700a41d0f16",
+        "mode": "deterministic",
+        "live_llm_calls": 0,
+        "controlled_decisions": 2
+      },
+      "training_attempts": 2,
+      "prediction_calls": [
+        {
+          "run_id": "d9de6813-5615-4164-bfab-4688062140ae",
+          "status": "completed",
+          "elapsed_ms": 6403.469208,
+          "calls": {
+            "models": 0,
+            "fits": 0,
+            "predictions": 1
+          },
+          "sha256": "6671f53f05c57a5853dffc7decf9fc3cd4570e6414b40241e0106fade174b2a9"
+        },
+        {
+          "run_id": "2d94f475-5e1d-4c58-b6dd-cb1545954956",
+          "status": "completed",
+          "elapsed_ms": 6160.033333,
+          "calls": {
+            "models": 0,
+            "fits": 0,
+            "predictions": 1
+          },
+          "sha256": "6671f53f05c57a5853dffc7decf9fc3cd4570e6414b40241e0106fade174b2a9"
+        }
+      ],
+      "native_score": {
+        "metric": "log-loss-sklearn-v1",
+        "direction": "minimize",
+        "value": 0.7962552653058909,
+        "protocol_sha256": "2efcd428e5187e5b1a99be7ae48fe548d4319de7eb2cbc641864e448e74cf5f9",
+        "scoring_version": "tabular-metrics-v2",
+        "metric_definition_sha256": "839ce4b6e20b23a0cf4b7f5534ebefbe41e67e429950c19bed320f5e9b70f6ec",
+        "evaluation_id": "58f9af1c5395e1e734f29aa30890b1e3d52aaa3abe60476261317510a604ab05",
+        "partition": "test",
+        "components": []
+      },
+      "official": {
+        "status": "passed",
+        "scope": "official-frozen-prediction-differential",
+        "dataset_sha256": "5300c3efc6c34a28be8d8e58f97e087db7361e647d073a90e842c9e4596e3e02",
+        "task_id": "363685",
+        "openml": {
+          "dataset_id": "46941",
+          "fold": 0,
+          "repeat": 0,
+          "version": 3
+        },
+        "predictions": {
+          "path": "runs/tabarena-system-real-v1/72cd12fe-a76f-405f-8513-460990be953e/canonical-predictions.csv",
+          "bytes": 20241,
+          "sha256": "7e2a967ef74c2676350fcc9ddb867a785a2674fa9f809eb0e5440270611e17d4"
+        },
+        "labels_sha256": "7535641285680a6dd4ffaecb7b13ff949033a533e4ed8d287606e63ca6349955",
+        "native_value": 0.7962552653058909,
+        "official_error": 0.7962552653058909,
+        "metric": "log_loss",
+        "canonical_classes": [
+          "high risk",
+          "low risk",
+          "mid risk"
+        ],
+        "original_classes": [
+          "high risk",
+          "low risk",
+          "mid risk"
+        ],
+        "code_commit": "df2f7533fc0cb3a781d8d4d4b12129644bfcf748",
+        "environment_lock_sha256": "e855c9fae096dcf6eb8e6cbcc88db05ad72fb8d0eb8fff092d464636534acd46",
+        "dependencies": {
+          "tabarena": "0.1.0",
+          "bencheval": "0.1.0",
+          "autogluon.core": "1.6.4b20261013",
+          "numpy": "2.5.4",
+          "pandas": "2.3.3",
+          "scikit-learn": "1.9.1",
+          "scipy": "1.18.1"
+        },
+        "calls": {
+          "models": 0,
+          "fits": 0
+        },
+        "elapsed_ms": 37.365625030361116
+      },
+      "reproduction": "two-independent-predict-calls-identical",
+      "elapsed_ms": 39663.9309169841,
+      "code": {
+        "commit": "5bc2a52cb283afc397366806b8945609cbaaba1f",
+        "dirty": false
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      }
+    }
+  ]
+}

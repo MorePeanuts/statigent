@@ -5,7 +5,14 @@ import type { ModelingMethod } from "./config";
 import type { AnalysisRecord } from "./eda";
 import type { Experiment } from "./experiments";
 import type { BasicProfile } from "./profile";
-import { type Protocol, validateScore } from "./protocol";
+import type { BasicProfileV2 } from "./profile-v2";
+import { validateScore } from "./protocol";
+import { validateScoreV2 } from "./score-v2";
+import {
+  type ModelingProtocol,
+  type ModelingScore,
+  validateEvaluationScore,
+} from "./versioned-score";
 
 export const DECISION_INTERFACE = "modeling-decision-v2";
 export const CORRECTION_POLICY = "consecutive-unproductive-v2";
@@ -52,10 +59,10 @@ export interface AcceptedAction {
 }
 export interface SourceContext {
   run_id: string;
-  profile: BasicProfile;
+  profile: BasicProfile | BasicProfileV2;
   profile_sha256: string;
-  protocol: Protocol;
-  experiments: readonly Experiment[];
+  protocol: ModelingProtocol;
+  experiments: readonly Experiment<ModelingScore>[];
   analyses: readonly AnalysisRecord[];
 }
 export function parseCore(
@@ -105,7 +112,7 @@ export function parseCore(
 }
 export function validateCore(
   core: CoreAction,
-  experiments: readonly Experiment[],
+  experiments: readonly Experiment<ModelingScore>[],
 ) {
   const source = (id: string) => {
     const e = experiments.find((e) => e.id === id);
@@ -205,7 +212,7 @@ export function bindSource(raw: unknown, context: SourceContext): BoundSource {
       } else if (fact === "score") {
         if (e.status !== "completed")
           throw new Error("Unconfirmed score source");
-        validateScore(e.score, context.protocol, e.evaluation.evaluation_id);
+        validateEvaluationScore(e.score, context.protocol, e.evaluation);
       } else {
         const d = e.training_diagnostic;
         if (
@@ -219,19 +226,21 @@ export function bindSource(raw: unknown, context: SourceContext): BoundSource {
             sha256(Buffer.from(JSON.stringify(e.evaluation.split.train)))
         )
           throw new Error("Training diagnostic source not available");
-        validateScore(
-          d.score,
-          context.protocol,
-          sha256(
-            Buffer.from(
-              JSON.stringify({
-                partition: "train",
-                search_evaluation_id: e.evaluation.evaluation_id,
-                members_sha256: d.members_sha256,
-              }),
-            ),
+        const diagnosticIdentity = sha256(
+          Buffer.from(
+            JSON.stringify({
+              partition: "train",
+              search_evaluation_id: e.evaluation.evaluation_id,
+              members_sha256: d.members_sha256,
+            }),
           ),
         );
+        if (context.protocol.version === 2)
+          validateScoreV2(d.score, context.protocol, {
+            evaluation_id: diagnosticIdentity,
+            partition: "search-training",
+          });
+        else validateScore(d.score, context.protocol, diagnosticIdentity);
       }
       binding = {
         ...scope,
@@ -279,7 +288,12 @@ export function bindSource(raw: unknown, context: SourceContext): BoundSource {
           e.predict?.output?.sha256 !== origin.prediction_sha256
         )
           throw new Error("Analysis prediction source mismatch");
-        validateScore(e.score, context.protocol, e.evaluation?.evaluation_id);
+        if (context.protocol.version === 2) {
+          if (!e.evaluation)
+            throw new Error("Missing analysis evaluation identity");
+          validateEvaluationScore(e.score, context.protocol, e.evaluation);
+        } else
+          validateScore(e.score, context.protocol, e.evaluation?.evaluation_id);
       }
       binding = {
         ...scope,
@@ -361,7 +375,7 @@ export function parseSearchEnd(value: unknown): SearchEnd | null {
     throw new Error("Invalid search end kind");
   return { kind: x.kind, reason: str(x.reason, "search end reason") };
 }
-export function parseDeliveryState(value: unknown) {
+export function parseDeliveryState(value: unknown, allowPending = false) {
   const x = obj(value);
   keys(x, ["status", "artifact"]);
   if (
@@ -369,12 +383,14 @@ export function parseDeliveryState(value: unknown) {
     x.status !== "running" &&
     x.status !== "completed" &&
     x.status !== "failed" &&
-    x.status !== "cancelled"
+    x.status !== "cancelled" &&
+    !(allowPending && x.status === "pending_prediction")
   )
     throw new Error("Invalid delivery status");
   if (
     x.artifact === undefined ||
-    (x.status === "completed" && x.artifact === null)
+    ((x.status === "completed" || x.status === "pending_prediction") &&
+      x.artifact === null)
   )
     throw new Error("Missing delivery artifact state");
   if (x.artifact !== null) obj(x.artifact);

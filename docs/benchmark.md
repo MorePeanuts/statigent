@@ -212,6 +212,12 @@ Question 1 What is your average hourly electricity usage?  a. 0.641kWh b. 0.782k
 
 评价以逐任务独立测试原生分数及适当汇总为主，同时报告任务完成率、重复运行稳定性、交付可复现性、token/API 成本、训练与总耗时。失败及未完成任务按预先确定的规则纳入结果，不只统计成功任务，不直接平均不同尺度的原生指标。轨迹用于检查分析是否产生或改变方案、实验是否落实改动及结果是否修正认识，不能以调用或证据引用次数代替效果证据。
 
+统一建模评测 v3 已将原生分数放在逐题结果中：完成率和 DSBench RPG 使用固定计划分母，合法预测才有原生分数；已执行失败计完成率 0、RPG 0，未运行或评分材料/计算故障使完整汇总为空。RPG 为 `max(0, (score - baseline) / (GT - baseline))`，最小化指标保留负分母，不截断大于 1 的值。参考来自固定上游压缩包，逐成员校验哈希，只在评分端读取；GT 不是本机同预算重训的基线，不据此推导硬件或效率优势。
+
+DSBench 按冻结脚本实际口径评分，保留题面与发布子集的差异：s3e23 实为 AUC、s3e20 实为 RMSE、s3e13 为前三候选命中而非位置加权 MAP；s3e19 双零导致未定义时按评分故障处理。先按冻结评价成员对齐 ID，再调用同一指标核心；不沿用原脚本未赋回排序导致的错行风险。范围和逐题勘误见 [指标协议](modeling-metrics.md) 与 [候选审计](modeling-dsbench-audit.md)。
+
+TabArena 当前软件口径为本地候选的 r0f0，分别保存本地 RMSE/AUC/log-loss 与官方误差表示（RMSE、1−AUC、log-loss），不平均异尺度原生值，不声称官方排行榜成绩。冻结预测的回归、二分类、多分类合成用例已在固定官方环境实际差分通过；真实 r0f0 的 system 验收范围另见 [建模基准验收记录](modeling-benchmarks-validation.md)。配对 JSON/CSV 通过 `evaluate compare` 导出，失败和缺失行保留，独立复现与成本另列。离线评分只需冻结预测、公开协议和私有评分材料，不依赖原生模型目录。
+
 各组尽量统一底层 LLM、可用建模库、硬件、数据划分、确认协议与合理的资源上限，披露无法统一的条件。同预算比较用于控制资源投入差异；上限通过开发预实验确定，不直接沿用当前只允许一次 EDA、三次搜索拟合的冒烟配置。EDA、训练、确认、重试和最终交付全部计入成本。预算—效果曲线可作为补充敏感性分析。
 
 测试标签仅供方案冻结后的独立评分，分析和自适应试验都基于允许训练数据及其内部验证产物。关键候选的额外划分或重复验证等确认策略仍待细化，须预先固定、对各组公平适用，不能在搜索中任意更换验证口径；外层测试结果不反馈搜索。正式任务集合、重复次数及资源上限尚未冻结，现有软件与开发冒烟状态见 [建模说明](modeling.md)，不据此宣称新方法已实现或收益已验证。
@@ -327,6 +333,12 @@ credit_score,country,gender,age,tenure,balance,products_number,credit_card,activ
 **接入方式：** 把本方法作为自行管理预处理、内部验证、搜索和集成的 `system` 接入，不在完整智能体外再套单模型的 200 配置 HPO。保留官方外层划分。官方排行榜所用预算与硬件可能不同，应重跑同条件基线后再比较成本；Lite 减少的是外层划分数量，不保证全部训练便宜。[官方 system 接入示例](https://github.com/autogluon/tabarena/blob/main/examples/benchmarking/run_quickstart_tabarena_system.py)
 
 ### 下载范围与实验清单的区别
+
+建模适配现已建立 [全候选目录](../benchmarks/metadata/modeling-task-catalog.json) 和 [DSBench 逐题审计矩阵](modeling-dsbench-audit.md)，`bun run evaluate audit` 可执行只读来源/结构审计。2026-10-14 的 103 项来源检查未发现哈希错误，RPG 的 104 个固定参考成员均可安全解析且方向一致；完整解码、内部划分、资源与模型执行尚须分层验收。TabArena 固定官方接口/指标探针及本项目 system wrapper 的合成真实调用已在独立锁定环境通过；小型真实 r0f0 与付费智能体验收仍待执行，见 [兼容环境](../environments/tabarena/README.md)。
+
+主兼容口径依据发布评分实现：s3e13 使用前三命中而非位置加权；s3e19 双零属于未定义边界；s3e20、s3e23 的误导变量分别实际计算 RMSE、AUC。s3e18 的 EC3–EC6 以及 bike-sharing-demand 的 casual/registered 均不能进入预测特征。原题面不改写，差异公开记录；后续修订公式需要独立版本和参考。
+
+候选状态不会因静态检查通过自动变为正式研究资格。s3e9 已有真实开发暴露；日期/周字段的未来预测解释以及跨任务/跨基准的潜在同源关系仍待审计，原发布划分保持不变。全指标工程覆盖也不等于全部候选已完成真实实验。
 
 DSBench 官方索引有 74 项，当前下载其中 **52 项常规结构化表格任务**，排除 22 项文本、时序/信号、未来预测或特殊结构任务。具体清单及理由见 [ds-modeling-selection.json](../benchmarks/metadata/ds-modeling-selection.json)。发布压缩包还多出索引之外的 `tabular-playground-series-oct-2021`，本次不自动纳入。每项只提取任务说明、处理后的训练/测试 CSV 和评测端标签，不下载原 Kaggle 提交模板及 macOS 隐藏文件。
 

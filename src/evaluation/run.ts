@@ -18,9 +18,10 @@ import {
   quarantineDeliverables,
   validateReport,
 } from "./deliverables";
-import { publishInputs } from "./files";
+import { publishTaskInputs } from "./files";
 import { JudgeBudgetExhausted, JudgeSession } from "./judge";
 import type { Plan, Registry } from "./plan";
+import { readPredictionManifest } from "./predictions";
 import { EvaluationStore, inspect, type UnitRecord } from "./records";
 
 export function effectiveBudget(
@@ -55,11 +56,33 @@ async function finalizeDeliverables(
   submission: Submission,
   task: PublicTask,
   root: string,
+  prepare?: () => Promise<void>,
+  seed?: number,
 ): Promise<void> {
   try {
     if (submission.deliverables.length)
       throw new Error("Adapters must not list deliverables themselves");
-    submission.deliverables = await freezeDeliverables(root);
+    if (submission.status === "completed") {
+      await prepare?.();
+      if (task.output.kind === "predictions")
+        await readPredictionManifest(root, task, { seed });
+    }
+    submission.deliverables = await freezeDeliverables(root, task.output);
+    if (
+      task.output.kind === "predictions" &&
+      submission.status === "completed"
+    ) {
+      const expected = [
+        task.output.prediction_file,
+        task.output.export_file,
+        task.output.manifest_file,
+      ].sort();
+      if (
+        JSON.stringify(submission.deliverables.map((f) => f.path).sort()) !==
+        JSON.stringify(expected)
+      )
+        throw new Error("Unexpected prediction deliverable set");
+    }
     if (
       submission.trajectory !== null &&
       !submission.deliverables.some((d) => d.path === submission.trajectory)
@@ -128,6 +151,7 @@ export async function scoreUnit(
         scoring: plan.config.scoring?.options ?? {},
         judge,
         signal,
+        seed: record.unit.seed,
       }),
       record.unit.id,
     );
@@ -273,7 +297,12 @@ export async function runEvaluation(
       await mkdir(deliverablesRoot, { mode: 0o700 });
       try {
         const inputRoot = join(store.directory, "units", unit.id, "input");
-        const method = await publishInputs(plan.source_root, task, inputRoot);
+        const publication = await publishTaskInputs(
+          plan.source_root,
+          task,
+          inputRoot,
+        );
+        const method = publication.method;
         await store.event("inputs_published", { unit_id: unit.id, method });
         unitSignal.throwIfAborted();
         const runRoot = join(store.directory, "native", unit.id);
@@ -283,10 +312,23 @@ export async function runEvaluation(
           typeof pinned === "string"
             ? { ...config, options: { ...config.options, image: pinned } }
             : config;
+        if (task.output.kind === "predictions") {
+          budget.timeout_ms = Math.max(
+            0,
+            budget.timeout_ms - (Date.now() - started),
+          );
+          record.effective_budget = { ...budget };
+          record.budget_status = "reduced";
+          await store.unit(record);
+          await store.event("effective_parent_budget", {
+            unit_id: unit.id,
+            budget,
+          });
+        }
         submission = validateSubmission(
           await adapter.run(
             {
-              schema_version: 2,
+              schema_version: task.output.kind === "predictions" ? 3 : 2,
               evaluation_id: store.manifest.evaluation_id,
               unit_id: unit.id,
               task,
@@ -294,6 +336,9 @@ export async function runEvaluation(
               budget,
               seed: unit.seed,
               input_root: inputRoot,
+              ...(publication.phase_roots
+                ? { phase_roots: publication.phase_roots }
+                : {}),
               run_root: runRoot,
               deliverables_root: deliverablesRoot,
               trajectory,
@@ -301,7 +346,7 @@ export async function runEvaluation(
             unitSignal,
           ),
           unit.id,
-          { frozen: false },
+          { frozen: false, output: task.output },
         );
         if (
           cap.model === "none"
@@ -316,7 +361,7 @@ export async function runEvaluation(
           throw new Error("Unverified measurement provenance");
       } catch (error) {
         submission = {
-          schema_version: 2,
+          schema_version: task.output.kind === "predictions" ? 3 : 2,
           unit_id: unit.id,
           status: signal.aborted
             ? options.signal?.aborted
@@ -344,7 +389,23 @@ export async function runEvaluation(
         submission.status = options.signal?.aborted ? "cancelled" : "timed_out";
         submission.answer_text = "";
       }
-      await finalizeDeliverables(submission, task, deliverablesRoot);
+      const prepareDelivery = benchmark.prepareDelivery;
+      await finalizeDeliverables(
+        submission,
+        task,
+        deliverablesRoot,
+        prepareDelivery
+          ? () =>
+              prepareDelivery(plan.config.benchmark.options, task, submission, {
+                deliverables_root: deliverablesRoot,
+                scoring: plan.config.scoring?.options ?? {},
+                judge: null,
+                seed: unit.seed,
+                signal,
+              })
+          : undefined,
+        unit.seed,
+      );
       record.elapsed_ms = Date.now() - started;
       record.ended_at = new Date().toISOString();
       record.execution_status = submission.status;
@@ -369,7 +430,7 @@ export async function runEvaluation(
         stop = submission.cleanup_error
           ? "cleanup_failed"
           : "agent_record_failed";
-      record.submission_sha256 = await store.freeze(submission);
+      record.submission_sha256 = await store.freeze(submission, task.output);
       await store.unit(record);
       await store.event("unit_finished", {
         unit_id: unit.id,

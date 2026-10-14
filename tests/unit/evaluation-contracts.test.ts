@@ -34,7 +34,7 @@ const report = {
 test("public contract rejects versions, private fields and unsupported outputs", () => {
   expect(validateTask(task)).toEqual(task);
   for (const bad of [
-    { ...task, schema_version: 3 },
+    { ...task, schema_version: 4 },
     { ...task, labels: [] },
     { ...task, output: { kind: "prediction", instructions: "x" } },
     { ...task, goal: "a".repeat(LIMITS.request) },

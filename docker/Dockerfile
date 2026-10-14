@@ -15,4 +15,5 @@ RUN groupadd --gid 10001 runtime && useradd --uid 10001 --gid 10001 --no-create-
 USER 10001:10001
 WORKDIR /workspace
 LABEL org.statigent.fresh-script="2"
+LABEL org.statigent.modeling-stage="4"
 ENTRYPOINT ["uv", "run", "--offline", "--no-sync", "--project", "/opt/runtime", "python", "-m", "statigent_runtime.bridge"]

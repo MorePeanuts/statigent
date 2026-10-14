@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "scope": "four-first-failure-retests-only",
+  "implementation_commit": "1959805",
+  "prompt_version": "modeling-v9",
+  "model_profile": "deepseek-flash",
+  "seed": 17,
+  "automatic_retry": false,
+  "retain_first_attempts": true,
+  "scopes": [
+    {
+      "scope": "configs/evaluations/modeling-smoke-repair-v1/scope-no_eda.json",
+      "units": [
+        {
+          "task_id": "playground-series-s3e13",
+          "method": "no_eda",
+          "first_evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+          "first_unit_id": "unit-000005",
+          "reason": "action_corrections"
+        },
+        {
+          "task_id": "playground-series-s3e18",
+          "method": "no_eda",
+          "first_evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+          "first_unit_id": "unit-000007",
+          "reason": "response_length"
+        }
+      ],
+      "thresholds": {
+        "timeout_ms": 1200000,
+        "model_attempts": 24,
+        "total_tokens": 320000
+      },
+      "preflight": {
+        "path": "runs/modeling-benchmarks-validation/smoke-repair-preflight/no_eda.json",
+        "sha256": "2a5c34f574cd8b5dc0afab56e08b9bbe7ff77eab739e5f266c7f4ea49275c88d",
+        "exit_code": 0,
+        "units": 2,
+        "model_calls": 0
+      }
+    },
+    {
+      "scope": "configs/evaluations/modeling-smoke-repair-v1/scope-collaborative.json",
+      "units": [
+        {
+          "task_id": "titanic",
+          "method": "collaborative",
+          "first_evaluation_id": "7565087f-fff5-4433-bb50-6927af69b8ee",
+          "first_unit_id": "unit-000002",
+          "reason": "response_length"
+        },
+        {
+          "task_id": "playground-series-s3e5",
+          "method": "collaborative",
+          "first_evaluation_id": "36b7bdfa-9785-446e-942c-7172c87b93ce",
+          "first_unit_id": "unit-000004",
+          "reason": "response_length"
+        }
+      ],
+      "thresholds": {
+        "timeout_ms": 1200000,
+        "model_attempts": 24,
+        "total_tokens": 320000
+      },
+      "preflight": {
+        "path": "runs/modeling-benchmarks-validation/smoke-repair-preflight/collaborative.json",
+        "sha256": "5cd53bd116b0b650f6ae54fea5d35e916f6ea7fba7d61d75209164ad1027d99d",
+        "exit_code": 0,
+        "units": 2,
+        "model_calls": 0
+      }
+    }
+  ],
+  "thresholds": {
+    "model_attempts": 48,
+    "total_tokens": 640000,
+    "timeout_ms": 2400000
+  },
+  "limitations": [
+    "Does not replace the unknown usage of the original s3e9 no_eda request.",
+    "Natural EDA remains optional; this scope does not guarantee collaboration coverage for every task.",
+    "Successful original units are not repeated and are not relabeled as v9 results."
+  ],
+  "authorization": {
+    "user_instruction": "运行，负责也不用单独批准，先确保基准测试中的任务类型能跑通",
+    "interpretation": "Execute this repair scope and continue necessary bounded fixes/retests without requesting per-batch approval.",
+    "per_unit_limits_retained": true,
+    "first_attempts_immutable": true
+  },
+  "execution_commit": "f0bee2295bfab4750b3cdfe7355d3a7522930b59",
+  "results": {
+    "path": "benchmarks/metadata/modeling-retest-validation.json",
+    "sha256": "dea33e6fc69904952c600e766b79101a9193ecbe1672454bb8ec00aa5db3cd36"
+  },
+  "delivery_coverage": {
+    "path": "benchmarks/metadata/modeling-live-coverage.json",
+    "sha256": "3694c7e38498790addbc1c3514d6121a35ba63104433e4060a7d35d97742dbb4"
+  },
+  "outcome": {
+    "completed": 4,
+    "reproduced": 4,
+    "model_attempts": 18,
+    "total_tokens": 333651,
+    "unknown_attempts": 0,
+    "collaborative_covered": 0,
+    "scope_statuses": [
+      {
+        "name": "modeling-live-repair-no_eda-v1",
+        "status": "passed"
+      },
+      {
+        "name": "modeling-live-repair-collaborative-v1",
+        "status": "incomplete"
+      }
+    ]
+  }
+}

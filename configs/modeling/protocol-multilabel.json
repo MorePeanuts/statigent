@@ -1,0 +1,10 @@
+{
+  "kind": "multilabel",
+  "metric_id": "mean-target-auc-v1",
+  "id_column": "row_id",
+  "feature_columns": ["feature_a", "feature_b"],
+  "targets": [
+    {"name": "label_a", "classes": ["0", "1"], "positive_class": "1", "levels": null},
+    {"name": "label_b", "classes": ["no", "yes"], "positive_class": "yes", "levels": null}
+  ]
+}

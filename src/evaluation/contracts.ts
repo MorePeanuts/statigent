@@ -1,10 +1,13 @@
+import { resolve } from "node:path";
+import { type DataLimits, parseDataLimits } from "../modeling/data-limits";
+import { type ProtocolV2, validateProtocolV2 } from "../modeling/protocol-v2";
 import { type ModelProfile, validateProfile } from "../models/config";
 import { integer, keys, obj, str, strings } from "../models/validation";
 import { safeRelativePath, sha256 } from "../records/store";
 
-// v2 is written for every new batch; v1 stays readable so earlier batches can be inspected and rescored.
-export const VERSION = 2;
-export type ContractVersion = 1 | 2;
+// 新批次使用 v3；旧分析适配器仍使用原 v2 wire contract。
+export const VERSION = 3;
+export type ContractVersion = 1 | 2 | 3;
 export const LIMITS = {
   request: 262144,
   response: 8388608,
@@ -51,7 +54,7 @@ export function bounded(value: unknown, max: number): void {
 export function envelope(
   value: unknown,
   allowed: string[],
-  versions: readonly ContractVersion[] = [VERSION],
+  versions: readonly ContractVersion[] = [2, VERSION],
 ): Record<string, unknown> {
   bounded(value, LIMITS.record);
   const x = obj(value);
@@ -62,7 +65,7 @@ export function envelope(
 }
 export function contractVersion(value: unknown): ContractVersion {
   const version = obj(value).schema_version;
-  if (version !== 1 && version !== 2)
+  if (version !== 1 && version !== 2 && version !== 3)
     throw new Error("Unsupported schema_version");
   return version;
 }
@@ -71,7 +74,16 @@ export interface InputFile {
   sha256: string;
   bytes: number;
 }
-export type OutputKind = "text" | "report";
+export type OutputKind = "text" | "report" | "predictions";
+export const INPUT_PHASES = [
+  "search",
+  "eda",
+  "confirmation",
+  "final_fit",
+  "prediction",
+] as const;
+export type InputPhases = Record<(typeof INPUT_PHASES)[number], string[]>;
+export type PhaseRoots = Record<(typeof INPUT_PHASES)[number], string>;
 export type ImageType = "png" | "jpeg";
 export type OutputContract =
   | { kind: "text"; instructions: string }
@@ -83,25 +95,82 @@ export type OutputContract =
       max_images: number;
       max_image_bytes: number;
       max_report_bytes: number;
+    }
+  | {
+      kind: "predictions";
+      instructions: string;
+      protocol: ProtocolV2;
+      input_manifest: string;
+      prediction_file: string;
+      export_file: string;
+      manifest_file: string;
+      limits: DataLimits;
+      max_total_bytes: number;
     };
 export interface PublicTask {
-  schema_version: 2;
+  schema_version: 2 | 3;
   id: string;
   version: string;
   goal: string;
   constraints: string[];
   inputs: InputFile[];
   output: OutputContract;
+  phase_inputs?: InputPhases;
 }
 export function validateOutput(
   value: unknown,
   version: ContractVersion,
 ): OutputContract {
   const o = obj(value);
-  const kind = literal(o.kind, version === 1 ? ["text"] : ["text", "report"]);
+  const kind = literal(
+    o.kind,
+    version === 1
+      ? ["text"]
+      : version === 2
+        ? ["text", "report"]
+        : ["text", "report", "predictions"],
+  );
   if (kind === "text") {
     keys(o, ["kind", "instructions"]);
     return { kind, instructions: str(o.instructions, "instructions") };
+  }
+  if (kind === "predictions") {
+    keys(o, [
+      "kind",
+      "instructions",
+      "protocol",
+      "input_manifest",
+      "prediction_file",
+      "export_file",
+      "manifest_file",
+      "limits",
+      "max_total_bytes",
+    ]);
+    const result = {
+      kind,
+      instructions: str(o.instructions, "instructions"),
+      protocol: validateProtocolV2(o.protocol),
+      input_manifest: safeRelativePath(str(o.input_manifest, "input manifest")),
+      prediction_file: safeRelativePath(
+        str(o.prediction_file, "prediction file"),
+      ),
+      export_file: safeRelativePath(str(o.export_file, "export file")),
+      manifest_file: safeRelativePath(
+        str(o.manifest_file, "prediction manifest"),
+      ),
+      limits: parseDataLimits(o.limits),
+      max_total_bytes: integer(o.max_total_bytes, "total prediction bytes"),
+    };
+    if (
+      new Set([
+        result.prediction_file,
+        result.export_file,
+        result.manifest_file,
+      ]).size !== 3 ||
+      result.max_total_bytes < result.limits.max_file_bytes
+    )
+      throw new Error("Invalid prediction delivery limits/paths");
+    return result;
   }
   keys(o, [
     "kind",
@@ -139,8 +208,16 @@ export function validateTask(value: unknown): PublicTask {
   bounded(value, LIMITS.request);
   const x = envelope(
     value,
-    ["id", "version", "goal", "constraints", "inputs", "output"],
-    [1, 2],
+    [
+      "id",
+      "version",
+      "goal",
+      "constraints",
+      "inputs",
+      "output",
+      ...(contractVersion(value) === 3 ? ["phase_inputs"] : []),
+    ],
+    [1, 2, 3],
   );
   const version = contractVersion(x);
   // Some benchmark questions (DSBench reasoning cases) ship without data files; v1 never allowed that.
@@ -157,14 +234,51 @@ export function validateTask(value: unknown): PublicTask {
   });
   if (new Set(inputs.map((f) => f.path)).size !== inputs.length)
     throw new Error("Duplicate input path");
+  const output = validateOutput(x.output, version);
+  let phases: InputPhases | undefined;
+  if (output.kind === "predictions") {
+    const p = obj(x.phase_inputs);
+    keys(p, [...INPUT_PHASES]);
+    const phasePaths = (phase: (typeof INPUT_PHASES)[number]) => {
+      const paths = strings(p[phase], `phase ${phase}`).map(safeRelativePath);
+      if (
+        !paths.length ||
+        new Set(paths).size !== paths.length ||
+        paths.some((path) => !inputs.some((f) => f.path === path))
+      )
+        throw new Error("Invalid phase input whitelist");
+      return paths;
+    };
+    phases = {
+      search: phasePaths("search"),
+      eda: phasePaths("eda"),
+      confirmation: phasePaths("confirmation"),
+      final_fit: phasePaths("final_fit"),
+      prediction: phasePaths("prediction"),
+    };
+    const assigned = Object.values(phases).flat();
+    if (
+      !inputs.some((f) => f.path === output.input_manifest) ||
+      inputs.some((f) => !assigned.includes(f.path))
+    )
+      throw new Error("Unassigned public input");
+    if (
+      inputs.some((f) =>
+        /(^|\/)(private|evaluator|upstream|raw)(\/|$)/.test(f.path),
+      )
+    )
+      throw new Error("Private input cannot be published");
+  } else if (x.phase_inputs !== undefined)
+    throw new Error("Phase inputs require a prediction contract");
   return {
-    schema_version: 2,
+    schema_version: version === 3 ? 3 : 2,
     id: id(x.id),
     version: str(x.version, "version"),
     goal: str(x.goal, "goal"),
     constraints: strings(x.constraints, "constraints"),
     inputs,
-    output: validateOutput(x.output, version),
+    output,
+    ...(phases ? { phase_inputs: phases } : {}),
   };
 }
 export interface Budget {
@@ -186,7 +300,7 @@ export function validateBudget(value: unknown): Budget {
   };
 }
 export interface Capabilities {
-  schema_version: 2;
+  schema_version: 2 | 3;
   outputs: OutputKind[];
   trajectory: "unified" | "none";
   model: "configurable" | "none";
@@ -194,6 +308,7 @@ export interface Capabilities {
   isolation: "docker";
   model_budget: boolean;
   usage: "measured" | "self_reported" | "not_applicable";
+  phase_isolation?: boolean;
 }
 export function validateCapabilities(value: unknown): Capabilities {
   const x = envelope(value, [
@@ -204,16 +319,22 @@ export function validateCapabilities(value: unknown): Capabilities {
     "isolation",
     "model_budget",
     "usage",
+    ...(contractVersion(value) === 3 ? ["phase_isolation"] : []),
   ]);
   if (typeof x.model_budget !== "boolean")
     throw new Error("Invalid model_budget");
   const outputs = strings(x.outputs, "outputs").map((o) =>
-    literal(o, ["text", "report"] as const),
+    literal(
+      o,
+      contractVersion(value) === 3
+        ? (["text", "report", "predictions"] as const)
+        : (["text", "report"] as const),
+    ),
   );
   if (!outputs.length || new Set(outputs).size !== outputs.length)
     throw new Error("Invalid output capabilities");
   const result: Capabilities = {
-    schema_version: 2,
+    schema_version: contractVersion(value) === 3 ? 3 : 2,
     outputs,
     trajectory: literal(x.trajectory, ["unified", "none"]),
     model: literal(x.model, ["configurable", "none"]),
@@ -221,7 +342,15 @@ export function validateCapabilities(value: unknown): Capabilities {
     isolation: literal(x.isolation, ["docker"]),
     model_budget: x.model_budget,
     usage: literal(x.usage, ["measured", "self_reported", "not_applicable"]),
+    ...(contractVersion(value) === 3
+      ? { phase_isolation: x.phase_isolation === true }
+      : {}),
   };
+  if (
+    (contractVersion(value) === 3 && typeof x.phase_isolation !== "boolean") ||
+    (outputs.includes("predictions") && result.phase_isolation !== true)
+  )
+    throw new Error("Prediction capability requires phase isolation");
   if ((result.model === "none") !== (result.usage === "not_applicable"))
     throw new Error("Inconsistent model usage capability");
   return result;
@@ -292,7 +421,7 @@ export interface Deliverable {
   sha256: string;
 }
 export interface Submission {
-  schema_version: 2;
+  schema_version: 2 | 3;
   unit_id: string;
   status: TerminalStatus;
   answer_text: string;
@@ -306,14 +435,23 @@ export interface Submission {
   cleanup_error: string | null;
   record_error: boolean;
 }
-export function validateDeliverables(value: unknown): Deliverable[] {
+export function deliveryLimits(output?: OutputContract) {
+  return output?.kind === "predictions"
+    ? { file: output.limits.max_file_bytes, total: output.max_total_bytes }
+    : { file: LIMITS.deliverable, total: LIMITS.deliverables };
+}
+export function validateDeliverables(
+  value: unknown,
+  output?: OutputContract,
+): Deliverable[] {
   if (!Array.isArray(value)) throw new Error("Invalid deliverables");
   let total = 0;
   const result = value.map((v): Deliverable => {
     const d = obj(v);
     keys(d, ["path", "bytes", "sha256"]);
     const bytes = integer(d.bytes, "bytes", 0);
-    if (bytes > LIMITS.deliverable) throw new Error("Deliverable too large");
+    if (bytes > deliveryLimits(output).file)
+      throw new Error("Deliverable too large");
     total += bytes;
     return {
       path: safeRelativePath(str(d.path, "path")),
@@ -323,7 +461,7 @@ export function validateDeliverables(value: unknown): Deliverable[] {
   });
   if (
     result.length > LIMITS.deliverable_files ||
-    total > LIMITS.deliverables ||
+    total > deliveryLimits(output).total ||
     new Set(result.map((d) => d.path)).size !== result.length
   )
     throw new Error("Deliverable limit/duplicate");
@@ -362,7 +500,7 @@ function legacyArtifacts(value: unknown): Deliverable[] {
 export function validateSubmission(
   value: unknown,
   unitId: string,
-  { frozen = true }: { frozen?: boolean } = {},
+  { frozen = true, output }: { frozen?: boolean; output?: OutputContract } = {},
 ): Submission {
   bounded(value, LIMITS.response);
   const version = contractVersion(value);
@@ -380,7 +518,7 @@ export function validateSubmission(
       "cleanup_error",
       "record_error",
     ],
-    [1, 2],
+    [1, 2, 3],
   );
   if (x.unit_id !== unitId) throw new Error("Submission identity mismatch");
   if (typeof x.record_error !== "boolean")
@@ -388,7 +526,10 @@ export function validateSubmission(
   const deliverables =
     version === 1
       ? legacyArtifacts(x.artifacts)
-      : validateDeliverables(x.deliverables);
+      : validateDeliverables(
+          x.deliverables,
+          version === 3 ? output : undefined,
+        );
   const trajectory =
     version === 1 || x.trajectory === null
       ? null
@@ -408,7 +549,7 @@ export function validateSubmission(
     native = { id: id(n.id), directory: str(n.directory, "directory") };
   }
   return {
-    schema_version: 2,
+    schema_version: version === 3 ? 3 : 2,
     unit_id: id(x.unit_id),
     status: literal(x.status, [
       "completed",
@@ -430,8 +571,8 @@ export function validateSubmission(
 export interface Metric {
   name: string;
   value: number;
-  minimum: number;
-  maximum: number;
+  minimum: number | null;
+  maximum: number | null;
   direction: "higher" | "lower";
 }
 export interface JudgeSummary {
@@ -489,7 +630,7 @@ export function validateJudgeSummary(value: unknown): JudgeSummary {
   return summary;
 }
 export interface Score {
-  schema_version: 2;
+  schema_version: 2 | 3;
   unit_id: string;
   protocol: string;
   status: "scored" | "failed";
@@ -510,9 +651,9 @@ export function validateScore(value: unknown, unitId: string): Score {
       "metrics",
       "details",
       "error",
-      ...(version === 2 ? ["judge"] : []),
+      ...(version !== 1 ? ["judge"] : []),
     ],
-    [1, 2],
+    [1, 2, 3],
   );
   if (x.unit_id !== unitId || !Array.isArray(x.metrics))
     throw new Error("Invalid score identity/metrics");
@@ -520,15 +661,23 @@ export function validateScore(value: unknown, unitId: string): Score {
     const m = obj(v);
     keys(m, ["name", "value", "minimum", "maximum", "direction"]);
     if (
-      [m.value, m.minimum, m.maximum].some(
-        (n) => typeof n !== "number" || !Number.isFinite(n),
+      typeof m.value !== "number" ||
+      !Number.isFinite(m.value) ||
+      [m.minimum, m.maximum].some(
+        (n) =>
+          !(version === 3 && n === null) &&
+          (typeof n !== "number" || !Number.isFinite(n)),
       )
     )
       throw new Error("Invalid metric");
     const value = Number(m.value),
-      minimum = Number(m.minimum),
-      maximum = Number(m.maximum);
-    if (value < minimum || value > maximum || minimum > maximum)
+      minimum = m.minimum === null ? null : Number(m.minimum),
+      maximum = m.maximum === null ? null : Number(m.maximum);
+    if (
+      (minimum !== null && value < minimum) ||
+      (maximum !== null && value > maximum) ||
+      (minimum !== null && maximum !== null && minimum > maximum)
+    )
       throw new Error("Metric outside range");
     return {
       name: id(m.name),
@@ -547,7 +696,7 @@ export function validateScore(value: unknown, unitId: string): Score {
   )
     throw new Error("Inconsistent score");
   return {
-    schema_version: 2,
+    schema_version: version === 3 ? 3 : 2,
     unit_id: id(x.unit_id),
     protocol: str(x.protocol, "protocol"),
     status,
@@ -566,7 +715,7 @@ export interface AgentConfig {
   require_seed: boolean;
 }
 export interface Invocation {
-  schema_version: 2;
+  schema_version: 2 | 3;
   evaluation_id: string;
   unit_id: string;
   task: PublicTask;
@@ -574,6 +723,7 @@ export interface Invocation {
   budget: Budget;
   seed: number;
   input_root: string;
+  phase_roots?: PhaseRoots;
   run_root: string;
   /** Unit-owned directory the adapter writes deliverables into before the harness freezes it. */
   deliverables_root: string;
@@ -593,16 +743,40 @@ export function validateInvocation(value: unknown): Invocation {
     "run_root",
     "deliverables_root",
     "trajectory",
+    ...(contractVersion(value) === 3 ? ["phase_roots"] : []),
   ]);
   const c = obj(x.config);
   keys(c, ["id", "adapter", "options", "model", "require_seed"]);
   if (typeof c.require_seed !== "boolean" || typeof x.trajectory !== "boolean")
     throw new Error("Invalid seed/trajectory requirement");
+  const task = validateTask(x.task);
+  let phaseRoots: PhaseRoots | undefined;
+  if (task.output.kind === "predictions") {
+    if (contractVersion(value) !== 3)
+      throw new Error("Prediction invocation requires v3");
+    const roots = obj(x.phase_roots);
+    keys(roots, [...INPUT_PHASES]);
+    const root = (phase: (typeof INPUT_PHASES)[number]) => {
+      const path = str(roots[phase], `phase root ${phase}`);
+      if (path !== resolve(str(x.input_root, "input_root"), phase))
+        throw new Error("Phase root ownership mismatch");
+      return path;
+    };
+    phaseRoots = {
+      search: root("search"),
+      eda: root("eda"),
+      confirmation: root("confirmation"),
+      final_fit: root("final_fit"),
+      prediction: root("prediction"),
+    };
+  } else if (x.phase_roots !== undefined)
+    throw new Error("Unexpected phase roots");
   return {
-    schema_version: 2,
+    schema_version: contractVersion(value) === 3 ? 3 : 2,
     evaluation_id: id(x.evaluation_id),
     unit_id: id(x.unit_id),
-    task: validateTask(x.task),
+    task,
+    ...(phaseRoots ? { phase_roots: phaseRoots } : {}),
     config: {
       id: id(c.id),
       adapter: id(c.adapter),
@@ -650,8 +824,16 @@ export interface ScoringContext {
   scoring: Record<string, unknown>;
   judge: JudgeClient | null;
   signal?: AbortSignal;
+  seed?: number;
 }
 export interface BenchmarkAdapter {
+  /** 受信基准导出在冻结前完成；此回调不会把私有数据提供给智能体。 */
+  prepareDelivery?(
+    options: Record<string, unknown>,
+    task: PublicTask,
+    submission: Submission,
+    context: ScoringContext,
+  ): Promise<void>;
   compatibility?(scores: Score[]): Promise<Record<string, unknown>>;
   id: string;
   version: string;

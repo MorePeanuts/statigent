@@ -1,0 +1,9 @@
+{
+  "kind": "multiclass",
+  "metric_id": "top3-hit-ds-v1",
+  "id_column": "row_id",
+  "feature_columns": ["feature_a", "feature_b"],
+  "targets": [
+    {"name": "label", "classes": ["a", "b", "c", "d"], "positive_class": null, "levels": null}
+  ]
+}

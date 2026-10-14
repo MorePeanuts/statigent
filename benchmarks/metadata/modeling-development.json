@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "selection": "proposal-public-type-size-coverage-v1",
+  "catalog_sha256": "de190d85a0229687ec5e8b99e7d6f0c5e99c1b784dccc271d80f3e2d4ae246c3",
+  "selected": [
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e9",
+      "coverage": "regression",
+      "exposure": "已用于真实协同/no_eda 开发；本轮继续作为已暴露开发题",
+      "source_revision": "1196d6553ec200e1262841efc89cda5954ffe89f",
+      "issues": [
+        "原 sort_values 未赋回；本地先按固定评价成员顺序对齐 ID，再调用上游公式"
+      ],
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露",
+          "已用于协同/no_eda 真实开发，不能作为未见开发任务"
+        ]
+      }
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "titanic",
+      "coverage": "binary",
+      "exposure": "已用于数据准备和软件测试",
+      "source_revision": "1196d6553ec200e1262841efc89cda5954ffe89f",
+      "issues": [
+        "原 sort_values 未赋回；本地先按固定评价成员顺序对齐 ID，再调用上游公式"
+      ],
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      }
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e2",
+      "coverage": "multiclass",
+      "exposure": "公开元数据预选",
+      "source_revision": "1196d6553ec200e1262841efc89cda5954ffe89f",
+      "issues": [],
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      }
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e5",
+      "coverage": "ordinal",
+      "exposure": "已用于数据准备和指标测试",
+      "source_revision": "1196d6553ec200e1262841efc89cda5954ffe89f",
+      "issues": [
+        "原 sort_values 未赋回；本地先按固定评价成员顺序对齐 ID，再调用上游公式"
+      ],
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      }
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e13",
+      "coverage": "top3",
+      "exposure": "已用于数据准备和指标测试",
+      "source_revision": "1196d6553ec200e1262841efc89cda5954ffe89f",
+      "issues": [
+        "题面的位置权重与代码不符：实际为无位置权重的前三命中；导出按空白拆分，类别含空白须阻塞",
+        "原 sort_values 未赋回；本地先按固定评价成员顺序对齐 ID，再调用上游公式"
+      ],
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      }
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e18",
+      "coverage": "two-target",
+      "exposure": "已用于数据准备和指标测试",
+      "source_revision": "1196d6553ec200e1262841efc89cda5954ffe89f",
+      "issues": [
+        "仅预测 EC1、EC2；EC3–EC6 是训练独有标签，全部排除特征",
+        "默认 value 为 Machine failure，实际读取 EC1、EC2"
+      ],
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      }
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s4e3",
+      "coverage": "seven-target",
+      "exposure": "已用于数据准备和指标测试",
+      "source_revision": "1196d6553ec200e1262841efc89cda5954ffe89f",
+      "issues": [
+        "默认 NObeyesdad 及未调用 logloss 函数无效；实际七目标 AUC 等权平均"
+      ],
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      }
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363612",
+      "coverage": "regression",
+      "exposure": "已用于 airfoil 数据准备",
+      "source_revision": "9044df07027054209362651af7c9502036aa92f0",
+      "issues": [],
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      }
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363621",
+      "coverage": "binary",
+      "exposure": "已用于 blood 数据准备",
+      "source_revision": "9044df07027054209362651af7c9502036aa92f0",
+      "issues": [],
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      }
+    },
+    {
+      "benchmark": "tabarena-lite",
+      "task_id": "363685",
+      "coverage": "multiclass",
+      "exposure": "已用于 maternal 数据准备",
+      "source_revision": "9044df07027054209362651af7c9502036aa92f0",
+      "issues": [],
+      "research": {
+        "status": "review_required",
+        "reasons": [
+          "正式研究集合未冻结；需核对任务同源关系和开发暴露"
+        ]
+      }
+    }
+  ],
+  "image": "sha256:74e2d6be21f7f304fe7a0fd14a8e102b35de2de10a79aef12bcec6c778273de3",
+  "repeats": 1,
+  "seed": 17,
+  "methods": [
+    "no_eda",
+    "initial_eda",
+    "adaptive_eda",
+    "collaborative"
+  ],
+  "prepared_root": "runs/modeling-candidate-preparation-v1/datasets",
+  "configs": [
+    "configs/evaluations/modeling-development/dsbench-modeling-no_eda.json",
+    "configs/evaluations/modeling-development/dsbench-modeling-initial_eda.json",
+    "configs/evaluations/modeling-development/dsbench-modeling-adaptive_eda.json",
+    "configs/evaluations/modeling-development/dsbench-modeling-collaborative.json",
+    "configs/evaluations/modeling-development/dsbench-modeling-deterministic.json",
+    "configs/evaluations/modeling-development/tabarena-lite-no_eda.json",
+    "configs/evaluations/modeling-development/tabarena-lite-initial_eda.json",
+    "configs/evaluations/modeling-development/tabarena-lite-adaptive_eda.json",
+    "configs/evaluations/modeling-development/tabarena-lite-collaborative.json",
+    "configs/evaluations/modeling-development/tabarena-lite-deterministic.json"
+  ],
+  "live_status": "not_run",
+  "formal_status": "not_frozen",
+  "rule": "失败不换题、不自动重跑；研究资格和数据同源关系另审。"
+}

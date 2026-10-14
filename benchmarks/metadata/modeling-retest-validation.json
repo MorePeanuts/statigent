@@ -1,0 +1,1035 @@
+{
+  "schema_version": 1,
+  "scope": "authorized-bounded-modeling-retests",
+  "model_profile": "deepseek-flash",
+  "research_experiment": false,
+  "automatic_retry": false,
+  "scopes": [
+    {
+      "name": "modeling-live-repair-no_eda-v1",
+      "status": "passed",
+      "scope": {
+        "schema_version": 1,
+        "name": "modeling-live-repair-no_eda-v1",
+        "config_files": [
+          "configs/evaluations/modeling-smoke-repair-v1/dsbench-no_eda.json"
+        ],
+        "models_file": "configs/models.json",
+        "allowed_tasks": [
+          "dsbench-modeling/playground-series-s3e13",
+          "dsbench-modeling/playground-series-s3e18"
+        ],
+        "allowed_methods": [
+          "no_eda"
+        ],
+        "model_profile": "deepseek-flash",
+        "seed": 17,
+        "resource_version": "modeling-benchmark-live-smoke-repair-v1"
+      },
+      "scope_sha256": "35449ddfc6b1d1d203f2b47a72f83aaeaf7777113fc39066d3a3732df51dd17a",
+      "preflight_code": {
+        "commit": "f0bee2295bfab4750b3cdfe7355d3a7522930b59",
+        "dirty": false,
+        "bun": "1.4.2"
+      },
+      "thresholds": {
+        "model_attempts": 24,
+        "total_tokens": 320000,
+        "timeout_ms": 1200000
+      },
+      "result": {
+        "path": "runs/modeling-live-repair-no_eda-v1/result.json",
+        "sha256": "fb3dcdfef5e393b53e950f18b13b95e2fb5060d30d8521752ab25e79ec3a7290"
+      }
+    },
+    {
+      "name": "modeling-live-repair-collaborative-v1",
+      "status": "incomplete",
+      "scope": {
+        "schema_version": 1,
+        "name": "modeling-live-repair-collaborative-v1",
+        "config_files": [
+          "configs/evaluations/modeling-smoke-repair-v1/dsbench-collaborative.json"
+        ],
+        "models_file": "configs/models.json",
+        "allowed_tasks": [
+          "dsbench-modeling/playground-series-s3e5",
+          "dsbench-modeling/titanic"
+        ],
+        "allowed_methods": [
+          "collaborative"
+        ],
+        "model_profile": "deepseek-flash",
+        "seed": 17,
+        "resource_version": "modeling-benchmark-live-smoke-repair-v1"
+      },
+      "scope_sha256": "8c8b27a759a325392bd30bf62d811ceaffd8a84d9e02834ea34cc17ef72f50dc",
+      "preflight_code": {
+        "commit": "f0bee2295bfab4750b3cdfe7355d3a7522930b59",
+        "dirty": false,
+        "bun": "1.4.2"
+      },
+      "thresholds": {
+        "model_attempts": 24,
+        "total_tokens": 320000,
+        "timeout_ms": 1200000
+      },
+      "result": {
+        "path": "runs/modeling-live-repair-collaborative-v1/result.json",
+        "sha256": "c3e44f025737acc5845d82b4797734495751ef7e1966dbad17d21946841be453"
+      }
+    }
+  ],
+  "totals": {
+    "planned": 4,
+    "recorded": 4,
+    "executed": 4,
+    "not_run": 0,
+    "historical_not_run_records": 0,
+    "completed": 4,
+    "failed": 0,
+    "reproduced": 4,
+    "collaborative_covered": 0,
+    "model_attempts": 18,
+    "total_tokens": 333651,
+    "unknown_attempts": 0,
+    "wall_ms": 767165,
+    "scoring_ms": 4999,
+    "reproduction_ms": 37950.322334000084,
+    "training_attempts": 18,
+    "eda_calls": 0,
+    "currency_cost": "not_computed",
+    "accounting_status": "known",
+    "token_total_semantics": "known recorded subtotal; excludes unknown consumption"
+  },
+  "coverage": [
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "titanic",
+      "type": "binary",
+      "methods": [
+        {
+          "method": "collaborative",
+          "status": "completed",
+          "reproduction": "passed",
+          "collaboration": "not_covered"
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e5",
+      "type": "ordinal",
+      "methods": [
+        {
+          "method": "collaborative",
+          "status": "completed",
+          "reproduction": "passed",
+          "collaboration": "not_covered"
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e13",
+      "type": "top3",
+      "methods": [
+        {
+          "method": "no_eda",
+          "status": "completed",
+          "reproduction": "passed",
+          "collaboration": "not_covered"
+        }
+      ]
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e18",
+      "type": "two-target",
+      "methods": [
+        {
+          "method": "no_eda",
+          "status": "completed",
+          "reproduction": "passed",
+          "collaboration": "not_covered"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Representative types only, not all 103 candidates or every metric under a live agent.",
+    "First failures retained in the separate immutable first-attempt index; retests explicitly authorized.",
+    "Independent reproduction adds time but no fits or model calls.",
+    "Parent usage already includes child EDA; no double counting.",
+    "Known token and attempt totals are not a currency estimate.",
+    "Input data preparation was explicitly reused; original cost is in modeling-preparation-validation.json."
+  ],
+  "units": [
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e13",
+      "type": "top3",
+      "method": "no_eda",
+      "seed": 17,
+      "evaluation_id": "8f5e8eac-3e93-4064-982d-d57916fa4c8f",
+      "unit_id": "unit-000001",
+      "score_id": "f74cdd0b-303a-42ff-b06a-61d56e52253d",
+      "report": {
+        "path": "runs/modeling-live-repair-no_eda-v1/evaluations/8f5e8eac-3e93-4064-982d-d57916fa4c8f/scores/f74cdd0b-303a-42ff-b06a-61d56e52253d/report.json",
+        "sha256": "ab9db9dcc64ab0c9102c6cb8399250a91787c3d5196bf72b5a788c8a1c23da59"
+      },
+      "native_record": {
+        "path": "runs/modeling-live-repair-no_eda-v1/evaluations/8f5e8eac-3e93-4064-982d-d57916fa4c8f/native/unit-000001/f2d201ff-3d38-4eee-8742-c6bd0189ebb7/modeling.json",
+        "sha256": "0e1b0e115e5d784a24c987b4925dc815db23094e70190427a1cb19a4d541de3a"
+      },
+      "code": {
+        "commit": "f0bee2295bfab4750b3cdfe7355d3a7522930b59",
+        "dirty": false
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      },
+      "model": {
+        "profile": {
+          "id": "deepseek-flash",
+          "provider": "deepseek",
+          "protocol": "chat-completions",
+          "base_url": "https://api.deepseek.com",
+          "model": "deepseek-flash",
+          "display_name": "DeepSeek-V4.1-Flash",
+          "api_key_env": "DEEPSEEK_API_KEY",
+          "allow_loopback_http": false,
+          "capabilities": {
+            "tool_calls": true,
+            "thinking": true,
+            "vision": false
+          },
+          "generation": {
+            "max_output_tokens": 65536,
+            "thinking": "enabled",
+            "reasoning_effort": "high"
+          }
+        },
+        "returned_models": [
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash"
+        ],
+        "response_ids": [
+          "1f87120c-3d2e-4bf9-b320-56aa30d86ef7",
+          "463583fe-deb1-4736-b02b-2ee4f8729c33",
+          "a8443cfe-b053-4858-8ba4-fa05fc77b841",
+          "0cf40369-43bb-47ea-a983-b82ce994b5c4",
+          "e6f80206-c2a6-4319-a12d-34fdb77abaea"
+        ],
+        "fingerprints": [
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669"
+        ]
+      },
+      "prompt": {
+        "decision_interface": "modeling-decision-v2",
+        "correction_policy": "consecutive-unproductive-v2",
+        "version": "modeling-v9",
+        "sha256": "357610c04c02327ac6d55b59653ad008e25c76d9a8444856052699fc82320df9"
+      },
+      "status": "completed",
+      "reason": "delivery_validated",
+      "scoring_status": "scored",
+      "native_metric": "top3-hit-ds-v1",
+      "native_value": 0.6056338028169014,
+      "native_components": [],
+      "rpg": 0.6056338028169014,
+      "completion": 1,
+      "search_end": {
+        "kind": "protected",
+        "reason": "token_preflight"
+      },
+      "delivery_status": "completed",
+      "prediction_status": "completed",
+      "trajectory": {
+        "search_end": {
+          "kind": "protected",
+          "reason": "token_preflight"
+        },
+        "delivery_status": "completed",
+        "completion": "protected",
+        "accounting": "known",
+        "collaboration": "not_covered",
+        "analysis_calls": 0,
+        "successful_analyses": 0,
+        "analysis_followups": [],
+        "analysis_experiment_links": [],
+        "analysis_ids": [],
+        "core_rejections": [
+          {
+            "sequence": 29,
+            "reason": "Error: Exactly one new tool call is required"
+          }
+        ],
+        "attachment_warnings": [],
+        "unproductive_executions": [
+          {
+            "id": "77839fbe-4682-45a4-8baf-054e0f49701b",
+            "status": "failed",
+            "reason": "error:name 'BaseEstimator' is not defined"
+          }
+        ],
+        "protection_reason": "token_preflight"
+      },
+      "native_identity": {
+        "run_id": "f2d201ff-3d38-4eee-8742-c6bd0189ebb7",
+        "frozen_id": "4accdc1cf179c1bb62045b0fdd98bb77286758daf564815f71bda6761924911c",
+        "sha256": "579c95fb2fecc80b94f47cf740025b3fc16d47a049bb091b2a503ab3b242ec03",
+        "bytes": 5434491,
+        "delivery_sha256": "5950c75b89967301cfcd0b4d83bbded8d66b6ce310752b3f6a95314802a1ce36"
+      },
+      "prediction_files": [
+        {
+          "path": "export.csv",
+          "bytes": 6228,
+          "sha256": "43ba3b9262c3471642cb42a5e9d7f8f7c935b04c37ead0b134ede1359271abe4"
+        },
+        {
+          "path": "prediction-manifest.json",
+          "bytes": 4458,
+          "sha256": "e0bc605d4116360d3b28027e532a4e298c9552f724b0bac1e283ef2d853aa499"
+        },
+        {
+          "path": "predictions.csv",
+          "bytes": 40598,
+          "sha256": "0474ada1e4649165ad7237df1148cf031d13a5d8e5e9efdfd2696fe5cb89c13d"
+        }
+      ],
+      "usage": {
+        "attempts": 5,
+        "total_tokens": 85370,
+        "unknown_attempts": 0,
+        "source": "measured",
+        "completeness": "complete",
+        "native": {
+          "tokens": {
+            "status": "known",
+            "input_tokens": 79938,
+            "output_tokens": 5432,
+            "total_tokens": 85370,
+            "attempts": 5,
+            "unknown_attempts": 0,
+            "elapsed_ms": 27674.318915000003,
+            "currency_cost": "not_computed"
+          },
+          "modeling": {
+            "status": "known",
+            "input_tokens": 79938,
+            "output_tokens": 5432,
+            "total_tokens": 85370,
+            "attempts": 5,
+            "unknown_attempts": 0,
+            "elapsed_ms": 27674.318915000003,
+            "currency_cost": "not_computed"
+          },
+          "children": {},
+          "training_attempts": 5,
+          "final_training_attempts": 1,
+          "confirmation_training_attempts": 0,
+          "eda_calls": 0,
+          "eda_executions": 0,
+          "remaining_ms": 454060,
+          "exploration_ms": 304060
+        }
+      },
+      "elapsed_ms": 147232,
+      "scoring_elapsed_ms": 1218,
+      "budget_status": "reduced",
+      "effective_budget": {
+        "timeout_ms": 599971,
+        "model_attempts": 12,
+        "total_tokens": 160000
+      },
+      "reproduction": {
+        "status": "passed",
+        "record": {
+          "path": "runs/modeling-live-repair-no_eda-v1/reproductions/34d7705f-edcd-40c8-b5cc-457c52e3f33a/reproduction.json",
+          "sha256": "b38cfe2abdc9c61cc6ddbc26d7e4ab1ff8664286737ce1c8a5b303047c431790"
+        },
+        "comparison": {
+          "matched": true,
+          "differences": [],
+          "rows": 142,
+          "protocol_sha256": "936cd178033f084ddc4db8bb9e90248cc8aea39162a1bf3ed1512b8e01a71144",
+          "reference_sha256": "0474ada1e4649165ad7237df1148cf031d13a5d8e5e9efdfd2696fe5cb89c13d",
+          "actual_sha256": "0474ada1e4649165ad7237df1148cf031d13a5d8e5e9efdfd2696fe5cb89c13d",
+          "tolerance": {
+            "atol": 1e-8,
+            "rtol": 0.000001
+          }
+        },
+        "elapsed_ms": 8691.677209000045,
+        "calls": {
+          "models": 0,
+          "fits": 0,
+          "predictions": 1
+        }
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e18",
+      "type": "two-target",
+      "method": "no_eda",
+      "seed": 17,
+      "evaluation_id": "8f5e8eac-3e93-4064-982d-d57916fa4c8f",
+      "unit_id": "unit-000002",
+      "score_id": "f74cdd0b-303a-42ff-b06a-61d56e52253d",
+      "report": {
+        "path": "runs/modeling-live-repair-no_eda-v1/evaluations/8f5e8eac-3e93-4064-982d-d57916fa4c8f/scores/f74cdd0b-303a-42ff-b06a-61d56e52253d/report.json",
+        "sha256": "ab9db9dcc64ab0c9102c6cb8399250a91787c3d5196bf72b5a788c8a1c23da59"
+      },
+      "native_record": {
+        "path": "runs/modeling-live-repair-no_eda-v1/evaluations/8f5e8eac-3e93-4064-982d-d57916fa4c8f/native/unit-000002/3dce06ea-6188-4dc1-a78f-2b5ba86849a5/modeling.json",
+        "sha256": "2d49ca9dad682ba7346fe328b61d34fe96676e448f79be8beb8a0ea24daba996"
+      },
+      "code": {
+        "commit": "f0bee2295bfab4750b3cdfe7355d3a7522930b59",
+        "dirty": false
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      },
+      "model": {
+        "profile": {
+          "id": "deepseek-flash",
+          "provider": "deepseek",
+          "protocol": "chat-completions",
+          "base_url": "https://api.deepseek.com",
+          "model": "deepseek-flash",
+          "display_name": "DeepSeek-V4.1-Flash",
+          "api_key_env": "DEEPSEEK_API_KEY",
+          "allow_loopback_http": false,
+          "capabilities": {
+            "tool_calls": true,
+            "thinking": true,
+            "vision": false
+          },
+          "generation": {
+            "max_output_tokens": 65536,
+            "thinking": "enabled",
+            "reasoning_effort": "high"
+          }
+        },
+        "returned_models": [
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash"
+        ],
+        "response_ids": [
+          "a185e410-70e8-4956-b15b-3334fbc2906a",
+          "ea50849e-ce5d-4237-bd96-d24579883ff9",
+          "97997573-acab-403c-a58b-ea5c2b9d5bac",
+          "f164a69e-5504-45fb-a1f4-12940091614e",
+          "6af16eaa-6842-4b34-a367-20031978c60d"
+        ],
+        "fingerprints": [
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669"
+        ]
+      },
+      "prompt": {
+        "decision_interface": "modeling-decision-v2",
+        "correction_policy": "consecutive-unproductive-v2",
+        "version": "modeling-v9",
+        "sha256": "357610c04c02327ac6d55b59653ad008e25c76d9a8444856052699fc82320df9"
+      },
+      "status": "completed",
+      "reason": "delivery_validated",
+      "scoring_status": "scored",
+      "native_metric": "mean-target-auc-v1",
+      "native_value": 0.6484569964587628,
+      "native_components": [
+        {
+          "target": "EC1",
+          "metric": "roc-auc-v1",
+          "value": 0.7001479277766806,
+          "error": null
+        },
+        {
+          "target": "EC2",
+          "metric": "roc-auc-v1",
+          "value": 0.5967660651408451,
+          "error": null
+        }
+      ],
+      "rpg": 0.2969139929175255,
+      "completion": 1,
+      "search_end": {
+        "kind": "protected",
+        "reason": "token_preflight"
+      },
+      "delivery_status": "completed",
+      "prediction_status": "completed",
+      "trajectory": {
+        "search_end": {
+          "kind": "protected",
+          "reason": "token_preflight"
+        },
+        "delivery_status": "completed",
+        "completion": "protected",
+        "accounting": "known",
+        "collaboration": "not_covered",
+        "analysis_calls": 0,
+        "successful_analyses": 0,
+        "analysis_followups": [],
+        "analysis_experiment_links": [],
+        "analysis_ids": [],
+        "core_rejections": [
+          {
+            "sequence": 7,
+            "reason": "Error: Exactly one new tool call is required"
+          },
+          {
+            "sequence": 25,
+            "reason": "Error: Invalid code"
+          }
+        ],
+        "attachment_warnings": [],
+        "unproductive_executions": [],
+        "protection_reason": "token_preflight"
+      },
+      "native_identity": {
+        "run_id": "3dce06ea-6188-4dc1-a78f-2b5ba86849a5",
+        "frozen_id": "b410b7d05454e78ff1d2777ed88f82693aa812bf45655325aa9d853846f7f41f",
+        "sha256": "fa1e0238deef44f023bcaee406098e4defbdabb262141cec26d2ab5ade5a9f3f",
+        "bytes": 255176,
+        "delivery_sha256": "c2ec260209b1db9aec9c6aa2d9beb64143ee1cddcf17beb40b73b1f221325250"
+      },
+      "prediction_files": [
+        {
+          "path": "export.csv",
+          "bytes": 130898,
+          "sha256": "9ff3c0980a170e4a5ddc13367a3cf01d92b5b9acc256b50d8d834d59068e4fbb"
+        },
+        {
+          "path": "prediction-manifest.json",
+          "bytes": 3876,
+          "sha256": "bd633499feb3fe1b7be938230de98ae0eeb9331698fcbe26cae79da2053cabb1"
+        },
+        {
+          "path": "predictions.csv",
+          "bytes": 273655,
+          "sha256": "022fbfe405fa7d382cf26e552c162ced50f86befede07e1e9679235f626a6407"
+        }
+      ],
+      "usage": {
+        "attempts": 5,
+        "total_tokens": 92501,
+        "unknown_attempts": 0,
+        "source": "measured",
+        "completeness": "complete",
+        "native": {
+          "tokens": {
+            "status": "known",
+            "input_tokens": 86493,
+            "output_tokens": 6008,
+            "total_tokens": 92501,
+            "attempts": 5,
+            "unknown_attempts": 0,
+            "elapsed_ms": 34634.08799900004,
+            "currency_cost": "not_computed"
+          },
+          "modeling": {
+            "status": "known",
+            "input_tokens": 86493,
+            "output_tokens": 6008,
+            "total_tokens": 92501,
+            "attempts": 5,
+            "unknown_attempts": 0,
+            "elapsed_ms": 34634.08799900004,
+            "currency_cost": "not_computed"
+          },
+          "children": {},
+          "training_attempts": 4,
+          "final_training_attempts": 1,
+          "confirmation_training_attempts": 0,
+          "eda_calls": 0,
+          "eda_executions": 0,
+          "remaining_ms": 414660,
+          "exploration_ms": 264660
+        }
+      },
+      "elapsed_ms": 187944,
+      "scoring_elapsed_ms": 1187,
+      "budget_status": "reduced",
+      "effective_budget": {
+        "timeout_ms": 599946,
+        "model_attempts": 12,
+        "total_tokens": 160000
+      },
+      "reproduction": {
+        "status": "passed",
+        "record": {
+          "path": "runs/modeling-live-repair-no_eda-v1/reproductions/084e584d-7a40-41d2-a25d-7f3f37f96f40/reproduction.json",
+          "sha256": "582faed48af2c68774830484c9b26bbcd429671b7a7d3325bda7ac820c0fbc1d"
+        },
+        "comparison": {
+          "matched": true,
+          "differences": [],
+          "rows": 2968,
+          "protocol_sha256": "8db48d8d5283802bd7099accaf0aa11b18fc92199ecb16eb4b7dea33dc2ad849",
+          "reference_sha256": "022fbfe405fa7d382cf26e552c162ced50f86befede07e1e9679235f626a6407",
+          "actual_sha256": "022fbfe405fa7d382cf26e552c162ced50f86befede07e1e9679235f626a6407",
+          "tolerance": {
+            "atol": 1e-8,
+            "rtol": 0.000001
+          }
+        },
+        "elapsed_ms": 9538.581917000003,
+        "calls": {
+          "models": 0,
+          "fits": 0,
+          "predictions": 1
+        }
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e5",
+      "type": "ordinal",
+      "method": "collaborative",
+      "seed": 17,
+      "evaluation_id": "b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4",
+      "unit_id": "unit-000001",
+      "score_id": "6e087af3-4d9d-43a3-a318-0114582bb0a4",
+      "report": {
+        "path": "runs/modeling-live-repair-collaborative-v1/evaluations/b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4/scores/6e087af3-4d9d-43a3-a318-0114582bb0a4/report.json",
+        "sha256": "e0007ab582b733839184f21258b87e24b6b65823ceff8f2c812894f1a21ed9e8"
+      },
+      "native_record": {
+        "path": "runs/modeling-live-repair-collaborative-v1/evaluations/b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4/native/unit-000001/ce22671a-4028-4508-b4f3-37bbf2ab6e83/modeling.json",
+        "sha256": "3ef7f571dfd1ead68bf618e08c8db5d6a0e7e208155d3e13ae86bca6ecc4c4c1"
+      },
+      "code": {
+        "commit": "f0bee2295bfab4750b3cdfe7355d3a7522930b59",
+        "dirty": false
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      },
+      "model": {
+        "profile": {
+          "id": "deepseek-flash",
+          "provider": "deepseek",
+          "protocol": "chat-completions",
+          "base_url": "https://api.deepseek.com",
+          "model": "deepseek-flash",
+          "display_name": "DeepSeek-V4.1-Flash",
+          "api_key_env": "DEEPSEEK_API_KEY",
+          "allow_loopback_http": false,
+          "capabilities": {
+            "tool_calls": true,
+            "thinking": true,
+            "vision": false
+          },
+          "generation": {
+            "max_output_tokens": 65536,
+            "thinking": "enabled",
+            "reasoning_effort": "high"
+          }
+        },
+        "returned_models": [
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash"
+        ],
+        "response_ids": [
+          "2e342cb9-612c-4d80-b032-5a817e48bc12",
+          "26dcea21-8d96-44f6-bf70-042866369e43",
+          "fa97e1ed-e011-44d9-b4fe-e41f37a1b4d1",
+          "70e48df7-887a-4b82-ac6c-d63a8ac75818"
+        ],
+        "fingerprints": [
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669"
+        ]
+      },
+      "prompt": {
+        "decision_interface": "modeling-decision-v2",
+        "correction_policy": "consecutive-unproductive-v2",
+        "version": "modeling-v9",
+        "sha256": "f810a3708c4e0e788de7b32dfe084cd0a6d67375008d60b57a82b8aee47beb26"
+      },
+      "status": "completed",
+      "reason": "delivery_validated",
+      "scoring_status": "scored",
+      "native_metric": "quadratic-kappa-ds10-v1",
+      "native_value": 0.4321646998018779,
+      "native_components": [],
+      "rpg": 0.4321646998018779,
+      "completion": 1,
+      "search_end": {
+        "kind": "protected",
+        "reason": "token_preflight"
+      },
+      "delivery_status": "completed",
+      "prediction_status": "completed",
+      "trajectory": {
+        "search_end": {
+          "kind": "protected",
+          "reason": "token_preflight"
+        },
+        "delivery_status": "completed",
+        "completion": "protected",
+        "accounting": "known",
+        "collaboration": "not_covered",
+        "analysis_calls": 0,
+        "successful_analyses": 0,
+        "analysis_followups": [],
+        "analysis_experiment_links": [],
+        "analysis_ids": [],
+        "core_rejections": [
+          {
+            "sequence": 20,
+            "reason": "Error: Exactly one new tool call is required"
+          }
+        ],
+        "attachment_warnings": [],
+        "unproductive_executions": [],
+        "protection_reason": "token_preflight"
+      },
+      "native_identity": {
+        "run_id": "ce22671a-4028-4508-b4f3-37bbf2ab6e83",
+        "frozen_id": "6c060bcec175a68d922de673ac66901f0ae30d21c5f5f2284edd344bdd1d8453",
+        "sha256": "be3eb904f5b18c28d6e6f9b51a870db8225b912f28a8838c18366407188b902e",
+        "bytes": 2761377,
+        "delivery_sha256": "4e30ff729ad63f503e8abebb37ef5ec357495ac2386844b666a9209eba997acf"
+      },
+      "prediction_files": [
+        {
+          "path": "export.csv",
+          "bytes": 3078,
+          "sha256": "551ef8128245f976c428e2107dc058459c59c18942cd178ad24385fe00c58225"
+        },
+        {
+          "path": "prediction-manifest.json",
+          "bytes": 3420,
+          "sha256": "25f7342a9253f1b574dcbc36d0f063fff2d5ff209e73b50656da395a7e0e6003"
+        },
+        {
+          "path": "predictions.csv",
+          "bytes": 5152,
+          "sha256": "904db6d7cb8ab2d411ad6710e88a5ae8b63b54d7ce23c6bcd6465e96d7bbd000"
+        }
+      ],
+      "usage": {
+        "attempts": 4,
+        "total_tokens": 75617,
+        "unknown_attempts": 0,
+        "source": "measured",
+        "completeness": "complete",
+        "native": {
+          "tokens": {
+            "status": "known",
+            "input_tokens": 63458,
+            "output_tokens": 12159,
+            "total_tokens": 75617,
+            "attempts": 4,
+            "unknown_attempts": 0,
+            "elapsed_ms": 60320.58333500003,
+            "currency_cost": "not_computed"
+          },
+          "modeling": {
+            "status": "known",
+            "input_tokens": 63458,
+            "output_tokens": 12159,
+            "total_tokens": 75617,
+            "attempts": 4,
+            "unknown_attempts": 0,
+            "elapsed_ms": 60320.58333500003,
+            "currency_cost": "not_computed"
+          },
+          "children": {},
+          "training_attempts": 4,
+          "final_training_attempts": 1,
+          "confirmation_training_attempts": 0,
+          "eda_calls": 0,
+          "eda_executions": 0,
+          "remaining_ms": 406572,
+          "exploration_ms": 256572
+        }
+      },
+      "elapsed_ms": 194694,
+      "scoring_elapsed_ms": 1138,
+      "budget_status": "reduced",
+      "effective_budget": {
+        "timeout_ms": 599976,
+        "model_attempts": 12,
+        "total_tokens": 160000
+      },
+      "reproduction": {
+        "status": "passed",
+        "record": {
+          "path": "runs/modeling-live-repair-collaborative-v1/reproductions/03eae9b3-e772-4cad-a980-57a0c6d8b9a9/reproduction.json",
+          "sha256": "0c1d60afb7e806755758e689d842ac99d24ef3421261a3378628a2abc30fade8"
+        },
+        "comparison": {
+          "matched": true,
+          "differences": [],
+          "rows": 412,
+          "protocol_sha256": "e31ed68e14fdfc3911db4ee793133f0efb523b3520dbbb1deda8c32d559e2280",
+          "reference_sha256": "904db6d7cb8ab2d411ad6710e88a5ae8b63b54d7ce23c6bcd6465e96d7bbd000",
+          "actual_sha256": "904db6d7cb8ab2d411ad6710e88a5ae8b63b54d7ce23c6bcd6465e96d7bbd000",
+          "tolerance": {
+            "atol": 1e-8,
+            "rtol": 0.000001
+          }
+        },
+        "elapsed_ms": 9783.835375000024,
+        "calls": {
+          "models": 0,
+          "fits": 0,
+          "predictions": 1
+        }
+      },
+      "cache_policy": "disabled"
+    },
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "titanic",
+      "type": "binary",
+      "method": "collaborative",
+      "seed": 17,
+      "evaluation_id": "b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4",
+      "unit_id": "unit-000002",
+      "score_id": "6e087af3-4d9d-43a3-a318-0114582bb0a4",
+      "report": {
+        "path": "runs/modeling-live-repair-collaborative-v1/evaluations/b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4/scores/6e087af3-4d9d-43a3-a318-0114582bb0a4/report.json",
+        "sha256": "e0007ab582b733839184f21258b87e24b6b65823ceff8f2c812894f1a21ed9e8"
+      },
+      "native_record": {
+        "path": "runs/modeling-live-repair-collaborative-v1/evaluations/b27c9eda-8ce9-4c83-8c8e-c9a32e8339c4/native/unit-000002/2169488a-858b-40ed-bdc3-03d52412500d/modeling.json",
+        "sha256": "a2d9744a0086a1afb2c89bff47b1aba2928eece24e17415f6eb176975a58a66e"
+      },
+      "code": {
+        "commit": "f0bee2295bfab4750b3cdfe7355d3a7522930b59",
+        "dirty": false
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      },
+      "model": {
+        "profile": {
+          "id": "deepseek-flash",
+          "provider": "deepseek",
+          "protocol": "chat-completions",
+          "base_url": "https://api.deepseek.com",
+          "model": "deepseek-flash",
+          "display_name": "DeepSeek-V4.1-Flash",
+          "api_key_env": "DEEPSEEK_API_KEY",
+          "allow_loopback_http": false,
+          "capabilities": {
+            "tool_calls": true,
+            "thinking": true,
+            "vision": false
+          },
+          "generation": {
+            "max_output_tokens": 65536,
+            "thinking": "enabled",
+            "reasoning_effort": "high"
+          }
+        },
+        "returned_models": [
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash"
+        ],
+        "response_ids": [
+          "3798a767-a976-40dc-bd7c-7f1844970157",
+          "dd8ab5ee-858e-40cc-ac4c-84b53b5e2cd2",
+          "14fea33a-5107-493c-bab2-3f84c09624d1",
+          "e2e16fd3-b3d5-47de-98c8-ffce6424a52b"
+        ],
+        "fingerprints": [
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669"
+        ]
+      },
+      "prompt": {
+        "decision_interface": "modeling-decision-v2",
+        "correction_policy": "consecutive-unproductive-v2",
+        "version": "modeling-v9",
+        "sha256": "f810a3708c4e0e788de7b32dfe084cd0a6d67375008d60b57a82b8aee47beb26"
+      },
+      "status": "completed",
+      "reason": "delivery_validated",
+      "scoring_status": "scored",
+      "native_metric": "accuracy-v1",
+      "native_value": 0.8547486033519553,
+      "native_components": [],
+      "rpg": 0.7111111111111112,
+      "completion": 1,
+      "search_end": {
+        "kind": "protected",
+        "reason": "token_preflight"
+      },
+      "delivery_status": "completed",
+      "prediction_status": "completed",
+      "trajectory": {
+        "search_end": {
+          "kind": "protected",
+          "reason": "token_preflight"
+        },
+        "delivery_status": "completed",
+        "completion": "protected",
+        "accounting": "known",
+        "collaboration": "not_covered",
+        "analysis_calls": 0,
+        "successful_analyses": 0,
+        "analysis_followups": [],
+        "analysis_experiment_links": [],
+        "analysis_ids": [],
+        "core_rejections": [],
+        "attachment_warnings": [],
+        "unproductive_executions": [
+          {
+            "id": "227fa97c-0390-4b38-9ef0-a375ac929cd6",
+            "status": "failed",
+            "reason": "timed_out:"
+          }
+        ],
+        "protection_reason": "token_preflight"
+      },
+      "native_identity": {
+        "run_id": "2169488a-858b-40ed-bdc3-03d52412500d",
+        "frozen_id": "90643816743e1705d9d2eccc8c33f6a9e1c25184b5c248fffb1067f074153fea",
+        "sha256": "0c67ca76266e5ed242db1853d3de6e565bb933389b926bb37453dac41d19305d",
+        "bytes": 2372797,
+        "delivery_sha256": "c5bce21f801967488fce8dc66659c505946696f7ed3ada0c457c40420da955c4"
+      },
+      "prediction_files": [
+        {
+          "path": "export.csv",
+          "bytes": 1249,
+          "sha256": "1f0e34964552093e9df3d473259b5a923460680c3a9dc021250b3f954ca9291c"
+        },
+        {
+          "path": "prediction-manifest.json",
+          "bytes": 3265,
+          "sha256": "621a5432686b87346de8bc81a7e12eac9d11be953f642bd9ea0c4be9e9df257e"
+        },
+        {
+          "path": "predictions.csv",
+          "bytes": 2148,
+          "sha256": "188f5e3c62e8be36b1e63fabd6f83435bbba874c58097bff3d82934150cd58b5"
+        }
+      ],
+      "usage": {
+        "attempts": 4,
+        "total_tokens": 80163,
+        "unknown_attempts": 0,
+        "source": "measured",
+        "completeness": "complete",
+        "native": {
+          "tokens": {
+            "status": "known",
+            "input_tokens": 65623,
+            "output_tokens": 14540,
+            "total_tokens": 80163,
+            "attempts": 4,
+            "unknown_attempts": 0,
+            "elapsed_ms": 72232.59849800006,
+            "currency_cost": "not_computed"
+          },
+          "modeling": {
+            "status": "known",
+            "input_tokens": 65623,
+            "output_tokens": 14540,
+            "total_tokens": 80163,
+            "attempts": 4,
+            "unknown_attempts": 0,
+            "elapsed_ms": 72232.59849800006,
+            "currency_cost": "not_computed"
+          },
+          "children": {},
+          "training_attempts": 5,
+          "final_training_attempts": 1,
+          "confirmation_training_attempts": 0,
+          "eda_calls": 0,
+          "eda_executions": 0,
+          "remaining_ms": 363946,
+          "exploration_ms": 213946
+        }
+      },
+      "elapsed_ms": 237295,
+      "scoring_elapsed_ms": 1456,
+      "budget_status": "reduced",
+      "effective_budget": {
+        "timeout_ms": 599975,
+        "model_attempts": 12,
+        "total_tokens": 160000
+      },
+      "reproduction": {
+        "status": "passed",
+        "record": {
+          "path": "runs/modeling-live-repair-collaborative-v1/reproductions/0184ef91-12e4-47e0-8f77-bc0d202e12ca/reproduction.json",
+          "sha256": "9c87fa28cd957d66dc5225af05ad063a0e3049c7186893975e1d366dd2c7af99"
+        },
+        "comparison": {
+          "matched": true,
+          "differences": [],
+          "rows": 179,
+          "protocol_sha256": "9661cc4c2d08615c15ba908598295de45f091685608b81a1eecf00d06f1c86af",
+          "reference_sha256": "188f5e3c62e8be36b1e63fabd6f83435bbba874c58097bff3d82934150cd58b5",
+          "actual_sha256": "188f5e3c62e8be36b1e63fabd6f83435bbba874c58097bff3d82934150cd58b5",
+          "tolerance": {
+            "atol": 1e-8,
+            "rtol": 0.000001
+          }
+        },
+        "elapsed_ms": 9936.227833000012,
+        "calls": {
+          "models": 0,
+          "fits": 0,
+          "predictions": 1
+        }
+      },
+      "cache_policy": "disabled"
+    }
+  ]
+}

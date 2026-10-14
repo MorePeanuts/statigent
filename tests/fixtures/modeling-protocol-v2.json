@@ -1,0 +1,2102 @@
+{
+  "valid": [
+    {
+      "input": {
+        "kind": "regression",
+        "metric_id": "rmse-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "rmse-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": null,
+          "parameters": {
+            "scale": "original",
+            "non_finite": "error"
+          },
+          "definition_sha256": "8c665f8b664f1c94ec1c9e7a8f528cacbdb08910f0204653f344f5f5e8462ed9"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "52a07616c2c69a68f1315d85a16bb405ff91c2baa85e59a859b57f9074b2bd4a"
+      }
+    },
+    {
+      "input": {
+        "kind": "regression",
+        "metric_id": "mae-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "mae-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": null,
+          "parameters": {
+            "scale": "original",
+            "non_finite": "error"
+          },
+          "definition_sha256": "bb5488b1241e5fd18366aad9bea565a9f0943f0feda0aa24f34b3c0a42d7bc35"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "ddeb35157c6b43b8e4f1a158b033b838ec11f4ba9ab328bee3ba9c400f6b0e23"
+      }
+    },
+    {
+      "input": {
+        "kind": "regression",
+        "metric_id": "median-absolute-error-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "median-absolute-error-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": null,
+          "parameters": {
+            "scale": "original",
+            "non_finite": "error"
+          },
+          "definition_sha256": "aaabfe9c9e4ab76749d8e7840e663b90651c2002f10ba7da47b93a069f7689ca"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "2391c6de593c5149b7b9f59cd0b391d849824ae46126e69895ea88ccbd40e745"
+      }
+    },
+    {
+      "input": {
+        "kind": "regression",
+        "metric_id": "rmsle-numpy-log-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "rmsle-numpy-log-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": null,
+          "parameters": {
+            "formula": "log(x+1)",
+            "domain": "greater-than-minus-one",
+            "clipping": "none"
+          },
+          "definition_sha256": "a740438b8c7c66526053b67b52a52977519e1beb4668b42232613b20727c5ea8"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "dbe77585b2ba296d27e04b1d2c74ac53c3b33e6bda32195d0e4e895e40982667"
+      }
+    },
+    {
+      "input": {
+        "kind": "regression",
+        "metric_id": "rmsle-numpy-log1p-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "rmsle-numpy-log1p-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": null,
+          "parameters": {
+            "formula": "log1p(x)",
+            "domain": "greater-than-minus-one",
+            "clipping": "none"
+          },
+          "definition_sha256": "168133b6aefc9e2f9aa7a31782aa0bf9b6cbb04ea32869f558b600fe82411aa1"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "4a8a02c7c3a8c61b6c06a477dad56eed81a3cc6ef7a754e6acd0a367b16e3dd0"
+      }
+    },
+    {
+      "input": {
+        "kind": "regression",
+        "metric_id": "rmsle-sklearn-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "rmsle-sklearn-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": null,
+          "parameters": {
+            "formula": "sklearn-mean-squared-log-error",
+            "domain": "greater-than-minus-one",
+            "clipping": "none"
+          },
+          "definition_sha256": "d79723aab03354822cd755d622ba3936d9c48235f1f0b1138b8f29ab7e807365"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "225da59d7ad517e8abf1cc4d53a1dc3d00be7d34bb3cf345be381db1453a11f7"
+      }
+    },
+    {
+      "input": {
+        "kind": "regression",
+        "metric_id": "r2-sklearn-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "r2-sklearn-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "maximize",
+          "minimum": null,
+          "maximum": 1,
+          "parameters": {
+            "force_finite": true,
+            "minimum_rows": 2
+          },
+          "definition_sha256": "6d190fb320db9de005c18999bfa166b234400878e6da730afa599d9e23477db3"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "11b274f77b5ac121a1e51b7afbbd13c4166b4405da534affadf1e0c81ef3c3d9"
+      }
+    },
+    {
+      "input": {
+        "kind": "regression",
+        "metric_id": "smape-ds-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "smape-ds-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": 2,
+          "parameters": {
+            "factor": 2,
+            "double_zero": "undefined"
+          },
+          "definition_sha256": "dcfad8d7200b6cd9f1c3a56ea0da4fea68295feedb8181a94b266554057c53f3"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "2e25b3781c22c34df34fd2b10cd002d55ae545158e80d28b8c1b7c127d3056a5"
+      }
+    },
+    {
+      "input": {
+        "kind": "regression",
+        "metric_id": "smape-zero-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "smape-zero-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": 2,
+          "parameters": {
+            "factor": 2,
+            "double_zero": "zero"
+          },
+          "definition_sha256": "afe6ae9feb7d1072d966cdb95c5980fe0f6dac3c2da3d4196a95c71248a1ea6c"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "d0e40dd867edccff7e1a1571251f67aecfcc4fbad111aaa2a9fcda38af37b313"
+      }
+    },
+    {
+      "input": {
+        "kind": "binary",
+        "metric_id": "accuracy-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "binary",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "accuracy-v1",
+          "kinds": [
+            "binary",
+            "multiclass",
+            "ordinal"
+          ],
+          "output": "label",
+          "direction": "maximize",
+          "minimum": 0,
+          "maximum": 1,
+          "parameters": {
+            "comparison": "exact-original-label"
+          },
+          "definition_sha256": "34d0e15184418b160afeb2f1657319cda230ce6a5fb66e48a73722a4a15198d5"
+        },
+        "output": "label",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "e3956dfc8f69d9df9c4fba50044b5e3013b8cb64794d4fb75cf5a9444c3bd57d"
+      }
+    },
+    {
+      "input": {
+        "kind": "binary",
+        "metric_id": "micro-f1-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "binary",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "micro-f1-v1",
+          "kinds": [
+            "binary",
+            "multiclass",
+            "ordinal"
+          ],
+          "output": "label",
+          "direction": "maximize",
+          "minimum": 0,
+          "maximum": 1,
+          "parameters": {
+            "average": "micro"
+          },
+          "definition_sha256": "1c64e5e54962ad408150e858350cae4e0119f6e7fc2633bcf50fb16de0ffeaee"
+        },
+        "output": "label",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "8d78b273a085e43974c43462d3d6614823019d6b9a530eeebfa1c9826c20eb0b"
+      }
+    },
+    {
+      "input": {
+        "kind": "binary",
+        "metric_id": "roc-auc-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "binary",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "roc-auc-v1",
+          "kinds": [
+            "binary"
+          ],
+          "output": "probabilities",
+          "direction": "maximize",
+          "minimum": 0,
+          "maximum": 1,
+          "parameters": {
+            "positive_class": "explicit",
+            "single_class": "undefined",
+            "ties": "half-credit"
+          },
+          "definition_sha256": "9714a95b3c631eb150a129236c12284c2cce0fec4f8a74a2a0b78a59dd13302c"
+        },
+        "output": "probabilities",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [
+                "probability_0_0",
+                "probability_0_1"
+              ],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "a91163544272cf59c097c9620790ffc3f28156dd1892ffdd253a678312a73349"
+      }
+    },
+    {
+      "input": {
+        "kind": "binary",
+        "metric_id": "log-loss-sklearn-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "binary",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "log-loss-sklearn-v1",
+          "kinds": [
+            "binary",
+            "multiclass"
+          ],
+          "output": "probabilities",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": null,
+          "parameters": {
+            "epsilon": "float64-eps",
+            "normalization": "sklearn-1.7",
+            "logarithm": "natural",
+            "labels": "explicit-training-classes"
+          },
+          "definition_sha256": "839ce4b6e20b23a0cf4b7f5534ebefbe41e67e429950c19bed320f5e9b70f6ec"
+        },
+        "output": "probabilities",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [
+                "probability_0_0",
+                "probability_0_1"
+              ],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "e66ef8630bee01154169224a8db6030a3a12f6c392ee00131a41cd3c6734a1b3"
+      }
+    },
+    {
+      "input": {
+        "kind": "binary",
+        "metric_id": "normalized-gini-ds-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "binary",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "normalized-gini-ds-v1",
+          "kinds": [
+            "binary"
+          ],
+          "output": "probabilities",
+          "direction": "maximize",
+          "minimum": null,
+          "maximum": null,
+          "parameters": {
+            "tie_break": "evaluation-row-order",
+            "normalization": "gini-actual-actual",
+            "single_class": "undefined"
+          },
+          "definition_sha256": "91e95ac0e3f3a1ea8e900a6b5d402e10f9a2dd7411bcae5a96dfb7a3c00c14c6"
+        },
+        "output": "probabilities",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [
+                "probability_0_0",
+                "probability_0_1"
+              ],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "3ff2b62180a6317cc2a54b77603010654993e7f68ffb8980dbba375d762a0b9d"
+      }
+    },
+    {
+      "input": {
+        "kind": "ordinal",
+        "metric_id": "quadratic-kappa-ds10-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "三",
+              "five",
+              "eight"
+            ],
+            "positive_class": null,
+            "levels": [
+              3,
+              5,
+              8
+            ]
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "ordinal",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "三",
+              "five",
+              "eight"
+            ],
+            "positive_class": null,
+            "levels": [
+              3,
+              5,
+              8
+            ]
+          }
+        ],
+        "metric": {
+          "id": "quadratic-kappa-ds10-v1",
+          "kinds": [
+            "ordinal"
+          ],
+          "output": "label",
+          "direction": "maximize",
+          "minimum": null,
+          "maximum": 1,
+          "parameters": {
+            "levels": 10,
+            "coordinates": "explicit-integers",
+            "zero_denominator": "undefined"
+          },
+          "definition_sha256": "a44dc36b0a853cbaf76fe099c6dcc6465299155c1d5e321818e4faf2a88040ad"
+        },
+        "output": "label",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "92b782f5c7da801f1989cbe7af4d3ebf5ea27177337d598eebd88861fac493e7"
+      }
+    },
+    {
+      "input": {
+        "kind": "multiclass",
+        "metric_id": "top3-hit-ds-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "三",
+              "five",
+              "eight"
+            ],
+            "positive_class": null,
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "multiclass",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "三",
+              "five",
+              "eight"
+            ],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "top3-hit-ds-v1",
+          "kinds": [
+            "multiclass"
+          ],
+          "output": "ranked-labels",
+          "direction": "maximize",
+          "minimum": 0,
+          "maximum": 1,
+          "parameters": {
+            "k": 3,
+            "position_weights": "none",
+            "serialization": "json-array"
+          },
+          "definition_sha256": "1c6875300fedb022eea97385dbd8788ad185fb81795b1cdfb1d06be950da17f6"
+        },
+        "output": "ranked-labels",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": null,
+              "probability_columns": [
+                "probability_0_0",
+                "probability_0_1",
+                "probability_0_2"
+              ],
+              "ranked_column": "ranked_0"
+            }
+          ],
+          "probabilities_optional": true,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "8dca855d925c03a2a33854655f908b573251b2e4c27a47e438deff44199de1c4"
+      }
+    },
+    {
+      "input": {
+        "kind": "multilabel",
+        "metric_id": "mean-target-auc-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_1",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "multilabel",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_1",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "mean-target-auc-v1",
+          "kinds": [
+            "multilabel"
+          ],
+          "output": "multilabel-probabilities",
+          "direction": "maximize",
+          "minimum": 0,
+          "maximum": 1,
+          "parameters": {
+            "weights": "equal",
+            "missing_target": "error",
+            "undefined_target": "error"
+          },
+          "definition_sha256": "a341b092d3696590c4a788742a78cf79b883878b6da5a5135c3b3e50712591ac"
+        },
+        "output": "multilabel-probabilities",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [
+                "probability_0_0",
+                "probability_0_1"
+              ],
+              "ranked_column": null
+            },
+            {
+              "target": "target_1",
+              "value_column": "prediction_1",
+              "probability_columns": [
+                "probability_1_0",
+                "probability_1_1"
+              ],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "e0d7fdfe34da68f2aea23bc3dc7293838f2af8d8d7824257fbfe1ee18d6d9863"
+      }
+    },
+    {
+      "input": {
+        "kind": "multilabel",
+        "metric_id": "mean-target-auc-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_1",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_2",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_3",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_4",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_5",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_6",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "multilabel",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_1",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_2",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_3",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_4",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_5",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_6",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "mean-target-auc-v1",
+          "kinds": [
+            "multilabel"
+          ],
+          "output": "multilabel-probabilities",
+          "direction": "maximize",
+          "minimum": 0,
+          "maximum": 1,
+          "parameters": {
+            "weights": "equal",
+            "missing_target": "error",
+            "undefined_target": "error"
+          },
+          "definition_sha256": "a341b092d3696590c4a788742a78cf79b883878b6da5a5135c3b3e50712591ac"
+        },
+        "output": "multilabel-probabilities",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [
+                "probability_0_0",
+                "probability_0_1"
+              ],
+              "ranked_column": null
+            },
+            {
+              "target": "target_1",
+              "value_column": "prediction_1",
+              "probability_columns": [
+                "probability_1_0",
+                "probability_1_1"
+              ],
+              "ranked_column": null
+            },
+            {
+              "target": "target_2",
+              "value_column": "prediction_2",
+              "probability_columns": [
+                "probability_2_0",
+                "probability_2_1"
+              ],
+              "ranked_column": null
+            },
+            {
+              "target": "target_3",
+              "value_column": "prediction_3",
+              "probability_columns": [
+                "probability_3_0",
+                "probability_3_1"
+              ],
+              "ranked_column": null
+            },
+            {
+              "target": "target_4",
+              "value_column": "prediction_4",
+              "probability_columns": [
+                "probability_4_0",
+                "probability_4_1"
+              ],
+              "ranked_column": null
+            },
+            {
+              "target": "target_5",
+              "value_column": "prediction_5",
+              "probability_columns": [
+                "probability_5_0",
+                "probability_5_1"
+              ],
+              "ranked_column": null
+            },
+            {
+              "target": "target_6",
+              "value_column": "prediction_6",
+              "probability_columns": [
+                "probability_6_0",
+                "probability_6_1"
+              ],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "cc76d0c746d8e2223a3544342f42798a0584c61ce97739a3aeb5794a6372799f"
+      }
+    },
+    {
+      "input": {
+        "kind": "binary",
+        "metric_id": "log-loss-sklearn-inferred-binary-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      },
+      "protocol": {
+        "version": 2,
+        "kind": "binary",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "log-loss-sklearn-inferred-binary-v1",
+          "kinds": [
+            "binary"
+          ],
+          "output": "probabilities",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": null,
+          "parameters": {
+            "epsilon": "float64-eps",
+            "prediction": "positive-column-and-complement",
+            "labels": "infer-from-evaluation-labels",
+            "logarithm": "natural"
+          },
+          "definition_sha256": "f48e4359206685d5686ec3b2ec051473be36a51071f2227bcdd2f30495957d45"
+        },
+        "output": "probabilities",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [
+                "probability_0_0",
+                "probability_0_1"
+              ],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "78c955b27024c0fbea515ec63302c123ed9709a8378a73ef57f1581a9612927f"
+      }
+    }
+  ],
+  "invalid_inputs": [
+    {
+      "name": "empty-targets",
+      "input": {
+        "kind": "binary",
+        "metric_id": "accuracy-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": []
+      }
+    },
+    {
+      "name": "unknown-metric",
+      "input": {
+        "kind": "binary",
+        "metric_id": "unknown",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "unsupported-multiclass-auc",
+      "input": {
+        "kind": "multiclass",
+        "metric_id": "roc-auc-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-positive",
+      "input": {
+        "kind": "binary",
+        "metric_id": "accuracy-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": null,
+            "levels": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown-positive",
+      "input": {
+        "kind": "binary",
+        "metric_id": "accuracy-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "missing",
+            "levels": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate-classes",
+      "input": {
+        "kind": "binary",
+        "metric_id": "accuracy-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "01"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "target-leakage",
+      "input": {
+        "kind": "binary",
+        "metric_id": "accuracy-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x",
+          "target_0"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate-targets",
+      "input": {
+        "kind": "multilabel",
+        "metric_id": "mean-target-auc-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_2",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_3",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_4",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_5",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          },
+          {
+            "name": "target_6",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "rank-out-of-range",
+      "input": {
+        "kind": "ordinal",
+        "metric_id": "quadratic-kappa-ds10-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "三",
+              "five",
+              "eight"
+            ],
+            "positive_class": null,
+            "levels": [
+              3,
+              5,
+              10
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate-rank",
+      "input": {
+        "kind": "ordinal",
+        "metric_id": "quadratic-kappa-ds10-v1",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "三",
+              "five",
+              "eight"
+            ],
+            "positive_class": null,
+            "levels": [
+              3,
+              3,
+              8
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-field",
+      "input": {
+        "kind": "binary",
+        "metric_id": "accuracy-v1",
+        "id_column": "id",
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [
+              "01",
+              "1"
+            ],
+            "positive_class": "01",
+            "levels": null
+          }
+        ]
+      }
+    }
+  ],
+  "invalid_protocols": [
+    {
+      "name": "version",
+      "protocol": {
+        "version": 99,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "rmse-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": null,
+          "parameters": {
+            "scale": "original",
+            "non_finite": "error"
+          },
+          "definition_sha256": "8c665f8b664f1c94ec1c9e7a8f528cacbdb08910f0204653f344f5f5e8462ed9"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "52a07616c2c69a68f1315d85a16bb405ff91c2baa85e59a859b57f9074b2bd4a"
+      }
+    },
+    {
+      "name": "metric-parameters",
+      "protocol": {
+        "version": 2,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "rmse-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": null,
+          "parameters": {
+            "scale": "log",
+            "non_finite": "error"
+          },
+          "definition_sha256": "8c665f8b664f1c94ec1c9e7a8f528cacbdb08910f0204653f344f5f5e8462ed9"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "52a07616c2c69a68f1315d85a16bb405ff91c2baa85e59a859b57f9074b2bd4a"
+      }
+    },
+    {
+      "name": "hash",
+      "protocol": {
+        "version": 2,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [
+          {
+            "name": "target_0",
+            "classes": [],
+            "positive_class": null,
+            "levels": null
+          }
+        ],
+        "metric": {
+          "id": "rmse-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": null,
+          "parameters": {
+            "scale": "original",
+            "non_finite": "error"
+          },
+          "definition_sha256": "8c665f8b664f1c94ec1c9e7a8f528cacbdb08910f0204653f344f5f5e8462ed9"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "name": "empty-targets",
+      "protocol": {
+        "version": 2,
+        "kind": "regression",
+        "id_column": "id",
+        "feature_columns": [
+          "prediction_0",
+          "x"
+        ],
+        "targets": [],
+        "metric": {
+          "id": "rmse-v1",
+          "kinds": [
+            "regression"
+          ],
+          "output": "numeric",
+          "direction": "minimize",
+          "minimum": 0,
+          "maximum": null,
+          "parameters": {
+            "scale": "original",
+            "non_finite": "error"
+          },
+          "definition_sha256": "8c665f8b664f1c94ec1c9e7a8f528cacbdb08910f0204653f344f5f5e8462ed9"
+        },
+        "output": "numeric",
+        "prediction": {
+          "targets": [
+            {
+              "target": "target_0",
+              "value_column": "prediction_0_",
+              "probability_columns": [],
+              "ranked_column": null
+            }
+          ],
+          "probabilities_optional": false,
+          "probability_tolerance": "1e-6",
+          "ties": "frozen-class-order"
+        },
+        "scoring_version": "tabular-metrics-v2",
+        "protocol_sha256": "52a07616c2c69a68f1315d85a16bb405ff91c2baa85e59a859b57f9074b2bd4a"
+      }
+    }
+  ],
+  "legacy_v1": {
+    "version": 1,
+    "kind": "binary",
+    "metric": "log_loss",
+    "direction": "minimize",
+    "output": "probabilities",
+    "classes": [
+      "01",
+      "1"
+    ],
+    "positive_class": "01",
+    "prediction": {
+      "column": "prediction",
+      "probability_columns": [
+        "probability_0",
+        "probability_1"
+      ]
+    },
+    "scoring_version": "tabular-metrics-v1",
+    "protocol_sha256": "aa32c53e7d3441363e5ef39e5f474aa04a0c20e34ec03b7d5e8704f2225d6349"
+  }
+}

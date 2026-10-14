@@ -123,6 +123,7 @@ export function validateFrozenModelingTask(
 }
 export function validateRecordedModelingTask(value: unknown) {
   const x = obj(value);
+  if (x.schema_version === 4) return validateBenchmarkModelingTask(x);
   if (
     (x.schema_version !== 2 && x.schema_version !== 3) ||
     x.method === undefined
@@ -168,7 +169,30 @@ export function validateRecordedModelingTask(value: unknown) {
     resource_version: str(resource_version, "resource_version"),
   };
 }
+export function validateBenchmarkModelingTask(value: unknown): ReturnType<
+  typeof validateFrozenModelingTask
+> & {
+  schema_version: 4;
+  method: ModelingMethod;
+  confirmation: { mode: "none" | "terminal_repeated_holdout" };
+  resource_version: string;
+  delivery_mode: "fit_only" | "fit_predict";
+} {
+  const x = obj(value);
+  if (
+    x.schema_version !== 4 ||
+    (x.delivery_mode !== "fit_only" && x.delivery_mode !== "fit_predict")
+  )
+    throw new Error(
+      "Modeling task v4 requires explicit delivery_mode fit_only/fit_predict",
+    );
+  const { delivery_mode, ...rest } = x;
+  const task = validateRecordedModelingTask({ ...rest, schema_version: 3 });
+  return { ...task, schema_version: 4, delivery_mode };
+}
 export function validateModelingTask(value: unknown) {
+  if (obj(value).schema_version === 4)
+    return validateBenchmarkModelingTask(value);
   if (obj(value).schema_version !== 3)
     throw new Error(
       "Migrate modeling task: declare schema_version: 3, method and confirmation.mode explicitly",

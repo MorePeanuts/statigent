@@ -10,22 +10,24 @@ import {
   shortlist,
 } from "./confirmation";
 import { datasetProtocol, tableFile, validateDataset } from "./data";
+import { parseDatasetV3 } from "./dataset-v3";
 import type { Experiment } from "./experiments";
-import { validateScore } from "./protocol";
 import {
   createValidationPlan,
   type Evaluation,
   type ValidationPlan,
 } from "./validation";
+import { validationPlanFromFilesV2 } from "./validation-v2";
+import { type ModelingScore, validateEvaluationScore } from "./versioned-score";
 
 function same(a: unknown, b: unknown, label: string) {
   if (!isDeepStrictEqual(a, b)) throw new Error(`${label} mismatch`);
 }
 export class ValidationAudit {
   frozen = false;
-  private candidates: Experiment[] = [];
+  private candidates: Experiment<ModelingScore>[] = [];
   private confirmation: ConfirmationResult | null = null;
-  private readonly results = new Map<string, Experiment>();
+  private readonly results = new Map<string, Experiment<ModelingScore>>();
   private readonly intentions = new Map<
     string,
     {
@@ -52,15 +54,26 @@ export class ValidationAudit {
   static async create(directory: string, manifest: Record<string, unknown>) {
     const config = obj(manifest.config),
       task = validateRecordedModelingTask(config.task),
-      dataset = validateDataset(config.dataset);
-    const trainFile = dataset.files[0];
+      dataset =
+        task.schema_version === 4
+          ? parseDatasetV3(config.dataset)
+          : validateDataset(config.dataset);
+    const trainFile =
+      dataset.schema_version === 3 ? dataset.training : dataset.files[0];
     if (!trainFile) throw new Error("Missing training identity");
     await verifyFiles(task.dataset_root, [trainFile]);
-    const plan = createValidationPlan(
-      dataset,
-      await tableFile(task.dataset_root, "train.csv"),
-      task.confirmation.mode,
-    );
+    const plan =
+      dataset.schema_version === 3
+        ? await validationPlanFromFilesV2(
+            task.dataset_root,
+            dataset,
+            task.confirmation.mode,
+          )
+        : createValidationPlan(
+            dataset,
+            await tableFile(task.dataset_root, "train.csv"),
+            task.confirmation.mode,
+          );
     same(config.validation_plan, plan, "Validation plan");
     const bytes = await readFile(
       await regular(directory, "validation-plan.json"),
@@ -70,6 +83,8 @@ export class ValidationAudit {
     return new ValidationAudit(manifest, plan);
   }
   get protocol() {
+    if (this.manifest.schema_version === 5)
+      return parseDatasetV3(obj(this.manifest.config).dataset).protocol;
     return datasetProtocol(validateDataset(obj(this.manifest.config).dataset));
   }
   search(id: string, code: string, candidate: string, evaluation: unknown) {
@@ -183,11 +198,7 @@ export class ValidationAudit {
       throw new Error("Invalid experiment status");
     const score =
       raw.status === "completed" && raw.final !== true
-        ? validateScore(
-            raw.score,
-            this.protocol,
-            intent.evaluation.evaluation_id,
-          )
+        ? validateEvaluationScore(raw.score, this.protocol, intent.evaluation)
         : null;
     if (score === null && raw.score !== null)
       throw new Error("Unexpected phase score");
@@ -250,7 +261,9 @@ export class ValidationAudit {
       "Selected experiment",
     );
     if (
-      this.manifest.status === "completed" &&
+      (this.manifest.status === "completed" ||
+        (this.manifest.schema_version === 5 &&
+          this.manifest.status === "model_frozen")) &&
       (!this.confirmation ||
         !["disabled", "complete"].includes(this.confirmation.status) ||
         ![...this.results.values()].some(

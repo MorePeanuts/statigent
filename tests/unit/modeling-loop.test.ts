@@ -1034,6 +1034,108 @@ test("fatal auxiliary execution retains the validated best fact but starts no cl
   expect(view.manifest.delivery).toMatchObject({ status: "not_started" });
 });
 
+function truncatedToolResponse(finishReason = "length") {
+  return reply(undefined, {
+    choices: [
+      {
+        index: 0,
+        finish_reason: finishReason,
+        message: {
+          role: "assistant",
+          content: null,
+          reasoning_content: "partial reasoning",
+          tool_calls: [call("run_experiment", '{"code":"INCOMPLETE')],
+        },
+      },
+    ],
+  });
+}
+
+test("truncated response closes a trusted candidate with confirmation, discarding partial tools without extra calls", async () => {
+  const o = await options((_body, i) => {
+    if (i === 0) return reply([trainCall()]);
+    if (i === 1) return truncatedToolResponse();
+    throw Error("No call allowed after truncation");
+  });
+  o.task = {
+    ...obj(o.task),
+    confirmation: { mode: "terminal_repeated_holdout" },
+    budget: {
+      training_attempts: 6,
+      task_timeout_ms: 1200000,
+      final_reserve_ms: 750000,
+    },
+  };
+  const result = await runModeling(o);
+  expect(result.status, result.reason).toBe("completed");
+  expect((o.client as ScriptClient).bodies).toHaveLength(2);
+  const view = await inspectModeling(result.directory);
+  expect(view.manifest.search_end).toEqual({
+    kind: "protected",
+    reason: "response_length",
+  });
+  expect(view.manifest.usage).toMatchObject({
+    tokens: { status: "known", attempts: 2, total_tokens: 30 },
+    training_attempts: 4,
+    confirmation_training_attempts: 2,
+  });
+  expect(view.events.filter((e) => e.type === "action_accepted")).toHaveLength(
+    1,
+  );
+  expect(view.manifest.delivery).toMatchObject({ status: "completed" });
+
+  // 修改保存响应后，保护原因必须失去审计依据，不能仅依赖清单声明。
+  const response = view.events
+    .filter((e) => e.type === "model_response")
+    .at(-1);
+  const ref = obj(response?.content_ref);
+  const path = join(result.directory, String(ref.path));
+  const payload = await Bun.file(path).json();
+  payload.finish_reason = "stop";
+  const bytes = JSON.stringify(payload);
+  await Bun.write(path, bytes);
+  ref.bytes = Buffer.byteLength(bytes);
+  ref.sha256 = sha256(Buffer.from(bytes));
+  await Bun.write(
+    join(result.directory, "events.jsonl"),
+    `${view.events.map((e) => JSON.stringify(e)).join("\n")}\n`,
+  );
+  await expect(inspectModeling(result.directory)).rejects.toThrow(
+    "Unsubstantiated protection",
+  );
+});
+
+for (const fault of ["no_candidate", "content_filter", "cancel"] as const) {
+  test(`${fault} does not authorize truncated-response delivery`, async () => {
+    const controller = new AbortController();
+    const o = await options((_body, i) => {
+      if (fault !== "no_candidate" && i === 0) return reply([trainCall()]);
+      if (fault === "cancel") controller.abort();
+      return truncatedToolResponse(
+        fault === "content_filter" ? "content_filter" : "length",
+      );
+    });
+    o.signal = controller.signal;
+    const result = await runModeling(o);
+    expect(result.status).toBe(fault === "cancel" ? "cancelled" : "failed");
+    expect(result.reason).toBe(
+      fault === "cancel"
+        ? "user_cancelled"
+        : fault === "content_filter"
+          ? "response_content_filter"
+          : "response_length",
+    );
+    const view = await inspectModeling(result.directory);
+    expect(view.manifest.experiments).toHaveLength(
+      fault === "no_candidate" ? 0 : 1,
+    );
+    expect(view.manifest.delivery).toMatchObject({ status: "not_started" });
+    expect(view.events.filter((e) => e.type === "search_frozen")).toHaveLength(
+      0,
+    );
+  });
+}
+
 test("crossing the exploration time boundary still closes two pipelines within the remaining hard deadline", async () => {
   const o = await options((_body, i) =>
       reply([trainCall(baselineCode + "\n".repeat(i))]),

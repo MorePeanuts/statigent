@@ -1,0 +1,272 @@
+{
+  "version": 1,
+  "definitions": [
+    {
+      "id": "rmse-v1",
+      "kinds": [
+        "regression"
+      ],
+      "output": "numeric",
+      "direction": "minimize",
+      "minimum": 0,
+      "maximum": null,
+      "parameters": {
+        "scale": "original",
+        "non_finite": "error"
+      }
+    },
+    {
+      "id": "mae-v1",
+      "kinds": [
+        "regression"
+      ],
+      "output": "numeric",
+      "direction": "minimize",
+      "minimum": 0,
+      "maximum": null,
+      "parameters": {
+        "scale": "original",
+        "non_finite": "error"
+      }
+    },
+    {
+      "id": "median-absolute-error-v1",
+      "kinds": [
+        "regression"
+      ],
+      "output": "numeric",
+      "direction": "minimize",
+      "minimum": 0,
+      "maximum": null,
+      "parameters": {
+        "scale": "original",
+        "non_finite": "error"
+      }
+    },
+    {
+      "id": "rmsle-numpy-log-v1",
+      "kinds": [
+        "regression"
+      ],
+      "output": "numeric",
+      "direction": "minimize",
+      "minimum": 0,
+      "maximum": null,
+      "parameters": {
+        "formula": "log(x+1)",
+        "domain": "greater-than-minus-one",
+        "clipping": "none"
+      }
+    },
+    {
+      "id": "rmsle-numpy-log1p-v1",
+      "kinds": [
+        "regression"
+      ],
+      "output": "numeric",
+      "direction": "minimize",
+      "minimum": 0,
+      "maximum": null,
+      "parameters": {
+        "formula": "log1p(x)",
+        "domain": "greater-than-minus-one",
+        "clipping": "none"
+      }
+    },
+    {
+      "id": "rmsle-sklearn-v1",
+      "kinds": [
+        "regression"
+      ],
+      "output": "numeric",
+      "direction": "minimize",
+      "minimum": 0,
+      "maximum": null,
+      "parameters": {
+        "formula": "sklearn-mean-squared-log-error",
+        "domain": "greater-than-minus-one",
+        "clipping": "none"
+      }
+    },
+    {
+      "id": "r2-sklearn-v1",
+      "kinds": [
+        "regression"
+      ],
+      "output": "numeric",
+      "direction": "maximize",
+      "minimum": null,
+      "maximum": 1,
+      "parameters": {
+        "force_finite": true,
+        "minimum_rows": 2
+      }
+    },
+    {
+      "id": "smape-ds-v1",
+      "kinds": [
+        "regression"
+      ],
+      "output": "numeric",
+      "direction": "minimize",
+      "minimum": 0,
+      "maximum": 2,
+      "parameters": {
+        "factor": 2,
+        "double_zero": "undefined"
+      }
+    },
+    {
+      "id": "smape-zero-v1",
+      "kinds": [
+        "regression"
+      ],
+      "output": "numeric",
+      "direction": "minimize",
+      "minimum": 0,
+      "maximum": 2,
+      "parameters": {
+        "factor": 2,
+        "double_zero": "zero"
+      }
+    },
+    {
+      "id": "accuracy-v1",
+      "kinds": [
+        "binary",
+        "multiclass",
+        "ordinal"
+      ],
+      "output": "label",
+      "direction": "maximize",
+      "minimum": 0,
+      "maximum": 1,
+      "parameters": {
+        "comparison": "exact-original-label"
+      }
+    },
+    {
+      "id": "micro-f1-v1",
+      "kinds": [
+        "binary",
+        "multiclass",
+        "ordinal"
+      ],
+      "output": "label",
+      "direction": "maximize",
+      "minimum": 0,
+      "maximum": 1,
+      "parameters": {
+        "average": "micro"
+      }
+    },
+    {
+      "id": "roc-auc-v1",
+      "kinds": [
+        "binary"
+      ],
+      "output": "probabilities",
+      "direction": "maximize",
+      "minimum": 0,
+      "maximum": 1,
+      "parameters": {
+        "positive_class": "explicit",
+        "single_class": "undefined",
+        "ties": "half-credit"
+      }
+    },
+    {
+      "id": "log-loss-sklearn-v1",
+      "kinds": [
+        "binary",
+        "multiclass"
+      ],
+      "output": "probabilities",
+      "direction": "minimize",
+      "minimum": 0,
+      "maximum": null,
+      "parameters": {
+        "epsilon": "float64-eps",
+        "normalization": "sklearn-1.7",
+        "logarithm": "natural",
+        "labels": "explicit-training-classes"
+      }
+    },
+    {
+      "id": "normalized-gini-ds-v1",
+      "kinds": [
+        "binary"
+      ],
+      "output": "probabilities",
+      "direction": "maximize",
+      "minimum": null,
+      "maximum": null,
+      "parameters": {
+        "tie_break": "evaluation-row-order",
+        "normalization": "gini-actual-actual",
+        "single_class": "undefined"
+      }
+    },
+    {
+      "id": "quadratic-kappa-ds10-v1",
+      "kinds": [
+        "ordinal"
+      ],
+      "output": "label",
+      "direction": "maximize",
+      "minimum": null,
+      "maximum": 1,
+      "parameters": {
+        "levels": 10,
+        "coordinates": "explicit-integers",
+        "zero_denominator": "undefined"
+      }
+    },
+    {
+      "id": "top3-hit-ds-v1",
+      "kinds": [
+        "multiclass"
+      ],
+      "output": "ranked-labels",
+      "direction": "maximize",
+      "minimum": 0,
+      "maximum": 1,
+      "parameters": {
+        "k": 3,
+        "position_weights": "none",
+        "serialization": "json-array"
+      }
+    },
+    {
+      "id": "mean-target-auc-v1",
+      "kinds": [
+        "multilabel"
+      ],
+      "output": "multilabel-probabilities",
+      "direction": "maximize",
+      "minimum": 0,
+      "maximum": 1,
+      "parameters": {
+        "weights": "equal",
+        "missing_target": "error",
+        "undefined_target": "error"
+      }
+    },
+    {
+      "id": "log-loss-sklearn-inferred-binary-v1",
+      "kinds": [
+        "binary"
+      ],
+      "output": "probabilities",
+      "direction": "minimize",
+      "minimum": 0,
+      "maximum": null,
+      "parameters": {
+        "epsilon": "float64-eps",
+        "prediction": "positive-column-and-complement",
+        "labels": "infer-from-evaluation-labels",
+        "logarithm": "natural"
+      }
+    }
+  ]
+}

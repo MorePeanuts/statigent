@@ -61,7 +61,7 @@ export interface ScoringConfig {
   options: Record<string, unknown>;
 }
 export interface EvaluationConfig {
-  schema_version: 2;
+  schema_version: 2 | 3;
   cache_policy: "disabled";
   purpose: "development" | "formal";
   development_overlap: string;
@@ -161,9 +161,9 @@ export function validateConfig(
       "seed",
       "task_budget",
       "batch_budget",
-      ...(version === 2 ? ["scoring"] : []),
+      ...(version !== 1 ? ["scoring"] : []),
     ],
-    [1, 2],
+    [1, 2, 3],
   );
   const b = obj(x.benchmark);
   keys(b, ["adapter", "version", "options", "task_ids"]);
@@ -250,7 +250,7 @@ export function validateConfig(
   if (tasks.length * agents.length * repetitions > 10000)
     throw new Error("Plan too large");
   return {
-    schema_version: 2,
+    schema_version: version === 3 ? 3 : 2,
     cache_policy: literal(x.cache_policy ?? "disabled", ["disabled"]),
     purpose: literal(x.purpose, ["development", "formal"]),
     development_overlap: str(x.development_overlap, "development_overlap"),
@@ -276,7 +276,7 @@ export interface Unit {
   seed: number;
 }
 export interface Plan {
-  schema_version: 2;
+  schema_version: 2 | 3;
   config: EvaluationConfig;
   tasks: PublicTask[];
   units: Unit[];
@@ -319,6 +319,11 @@ export async function buildPlan(
   for (const t of tasks)
     for (const a of config.agents)
       for (let r = 0; r < config.repetitions; r++) {
+        const capability = validateCapabilities(
+          registry.getAgent(a.adapter).capabilities,
+        );
+        if (t.phase_inputs && capability.phase_isolation !== true)
+          throw new Error(`Agent ${a.id} lacks phase isolation`);
         if (
           !registry
             .getAgent(a.adapter)
@@ -341,7 +346,7 @@ export async function buildPlan(
   for (const a of config.agents)
     adapters[`agent:${a.adapter}`] = registry.getAgent(a.adapter).version;
   const body = {
-    schema_version: 2 as const,
+    schema_version: 3 as const,
     config,
     tasks,
     units,

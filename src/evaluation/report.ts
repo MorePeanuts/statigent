@@ -6,7 +6,13 @@ import type { ModelProfile } from "../models/config";
 import { keys, obj } from "../models/validation";
 import { writeJson } from "../records/store";
 import { aggregate } from "./aggregate";
-import { bounded, id, LIMITS, validateTask } from "./contracts";
+import {
+  bounded,
+  id,
+  LIMITS,
+  type Submission,
+  validateTask,
+} from "./contracts";
 import {
   checkJudges,
   type JudgeBudget,
@@ -38,6 +44,45 @@ export function csv(rows: Record<string, unknown>[]): string {
     names.map(cell).join(","),
     ...rows.map((r) => names.map((n) => cell(r[n])).join(",")),
   ].join("\n")}\n`;
+}
+
+function modelingColumns(
+  options: Record<string, unknown>,
+  record: UnitRecord,
+  submission: Submission | undefined,
+) {
+  const details = record.score?.details ?? {},
+    workflow = details.workflow ? obj(details.workflow) : null;
+  const native = details.native ? obj(details.native) : null,
+    metric = native?.metric ? obj(native.metric) : null;
+  const identity = details.delivery_identity
+    ? obj(details.delivery_identity)
+    : null;
+  const usage = workflow?.usage ? obj(workflow.usage) : null;
+  return {
+    method: options.method ?? "unspecified",
+    search_end: workflow?.search_end ?? null,
+    delivery_status:
+      workflow?.delivery_status ?? (submission ? "not_delivered" : "not_run"),
+    prediction_status:
+      workflow?.prediction_status ?? (submission ? "not_delivered" : "not_run"),
+    reproduction_status: "not_run",
+    search_best_experiment_id: workflow?.search_best_experiment_id ?? null,
+    selected_experiment_id: workflow?.selected_experiment_id ?? null,
+    confirmation: workflow?.confirmation ?? null,
+    native_metric: metric?.id ?? null,
+    native_value: native?.value ?? null,
+    native_direction: metric?.direction ?? null,
+    native_components: native?.components ?? null,
+    official: details.official ?? null,
+    prediction_files: submission?.deliverables ?? [],
+    native_identity: identity?.native_model ?? null,
+    seed_preparation: identity?.execution_preparation ?? null,
+    native_usage: usage,
+    native_wall_ms: workflow?.wall_ms ?? null,
+    cache_policy: "disabled",
+    reproduction_cost: null,
+  };
 }
 export async function createReport(
   directory: string,
@@ -72,7 +117,8 @@ export async function createReport(
     };
     let elapsed = 0;
     for (const r of selected) {
-      const u = (await readSubmission(directory, r))?.submission.usage;
+      const submission = (await readSubmission(directory, r))?.submission;
+      const u = submission?.usage;
       if (u) {
         sources.add(u.source);
         for (const key of Object.keys(totals) as (keyof typeof totals)[])
@@ -102,6 +148,11 @@ export async function createReport(
         unit_id: r.unit.id,
         task_id: r.unit.task_id,
         repetition: r.unit.repetition,
+        seed: r.unit.seed,
+        ...(view.plan.tasks.find((t) => t.id === r.unit.task_id)?.output
+          .kind === "predictions"
+          ? modelingColumns(agent.options, r, submission)
+          : {}),
         execution_status: r.execution_status,
         scoring_status: r.scoring_status,
         scoring_reason: r.scoring_reason ?? null,

@@ -1,6 +1,6 @@
 # 统一评测
 
-评测层通过独立的 BenchmarkAdapter 与 AgentAdapter 连接基准和智能体。注册发生在受信代码中；配置只选择注册 ID，不动态加载外部插件。公共任务包含目标、约束、明确输入清单和输出契约；私有标签只交给评分端。新批次使用契约版本 2，未知版本、字段及不支持的能力会被拒绝；版本 1 的旧批次仍可只读检查和重新评分（见下节）。
+评测层通过独立的 BenchmarkAdapter 与 AgentAdapter 连接基准和智能体。注册发生在受信代码中；配置只选择注册 ID，不动态加载外部插件。公共任务包含目标、约束、明确输入清单和输出契约；私有标签只交给评分端。新批次使用契约版本 3，未知版本、字段及不支持的能力会被拒绝；版本 1/2 的旧批次仍可只读检查和重新评分。既有分析适配器及 container-command 保留原 v2 调用格式。
 
 智能体只需返回终态、明确最终回答、交付文件和用量，无需使用 Notebook 或 Statigent 的角色/工具实现。模型配置复用 `configs/models.json`，用量区分模型返回的测量值、外部自报告、未知与不适用。缺失遥测不能记为零。
 
@@ -8,10 +8,77 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | statigent-eda | text、report | unified（trajectory-v1） | 现有 model profile | Python 执行，非模型采样保证 | Docker | 请求日志与模型返回用量 |
 | container-command | text、report | none | 无模型，首版不联网 | 由协议提供 | Docker | 无模型调用时不适用 |
+| statigent-modeling | predictions | none | 同一 profile 供建模与子 EDA 使用 | 内部分割与实际拟合 | Docker | 只结算已审计原生父账 |
+| deterministic-modeling | predictions | none | 固定预处理和决策树，无付费 LLM | 内部分割与实际拟合 | Docker | 付费调用不适用，原生训练次数另记 |
 
-模型预算包含尝试次数、token 停止阈值；响应可能使 token 超出阈值，阈值不是账单硬上限。相同智能体可以注册多个配置分别比较。Statigent 支持 single 与 planner-executor；尚未实现的脚本后端、预测文件及联网外部智能体不能通过配置冒充已支持。
+模型预算包含尝试次数、token 停止阈值；响应可能使 token 超出阈值，阈值不是账单硬上限。相同智能体可以注册多个配置分别比较。分析适配器接受 text/report；`statigent-modeling` 与 `deterministic-modeling` 接受 predictions。
 
-## 契约版本
+## v3 预测契约
+
+`predictions` 输出声明完整目标协议、准备清单路径、规范预测/官方导出/身份清单文件名，以及独立的数据限额和总交付字节限额。公开输入必须逐一列入 `phase_inputs` 的 search、eda、confirmation、final_fit、prediction 白名单；私有 evaluator、private、upstream、raw 文件不能列入公开输入。适配器还需声明 v3 `phase_isolation=true` 和 predictions 能力，旧分析或容器命令适配器在计划阶段拒绝这类任务。
+
+预测文件使用冻结任务声明的限额；普通报告继续使用原文件限额。读取和重评分从原冻结计划取得限额，不能靠提交文件自行放大允许值。v3 指标上下界可以为 null，例如 RMSE 无上界、R² 无下界，指标值仍必须有限；旧 v1/v2 分数继续要求有限上下界。
+
+调度器将五份白名单分别发布到单元的 `input/<phase>/`，优先使用写时复制并验证哈希；私有评分文件不发布。原生建模先以 training 访问模式核验训练分区，保留原清单身份且不打开测试特征或 evaluator。冻结模型后才把 prediction 阶段的指定特征追加到本次运行的预测输入，不能覆盖已有文件或再次发布。Docker 实际挂载仍限定到当前训练、EDA 或预测阶段需要的子集，阶段目录名本身不充当隔离措施。两套基准的合成确定性批次已实际通过训练、预测、冻结及移走原生模型后的重评。
+
+## 建模基准的显式数据准备
+
+`evaluate prepare` 独立于 plan/run。它不读取模型配置、不调用 LLM、不训练或下载；
+默认计划入口不会隐式生成准备目录。`dsbench-modeling`、`tabarena-lite` 只接受已准备目录，
+准备通过只能作为数据层证据，实际训练范围见 [建模基准验收记录](modeling-benchmarks-validation.md)。
+
+```bash
+uv sync --frozen --group data
+mkdir -p runs/prepared
+bun run evaluate prepare --config configs/evaluations/dsbench-modeling-prepare.json --out runs/prepared/titanic
+bun run evaluate prepare --config configs/evaluations/tabarena-modeling-prepare.json --out runs/prepared/airfoil
+bun run evaluate prepare --config configs/evaluations/dsbench-modeling-prepare.json --reuse runs/prepared/titanic --receipt runs/prepared/titanic-reuse.json
+```
+
+配置显式指定一个候选、来源清单、种子、五项数据限额与准备时限。输出及回执必须不存在；
+新建默认回执是 `<out>.preparation.json`，可用 `--receipt` 指定其他新文件。
+已有目录不得覆盖，也不能向原始基准树写入准备产物；复用必须显式使用 `--reuse`。
+复用会重新验证源文件、准备文件、划分、协议及配置身份，保存本次校验耗时和原始成本文件的哈希，
+不会把历史准备报告为本次免费完成。`dataset.preparation.elapsed_ms` 是材料化耗时；
+`preparation-cost.json` 另存完整准备/校验进程耗时，回执的 `original_cost` 引用该事实。
+失败回执保存错误和本次耗时；部分准备产物保留，不能被误用为成功任务。
+
+新数据清单为 schema 3，目标协议为 v2；旧原生 `modeling prepare` 的 schema 1/2 读取规则保留。
+目录内容及发布边界：
+
+| 目录/文件 | 内容与用途 |
+| --- | --- |
+| `search/train.csv` | 允许训练成员及全部目标；预测特征采用冻结白名单 |
+| `search/features.json`、`split.json` | 完整特征类型、缺失编码和内部成员 |
+| `search/task.txt`、`adaptation.json` | 原题面或公开任务说明、实际发布规模及协议勘误 |
+| `final-prediction/test.csv` | 冻结后才可发布的无标签测试特征 |
+| `evaluator/labels.csv`、`source-rows.jsonl` | 私有评分标签与来源/导出身份映射 |
+| `dataset.json`、`preparation-cost.json` | 受信调度端使用的身份、限额、哈希及成本事实 |
+
+这些目录名不是安全沙箱。实际执行必须按阶段只挂载白名单文件，不能把准备根目录整体挂载给智能体。
+
+准备后的批次在 `benchmark.options` 显式声明 `prepared_root`、`datasets`（任务 ID 到相对准备目录的映射）和私有原始材料根 `data_root`。`benchmark.version` 必须等于该组准备数据的 `source_revision`，不能混用来源版本。两套基准分别建批次；TabArena 固定 r0f0。
+
+原生 agent 的 `options` 使用 `image`、`method`、`confirmation`、`resource_version`、`budget`、`limits`。四种方法为 `no_eda`、`initial_eda`、`adaptive_eda`、`collaborative`；确定性验收只接受 `no_eda`。`model_attempts`、`total_tokens`、`task_timeout_ms` 由统一父预算控制，不能在原生 options 中重复覆盖；输入发布及内部划分准备消耗剩余时间。确认/最终拟合预留不随余额缩小，余额不足时在首个模型请求前拒绝。子 EDA 已计入原生父账，批次不得再相加；未知用量阻止后续受预算约束派发。
+
+重复实验使用 `seed + repetition`。种子不等于准备种子时，只在运行目录派生内部划分，冻结外层成员和数据字节，记录 `dataset-seed-v1` 身份与独立准备耗时；显式内部划分保持原成员。若类别覆盖不满足协议则失败，不重新抽种子。关闭跨单元缓存，每个确定性单元也必须实际训练和预测。
+
+```bash
+# CONFIG 是显式选择上述准备目录、任务、agent、种子及有限预算的批次配置。
+bun run evaluate plan --config CONFIG
+bun run evaluate run --config CONFIG --root runs/evaluations
+bun run evaluate inspect EVALUATION_ID --root runs/evaluations
+bun run evaluate score EVALUATION_ID --root runs/evaluations
+bun run evaluate compare EVALUATION_ID --score-id SCORE_ID --root runs/evaluations
+```
+
+`plan` 只读校验准备数据和评分资源，不训练或调用模型。成功交付恰含 `predictions.csv`、`export.csv`、`prediction-manifest.json`（文件名由输出契约冻结）；模型保留在原生目录，清单记录模型、原生交付和预测哈希。受信导出器按发布行序还原 DSBench 列，TabArena 导出源行号及原尺度预测/正类概率/完整类别概率。文件缺失、超限、集合变化或篡改均拒绝。`score` 生成新的评分身份，读取冻结预测及私有标签/参考，不读取模型，不改变原交付及原评分。
+
+逐题原生值保留在 `score.details.native` 和 CSV 的 `native_value`，不跨任务平均异尺度指标。主汇总仅包含完成率及 DSBench RPG。执行失败计完成率 0、RPG 0；未运行或评分材料/计算错误使完整汇总为 null。RPG 不截断大于 1 的结果；TabArena 官方误差映射另列，固定官方环境差分是否实际执行须另看验收记录。
+
+`compare` 是独立、零模型调用的配对导出入口，只读指定既有 `SCORE_ID`，在 `comparisons/<id>/` 写入 `pairs.json`、`pairs.csv`。按任务、配置、种子、重复保留所有计划行，包括失败及未运行；记录原评分文件哈希，不生成排行榜或启用 `cross_agent_summary`。搜索结束原因、交付/预测/独立复现状态、确认、预算、父账、墙钟和准备复用身份分列。报告生成不会执行独立复现，复现状态明确为 `not_run`，实际复现记录及额外成本须另行关联。
+
+## 契约版本（现有评测 v2）
 
 版本 2 相对版本 1 的变化：
 
@@ -243,3 +310,20 @@ bun run evaluate plan --config configs/evaluations/dacomp-da-backend-ablation-de
 统一轨迹仍为 trajectory-v1，新增 fresh-script-single-v1 / fresh-script-planner-executor-v1 映射。脚本按实际顺序呈现 execution_id、代码、输出和失败，双角色标记执行者与子任务；不伪造 Notebook/kernel 字段。报告与图片交付不变，原生代码导出按后端选择。长轨迹仍明确标记截断，宿主路径与密钥在交付前脱敏。
 
 两组都保留模型历史，脚本组允许显式工作文件复用；不会强迫每轮从原始数据重算。脚本的 import/初始化、收集和清理开销计入任务总墙钟，阶段小计不再次累计。普通脚本无末尾表达式自动展示，使用 print、显式 display 和保存图片；这是实验解释中需披露的输出语法差异。开发任务已暴露，不能冒充冻结的正式评测；四组配置准备和预览不代表真实模型冒烟或研究预实验已完成。本次没有执行真实付费批次，下一步需先明确任务范围及预算。
+
+## 第二章建模基准真实冒烟
+
+独立入口使用版本化 scope，明确任务、方法、模型、种子和资源版本；默认运行只显示帮助，`--preflight` 只读取并验证准备数据和计划，即使环境有 API 密钥也不派发模型、不训练、不启动容器。实际执行仍会检查凭据和镜像；预检通过不等于这些外部资源可用。
+
+```bash
+bun run test:smoke:modeling-benchmarks
+bun run test:smoke:modeling-benchmarks --preflight --scope configs/evaluations/modeling-smoke/scope.json
+# 仅在实际付费范围得到确认后运行：
+bun run test:smoke:modeling-benchmarks --run --allow-model-calls --scope configs/evaluations/modeling-smoke/scope.json --out runs/modeling-live-smoke-v1
+```
+
+预置 scope 为 Titanic 与 TabArena 363612，各执行 no_eda/collaborative，deepseek-flash、seed=17、一次重复，共 4 单元。单元阈值为 12 次模型调用、160,000 token、600 秒；两批总阈值 48 次、640,000 token、2,400 秒，子 EDA 包含在父账中；1 CPU、2 GiB，拟合 60 秒、预测 30 秒，终局预留 150 秒。token 阈值是派发门槛，最后一次响应结算可能超过阈值，实际输出上限按请求字节估计和剩余 token 预算动态缩小，额度过小时可能出现 response_length 失败。关闭重复终局确认用于小型接口验收，不能把本配置当作四方法正式实验。独立预测复现另外计时，新增模型调用和拟合均为零。
+
+输出目录必须全新。入口保存 scope/计划哈希、代码快照、全部单元状态、配对报告、原生轨迹摘要与独立预测复现；首次失败保留，不自动重跑或换题。未知用量、未确认清理/记录或批次异常会阻止后续批次派发。验收通过要求完成交付与评分、复现通过、用量已知，并实际观察到 collaborative 的 EDA 返回后继续训练；no_eda 必须没有分析调用。只有声明协同而没有实际覆盖时，结果为 incomplete，CLI 退出非零。实际付费验收状态以 [验收记录](modeling-benchmarks-validation.md) 为准。
+
+任务类型补充范围已准备在 `configs/evaluations/modeling-smoke-type-coverage/scope.json`：沿用固定开发清单的其余 8 项任务，分别运行 no_eda/collaborative，共 16 单元；与首批 4 单元合并为 10 题 × 2 方法。按公开类型覆盖，不依据首批得分选择；相同逐单元配置，追加批次阈值为 192 次调用、2,560,000 token、9,600 秒。该 scope 的只读预检已通过，实际执行仍须对应付费范围授权。覆盖代表类型不等于 103 个候选逐题均已运行，也不替代全部指标的合成上游差分。

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "name": "modeling-benchmark-live-smoke-v1",
+  "config_files": [
+    "configs/evaluations/modeling-smoke/dsbench-modeling.json",
+    "configs/evaluations/modeling-smoke/tabarena-lite.json"
+  ],
+  "models_file": "configs/models.json",
+  "allowed_tasks": [
+    "dsbench-modeling/titanic",
+    "tabarena-lite/363612"
+  ],
+  "allowed_methods": [
+    "no_eda",
+    "collaborative"
+  ],
+  "model_profile": "deepseek-flash",
+  "seed": 17,
+  "resource_version": "modeling-benchmark-live-smoke-v1"
+}
