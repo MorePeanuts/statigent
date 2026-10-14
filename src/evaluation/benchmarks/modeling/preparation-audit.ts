@@ -8,39 +8,42 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import * as z from "zod";
 import { parseDataLimits } from "../../../modeling/data-limits";
-import { integer, keys, obj, str } from "../../../models/validation";
 import { writeJson } from "../../../records/store";
 import { codeSnapshot } from "../../records";
 import { auditModeling } from "./audit";
 import { parseModelingCatalog } from "./catalog";
+import { parseStrictOptions } from "./cli-options";
 import { prepareModeling } from "./prepare";
 
+const nonemptyString = z.string().refine((value) => value.trim().length > 0);
+const positiveInteger = z
+  .number()
+  .refine((value) => Number.isSafeInteger(value) && value >= 1);
+const preparationAuditSchema = z.strictObject({
+  schema_version: z.literal(1),
+  catalog: nonemptyString,
+  data_root: nonemptyString,
+  seed: z.number().refine((value) => Number.isSafeInteger(value) && value >= 0),
+  limits: z.unknown(),
+  timeout_ms: positiveInteger,
+  batch_timeout_ms: positiveInteger,
+  max_output_bytes: positiveInteger,
+  minimum_free_bytes: positiveInteger,
+});
 export function preparationAuditConfig(value: unknown) {
-  const x = obj(value);
-  keys(x, [
-    "schema_version",
-    "catalog",
-    "data_root",
-    "seed",
-    "limits",
-    "timeout_ms",
-    "batch_timeout_ms",
-    "max_output_bytes",
-    "minimum_free_bytes",
-  ]);
-  if (x.schema_version !== 1)
-    throw new Error("Invalid preparation audit version");
+  const x = preparationAuditSchema.parse(value);
   return {
     schema_version: 1,
-    catalog: resolve(str(x.catalog, "catalog")),
-    data_root: resolve(str(x.data_root, "data root")),
-    seed: integer(x.seed, "seed", 0),
+    catalog: resolve(x.catalog),
+    data_root: resolve(x.data_root),
+    seed: x.seed,
     limits: parseDataLimits(x.limits),
-    timeout_ms: integer(x.timeout_ms, "task timeout"),
-    batch_timeout_ms: integer(x.batch_timeout_ms, "batch timeout"),
-    max_output_bytes: integer(x.max_output_bytes, "storage budget"),
-    minimum_free_bytes: integer(x.minimum_free_bytes, "free storage reserve"),
+    timeout_ms: x.timeout_ms,
+    batch_timeout_ms: x.batch_timeout_ms,
+    max_output_bytes: x.max_output_bytes,
+    minimum_free_bytes: x.minimum_free_bytes,
   };
 }
 async function treeBytes(root: string): Promise<number> {
@@ -73,20 +76,11 @@ export async function auditPreparations(
     prepare?: typeof prepareModeling;
   } = {},
 ) {
-  const parsed: Record<string, string> = {};
-  for (let i = 0; i < args.length; i += 2) {
-    const key = args[i],
-      value = args[i + 1];
-    if (
-      !key ||
-      !["--config", "--out"].includes(key) ||
-      !value ||
-      value.startsWith("--") ||
-      parsed[key]
-    )
-      throw new Error("audit-prepare --config FILE --out NEW_DIRECTORY");
-    parsed[key] = value;
-  }
+  const parsed = parseStrictOptions(
+    args,
+    ["--config", "--out"],
+    "audit-prepare --config FILE --out NEW_DIRECTORY",
+  );
   if (!parsed["--config"] || !parsed["--out"])
     throw new Error("audit-prepare requires --config and --out");
   const config = preparationAuditConfig(

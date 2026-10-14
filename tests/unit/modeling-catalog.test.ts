@@ -73,7 +73,7 @@ test("audit CLI accepts explicit options and rejects repeats or unknown flags", 
   expect(parseAuditOptions([])).toEqual({});
   expect(
     parseAuditOptions(["--data-root", "benchmarks", "--output", "audit.json"]),
-  ).toEqual({ dataRoot: "benchmarks", output: "audit.json" });
+  ).toEqual({ "--data-root": "benchmarks", "--output": "audit.json" });
   for (const args of [
     ["--catalog"],
     ["--catalog="],
