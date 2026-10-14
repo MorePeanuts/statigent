@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "name": "modeling-ablation-seed-repair-v1",
+  "config_files": [
+    "configs/evaluations/modeling-ablation-repair-v1/dsbench-initial_eda.json"
+  ],
+  "models_file": "configs/models.json",
+  "allowed_tasks": [
+    "dsbench-modeling/playground-series-s3e5"
+  ],
+  "allowed_methods": [
+    "initial_eda"
+  ],
+  "model_profile": "deepseek-flash",
+  "seed": 17,
+  "resource_version": "modeling-development-v1"
+}
