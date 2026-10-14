@@ -2,6 +2,8 @@
 
 日期：2026-10-13。变更：`add-fresh-script-backend`，任务分支 `feat/fresh-script-backend`。本记录分开说明软件行为、无模型验收及研究实验，不将合成测试当作方法收益。
 
+2026-10-14 补充：single 与 planner-executor 的真实模型脚本冒烟均已有验收和独立重放通过证据。首次验收器误判、双角色输出契约失败、一次真实复测及全部成本分别保留，见 [两章消融路径验收](ablation-readiness-validation.md)。下文“未运行”描述原变更归档时的历史状态；四组基准开发预实验仍未执行。
+
 ## 环境与范围
 
 Bun 1.4.2；Python 3.12.9、uv 0.8.22 及计算依赖按锁文件构建。Docker Engine 29.4.0，容器平台 linux/arm64。本次镜像 `statigent-runtime:fresh-script` 的实际 ID 为 `sha256:2207a52ae443611662287f3152f3b5bd55d82c3b4f9b021638d16c531e06ccb9`，本机构建无 RepoDigest。原 `statigent-runtime:dev` 未覆盖，供原镜像持久重放回归。

@@ -1,0 +1,500 @@
+{
+  "schema_version": 1,
+  "scope": "fresh-script-live-readiness",
+  "research_experiment": false,
+  "source_records_unchanged": true,
+  "units": [
+    {
+      "organization": "single",
+      "run_id": "cb982c8f-ac9c-4967-b705-84fdc50937b2",
+      "manifest": {
+        "path": "runs/script-smoke/cb982c8f-ac9c-4967-b705-84fdc50937b2/manifest.json",
+        "sha256": "df48fa6f203e100f2666410a5be0f92f41ff790c7cda60b7d4bb699f158a18b4"
+      },
+      "original_smoke": {
+        "path": "runs/script-smoke/cb982c8f-ac9c-4967-b705-84fdc50937b2/smoke-result.json",
+        "sha256": "a54543e7f30e8548de34a274af8928835b566c8ed1d8273e1be966c61ba5a479"
+      },
+      "code": {
+        "commit": "1d3addf8baced32d1d32e581f923b6894133179e",
+        "dirty": false
+      },
+      "image": {
+        "id": "sha256:2207a52ae443611662287f3152f3b5bd55d82c3b4f9b021638d16c531e06ccb9",
+        "platform": "linux/arm64",
+        "digests": []
+      },
+      "environment": {
+        "host_os": "darwin",
+        "host_arch": "arm64",
+        "host_release": "24.6.0",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2",
+        "docker_version": "29.4.0",
+        "container_platform": "linux/arm64",
+        "dependencies": {
+          "numpy": "2.3.3",
+          "pandas": "2.3.2",
+          "matplotlib": "3.10.6",
+          "ipython": "9.17.1",
+          "python": "3.12.9"
+        }
+      },
+      "prompt": {
+        "version": "eda-fresh-script-v1+report-v1",
+        "sha256": "0f1a080fa46798989e3f992cb71358c5a5d92c25cc76795cbaa71076e9c9eea4"
+      },
+      "model": {
+        "profile": {
+          "id": "deepseek-flash",
+          "provider": "deepseek",
+          "protocol": "chat-completions",
+          "base_url": "https://api.deepseek.com",
+          "model": "deepseek-flash",
+          "display_name": "DeepSeek-V4.1-Flash",
+          "api_key_env": "DEEPSEEK_API_KEY",
+          "allow_loopback_http": false,
+          "capabilities": {
+            "tool_calls": true,
+            "thinking": true,
+            "vision": false
+          },
+          "generation": {
+            "max_output_tokens": 65536,
+            "thinking": "enabled",
+            "reasoning_effort": "high"
+          }
+        },
+        "returned_models": [
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash"
+        ],
+        "response_ids": [
+          "2e8de8c4-e027-4a5e-b7ba-c6faa1f99bd6",
+          "f97040ae-917b-4157-9f45-d81b83414bc7",
+          "0bd93bf5-ec20-4ffe-a0e3-6e8b5b141db0",
+          "54d4def2-e616-4192-bb3c-1f0320893736",
+          "15cb3e29-7e54-4b6a-8368-594ab2765568"
+        ],
+        "fingerprints": [
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669"
+        ]
+      },
+      "budget": {
+        "model_attempts": 20,
+        "executions": 10,
+        "total_tokens": 400000,
+        "model_timeout_ms": 90000,
+        "task_timeout_ms": 600000,
+        "rate_retries": 2,
+        "code_repairs": 2,
+        "action_corrections": 2,
+        "max_request_bytes": 262144,
+        "max_response_bytes": 2097152,
+        "max_trace_bytes": 16777216
+      },
+      "status": "completed",
+      "executions": 4,
+      "tokens": {
+        "status": "known",
+        "input_tokens": 16497,
+        "output_tokens": 2975,
+        "total_tokens": 19472,
+        "attempts": 5,
+        "unknown_attempts": 0,
+        "elapsed_ms": 16359.205042,
+        "currency_cost": "not_computed"
+      },
+      "timing": {
+        "wall_ms": 25494.582583,
+        "startup_ms": 1160.99,
+        "execution_ms": 7521.2762410519645,
+        "wait_ms": 15.079957999998896,
+        "cleanup_ms": 142.85199999999895,
+        "execution_count": 4,
+        "script_stages": {
+          "process_startup_ms": 3489.4553019548766,
+          "execution_ms": 3644.2646810319275,
+          "collection_ms": 1.5750229940749705,
+          "cleanup_ms": 1.3948340783827007,
+          "unknown_stages": 0
+        }
+      },
+      "acceptance": "passed_after_validator_fix",
+      "recheck": {
+        "path": "runs/ablation-readiness-v1/script-recheck-single.json",
+        "sha256": "db854437c50ae8825cc6c492e0e7709f5446d39f4347320eb328b7e7577f9841"
+      }
+    },
+    {
+      "organization": "planner-executor",
+      "run_id": "a89d8460-65be-4970-9aa2-1b00ed543201",
+      "manifest": {
+        "path": "runs/script-smoke/a89d8460-65be-4970-9aa2-1b00ed543201/manifest.json",
+        "sha256": "8754f88b08ce705ae4aad036f4c0ad41db580d10876a65df6003e88b43541edb"
+      },
+      "original_smoke": {
+        "path": "runs/script-smoke/a89d8460-65be-4970-9aa2-1b00ed543201/smoke-result.json",
+        "sha256": "18d279bae7f7446d8ff8a6d77dd37e5e86145ab167e5e14f5b463161796f1a0d"
+      },
+      "code": {
+        "commit": "1d3addf8baced32d1d32e581f923b6894133179e",
+        "dirty": false
+      },
+      "image": {
+        "id": "sha256:2207a52ae443611662287f3152f3b5bd55d82c3b4f9b021638d16c531e06ccb9",
+        "platform": "linux/arm64",
+        "digests": []
+      },
+      "environment": {
+        "host_os": "darwin",
+        "host_arch": "arm64",
+        "host_release": "24.6.0",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2",
+        "docker_version": "29.4.0",
+        "container_platform": "linux/arm64",
+        "dependencies": {
+          "numpy": "2.3.3",
+          "pandas": "2.3.2",
+          "matplotlib": "3.10.6",
+          "ipython": "9.17.1",
+          "python": "3.12.9"
+        }
+      },
+      "prompt": {
+        "version": "eda-script-collaboration-v1",
+        "sha256": "ccdd7a9d092491756c16091e0e667cc4457239c33a784b3c7e803a6818f7abcc"
+      },
+      "model": {
+        "profile": {
+          "id": "deepseek-flash",
+          "provider": "deepseek",
+          "protocol": "chat-completions",
+          "base_url": "https://api.deepseek.com",
+          "model": "deepseek-flash",
+          "display_name": "DeepSeek-V4.1-Flash",
+          "api_key_env": "DEEPSEEK_API_KEY",
+          "allow_loopback_http": false,
+          "capabilities": {
+            "tool_calls": true,
+            "thinking": true,
+            "vision": false
+          },
+          "generation": {
+            "max_output_tokens": 65536,
+            "thinking": "enabled",
+            "reasoning_effort": "high"
+          }
+        },
+        "returned_models": [
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash"
+        ],
+        "response_ids": [
+          "d9c36c8f-a55f-41f6-8100-eb1483aa4608",
+          "cb98016d-7ea6-480a-b5ef-13b90da45b6c",
+          "215c527c-ca30-4131-8182-d6897738c37d",
+          "111b0873-ac88-450c-b98a-e5ec72675048",
+          "8edcf9f3-ee1c-4624-a6cd-be0262377612",
+          "a60c81ac-57af-4b41-8f95-23cd8830cb37",
+          "db2bb8a7-ce46-4ff8-8f9b-5458f87e68e7"
+        ],
+        "fingerprints": [
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669"
+        ]
+      },
+      "budget": {
+        "model_attempts": 20,
+        "executions": 10,
+        "total_tokens": 400000,
+        "model_timeout_ms": 90000,
+        "task_timeout_ms": 600000,
+        "rate_retries": 2,
+        "code_repairs": 2,
+        "action_corrections": 2,
+        "max_request_bytes": 262144,
+        "max_response_bytes": 2097152,
+        "max_trace_bytes": 16777216
+      },
+      "status": "completed",
+      "executions": 2,
+      "tokens": {
+        "status": "known",
+        "input_tokens": 21889,
+        "output_tokens": 5454,
+        "total_tokens": 27343,
+        "attempts": 7,
+        "unknown_attempts": 0,
+        "elapsed_ms": 29439.927999,
+        "currency_cost": "not_computed"
+      },
+      "timing": {
+        "wall_ms": 34303.15375,
+        "startup_ms": 807.9257500000001,
+        "execution_ms": 3675.3922880161554,
+        "wait_ms": 12.111166999999114,
+        "cleanup_ms": 161.6682920000021,
+        "execution_count": 2,
+        "script_stages": {
+          "process_startup_ms": 1498.2973650330678,
+          "execution_ms": 1984.7700520185754,
+          "collection_ms": 0.8936809608712792,
+          "cleanup_ms": 0.7144860574044287,
+          "unknown_stages": 0
+        }
+      },
+      "acceptance": "failed_output_contract",
+      "recheck": null
+    },
+    {
+      "organization": "planner-executor",
+      "run_id": "c9ab01ec-6ebf-4dc0-942a-a936ddcea31b",
+      "manifest": {
+        "path": "runs/script-smoke/c9ab01ec-6ebf-4dc0-942a-a936ddcea31b/manifest.json",
+        "sha256": "476efc0549ceb3cb58962cb297116e08f26c72684b82d8253d28157fe7397757"
+      },
+      "original_smoke": {
+        "path": "runs/script-smoke/c9ab01ec-6ebf-4dc0-942a-a936ddcea31b/smoke-result.json",
+        "sha256": "d8afda31561c739b2fb12a6a581998e260a6c2ea0f3405a1c6c5e475b4dff399"
+      },
+      "code": {
+        "commit": "6e74555e0684521d5d6bc6b82f2345f794cee3cc",
+        "dirty": false
+      },
+      "image": {
+        "id": "sha256:2207a52ae443611662287f3152f3b5bd55d82c3b4f9b021638d16c531e06ccb9",
+        "platform": "linux/arm64",
+        "digests": []
+      },
+      "environment": {
+        "host_os": "darwin",
+        "host_arch": "arm64",
+        "host_release": "24.6.0",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2",
+        "docker_version": "29.4.0",
+        "container_platform": "linux/arm64",
+        "dependencies": {
+          "numpy": "2.3.3",
+          "pandas": "2.3.2",
+          "matplotlib": "3.10.6",
+          "ipython": "9.17.1",
+          "python": "3.12.9"
+        }
+      },
+      "prompt": {
+        "version": "eda-script-collaboration-v1",
+        "sha256": "ccdd7a9d092491756c16091e0e667cc4457239c33a784b3c7e803a6818f7abcc"
+      },
+      "model": {
+        "profile": {
+          "id": "deepseek-flash",
+          "provider": "deepseek",
+          "protocol": "chat-completions",
+          "base_url": "https://api.deepseek.com",
+          "model": "deepseek-flash",
+          "display_name": "DeepSeek-V4.1-Flash",
+          "api_key_env": "DEEPSEEK_API_KEY",
+          "allow_loopback_http": false,
+          "capabilities": {
+            "tool_calls": true,
+            "thinking": true,
+            "vision": false
+          },
+          "generation": {
+            "max_output_tokens": 65536,
+            "thinking": "enabled",
+            "reasoning_effort": "high"
+          }
+        },
+        "returned_models": [
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash"
+        ],
+        "response_ids": [
+          "3d86975d-2b12-4d7e-96bc-5c76aac7d067",
+          "21e661cc-af5b-442b-b1e6-ef70b3684b0d",
+          "51fd9de4-d134-4514-a587-b1e92ba76c2d",
+          "8d3dc226-a480-4995-8c1e-ac4f6cb502cb",
+          "2160a607-017b-4a3a-abbd-785454122fa9",
+          "f6a061fa-ef4f-4dec-8ff9-4cb9567ddfd9",
+          "97371325-d096-4c4c-8a75-6a1ba62c433e"
+        ],
+        "fingerprints": [
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669"
+        ]
+      },
+      "budget": {
+        "model_attempts": 20,
+        "executions": 10,
+        "total_tokens": 400000,
+        "model_timeout_ms": 90000,
+        "task_timeout_ms": 600000,
+        "rate_retries": 2,
+        "code_repairs": 2,
+        "action_corrections": 2,
+        "max_request_bytes": 262144,
+        "max_response_bytes": 2097152,
+        "max_trace_bytes": 16777216
+      },
+      "status": "completed",
+      "executions": 2,
+      "tokens": {
+        "status": "known",
+        "input_tokens": 24096,
+        "output_tokens": 5968,
+        "total_tokens": 30064,
+        "attempts": 7,
+        "unknown_attempts": 0,
+        "elapsed_ms": 31711.152542000003,
+        "currency_cost": "not_computed"
+      },
+      "timing": {
+        "wall_ms": 36403.990583,
+        "startup_ms": 745.7337909999999,
+        "execution_ms": 3596.9249740010127,
+        "wait_ms": 4.99516599999879,
+        "cleanup_ms": 106.36404099999345,
+        "execution_count": 2,
+        "script_stages": {
+          "process_startup_ms": 1576.9716620561667,
+          "execution_ms": 1839.622778003104,
+          "collection_ms": 0.8195359841920435,
+          "cleanup_ms": 0.5595950060524046,
+          "unknown_stages": 0
+        }
+      },
+      "acceptance": "passed_after_validator_fix",
+      "recheck": {
+        "path": "runs/ablation-readiness-v1/script-recheck-planner-executor.json",
+        "sha256": "9c4ba70b68b7f505e8a7c244a1fe6f313f12f4445b4431771cdea30a166a370d"
+      }
+    }
+  ],
+  "replays": [
+    {
+      "manifest": {
+        "path": "runs/ablation-readiness-v1/script-replays/2296b419-0edb-4b29-9e64-56c32153e7bf/manifest.json",
+        "sha256": "3598b8d422a232234cf0c8707ec0e90236b2f1cd86880fb3d24a96f452105816"
+      },
+      "run_id": "2296b419-0edb-4b29-9e64-56c32153e7bf",
+      "status": "completed",
+      "replay_of": "cb982c8f-ac9c-4967-b705-84fdc50937b2",
+      "timing": {
+        "wall_ms": 8225.746625,
+        "startup_ms": 911.0137500000001,
+        "execution_ms": 7074.572306999471,
+        "wait_ms": 7.325626000000739,
+        "cleanup_ms": 94.71066600000086,
+        "execution_count": 4,
+        "script_stages": {
+          "process_startup_ms": 3239.185095007997,
+          "execution_ms": 3463.828055013437,
+          "collection_ms": 1.53355608927086,
+          "cleanup_ms": 1.5278050559572875,
+          "unknown_stages": 0
+        }
+      },
+      "model": "not_applicable"
+    },
+    {
+      "manifest": {
+        "path": "runs/ablation-readiness-v1/script-replays/dafe50db-7b73-4333-90b8-8ba49d7e7ff8/manifest.json",
+        "sha256": "b517f90604722d64c69e8f31a4b73380c7f513a886bd250d695319a9e2a05047"
+      },
+      "run_id": "dafe50db-7b73-4333-90b8-8ba49d7e7ff8",
+      "status": "completed",
+      "replay_of": "cb982c8f-ac9c-4967-b705-84fdc50937b2",
+      "timing": {
+        "wall_ms": 7870.431584,
+        "startup_ms": 828.2247500000001,
+        "execution_ms": 6824.106454907451,
+        "wait_ms": 5.438250000000153,
+        "cleanup_ms": 82.51941699999952,
+        "execution_count": 4,
+        "script_stages": {
+          "process_startup_ms": 3152.8159239678644,
+          "execution_ms": 3284.056236036122,
+          "collection_ms": 2.8145670075900853,
+          "cleanup_ms": 1.3435109285637736,
+          "unknown_stages": 0
+        }
+      },
+      "model": "not_applicable"
+    },
+    {
+      "manifest": {
+        "path": "runs/ablation-readiness-v1/script-replays/01b288d7-c907-42f3-a891-a2b14c7f0df5/manifest.json",
+        "sha256": "f7d00ee714923981908849ab3279c57f14b3162dbe9a9b9641495b036df3da9e"
+      },
+      "run_id": "01b288d7-c907-42f3-a891-a2b14c7f0df5",
+      "status": "completed",
+      "replay_of": "c9ab01ec-6ebf-4dc0-942a-a936ddcea31b",
+      "timing": {
+        "wall_ms": 5282.759333999999,
+        "startup_ms": 697.183125,
+        "execution_ms": 4429.6414609998465,
+        "wait_ms": 5.605750999999714,
+        "cleanup_ms": 80.99704199999996,
+        "execution_count": 2,
+        "script_stages": {
+          "process_startup_ms": 1799.9919139547274,
+          "execution_ms": 2410.9011670807377,
+          "collection_ms": 1.0465660016052425,
+          "cleanup_ms": 1.0326489573344588,
+          "unknown_stages": 0
+        }
+      },
+      "model": "not_applicable"
+    }
+  ],
+  "totals": {
+    "actual_live_runs": 3,
+    "model_attempts": 19,
+    "total_tokens": 76879,
+    "unknown_attempts": 0,
+    "successful_organizations": 2
+  },
+  "limitations": [
+    "Original CLI smoke failures remain unchanged; revised validation is a separate read-only result.",
+    "The first dual-role result omitted the required group_means wrapper; only that task was explicitly retested with clearer output instructions.",
+    "Synthetic task validates backend and role/file handoff, not all analysis benchmark tasks or method quality.",
+    "A preliminary replay hash comparison compared directory enumeration order; all replay records are retained, final comparison uses per-path hashes."
+  ]
+}

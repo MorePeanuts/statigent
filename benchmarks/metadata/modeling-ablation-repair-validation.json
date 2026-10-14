@@ -1,0 +1,349 @@
+{
+  "schema_version": 1,
+  "scope": "bounded-ablation-seed-repair",
+  "model_profile": "deepseek-flash",
+  "research_experiment": false,
+  "automatic_retry": false,
+  "scopes": [
+    {
+      "name": "modeling-ablation-seed-repair-v1",
+      "status": "passed",
+      "scope": {
+        "schema_version": 1,
+        "name": "modeling-ablation-seed-repair-v1",
+        "config_files": [
+          "configs/evaluations/modeling-ablation-repair-v1/dsbench-initial_eda.json"
+        ],
+        "models_file": "configs/models.json",
+        "allowed_tasks": [
+          "dsbench-modeling/playground-series-s3e5"
+        ],
+        "allowed_methods": [
+          "initial_eda"
+        ],
+        "model_profile": "deepseek-flash",
+        "seed": 17,
+        "resource_version": "modeling-development-v1"
+      },
+      "scope_sha256": "ccfcdcc198c31e43012edcf7a3fc5f15bf5ad1470ff1d8f4f8451f63c233bace",
+      "preflight_code": {
+        "commit": "45ab29128046e6abaaf33ed08d9222bad0645dc3",
+        "dirty": false,
+        "bun": "1.4.2"
+      },
+      "thresholds": {
+        "model_attempts": 30,
+        "total_tokens": 300000,
+        "timeout_ms": 900000
+      },
+      "result": {
+        "path": "../../../../private/tmp/statigent-ablation-fixes/runs/modeling-ablation-seed-repair-v1/result.json",
+        "sha256": "d57d059aef6dd5a8b55a04b8908a209e21519917315c97051433c5b80fc36566"
+      }
+    }
+  ],
+  "totals": {
+    "planned": 1,
+    "recorded": 1,
+    "executed": 1,
+    "not_run": 0,
+    "historical_not_run_records": 0,
+    "completed": 1,
+    "failed": 0,
+    "reproduced": 1,
+    "collaborative_covered": 0,
+    "model_attempts": 15,
+    "total_tokens": 201512,
+    "unknown_attempts": 0,
+    "wall_ms": 498236,
+    "scoring_ms": 1021,
+    "reproduction_ms": 8786.308290999965,
+    "training_attempts": 11,
+    "eda_calls": 1,
+    "currency_cost": "not_computed",
+    "accounting_status": "known",
+    "token_total_semantics": "known recorded subtotal; excludes unknown consumption"
+  },
+  "coverage": [
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e5",
+      "type": "ordinal",
+      "methods": [
+        {
+          "method": "initial_eda",
+          "status": "completed",
+          "reproduction": "passed",
+          "collaboration": "covered"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Representative types only, not all 103 candidates or every metric under a live agent.",
+    "Independent repair of first initial_eda ordinal failure 438d6415-e695-48ff-8246-55f361091a70; original failure is retained. Same task resources, splits and seed; prompt modeling-v10.",
+    "Independent reproduction adds time but no fits or model calls.",
+    "Parent usage already includes child EDA; no double counting.",
+    "Known token and attempt totals are not a currency estimate.",
+    "Input data preparation was explicitly reused; original cost is in modeling-preparation-validation.json."
+  ],
+  "units": [
+    {
+      "benchmark": "dsbench-modeling",
+      "task_id": "playground-series-s3e5",
+      "type": "ordinal",
+      "method": "initial_eda",
+      "seed": 17,
+      "evaluation_id": "8d0b54ce-ee47-41e5-8218-bc34cef5d5d9",
+      "unit_id": "unit-000001",
+      "score_id": "ff252f6f-4021-4084-b6e5-6399dbd54667",
+      "report": {
+        "path": "../../../../private/tmp/statigent-ablation-fixes/runs/modeling-ablation-seed-repair-v1/evaluations/8d0b54ce-ee47-41e5-8218-bc34cef5d5d9/scores/ff252f6f-4021-4084-b6e5-6399dbd54667/report.json",
+        "sha256": "8329049ff2dd0956dd932e12943ec9568d083bfcc6d71aa5226b80547799fd1e"
+      },
+      "native_record": {
+        "path": "../../../../private/tmp/statigent-ablation-fixes/runs/modeling-ablation-seed-repair-v1/evaluations/8d0b54ce-ee47-41e5-8218-bc34cef5d5d9/native/unit-000001/6786be16-1ca9-4cab-b7ff-6a2514f46d47/modeling.json",
+        "sha256": "d03e0683d7b042fcda21745fa93c52fc36fa205d35de5c09f5de109ca9f7a201"
+      },
+      "code": {
+        "commit": "45ab29128046e6abaaf33ed08d9222bad0645dc3",
+        "dirty": false
+      },
+      "environment": {
+        "os": "darwin",
+        "arch": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 8,
+        "memory_bytes": 17179869184,
+        "bun": "1.4.2"
+      },
+      "model": {
+        "profile": {
+          "id": "deepseek-flash",
+          "provider": "deepseek",
+          "protocol": "chat-completions",
+          "base_url": "https://api.deepseek.com",
+          "model": "deepseek-flash",
+          "display_name": "DeepSeek-V4.1-Flash",
+          "api_key_env": "DEEPSEEK_API_KEY",
+          "allow_loopback_http": false,
+          "capabilities": {
+            "tool_calls": true,
+            "thinking": true,
+            "vision": false
+          },
+          "generation": {
+            "max_output_tokens": 65536,
+            "thinking": "enabled",
+            "reasoning_effort": "high"
+          }
+        },
+        "returned_models": [
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash",
+          "deepseek-flash"
+        ],
+        "response_ids": [
+          "5f3b2c1b-a0e2-4a3f-aa34-f15fe22ca2e4",
+          "e4867546-f499-4500-9c48-0c268bfe0bbc",
+          "f0cee706-944d-4e6e-b646-dd8fc18686d9",
+          "4d6cc855-ed58-4f0c-b7fa-8c496c2904ba",
+          "5cf465ec-2413-47c3-a8a6-8988ac2b1d48",
+          "fdb5387d-0a53-4765-8544-8e4b64f2806a"
+        ],
+        "fingerprints": [
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669",
+          "aeb56401ca74e127821c4f9126dcb669"
+        ]
+      },
+      "prompt": {
+        "decision_interface": "modeling-decision-v2",
+        "correction_policy": "consecutive-unproductive-v2",
+        "version": "modeling-v10",
+        "sha256": "35d6c87c7d03635fe10ff092200392303c1cef77888c79d375339acd70db39d6"
+      },
+      "status": "completed",
+      "reason": "delivery_validated",
+      "scoring_status": "scored",
+      "native_metric": "quadratic-kappa-ds10-v1",
+      "native_value": 0.49612581259439215,
+      "native_components": [],
+      "rpg": 0.49612581259439215,
+      "completion": 1,
+      "search_end": {
+        "kind": "protected",
+        "reason": "token_preflight"
+      },
+      "delivery_status": "completed",
+      "prediction_status": "completed",
+      "trajectory": {
+        "search_end": {
+          "kind": "protected",
+          "reason": "token_preflight"
+        },
+        "delivery_status": "completed",
+        "completion": "protected",
+        "accounting": "known",
+        "collaboration": "covered",
+        "analysis_calls": 1,
+        "successful_analyses": 1,
+        "analysis_followups": [
+          {
+            "analysis_id": "122c37bb-99e3-4612-82ae-df38444c0f5d",
+            "experiment_id": "c66ababa-902c-42cd-888e-c1598d2d227d"
+          }
+        ],
+        "analysis_experiment_links": [],
+        "analysis_ids": [],
+        "core_rejections": [],
+        "attachment_warnings": [],
+        "unproductive_executions": [],
+        "protection_reason": "token_preflight"
+      },
+      "native_identity": {
+        "run_id": "6786be16-1ca9-4cab-b7ff-6a2514f46d47",
+        "frozen_id": "30d1a29e2ed7f41bc31bdf9221978cdcc489bc28f43a8f2ad7d597c75f490c5c",
+        "sha256": "149dc6f780f497f7917aa5af52de1008ea950f111f667ee960c23ed9999c1a4d",
+        "bytes": 11750581,
+        "delivery_sha256": "f759e9547ebccd7e588bff020340c3653f7a0b22386e4d007ded3cf1a141ef86"
+      },
+      "prediction_files": [
+        {
+          "path": "export.csv",
+          "bytes": 3078,
+          "sha256": "7c7da4166a68b8581ad1e5e16b8f96572a0902a525a60808886e40975aa0879b"
+        },
+        {
+          "path": "prediction-manifest.json",
+          "bytes": 4138,
+          "sha256": "6d1b139865fb3ddf51ce9911155dd491874cff4077d61ccfecc720bcdd550fad"
+        },
+        {
+          "path": "predictions.csv",
+          "bytes": 5152,
+          "sha256": "10bd4617f19156514257d578b4ee342712a07761a6a45815dd1250cf3a3978fe"
+        }
+      ],
+      "usage": {
+        "attempts": 15,
+        "total_tokens": 201512,
+        "unknown_attempts": 0,
+        "source": "measured",
+        "completeness": "complete",
+        "native": {
+          "tokens": {
+            "status": "known",
+            "input_tokens": 177681,
+            "output_tokens": 23831,
+            "total_tokens": 201512,
+            "attempts": 15,
+            "unknown_attempts": 0,
+            "elapsed_ms": 116376.90470800002,
+            "currency_cost": "not_computed"
+          },
+          "modeling": {
+            "status": "known",
+            "input_tokens": 120985,
+            "output_tokens": 15423,
+            "total_tokens": 136408,
+            "attempts": 6,
+            "unknown_attempts": 0,
+            "elapsed_ms": 74970.713666,
+            "currency_cost": "not_computed"
+          },
+          "children": {
+            "dffaac7e-1556-4f3d-8ffa-0451f3d5f0c8": {
+              "status": "known",
+              "input_tokens": 56696,
+              "output_tokens": 8408,
+              "total_tokens": 65104,
+              "attempts": 9,
+              "unknown_attempts": 0,
+              "elapsed_ms": 41406.19104200001,
+              "currency_cost": "not_computed"
+            }
+          },
+          "training_attempts": 11,
+          "final_training_attempts": 1,
+          "confirmation_training_attempts": 4,
+          "eda_calls": 1,
+          "eda_executions": 6,
+          "remaining_ms": 403181,
+          "exploration_ms": 0
+        }
+      },
+      "elapsed_ms": 498236,
+      "scoring_elapsed_ms": 1021,
+      "budget_status": "reduced",
+      "effective_budget": {
+        "timeout_ms": 899972,
+        "model_attempts": 30,
+        "total_tokens": 300000
+      },
+      "reproduction": {
+        "status": "passed",
+        "record": {
+          "path": "../../../../private/tmp/statigent-ablation-fixes/runs/modeling-ablation-seed-repair-v1/reproductions/244a62dc-cf40-4247-90b8-b5f46b17e972/reproduction.json",
+          "sha256": "f37cf120627005a41d149b619402bf8d5e529190180e5db5bd74094d44d5c0f5"
+        },
+        "comparison": {
+          "matched": true,
+          "differences": [],
+          "rows": 412,
+          "protocol_sha256": "e31ed68e14fdfc3911db4ee793133f0efb523b3520dbbb1deda8c32d559e2280",
+          "reference_sha256": "10bd4617f19156514257d578b4ee342712a07761a6a45815dd1250cf3a3978fe",
+          "actual_sha256": "10bd4617f19156514257d578b4ee342712a07761a6a45815dd1250cf3a3978fe",
+          "tolerance": {
+            "atol": 1e-8,
+            "rtol": 0.000001
+          }
+        },
+        "elapsed_ms": 8786.308290999965,
+        "calls": {
+          "models": 0,
+          "fits": 0,
+          "predictions": 1
+        }
+      },
+      "cache_policy": "disabled"
+    }
+  ],
+  "lineage": {
+    "first_run_id": "438d6415-e695-48ff-8246-55f361091a70",
+    "retest_run_id": "6786be16-1ca9-4cab-b7ff-6a2514f46d47",
+    "first_status": "failed",
+    "retest_status": "completed",
+    "dataset_sha256": "c303e54345d3816754452d9acc7ed7b4774713cdf66e3e10f8051c954f077193",
+    "data_identity_preserved": true,
+    "task_budget_preserved": true,
+    "first_prompt": "modeling-v9",
+    "retest_prompt": "modeling-v10",
+    "confirmation_model_seeds": [
+      1375144438,
+      10769671
+    ]
+  },
+  "method_audit": {
+    "rows": [
+      {
+        "run_id": "6786be16-1ca9-4cab-b7ff-6a2514f46d47",
+        "method": "initial_eda",
+        "status": "completed",
+        "confirmation": "complete",
+        "notes_disabled": true,
+        "initial_scheduled": 1,
+        "analyses": 1,
+        "successful_analyses": 1,
+        "successful_searches": 6,
+        "method_contract": "passed"
+      }
+    ]
+  }
+}

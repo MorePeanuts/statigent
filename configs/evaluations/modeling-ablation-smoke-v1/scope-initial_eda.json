@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "name": "modeling-ablation-initial-eda-v1",
+  "config_files": [
+    "configs/evaluations/modeling-development/dsbench-modeling-initial_eda.json",
+    "configs/evaluations/modeling-development/tabarena-lite-initial_eda.json"
+  ],
+  "models_file": "configs/models.json",
+  "allowed_tasks": [
+    "dsbench-modeling/playground-series-s3e9",
+    "dsbench-modeling/titanic",
+    "dsbench-modeling/playground-series-s4e2",
+    "dsbench-modeling/playground-series-s3e5",
+    "dsbench-modeling/playground-series-s3e13",
+    "dsbench-modeling/playground-series-s3e18",
+    "dsbench-modeling/playground-series-s4e3",
+    "tabarena-lite/363612",
+    "tabarena-lite/363621",
+    "tabarena-lite/363685"
+  ],
+  "allowed_methods": [
+    "initial_eda"
+  ],
+  "model_profile": "deepseek-flash",
+  "seed": 17,
+  "resource_version": "modeling-development-v1"
+}

@@ -5,7 +5,11 @@ import { join } from "node:path";
 import { ROLE_PROMPTS } from "../../src/agent/collaboration-prompt";
 import { SYSTEM_PROMPT } from "../../src/agent/prompt";
 import { runAgent } from "../../src/agent/run";
-import { loadScriptSmoke, scriptSmokeMain } from "../../src/agent/script-smoke";
+import {
+  checkSmokeMeans,
+  loadScriptSmoke,
+  scriptSmokeMain,
+} from "../../src/agent/script-smoke";
 import { ScriptSession } from "../../src/execution/script-session";
 import { readManifest, sha256 } from "../../src/records/store";
 import {
@@ -19,6 +23,14 @@ import {
 } from "../helpers/agent";
 import { returned } from "../helpers/collaboration";
 import { FakeScriptTransport } from "../helpers/script";
+
+test("script smoke verifies CSV values independently of row order and extra columns", () => {
+  expect(checkSmokeMeans('group,mean,n\n"B",4,2\n"A",2,2\n')).toBe(true);
+  expect(checkSmokeMeans("mean,group\n2,A\n4,B\n")).toBe(true);
+  expect(checkSmokeMeans("group,mean,n\nA,9,2\nB,8,2\n")).toBe(false);
+  expect(checkSmokeMeans("group,mean\nA,2\nA,4\n")).toBe(false);
+  expect(checkSmokeMeans("group,mean\nA,2\nB,4\nC,6\n")).toBe(false);
+});
 
 for (const organization of ["single", "planner-executor"] as const)
   test(`fresh ${organization} keeps history, valid evidence and global budget`, async () => {
