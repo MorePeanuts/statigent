@@ -1,29 +1,44 @@
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { Command, InvalidArgumentError, Option } from "commander";
 import { obj } from "../../../models/validation";
 import { command, commandEnvironment } from "../../process";
 import { assertCatalogCoverage, parseModelingCatalog } from "./catalog";
 
-export async function auditModeling(args: string[]): Promise<unknown> {
-  const options: Record<string, string> = {};
-  for (let i = 0; i < args.length; i += 2) {
-    const key = args[i],
-      value = args[i + 1];
-    if (
-      !key ||
-      !["--data-root", "--catalog", "--output"].includes(key) ||
-      !value ||
-      value.startsWith("--") ||
-      options[key] !== undefined
-    )
-      throw new Error(
-        "evaluate audit [--data-root benchmarks] [--catalog FILE] [--output NEW_FILE]",
-      );
-    options[key] = value;
+export function parseAuditOptions(args: string[]) {
+  const help =
+    "evaluate audit [--data-root benchmarks] [--catalog FILE] [--output NEW_FILE]";
+  const uniqueValue = (value: string, previous: string | undefined) => {
+    if (!value || previous !== undefined || value.startsWith("--"))
+      throw new InvalidArgumentError("Invalid or duplicate option");
+    return value;
+  };
+  const cli = new Command()
+    .name("evaluate audit")
+    .helpOption(false)
+    .configureOutput({ writeErr: () => {} })
+    .exitOverride()
+    .addOption(new Option("--data-root <path>").argParser(uniqueValue))
+    .addOption(new Option("--catalog <file>").argParser(uniqueValue))
+    .addOption(new Option("--output <file>").argParser(uniqueValue));
+  try {
+    cli.parse(args, { from: "user" });
+    if (cli.args.length) throw new Error(help);
+  } catch {
+    throw new Error(help);
   }
-  const root = resolve(options["--data-root"] ?? "benchmarks");
+  return cli.opts<{
+    dataRoot?: string;
+    catalog?: string;
+    output?: string;
+  }>();
+}
+
+export async function auditModeling(args: string[]): Promise<unknown> {
+  const options = parseAuditOptions(args);
+  const root = resolve(options.dataRoot ?? "benchmarks");
   const path = resolve(
-    options["--catalog"] ?? `${root}/metadata/modeling-task-catalog.json`,
+    options.catalog ?? `${root}/metadata/modeling-task-catalog.json`,
   );
   const catalog = parseModelingCatalog(await Bun.file(path).json());
   const selection = obj(
@@ -80,9 +95,9 @@ export async function auditModeling(args: string[]): Promise<unknown> {
     report.downloads !== 0
   )
     throw new Error("Invalid audit response");
-  if (options["--output"])
+  if (options.output)
     await writeFile(
-      resolve(options["--output"]),
+      resolve(options.output),
       `${JSON.stringify(report, null, 2)}\n`,
       { flag: "wx" },
     );
