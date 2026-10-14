@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "awaiting_explicit_paid_authorization",
+  "status": "authorized",
   "scope": "four-first-failure-retests-only",
   "implementation_commit": "1959805",
   "prompt_version": "modeling-v9",
@@ -81,5 +81,11 @@
     "Does not replace the unknown usage of the original s3e9 no_eda request.",
     "Natural EDA remains optional; this scope does not guarantee collaboration coverage for every task.",
     "Successful original units are not repeated and are not relabeled as v9 results."
-  ]
+  ],
+  "authorization": {
+    "user_instruction": "运行，负责也不用单独批准，先确保基准测试中的任务类型能跑通",
+    "interpretation": "Execute this repair scope and continue necessary bounded fixes/retests without requesting per-batch approval.",
+    "per_unit_limits_retained": true,
+    "first_attempts_immutable": true
+  }
 }

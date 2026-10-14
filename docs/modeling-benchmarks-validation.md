@@ -131,8 +131,8 @@ TS 只传文件描述符；Python 流式准备和验证特征表。排名评分�
 
 修复后只读审计前 15 个已结束的 schema 5 首次记录通过，成功和失败状态均保留，modeling.json/events.jsonl 哈希不变，见 `runs/modeling-live-smoke-fix-compat.json`。本次索引保存每项模型标识、提示词版本/哈希、实际成本、协议预测身份及复现链接，见 [首次运行汇总](../benchmarks/metadata/modeling-live-validation.json)。代表任务验收不等于全部 103 项、每个指标的真实智能体实验或正式研究已通过。
 
-## 待批准的修复复测
+## 修复复测
 
 仅准备首次失败的四项：Titanic 协同、s3e5 协同、s3e13 无协同、s3e18 无协同；配置在 `configs/evaluations/modeling-smoke-repair-v1/`，两份 scope 的零模型/零训练预检均退出 0。使用修复提交 `1959805`、提示词 v9，保留 deepseek-flash、seed=17、原冻结数据、不可变镜像及所有单项限制：每项 12 调用、160,000 token、600 秒；四项合计阈值 48 调用、640,000 token、2,400 秒。确认模式仍为 none，不改变首次协议。
 
-[复测计划](../benchmarks/metadata/modeling-smoke-repair-plan.json) 明确标为 awaiting_explicit_paid_authorization。未启动任何付费复测。执行时必须使用新运行身份，首次失败和原未知账目永久保留；不得把原成功项改标为 v9 成功，也不保证自然决策一定覆盖每项协同路径。此前授权限定首次矩阵且禁止自动重跑，因此需要用户另行批准这四个付费运行单元。任务 9.2 保持未勾选。
+[复测计划](../benchmarks/metadata/modeling-smoke-repair-plan.json) 已获用户明确批准。用户进一步授权为跑通任务类型所需的后续修复与有界复测，不再逐批请求批准。执行时必须使用新运行身份，首次失败和原未知账目永久保留；不得把原成功项改标为 v9 成功，也不保证自然决策一定覆盖每项协同路径。逐次复测仍使用独立运行身份和显式预算，不进行无界重试。任务 9.2 保持未勾选。
