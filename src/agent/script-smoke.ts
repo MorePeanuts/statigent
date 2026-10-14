@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { inspectImage } from "../evaluation/agents/docker";
 import { dockerCommand, validateImageBackend } from "../execution/docker";
+import { parseCsv } from "../modeling/data";
 import { obj } from "../models/validation";
 import { buildScripts } from "../records/script-journal";
 import { verifyScriptExport } from "../records/scripts";
@@ -16,6 +17,21 @@ import { returnedImages, validatePlannerReport } from "./collaboration-report";
 import { preflightInputs, validateOrganization } from "./config";
 import { resolveReport } from "./report";
 import { type AgentResult, runAgent } from "./run";
+export function checkSmokeMeans(csv: string) {
+  const table = parseCsv(csv);
+  const group = table.columns.indexOf("group");
+  const a = table.rows.find((r) => r[group] === "A");
+  const b = table.rows.find((r) => r[group] === "B");
+  return (
+    group >= 0 &&
+    table.rows.length === 2 &&
+    a !== undefined &&
+    b !== undefined &&
+    table.columns.some(
+      (_, i) => i !== group && Number(a[i]) === 2 && Number(b[i]) === 4,
+    )
+  );
+}
 export async function loadScriptSmoke(args: string[]) {
   const preflight = args.includes("--preflight");
   const values = args.filter((a) => a !== "--preflight");
@@ -73,7 +89,9 @@ export async function checkScriptSmoke(result: AgentResult) {
     ),
   );
   const reader = success.findIndex(
-    (s, i) => i > writer && /\.read_csv\(["']middle\.csv["']/.test(s.code),
+    (s, i) =>
+      i > writer &&
+      /\.read_csv\(\s*["'](?:\.\/|\/workspace\/)?middle\.csv["']/.test(s.code),
   );
   if (writer < 0 || reader < 0)
     throw Error(
@@ -91,10 +109,7 @@ export async function checkScriptSmoke(result: AgentResult) {
   );
   if (
     !snapshot ||
-    !/(?:^|\n)A,2(?:\.0)?\r?\n/.test(
-      (await readArtifact(result.directory, snapshot)).toString(),
-    ) ||
-    !/(?:^|\n)B,4(?:\.0)?(?:\r?\n|$)/.test(
+    !checkSmokeMeans(
       (await readArtifact(result.directory, snapshot)).toString(),
     )
   )
