@@ -2,7 +2,7 @@ import { obj } from "../../src/models/validation";
 import { call, finish, lastFeedback, reply } from "./agent";
 import { returned } from "./collaboration";
 export const saveCsv =
-  "import pandas as pd\ndf=pd.read_csv('/input/synthetic.csv')\nmeans=df.groupby('group')['value'].mean()\nassert means.to_dict()=={'A':2.0,'B':4.0}\nmeans.to_csv('middle.csv')\nprint(means.to_json())";
+  "import pandas as pd\nimport os\ndf=pd.read_csv('/input/synthetic.csv')\nmeans=df.groupby('group')['value'].mean()\nassert means.to_dict()=={'A':2.0,'B':4.0}\nout=os.path.join(os.getcwd(),'middle.csv')\nmeans.to_csv(out)\nprint(means.to_json())";
 export const readCsv =
   "import pandas as pd\nimport matplotlib.pyplot as plt\nassert 'df' not in globals()\nmeans=pd.read_csv('middle.csv',index_col=0).iloc[:,0]\nassert means.to_dict()=={'A':2.0,'B':4.0}\nmeans.plot.bar()\nplt.tight_layout()\nplt.savefig('means.png')\nplt.close()\nprint(means.to_json())";
 export function freshAgentScript(

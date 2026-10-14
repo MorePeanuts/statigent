@@ -49,6 +49,24 @@ for (const organization of ["single", "planner-executor"] as const)
     expect(result.status).toBe("completed");
     expect((await checkScriptSmoke(result)).status).toBe("passed");
     const manifest = await readManifest(result.directory);
+    const manifestPath = join(result.directory, "manifest.json");
+    const originalManifest = await readFile(manifestPath);
+    try {
+      await writeFile(
+        manifestPath,
+        JSON.stringify({
+          ...manifest,
+          artifacts: manifest.artifacts.filter(
+            (a) => a.source_path !== "middle.csv",
+          ),
+        }),
+      );
+      await expect(checkScriptSmoke(result)).rejects.toThrow(
+        "Missing explicit middle.csv write/read witness",
+      );
+    } finally {
+      await writeFile(manifestPath, originalManifest);
+    }
     expect(manifest.schema_version).toBe(4);
     expect(manifest.export.kind).toBe("scripts");
     expect(manifest.export.notebook_status).toBe("not_applicable");

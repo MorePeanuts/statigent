@@ -62,8 +62,15 @@ export async function checkScriptSmoke(result: AgentResult) {
       success.length
   )
     throw Error("Distinct successful processes required");
+  // A collected snapshot witnesses the file's creation regardless of whether
+  // generated code passes a literal, variable or composed path to to_csv.
   const writer = success.findIndex((s) =>
-    /\.to_csv\(["']middle\.csv["']/.test(s.code),
+    manifest.artifacts.some(
+      (a) =>
+        a.complete &&
+        a.source_path === "middle.csv" &&
+        a.execution_id === s.execution_id,
+    ),
   );
   const reader = success.findIndex(
     (s, i) => i > writer && /\.read_csv\(["']middle\.csv["']/.test(s.code),
