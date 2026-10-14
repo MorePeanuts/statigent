@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "name": "modeling-benchmark-type-coverage-v1",
+  "config_files": [
+    "configs/evaluations/modeling-smoke-type-coverage/dsbench-modeling.json",
+    "configs/evaluations/modeling-smoke-type-coverage/tabarena-lite.json"
+  ],
+  "models_file": "configs/models.json",
+  "allowed_tasks": [
+    "dsbench-modeling/playground-series-s3e9",
+    "dsbench-modeling/playground-series-s4e2",
+    "dsbench-modeling/playground-series-s3e5",
+    "dsbench-modeling/playground-series-s3e13",
+    "dsbench-modeling/playground-series-s3e18",
+    "dsbench-modeling/playground-series-s4e3",
+    "tabarena-lite/363621",
+    "tabarena-lite/363685"
+  ],
+  "allowed_methods": [
+    "no_eda",
+    "collaborative"
+  ],
+  "model_profile": "deepseek-flash",
+  "seed": 17,
+  "resource_version": "modeling-benchmark-live-smoke-v1"
+}

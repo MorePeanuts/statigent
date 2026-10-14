@@ -325,3 +325,5 @@ bun run test:smoke:modeling-benchmarks --run --allow-model-calls --scope configs
 预置 scope 为 Titanic 与 TabArena 363612，各执行 no_eda/collaborative，deepseek-flash、seed=17、一次重复，共 4 单元。单元阈值为 12 次模型调用、160,000 token、600 秒；两批总阈值 48 次、640,000 token、2,400 秒，子 EDA 包含在父账中；1 CPU、2 GiB，拟合 60 秒、预测 30 秒，终局预留 150 秒。token 阈值是派发门槛，最后一次响应结算可能超过阈值，完整输出上限预留仍适用。关闭重复终局确认用于小型接口验收，不能把本配置当作四方法正式实验。独立预测复现另外计时，新增模型调用和拟合均为零。
 
 输出目录必须全新。入口保存 scope/计划哈希、代码快照、全部单元状态、配对报告、原生轨迹摘要与独立预测复现；首次失败保留，不自动重跑或换题。未知用量、未确认清理/记录或批次异常会阻止后续批次派发。验收通过要求完成交付与评分、复现通过、用量已知，并实际观察到 collaborative 的 EDA 返回后继续训练；no_eda 必须没有分析调用。只有声明协同而没有实际覆盖时，结果为 incomplete，CLI 退出非零。实际付费验收状态以 [验收记录](modeling-benchmarks-validation.md) 为准。
+
+任务类型补充范围已准备在 `configs/evaluations/modeling-smoke-type-coverage/scope.json`：沿用固定开发清单的其余 8 项任务，分别运行 no_eda/collaborative，共 16 单元；与首批 4 单元合并为 10 题 × 2 方法。按公开类型覆盖，不依据首批得分选择；相同逐单元配置，追加批次阈值为 192 次调用、2,560,000 token、9,600 秒。该 scope 的只读预检已通过，实际执行仍须对应付费范围授权。覆盖代表类型不等于 103 个候选逐题均已运行，也不替代全部指标的合成上游差分。
