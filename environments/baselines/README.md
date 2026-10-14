@@ -50,3 +50,16 @@ Linux 锁定 CPU PyTorch wheel；macOS 使用官方平台 wheel。计算依赖�
 macOS 原生六家族混合训练已出现 OpenMP 挂起；原生环境不标为就绪。Linux arm64 Docker 已完成全部家族真实训练与重载预测，计算部署以该环境为准。系统依赖锁定 Debian `libgomp1=12.2.0-14+deb12u1`，已验收镜像摘要见 [images.json](images.json)。
 
 分层状态见 [baseline 验收记录](../../docs/baselines-validation.md)。默认 `bun run check` 不安装或运行这些可选环境。
+
+## 受控桥接开发检查
+
+```bash
+bun test tests/upstream/baseline-autogen.test.ts
+bun test tests/integration/baseline-execution.test.ts tests/integration/baseline-lifecycle.test.ts
+```
+
+第一条使用锁定的官方 AutoGen 双代理和受控模型/执行反馈，检查真实消息流、自主修复、推理历史、显式交付和父账；执行代理没有 LLM，不接受人工输入。仅启用 Python 代码块，额外命令返回执行错误；SDK 默认客户端不使用，缓存关闭。该检查不是 DSBench 原论文配置逐项复现。
+
+第二条需要共同 CPU 镜像，实际运行持久内核和新脚本执行器；验证输入和产物范围、凭据/私有文件/网络隔离，以及 worker 退出、取消、超时后的定向容器清理。worker 只接收公开任务视图，Python 通过固定 uv 入口启动，环境不继承 API 密钥、代理或 CUSTOM_CONFIG。双向 JSONL 以 run_id/request_id/sequence 拒绝重复、并发、错序及迟到请求；运行事件独立写入 baseline 记录。
+
+当前这些是基础层接口与检查，尚未注册四种 baseline，也未完成冻结预测、统一评分和冒烟命令。DatawiseAgent 的官方过滤阶段需要显式内核重启/历史重放，与提案中笼统的禁重放规则存在冲突，待明确方法边界后实现。不能以其他循环代替它并继续称为 DatawiseAgent。
