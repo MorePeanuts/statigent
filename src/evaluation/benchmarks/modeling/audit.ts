@@ -1,9 +1,9 @@
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { parseStrictOptions } from "../../../cli-options";
 import { obj } from "../../../models/validation";
 import { command, commandEnvironment } from "../../process";
 import { assertCatalogCoverage, parseModelingCatalog } from "./catalog";
-import { parseStrictOptions } from "./cli-options";
 
 export function parseAuditOptions(args: string[]) {
   const help =

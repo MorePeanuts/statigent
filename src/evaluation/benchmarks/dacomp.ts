@@ -1,6 +1,7 @@
 import { lstat } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { integer, keys, obj, str } from "../../models/validation";
+import * as z from "zod";
+import { integer, obj, str } from "../../models/validation";
 import { sha256 } from "../../records/store";
 import {
   type BenchmarkAdapter,
@@ -14,6 +15,7 @@ import {
 import { validateReport } from "../deliverables";
 import { describeFile, regular } from "../files";
 import provenance from "./dacomp-provenance.json";
+import { benchmarkRootAndMetadataOptions } from "./options";
 import { scorerRequest } from "./python";
 
 export const DACOMP_PROTOCOL = "dacomp-da-report-v1";
@@ -101,12 +103,7 @@ export function createDacomp(
   pins: DacompPins = provenance.pins,
 ): BenchmarkAdapter {
   const options = (value: unknown) => {
-    const x = obj(value);
-    keys(x, ["root", "metadata"]);
-    return {
-      root: resolve(str(x.root, "root")),
-      metadata: resolve(str(x.metadata ?? "benchmarks/metadata", "metadata")),
-    };
+    return benchmarkRootAndMetadataOptions(value);
   };
   const manifest = async (value: Record<string, unknown>) => {
     const o = options(value);
@@ -119,13 +116,9 @@ export function createDacomp(
     return { ...o, ...m };
   };
   const scoring = (value: unknown) => {
-    const x = obj(value);
-    keys(x, ["upstream_compatible"]);
-    if (
-      x.upstream_compatible !== undefined &&
-      typeof x.upstream_compatible !== "boolean"
-    )
-      throw new Error("Invalid upstream_compatible");
+    const x = z
+      .strictObject({ upstream_compatible: z.boolean().optional() })
+      .parse(value);
     return { upstream_compatible: x.upstream_compatible === true };
   };
   const evaluatorFiles = (m: Map<string, Entry>, taskId: string) =>

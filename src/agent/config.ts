@@ -1,5 +1,6 @@
 import { lstat } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import * as z from "zod";
 import { type ExecutionBackend, validateBackend } from "../execution/backend";
 import {
   DEFAULT_LIMITS,
@@ -24,11 +25,12 @@ export const DEFAULT_BUDGET = {
 };
 export type AgentBudget = typeof DEFAULT_BUDGET;
 export type Organization = "single" | "planner-executor";
+const organizationSchema = z.enum(["single", "planner-executor"]);
 export function validateOrganization(value: unknown): Organization {
   if (value === undefined) return "single";
-  if (value !== "single" && value !== "planner-executor")
-    throw new Error("Unsupported organization");
-  return value;
+  const result = organizationSchema.safeParse(value);
+  if (!result.success) throw new Error("Unsupported organization");
+  return result.data;
 }
 export interface AgentTask {
   backend: ExecutionBackend;

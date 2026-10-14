@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import * as z from "zod";
 import type { ModelClient } from "../models/client";
 import type { ModelProfile } from "../models/config";
-import { keys, obj } from "../models/validation";
+import { obj } from "../models/validation";
 import { writeJson } from "../records/store";
 import { aggregate } from "./aggregate";
 import {
@@ -289,8 +290,9 @@ export function parseJudgeBudget(value: unknown): {
   unit_budget: JudgeBudget;
   batch_budget: JudgeBudget;
 } {
-  const x = obj(value);
-  keys(x, ["unit_budget", "batch_budget"]);
+  const x = z
+    .strictObject({ unit_budget: z.unknown(), batch_budget: z.unknown() })
+    .parse(value);
   return {
     unit_budget: validateJudgeBudget(x.unit_budget),
     batch_budget: validateJudgeBudget(x.batch_budget),

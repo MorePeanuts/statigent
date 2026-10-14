@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { open, realpath, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import * as z from "zod";
+import { parseStrictOptions } from "../../../cli-options";
 import { parseDataLimits } from "../../../modeling/data-limits";
 import { parseDatasetV3 } from "../../../modeling/dataset-v3";
 import { canonicalJson } from "../../../modeling/protocol-v2";
@@ -9,7 +10,6 @@ import { integer, keys, obj, str } from "../../../models/validation";
 import { sha256 } from "../../../records/store";
 import { command, commandEnvironment } from "../../process";
 import { parseModelingCatalog } from "./catalog";
-import { parseStrictOptions } from "./cli-options";
 
 export const PREPARE_HELP =
   "evaluate prepare --config FILE (--out NEW_DIRECTORY | --reuse PREPARED_DIRECTORY) [--receipt NEW_FILE]";

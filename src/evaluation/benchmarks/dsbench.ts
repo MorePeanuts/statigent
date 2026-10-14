@@ -1,6 +1,6 @@
 import { readdir } from "node:fs/promises";
 import { resolve } from "node:path";
-import { keys, obj, str, strings } from "../../models/validation";
+import { obj, str, strings } from "../../models/validation";
 import { sha256 } from "../../records/store";
 import {
   type BenchmarkAdapter,
@@ -12,6 +12,7 @@ import {
 } from "../contracts";
 import { describeFile, regular } from "../files";
 import provenance from "./dsbench-provenance.json";
+import { benchmarkRootOptions } from "./options";
 import { scorerRequest } from "./python";
 
 export const DSBENCH_PROTOCOL = "dsbench-analysis-judge-v1";
@@ -42,9 +43,7 @@ export function createDsbenchAnalysis(
   resources: Resource[] = provenance.resources,
 ): BenchmarkAdapter {
   const options = (value: unknown) => {
-    const x = obj(value);
-    keys(x, ["root"]);
-    return { root: resolve(str(x.root, "root")) };
+    return benchmarkRootOptions(value);
   };
   const verify = async (root: string, path: string) => {
     const expected = resources.find((r) => r.path === path);

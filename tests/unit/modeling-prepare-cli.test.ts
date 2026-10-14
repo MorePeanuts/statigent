@@ -2,7 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
-import { parseStrictOptions } from "../../src/evaluation/benchmarks/modeling/cli-options";
+import { parseStrictOptions } from "../../src/cli-options";
 import {
   parsePreparationConfig,
   prepareModeling,

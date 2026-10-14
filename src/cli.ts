@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
+import { parsePositionals } from "./cli-options";
 import { cleanupRun } from "./execution/docker";
 import { createSession } from "./execution/factory";
 import { DEFAULT_LIMITS, type SessionConfig } from "./execution/protocol";
@@ -122,7 +123,11 @@ export async function demo(
   };
 }
 async function main() {
-  const [command, value, extra, scenario] = Bun.argv.slice(2);
+  const [command, value, extra, scenario] = parsePositionals(
+    Bun.argv.slice(2),
+    "<command> [value] [extra] [scenario]",
+    "Usage: bun run runtime demo [RUN_ROOT] [IMAGE] [normal|timeout|restart|fresh-script] | export RUN_DIRECTORY | inspect RUN_DIRECTORY | replay RUN_DIRECTORY [RUN_ROOT] | cleanup RUN_ID",
+  );
   switch (command) {
     case "demo":
       return demo(

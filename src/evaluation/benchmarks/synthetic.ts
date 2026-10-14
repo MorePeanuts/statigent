@@ -1,18 +1,15 @@
-import { resolve } from "node:path";
-import { keys, obj, str } from "../../models/validation";
 import { type BenchmarkAdapter, validateTask } from "../contracts";
 import { describeFile } from "../files";
+import { benchmarkRootOptions } from "./options";
 export const syntheticBenchmark: BenchmarkAdapter = {
   id: "synthetic-sum",
   version: "1",
   protocol: "synthetic-exact-v1",
   options(value) {
-    const x = obj(value);
-    keys(x, ["root"]);
-    return { root: resolve(str(x.root, "root")) };
+    return benchmarkRootOptions(value);
   },
   async catalog(value) {
-    const root = str(this.options(value).root, "root");
+    const root = benchmarkRootOptions(value).root;
     const input = await describeFile(root, "data.csv");
     return {
       source_root: root,

@@ -1,5 +1,6 @@
 import { mkdir, readdir } from "node:fs/promises";
 import { join } from "node:path";
+import { parsePositionals } from "../cli-options";
 import { obj, str, strings } from "../models/validation";
 import { createDacomp } from "./benchmarks/dacomp";
 import { createDsbenchAnalysis } from "./benchmarks/dsbench";
@@ -215,7 +216,11 @@ export async function freezeDacomp(root = "benchmarks/dacomp-da") {
   return selected;
 }
 if (import.meta.main) {
-  const target = process.argv[2];
+  const [target] = parsePositionals(
+    process.argv.slice(2),
+    "<target>",
+    "Usage: bun src/evaluation/analysis-development.ts dsbench|dacomp",
+  );
   if (target === "dsbench") console.log(await freezeDsbench());
   else if (target === "dacomp") console.log(await freezeDacomp());
   else

@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { parseStrictOptions } from "../cli-options";
 import { reproduce } from "../modeling/delivery";
 import { inspectModeling } from "../modeling/records";
 import { workflowTrajectory } from "../modeling/trajectory";
@@ -18,24 +19,20 @@ export const MODELING_SMOKE_HELP =
   "bun run test:smoke:modeling-benchmarks --preflight --scope FILE | --run --allow-model-calls --scope FILE --out NEW_DIRECTORY";
 export function parseModelingSmoke(args: string[]) {
   if (!args.length || args.join(" ") === "--help") return null;
-  let mode: "preflight" | "run" | null = null,
-    allowed = false;
-  const values: Record<string, string> = {};
-  for (let index = 0; index < args.length; index++) {
-    const arg = args[index];
-    if (arg === "--preflight" || arg === "--run") {
-      if (mode) throw new Error("Choose one explicit smoke mode");
-      mode = arg === "--run" ? "run" : "preflight";
-    } else if (arg === "--allow-model-calls") {
-      if (allowed) throw new Error("Duplicate model authorization flag");
-      allowed = true;
-    } else if (arg === "--scope" || arg === "--out") {
-      const value = args[++index];
-      if (!value || value.startsWith("--") || values[arg])
-        throw new Error(MODELING_SMOKE_HELP);
-      values[arg] = value;
-    } else throw new Error(MODELING_SMOKE_HELP);
-  }
+  const values = parseStrictOptions(
+    args,
+    ["--scope", "--out"],
+    MODELING_SMOKE_HELP,
+    ["--preflight", "--run", "--allow-model-calls"],
+  );
+  if (values["--preflight"] && values["--run"])
+    throw new Error("Choose one explicit smoke mode");
+  const mode = values["--run"]
+    ? "run"
+    : values["--preflight"]
+      ? "preflight"
+      : null;
+  const allowed = values["--allow-model-calls"] === "true";
   if (
     !mode ||
     !values["--scope"] ||

@@ -9,12 +9,12 @@ import {
 } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import * as z from "zod";
+import { parseStrictOptions } from "../../../cli-options";
 import { parseDataLimits } from "../../../modeling/data-limits";
 import { writeJson } from "../../../records/store";
 import { codeSnapshot } from "../../records";
 import { auditModeling } from "./audit";
 import { parseModelingCatalog } from "./catalog";
-import { parseStrictOptions } from "./cli-options";
 import { prepareModeling } from "./prepare";
 
 const nonemptyString = z.string().refine((value) => value.trim().length > 0);

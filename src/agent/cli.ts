@@ -1,22 +1,14 @@
 import { resolve } from "node:path";
+import { parseStrictOptions } from "../cli-options";
 import { selectProfile } from "../models/config";
 import { validateTask } from "./config";
 import { runAgent } from "./run";
 export function parseFlags(args: string[]): Record<string, string> {
-  const flags: Record<string, string> = {};
-  for (let i = 0; i < args.length; i += 2) {
-    const flag = args[i];
-    const value = args[i + 1];
-    if (
-      !flag ||
-      !["--task", "--models", "--model", "--runs"].includes(flag) ||
-      !value ||
-      value.startsWith("--") ||
-      flags[flag] !== undefined
-    )
-      throw new Error("Expected unique --task/--models/--model/--runs values");
-    flags[flag] = value;
-  }
+  const flags = parseStrictOptions(
+    args,
+    ["--task", "--models", "--model", "--runs"],
+    "Expected unique --task/--models/--model/--runs values",
+  );
   if (!flags["--task"]) throw new Error("Explicit --task is required");
   return flags;
 }

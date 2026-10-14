@@ -1,17 +1,19 @@
+import * as z from "zod";
 import defaults from "../../python/statigent_modeling/data_limits.json";
-import { integer, keys, obj } from "../models/validation";
 
 export type DataLimits = typeof defaults;
 export const DEFAULT_DATA_LIMITS: Readonly<DataLimits> =
   Object.freeze(defaults);
+const positiveInteger = z
+  .number()
+  .refine((value) => Number.isSafeInteger(value) && value >= 1);
+const dataLimitsSchema = z.strictObject({
+  max_file_bytes: positiveInteger,
+  max_rows: positiveInteger,
+  max_columns: positiveInteger,
+  max_field_bytes: positiveInteger,
+  max_memory_bytes: positiveInteger,
+});
 export function parseDataLimits(value: unknown): DataLimits {
-  const raw = obj(value);
-  keys(raw, Object.keys(DEFAULT_DATA_LIMITS));
-  return {
-    max_file_bytes: integer(raw.max_file_bytes, "file limit"),
-    max_rows: integer(raw.max_rows, "row limit"),
-    max_columns: integer(raw.max_columns, "column limit"),
-    max_field_bytes: integer(raw.max_field_bytes, "field limit"),
-    max_memory_bytes: integer(raw.max_memory_bytes, "memory limit"),
-  };
+  return dataLimitsSchema.parse(value);
 }

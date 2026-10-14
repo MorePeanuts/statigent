@@ -1,5 +1,5 @@
+import * as z from "zod";
 import { type ExecutionBackend, validateBackend } from "../execution/backend";
-import { keys, obj, str } from "../models/validation";
 export interface ExecutionMetadata {
   version: 1;
   backend: ExecutionBackend;
@@ -9,6 +9,15 @@ export interface ExecutionMetadata {
   seed_policy: "session-start" | "each-execution";
   export_kind: "notebook" | "scripts";
 }
+const executionMetadataSchema = z.strictObject({
+  version: z.literal(1),
+  backend: z.enum(["persistent-kernel", "fresh-script"]),
+  protocol_version: z.union([z.literal(1), z.literal(2)]),
+  files_policy: z.literal("task-workspace"),
+  initialization: z.enum(["kernel-init-v1", "script-init-v1"]),
+  seed_policy: z.enum(["session-start", "each-execution"]),
+  export_kind: z.enum(["notebook", "scripts"]),
+});
 export function executionMetadata(backend: unknown): ExecutionMetadata {
   const selected = validateBackend(backend),
     script = selected === "fresh-script";
@@ -23,18 +32,10 @@ export function executionMetadata(backend: unknown): ExecutionMetadata {
   };
 }
 export function validateExecutionMetadata(value: unknown): ExecutionMetadata {
-  const x = obj(value);
-  keys(x, [
-    "version",
-    "backend",
-    "protocol_version",
-    "files_policy",
-    "initialization",
-    "seed_policy",
-    "export_kind",
-  ]);
-  const expected = executionMetadata(str(x.backend, "backend"));
-  for (const [key, v] of Object.entries(expected))
-    if (x[key] !== v) throw Error(`Invalid execution metadata ${key}`);
+  const x = executionMetadataSchema.parse(value);
+  const expected = executionMetadata(x.backend);
+  for (const key of Object.keys(expected) as (keyof ExecutionMetadata)[])
+    if (x[key] !== expected[key])
+      throw Error(`Invalid execution metadata ${key}`);
   return expected;
 }
