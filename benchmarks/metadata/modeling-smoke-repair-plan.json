@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "authorized",
+  "status": "completed",
   "scope": "four-first-failure-retests-only",
   "implementation_commit": "1959805",
   "prompt_version": "modeling-v9",
@@ -87,5 +87,32 @@
     "interpretation": "Execute this repair scope and continue necessary bounded fixes/retests without requesting per-batch approval.",
     "per_unit_limits_retained": true,
     "first_attempts_immutable": true
+  },
+  "execution_commit": "f0bee2295bfab4750b3cdfe7355d3a7522930b59",
+  "results": {
+    "path": "benchmarks/metadata/modeling-retest-validation.json",
+    "sha256": "dea33e6fc69904952c600e766b79101a9193ecbe1672454bb8ec00aa5db3cd36"
+  },
+  "delivery_coverage": {
+    "path": "benchmarks/metadata/modeling-live-coverage.json",
+    "sha256": "3694c7e38498790addbc1c3514d6121a35ba63104433e4060a7d35d97742dbb4"
+  },
+  "outcome": {
+    "completed": 4,
+    "reproduced": 4,
+    "model_attempts": 18,
+    "total_tokens": 333651,
+    "unknown_attempts": 0,
+    "collaborative_covered": 0,
+    "scope_statuses": [
+      {
+        "name": "modeling-live-repair-no_eda-v1",
+        "status": "passed"
+      },
+      {
+        "name": "modeling-live-repair-collaborative-v1",
+        "status": "incomplete"
+      }
+    ]
   }
 }
