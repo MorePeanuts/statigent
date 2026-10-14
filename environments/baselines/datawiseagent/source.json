@@ -1,0 +1,403 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/zimingyou01/DatawiseAgent",
+  "commit": "64f3164869fa2558e7385d0e33a241aee2baf37f",
+  "files": [
+    {
+      "path": "LICENSE",
+      "git_blob": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357
+    },
+    {
+      "path": "README.md",
+      "git_blob": "9ecb1a782ec0a3efad523e77e695d08db9b47254",
+      "sha256": "800248ba04573d6d4b7a702a2caa583c804c205d9bfd8e519b67583c665ea745",
+      "bytes": 11065
+    },
+    {
+      "path": "configs/datamodeling.yaml",
+      "git_blob": "5e68354a586b1d53caed4b034cd969661bdfffca",
+      "sha256": "9ec0adfdcc24c5d43aae41624735bdae4a9cbb6efc25b6e45b330756869e0a01",
+      "bytes": 1309
+    },
+    {
+      "path": "configs/default_config.yaml",
+      "git_blob": "021b29fcd376590e93ab25adca0ba97573b5f231",
+      "sha256": "8479e8b2a1c4d30de4965ffd28a406677b3c854c1a3a02d11b919fc24bc8f605",
+      "bytes": 2164
+    },
+    {
+      "path": "datawiseagent/agents/datawise_agent.py",
+      "git_blob": "e8af1b9f01da2f335477e75b13558d899617553b",
+      "sha256": "ad3492e5008280b46a2cc5f70f55ac97f058c437cb0c149268cc7174d2afe4fe",
+      "bytes": 58101
+    },
+    {
+      "path": "datawiseagent/coding/__init__.py",
+      "git_blob": "e0b5d960f72260278f404244c986c8bdfde8b645",
+      "sha256": "d7969152b177027bfe345027b073d9d4fc2c7592db7376579406b7e753f3eeb5",
+      "bytes": 930
+    },
+    {
+      "path": "datawiseagent/coding/base.py",
+      "git_blob": "5b0b14ccd8e366cda25a7772587ab46ea45df530",
+      "sha256": "85eaaf4319b8101e79d9a67a02225670674850f071ff3fafc3c79be7622c046e",
+      "bytes": 4396
+    },
+    {
+      "path": "datawiseagent/coding/code_utils.py",
+      "git_blob": "ce0d8140108c92718466e556daa7a24436167213",
+      "sha256": "1b4113d607522e8cce2fa4f51ea97209c54984699537cb21b1370ae5b9976176",
+      "bytes": 42631
+    },
+    {
+      "path": "datawiseagent/coding/docker_commandline_code_executor.py",
+      "git_blob": "1281f80c990616b9420a559700df3eacba9d5e55",
+      "sha256": "605d1e7c724dec99a26666bac83a3464cc838ea42082bd6499041d2d604a55fc",
+      "bytes": 9848
+    },
+    {
+      "path": "datawiseagent/coding/factory.py",
+      "git_blob": "61215ec1537d08387036b88619213765a3075eda",
+      "sha256": "8a1966ba763d4ef79802c53c420032f68820d45185d0d7311b69bbd1a395ed58",
+      "bytes": 1993
+    },
+    {
+      "path": "datawiseagent/coding/func_with_reqs.py",
+      "git_blob": "cbb998582f2c9d2c23b1ccaf9f7627d6225ddb8b",
+      "sha256": "c34ba2edcabac073e683c2968de0bdf50cfba782601a13a596907785a0f05946",
+      "bytes": 6482
+    },
+    {
+      "path": "datawiseagent/coding/jupyter/__init__.py",
+      "git_blob": "796a307375c34b6f91c28bf36a2aa8d9c55e8425",
+      "sha256": "58dfb188246f83901745ece23357def4f255d86a3552e464bc59727516b85c55",
+      "bytes": 893
+    },
+    {
+      "path": "datawiseagent/coding/jupyter/base.py",
+      "git_blob": "c2acbe1611bde9ed46dbf1f1a7e2401bd479f855",
+      "sha256": "42fd3044fcc2b9b14ea4a7ed8c88d0c648d1f841f4894d813eb5dcc205991c16",
+      "bytes": 1112
+    },
+    {
+      "path": "datawiseagent/coding/jupyter/cuda_jupyter_server.dockerfile",
+      "git_blob": "c2b6114973ff695867e262e5ae3ed347d13da8a4",
+      "sha256": "51ab9e491b6f327f781ab789c8de29cb9f0c3ebf458512041e4fed89f0cacfaf",
+      "bytes": 2632
+    },
+    {
+      "path": "datawiseagent/coding/jupyter/default_jupyter_server.dockerfile",
+      "git_blob": "bdecef9c249b493bcd8d30bb6ae6ba917bbffb1b",
+      "sha256": "d3af95185fca8b48f065f94f947f12e09eb353b10e65b29926499e9433a1fb5c",
+      "bytes": 2505
+    },
+    {
+      "path": "datawiseagent/coding/jupyter/docker_jupyter_server.py",
+      "git_blob": "19c626a135042fe2c36b5f292eeca3f1f638f674",
+      "sha256": "3057863f0a49e35d9146016df564560a4a84ff34fb1ab9e0d103b7f103346ac5",
+      "bytes": 13168
+    },
+    {
+      "path": "datawiseagent/coding/jupyter/embedded_ipython_code_executor.py",
+      "git_blob": "ed4cc37578f387dde2c64e1d0a3c97fff945e8b3",
+      "sha256": "715a25d7f3064fc510f9ba7b535bf629e2b5001b80e48e88d5127d49ea1fe90c",
+      "bytes": 8567
+    },
+    {
+      "path": "datawiseagent/coding/jupyter/ipython_kernel_config.py",
+      "git_blob": "9c631cb3419ae4bdee6a0fabf3301d8c9355bc04",
+      "sha256": "fac896f509734ad6ff0969185f965e3e7e56ef5d1fff8fc15925e43e7f332af6",
+      "bytes": 35865
+    },
+    {
+      "path": "datawiseagent/coding/jupyter/jupyter_client.py",
+      "git_blob": "1921112303fc26cc228ff8bebf986427e31c8f98",
+      "sha256": "698c4d0ffd4847b1f41df1cfa183fa307a5be17a33c72873abdede89e7c2ec40",
+      "bytes": 32614
+    },
+    {
+      "path": "datawiseagent/coding/jupyter/jupyter_code_executor.py",
+      "git_blob": "8c326a65d04d43a4678e7cb23b34100e2dd893f1",
+      "sha256": "dd9662f8f7d43463a71e6e122e2a35d6060b9978386ee438cbdc550ca3198014",
+      "bytes": 9398
+    },
+    {
+      "path": "datawiseagent/coding/jupyter/jupyter_kernel_gateway_config.py",
+      "git_blob": "1c9af9f7438264a1517e9e2d19522f054d9701d4",
+      "sha256": "1a3975dfe061b63db64803fee17bc380ff0d20a0f003bb4d4238c19179a3814b",
+      "bytes": 13442
+    },
+    {
+      "path": "datawiseagent/coding/jupyter/local_jupyter_server.py",
+      "git_blob": "02d3ca69af3c6a03b07a685caafefd516c066f80",
+      "sha256": "f7f2c2d7ac7c8bfeb15fc48bd3a35d9b72aa0786a2513ea47b2e5c3557625eb6",
+      "bytes": 9625
+    },
+    {
+      "path": "datawiseagent/coding/jupyter/start.sh",
+      "git_blob": "c81c5247a972e7453e04f07f38a572f462c8570c",
+      "sha256": "1d39aa6745fd02c49859bf918fbf4a78b50154ec1c7eb87095085b0b16aa658e",
+      "bytes": 582
+    },
+    {
+      "path": "datawiseagent/coding/local_commandline_code_executor.py",
+      "git_blob": "5665ea7e8faf6093507db8856376f246dfff6f60",
+      "sha256": "275598fd41d18d43ae4c87dd6061a2c7ee6030270fa4a1981d49a6dba745bced",
+      "bytes": 17368
+    },
+    {
+      "path": "datawiseagent/coding/markdown_code_extractor.py",
+      "git_blob": "0e0110d17a3ed1ace69aa6c713eeb2a14958be20",
+      "sha256": "84cf6dea793b0c5964048b9e586f9938081f49ba800e1dddf205c4d6c871c0ea",
+      "bytes": 1777
+    },
+    {
+      "path": "datawiseagent/coding/types.py",
+      "git_blob": "5cc4ff48aa3891bb3c0906d19580c46ccb92f828",
+      "sha256": "4ad4a12fab4616eb6316c139ec6ae0608dc78e034704dca576462ff2eefa4d92",
+      "bytes": 725
+    },
+    {
+      "path": "datawiseagent/coding/utils.py",
+      "git_blob": "8299a423b8773e8a68e1e25371b117708d1abe57",
+      "sha256": "be29919f8ec75ce49c1e7354cbe32ca373ed97c05bb5694f97a72f2d58a039e3",
+      "bytes": 2150
+    },
+    {
+      "path": "datawiseagent/common/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "datawiseagent/common/config.py",
+      "git_blob": "d943dc29506f8d91b7ef6a5e6ef5c06abb131717",
+      "sha256": "8616c722ddfc494774f89e9303d9b959dc4e5d218177db14ad7a62c8f9715cbb",
+      "bytes": 988
+    },
+    {
+      "path": "datawiseagent/common/log.py",
+      "git_blob": "54cd7ddcc8900cc0a2ce7418d7de94842b6567c5",
+      "sha256": "2ab0fa22f5823c375d7fea0e2b54c07b2402622de4c9ee860c84a7c1c374dd60",
+      "bytes": 10834
+    },
+    {
+      "path": "datawiseagent/common/registry.py",
+      "git_blob": "b53b571416736fe4e7d83e23bd0dad71950b43fa",
+      "sha256": "a43dd1bd053a162a4fb27e34698c37a7ff9c441e30a80bb89910742b07688e82",
+      "bytes": 712
+    },
+    {
+      "path": "datawiseagent/common/types/__init__.py",
+      "git_blob": "f7d032d1a9747a10be8bc309d6aa321e266c9d9d",
+      "sha256": "8904656e99faf449bd774468a3093ab0ccb91f45fd6a8b69ae90303e4f957c72",
+      "bytes": 174
+    },
+    {
+      "path": "datawiseagent/common/types/cell.py",
+      "git_blob": "4e12a9e13f45819c7f15eca7e2b9a369aa5d4572",
+      "sha256": "8284f8ce9aeb835c539f3fb0c86df65755b8c6611a55074398d23db61ee8f71a",
+      "bytes": 9986
+    },
+    {
+      "path": "datawiseagent/common/types/llm.py",
+      "git_blob": "b4c69e45857db6be98efadb773d8e4bf1a7b4b83",
+      "sha256": "9d1b4298e4282d6448e01e9606f7d0b7e496e9b74d5af82e28fbb061f77867d4",
+      "bytes": 4615
+    },
+    {
+      "path": "datawiseagent/common/types/node.py",
+      "git_blob": "fd02146dc61082459688f0450559b1a6d019253d",
+      "sha256": "8448b1df3fa658c1d05c7a94999da00ebd31977b38bd0e3eabe9652364e63212",
+      "bytes": 5730
+    },
+    {
+      "path": "datawiseagent/common/types/server.py",
+      "git_blob": "115711ae0060cca18968fe62051d01b7c208b325",
+      "sha256": "f6f598d3e2161f368cfc362cb51d45d26f08b8de1c41dfb1f511b893b3056189",
+      "bytes": 3279
+    },
+    {
+      "path": "datawiseagent/common/utils/__init__.py",
+      "git_blob": "a7df4b2a82ad2601cdbe5dca17ba75b432eecd73",
+      "sha256": "a05d14631a968042dfd7ec115c8d2d9b76bc3ca48ce11e9d52195faaefb59e87",
+      "bytes": 26
+    },
+    {
+      "path": "datawiseagent/common/utils/code_utils.py",
+      "git_blob": "f79d4e8b25eef82c2cde8b16e61bb8fdac6921ae",
+      "sha256": "a5dc2c6fa1ebffde073a14a5bbc2c828031dcf88db2db6867d1bdb7a81fc9b56",
+      "bytes": 1755
+    },
+    {
+      "path": "datawiseagent/common/utils/database_utils.py",
+      "git_blob": "22914c0725c43ad386a728588309a27eb1f5e1e2",
+      "sha256": "9cb065964e7036d6dd36847e808de948219c1212663659f799684b19f0faf192",
+      "bytes": 7444
+    },
+    {
+      "path": "datawiseagent/common/utils/json_utils.py",
+      "git_blob": "df8d6c708522c01a0a66dc594ecea4d1e5d1f3cc",
+      "sha256": "ee7d6d3ea0865a04cb46e4330df2837fd7aee0bb294f9e6f97b9cb1aeab4c7e0",
+      "bytes": 22406
+    },
+    {
+      "path": "datawiseagent/common/utils/misc.py",
+      "git_blob": "4a9b1c98e7df4542df99f90b7a44f0e9d0ce56d8",
+      "sha256": "c371b4a9199a1ed1d2ea9f4e6b1ff24a72c1392e85c1b8956a5d68eeb7b8abe3",
+      "bytes": 329
+    },
+    {
+      "path": "datawiseagent/common/utils/type_utils.py",
+      "git_blob": "1eeb198fb4309c8672f9cf65ec9bd19fcd9f6fe1",
+      "sha256": "a14dad113d20e7294f70ac030b8ee717e05afe700e8b0323d8882d1d22fd2a6a",
+      "bytes": 1531
+    },
+    {
+      "path": "datawiseagent/llms/__init__.py",
+      "git_blob": "a346cd5860c3028a84c587840a96b9243b3e239e",
+      "sha256": "8bbcaaf8e223471750b2e66a80eeb3f88eec4e14c364b6026f77b539b933ac1c",
+      "bytes": 1438
+    },
+    {
+      "path": "datawiseagent/llms/base.py",
+      "git_blob": "def3770e4f14fc2dd88309463736406469b1711f",
+      "sha256": "d67c3356b7400eab2d28a7a6a96ded8cc5a53bdb07e49824222a9fb9face54e0",
+      "bytes": 907
+    },
+    {
+      "path": "datawiseagent/llms/openai.py",
+      "git_blob": "43d28b3a3de2d2f5e28aaf8be8427444606b2c67",
+      "sha256": "07a115ec1973d40293fbd665b3f989c4702ccf824bdbd8acc2480d25bd254cea",
+      "bytes": 16993
+    },
+    {
+      "path": "datawiseagent/llms/utils/__init__.py",
+      "git_blob": "d64f068ef434bbe3c16e1ec3e38c8c8ec5ba8aa8",
+      "sha256": "9a3f1a50cc752470b91fe25706305e5306f808f2395b1ca594dd66521a31ea5a",
+      "bytes": 104
+    },
+    {
+      "path": "datawiseagent/llms/utils/jsonrepair.py",
+      "git_blob": "df8d6c708522c01a0a66dc594ecea4d1e5d1f3cc",
+      "sha256": "ee7d6d3ea0865a04cb46e4330df2837fd7aee0bb294f9e6f97b9cb1aeab4c7e0",
+      "bytes": 22406
+    },
+    {
+      "path": "datawiseagent/llms/utils/token_counter.py",
+      "git_blob": "b13b77ce5db0a1203e9fafa556811ae62dcddc7e",
+      "sha256": "e6c66051b59e4155153272c61c2c05034cc6ea05189afef50a12ca1a65a2fecd",
+      "bytes": 3004
+    },
+    {
+      "path": "datawiseagent/management/__init__.py",
+      "git_blob": "35cdd94877c11a8e00a2b5a647860a9b0dbcdd81",
+      "sha256": "92406fdeebe4ea2610340967793ece9d45bfb72ceea5e3939b0c961dde0901cf",
+      "bytes": 42
+    },
+    {
+      "path": "datawiseagent/management/manager.py",
+      "git_blob": "6e67fdf1c7336fa6f3bddbdaa755c3e6a83d2d82",
+      "sha256": "9d985354a31847137fe9c937ff296572ead2452f2c8f50c44a16d656c27805b7",
+      "bytes": 2851
+    },
+    {
+      "path": "datawiseagent/memory/__init__.py",
+      "git_blob": "64b907c04069e173438d44f89ff1120a493d2ab9",
+      "sha256": "0827d69cc8ec32d188a7e64436e9bc6d1d29d6816d7c41b1fb4dd7aa74311918",
+      "bytes": 132
+    },
+    {
+      "path": "datawiseagent/memory/base.py",
+      "git_blob": "d8664dd69aeae446830ddb48bfd5f50562fb459e",
+      "sha256": "8ffae42928b7420eebc5d112eff0fdcd0fa144ef7a22e40b929a4370850e18ae",
+      "bytes": 620
+    },
+    {
+      "path": "datawiseagent/memory/chat_history.py",
+      "git_blob": "cd387f3b8698a1f31ce810098aaa608982f8c942",
+      "sha256": "0dbf0c018932c3330f1d6429556795d0c8063f90cb42cd84fa161100fb3369db",
+      "bytes": 25750
+    },
+    {
+      "path": "datawiseagent/memory/files.py",
+      "git_blob": "7a32f752d657de2d9627901802cbb73b5045a352",
+      "sha256": "0c04d709f003b9b1bb11333841eecb4a79fb3d7044f08891482ad9e1edd6f3cb",
+      "bytes": 6482
+    },
+    {
+      "path": "datawiseagent/memory/react/__init__.py",
+      "git_blob": "b472dd1056e1d886c90320899eaa15cd164682c4",
+      "sha256": "7b28306f8a748d4a27f43fc8f25fc4bd9395d21899d0fec52127eb85c45d1ad0",
+      "bytes": 60
+    },
+    {
+      "path": "datawiseagent/memory/react/files.py",
+      "git_blob": "049a1672538c196fdb982eeb5b03584ee8e9ae57",
+      "sha256": "294781d9dd58c14be66eb079d07367f5e5a45e3b0fdf0dfb9c534aec1ee8d559",
+      "bytes": 4031
+    },
+    {
+      "path": "datawiseagent/memory/react/message.py",
+      "git_blob": "05cad010e32cf332aeaf56b6d3b78bba93a4e23e",
+      "sha256": "42f77085655f65133cde2a98a5a0680a9753b1d5d1ce5afa5efd2c607834d220",
+      "bytes": 3813
+    },
+    {
+      "path": "datawiseagent/memory/session.py",
+      "git_blob": "31505c8e69d102d8c6c18f20f788e217cf1de53f",
+      "sha256": "30deb5b5e0e6a2ea25bb1efc06c430763c0cd9e707d4c046a08838053ecf386e",
+      "bytes": 9494
+    },
+    {
+      "path": "datawiseagent/prompts/__init__.py",
+      "git_blob": "35d37c549df24edce44b241957e5cbbacdf294b4",
+      "sha256": "fc42f9584c85819d345ce8777272c87cac1af5bcfdadf7b6aca50c1923b437e2",
+      "bytes": 53
+    },
+    {
+      "path": "datawiseagent/prompts/datawise.py",
+      "git_blob": "7349904ed6ea72a423da62b0789ade7eecb96f6d",
+      "sha256": "d12bc6751d5f00950d5806ceb05c91ea21d0b3717ea303efa976a2547097de13",
+      "bytes": 18935
+    },
+    {
+      "path": "datawiseagent/prompts/openai_assistant.py",
+      "git_blob": "2adb368aea30e9fa3721a7735e5342894ada5258",
+      "sha256": "c680c8e812e6ae4067f2b5f3849c01a8ed4c940f509c7ea5d2b2328c23b9024c",
+      "bytes": 1482
+    },
+    {
+      "path": "datawiseagent/prompts/react.py",
+      "git_blob": "5ac3b25735c4184101a9942bff360073fe4e9273",
+      "sha256": "a3ab4a009905caa8d0c76ef6eaa202cdc3baabd97e3b3c5ff57f2e8e56f17d64",
+      "bytes": 2104
+    },
+    {
+      "path": "datawiseagent/tools/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "datawiseagent/tools/dsbench/__init__.py",
+      "git_blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "datawiseagent/tools/dsbench/vision_tool.py",
+      "git_blob": "f4366afaf820c2a05e57b36cdabfc35230ed2b56",
+      "sha256": "bd7eb1e6ccf4b533bb45adbb114b7d8fced5289f68bcec659ea756031b579acb",
+      "bytes": 9584
+    },
+    {
+      "path": "requirements.txt",
+      "git_blob": "52b6f9888815b297d2cff0d1aa1568523398f93b",
+      "sha256": "c1f88bb488ba0ece51a3b6a8c1ca6a633cd14f87577bc0fb9ec402c9718b9c2d",
+      "bytes": 3194
+    }
+  ]
+}

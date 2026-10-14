@@ -6,4 +6,13 @@
 !python/**
 !docker/
 !docker/Dockerfile
+!docker/baselines.Dockerfile
+!environments/
+!environments/baselines/
+!environments/baselines/compute/
+!environments/baselines/compute/pyproject.toml
+!environments/baselines/compute/uv.lock
+!environments/baselines/autogluon/
+!environments/baselines/autogluon/pyproject.toml
+!environments/baselines/autogluon/uv.lock
 python/**/__pycache__/
