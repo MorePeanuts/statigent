@@ -1,3 +1,4 @@
+import * as z from "zod";
 import { Stop } from "../agent/stop";
 import type { Usage } from "../models/client";
 import { integer, keys, obj } from "../models/validation";
@@ -24,6 +25,14 @@ export type HostAllocation = Omit<Allocation, "requested"> & {
   version: 2;
   policy: "host-cap-v1";
 };
+const positiveInteger = z
+  .number()
+  .refine((value) => Number.isSafeInteger(value) && value >= 1);
+const requestedBudgetSchema = z.strictObject({
+  task_timeout_ms: positiveInteger,
+  total_tokens: positiveInteger,
+  executions: positiveInteger,
+});
 export function validateHostAllocation(value: unknown): HostAllocation {
   const x = obj(value);
   keys(x, ["version", "policy", "effective", "remaining", "limits", "clipped"]);
@@ -44,13 +53,16 @@ export function validateHostAllocation(value: unknown): HostAllocation {
   return { version: 2, policy: "host-cap-v1", ...validated };
 }
 export function requestedBudget(value: unknown): RequestedBudget {
-  const x = obj(value);
-  keys(x, ["task_timeout_ms", "total_tokens", "executions"]);
-  return {
-    task_timeout_ms: integer(x.task_timeout_ms, "task_timeout_ms"),
-    total_tokens: integer(x.total_tokens, "total_tokens"),
-    executions: integer(x.executions, "executions"),
-  };
+  const result = requestedBudgetSchema.safeParse(value);
+  if (!result.success) {
+    const unknown = result.error.issues.find(
+      (issue) => issue.code === "unrecognized_keys",
+    );
+    if (unknown?.code === "unrecognized_keys")
+      throw new Error(`Unsupported field: ${unknown.keys[0]}`);
+    throw result.error;
+  }
+  return result.data;
 }
 export function validateAllocation(value: unknown): Allocation {
   const x = obj(value);

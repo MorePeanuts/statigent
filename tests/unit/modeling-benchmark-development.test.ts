@@ -3,7 +3,10 @@ import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { modelingOptions } from "../../src/evaluation/agents/modeling";
-import { auditPreparations } from "../../src/evaluation/benchmarks/modeling/preparation-audit";
+import {
+  auditPreparations,
+  preparationAuditConfig,
+} from "../../src/evaluation/benchmarks/modeling/preparation-audit";
 import { MODELING_DEVELOPMENT } from "../../src/evaluation/modeling-development";
 import { MODELING_METHODS } from "../../src/modeling/config";
 import { sha256 } from "../../src/records/store";
@@ -68,6 +71,10 @@ test("bounded audit retains failures, oversized candidates and undispatched task
       catalog: join(root, "catalog.json"),
       minimum_free_bytes: 1,
     };
+    expect(preparationAuditConfig(config).seed).toBe(17);
+    expect(() =>
+      preparationAuditConfig({ ...config, unknown: true }),
+    ).toThrow();
     await writeFile(join(root, "config.json"), JSON.stringify(config));
     let attempts = 0;
     const options = {

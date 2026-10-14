@@ -12,6 +12,7 @@
 
 - 智能体编排、工具接口、配置与应用层使用 **Bun + TypeScript**。Bun 统一负责 JavaScript/TypeScript 的依赖管理、脚本运行与测试，不混用 npm、pnpm 或 Yarn 维护本项目依赖。
 - TypeScript 开启 `strict`，采用 ESM。默认使用 **Biome** 统一格式化、lint 和导入整理；使用 `tsc --noEmit` 做类型检查，使用 `bun test` 做 TypeScript 测试。配置落地后以配置为准，不手工维护重复的格式规则。
+- TypeScript 命令行参数使用 **Commander** 解析；外部输入的结构、类型、枚举与范围优先用 **Zod** 定义并校验，类型尽量由 Schema 推导。跨字段关系、路径权限、预算记账等业务约束保留显式检查。新增入口不再复制手写参数循环或基础字段校验。
 - **所有 Python 调用必须通过 `uv` 执行**，例如 `uv run python ...`、`uv run pytest`、`uv run ruff check ...`；不要直接调用 `python` 或 `python3`，不要直接使用 pip 或 conda 管理项目环境。
 - 自有 Python 源码使用 Ruff 格式化与 lint，必要的行为测试使用 pytest。第三方上游代码保持原样，不批量格式化或修改。
 - 初始化时固定运行时与开发工具版本，提交 `bun.lock`、`uv.lock` 及对应依赖声明；CI 使用锁定依赖安装。新增依赖应说明用途，优先使用现有能力，避免重复框架。

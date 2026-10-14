@@ -1,26 +1,22 @@
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { parseStrictOptions } from "../../../cli-options";
 import { obj } from "../../../models/validation";
 import { command, commandEnvironment } from "../../process";
 import { assertCatalogCoverage, parseModelingCatalog } from "./catalog";
 
+export function parseAuditOptions(args: string[]) {
+  const help =
+    "evaluate audit [--data-root benchmarks] [--catalog FILE] [--output NEW_FILE]";
+  return parseStrictOptions(
+    args,
+    ["--data-root", "--catalog", "--output"],
+    help,
+  );
+}
+
 export async function auditModeling(args: string[]): Promise<unknown> {
-  const options: Record<string, string> = {};
-  for (let i = 0; i < args.length; i += 2) {
-    const key = args[i],
-      value = args[i + 1];
-    if (
-      !key ||
-      !["--data-root", "--catalog", "--output"].includes(key) ||
-      !value ||
-      value.startsWith("--") ||
-      options[key] !== undefined
-    )
-      throw new Error(
-        "evaluate audit [--data-root benchmarks] [--catalog FILE] [--output NEW_FILE]",
-      );
-    options[key] = value;
-  }
+  const options = parseAuditOptions(args);
   const root = resolve(options["--data-root"] ?? "benchmarks");
   const path = resolve(
     options["--catalog"] ?? `${root}/metadata/modeling-task-catalog.json`,

@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { parseStrictOptions } from "../cli-options";
 import { inspectImage } from "../evaluation/agents/docker";
 import { dockerCommand, validateImageBackend } from "../execution/docker";
 import { parseCsv } from "../modeling/data";
@@ -33,17 +34,17 @@ export function checkSmokeMeans(csv: string) {
   );
 }
 export async function loadScriptSmoke(args: string[]) {
-  const preflight = args.includes("--preflight");
-  const values = args.filter((a) => a !== "--preflight");
-  if (
-    args.filter((a) => a === "--preflight").length > 1 ||
-    values.length !== 2 ||
-    values[0] !== "--organization"
-  )
+  const values = parseStrictOptions(
+    args,
+    ["--organization"],
+    "Usage: bun run test:smoke:script --organization single|planner-executor [--preflight]",
+    ["--preflight"],
+  );
+  if (!values["--organization"])
     throw Error(
       "Usage: bun run test:smoke:script --organization single|planner-executor [--preflight]",
     );
-  const organization = validateOrganization(values[1]);
+  const organization = validateOrganization(values["--organization"]);
   const config = await loadConfiguration(
     [
       "--task",
@@ -56,7 +57,7 @@ export async function loadScriptSmoke(args: string[]) {
     true,
   );
   config.task.organization = organization;
-  return { ...config, preflight };
+  return { ...config, preflight: values["--preflight"] === "true" };
 }
 export async function checkScriptSmoke(result: AgentResult) {
   const manifest = await readManifest(result.directory);

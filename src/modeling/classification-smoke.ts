@@ -1,10 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import * as z from "zod";
 import binaryConfig from "../../configs/modeling/binary.json";
 import binarySelection from "../../configs/modeling/binary-selection.json";
 import multiclassConfig from "../../configs/modeling/multiclass.json";
 import multiclassSelection from "../../configs/modeling/multiclass-selection.json";
+import { parseStrictOptions } from "../cli-options";
 import { verifyFiles } from "../evaluation/files";
 import type { ModelClient } from "../models/client";
 import { selectProfile } from "../models/config";
@@ -16,26 +18,18 @@ import { runModeling } from "./run";
 import { validateSmoke, writeSmokeReport } from "./smoke";
 export type ClassificationKind = "binary" | "multiclass";
 export function smokeArgs(args: string[]) {
-  let kind: ClassificationKind | undefined;
-  let preflight = false;
-  for (let i = 0; i < args.length; i++) {
-    if (
-      args[i] === "--kind" &&
-      kind === undefined &&
-      ["binary", "multiclass"].includes(args[i + 1] ?? "")
-    ) {
-      kind = args[++i] === "binary" ? "binary" : "multiclass";
-    } else if (args[i] === "--preflight" && !preflight) preflight = true;
-    else
-      throw new Error(
-        "Expected --kind binary|multiclass and optional --preflight",
-      );
-  }
-  if (!kind)
+  const values = parseStrictOptions(
+    args,
+    ["--kind"],
+    "Expected --kind binary|multiclass and optional --preflight",
+    ["--preflight"],
+  );
+  if (!values["--kind"])
     throw new Error(
       "Explicit --kind binary|multiclass is required; one task per invocation",
     );
-  return { kind, preflight };
+  const kind = z.enum(["binary", "multiclass"]).parse(values["--kind"]);
+  return { kind, preflight: values["--preflight"] === "true" };
 }
 export async function classificationPreflight(
   kind: ClassificationKind,

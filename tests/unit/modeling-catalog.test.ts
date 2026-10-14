@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import selection from "../../benchmarks/metadata/ds-modeling-selection.json";
 import catalog from "../../benchmarks/metadata/modeling-task-catalog.json";
 import tabarena from "../../benchmarks/metadata/tabarena-tasks.json";
+import { parseAuditOptions } from "../../src/evaluation/benchmarks/modeling/audit";
 import {
   assertCatalogCoverage,
   parseModelingCatalog,
@@ -10,6 +11,21 @@ import { main } from "../../src/evaluation/cli";
 
 test("catalog retains all 52 DSBench and 51 TabArena candidate identities", () => {
   const parsed = parseModelingCatalog(catalog);
+  expect(parsed as unknown).toEqual(catalog);
+  expect(Object.keys(parsed.tasks[0] ?? {})).toEqual([
+    "benchmark",
+    "task_id",
+    "source_revision",
+    "code_revision",
+    "openml",
+    "files",
+    "outer_split",
+    "protocol",
+    "issues",
+    "research",
+    "adaptation",
+    "acceptance",
+  ]);
   expect(parsed.tasks.length).toBe(103);
   assertCatalogCoverage(parsed, {
     "dsbench-modeling": selection.included,
@@ -24,6 +40,49 @@ test("catalog retains all 52 DSBench and 51 TabArena candidate identities", () =
       },
     ),
   ).toThrow("missing=");
+});
+
+test("catalog rejects unknown nested fields and keeps protocol checks", () => {
+  const task = catalog.tasks.find((item) => item.protocol !== null);
+  expect(task).toBeDefined();
+  const protocol = task?.protocol;
+  if (!task || !protocol) throw new Error("Missing protocol fixture");
+  for (const changed of [
+    { ...task, files: [{ ...task.files[0], hidden: true }] },
+    {
+      ...task,
+      protocol: {
+        ...protocol,
+        identity: { ...protocol.identity, hidden: true },
+      },
+    },
+    {
+      ...task,
+      protocol: {
+        ...protocol,
+        feature_columns: [...protocol.feature_columns, ...protocol.targets],
+      },
+    },
+  ])
+    expect(() =>
+      parseModelingCatalog({ schema_version: 1, tasks: [changed] }),
+    ).toThrow();
+});
+
+test("audit CLI accepts explicit options and rejects repeats or unknown flags", () => {
+  expect(parseAuditOptions([])).toEqual({});
+  expect(
+    parseAuditOptions(["--data-root", "benchmarks", "--output", "audit.json"]),
+  ).toEqual({ "--data-root": "benchmarks", "--output": "audit.json" });
+  for (const args of [
+    ["--catalog"],
+    ["--catalog="],
+    ["--data-root", "benchmarks", "--data-root", "other"],
+    ["--data-root", "--catalog", "file.json"],
+    ["--models", "models.json"],
+    ["unexpected"],
+  ])
+    expect(() => parseAuditOptions(args)).toThrow("evaluate audit");
 });
 
 test("missing fields, duplicate identities, unknown versions and states are rejected", () => {

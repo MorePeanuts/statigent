@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { parsePositionals } from "../cli-options";
 import { selectProfile } from "../models/config";
 import { obj, str } from "../models/validation";
 import { writeJson } from "../records/store";
@@ -153,7 +154,12 @@ export async function judgeSmoke(
   return { ...result, directory };
 }
 if (import.meta.main) {
-  const result = await judgeSmoke(process.argv[2]);
+  const [profileId] = parsePositionals(
+    process.argv.slice(2),
+    "[profile]",
+    "Usage: bun run test:smoke:judge [PROFILE]",
+  );
+  const result = await judgeSmoke(profileId);
   console.log(JSON.stringify(result, null, 2));
   if (result.status !== "passed") process.exitCode = 1;
 }

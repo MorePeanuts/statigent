@@ -2,6 +2,7 @@ import { afterAll, expect, test } from "bun:test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
+import { parseStrictOptions } from "../../src/cli-options";
 import {
   parsePreparationConfig,
   prepareModeling,
@@ -23,6 +24,27 @@ test("prepare has explicit options and does not accept paid model configuration"
     "configs/evaluations/dsbench-modeling-prepare.json",
   ).json();
   expect(parsePreparationConfig(config).benchmark).toBe("dsbench-modeling");
+  expect(() =>
+    parsePreparationConfig({ ...(config as object), extra: true }),
+  ).toThrow();
+  expect(() =>
+    parsePreparationConfig({ ...(config as object), timeout_ms: 0 }),
+  ).toThrow();
+  expect(
+    parseStrictOptions(
+      ["--config", "task.json", "--out", "prepared"],
+      ["--config", "--out"],
+      "prepare options",
+    ),
+  ).toEqual({ "--config": "task.json", "--out": "prepared" });
+  for (const args of [
+    ["--config", "one", "--config", "two"],
+    ["--out", "--config", "task.json"],
+    ["--models", "models.json"],
+  ])
+    expect(() =>
+      parseStrictOptions(args, ["--config", "--out"], "prepare options"),
+    ).toThrow("prepare options");
   await expect(
     prepareModeling([
       "--config",

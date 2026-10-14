@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { parseStrictOptions } from "../cli-options";
 import { MODELING_METHODS } from "../modeling/config";
 import { sha256 } from "../records/store";
 import { parseModelingCatalog } from "./benchmarks/modeling/catalog";
@@ -216,7 +217,13 @@ export async function writeModelingDevelopment() {
   return manifest;
 }
 if (import.meta.main) {
-  if (process.argv.slice(2).join(" ") !== "--write")
+  const flags = parseStrictOptions(
+    process.argv.slice(2),
+    [],
+    "Use explicit --write to freeze new development configs",
+    ["--write"],
+  );
+  if (flags["--write"] !== "true")
     throw new Error("Use explicit --write to freeze new development configs");
   console.log(JSON.stringify(await writeModelingDevelopment(), null, 2));
 }

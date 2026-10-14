@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { integer, keys, obj, str } from "../../models/validation";
+import { integer, obj, str } from "../../models/validation";
 import { sha256 } from "../../records/store";
 import {
   type BenchmarkAdapter,
@@ -10,6 +10,7 @@ import {
 } from "../contracts";
 import { describeFile, regular } from "../files";
 import provenance from "./infiagent-provenance.json";
+import { benchmarkRootOptions } from "./options";
 import { scorerRequest } from "./python";
 
 export const INFI_PROTOCOL = "infiagent-fixed-denominator-v1";
@@ -59,9 +60,7 @@ export function createInfiAgent(
   resources: Resource[] = provenance.resources,
 ): BenchmarkAdapter {
   const options = (value: unknown) => {
-    const x = obj(value);
-    keys(x, ["root"]);
-    return { root: resolve(str(x.root, "root")) };
+    return benchmarkRootOptions(value);
   };
   const verifyResource = async (root: string, path: string) => {
     const expected = resources.find((r) => r.path === path);

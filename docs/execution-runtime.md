@@ -8,7 +8,7 @@
 
 ## 本地前提与工程入口
 
-控制程序使用 Bun（版本见 `package.json`），Python 版本见 `.python-version`，依赖由 `bun.lock` 和 `uv.lock` 固定。TypeScript 使用 strict ESM、Biome 和 tsc；Python 使用 Ruff 和 pytest。Jupyter Client 管理真实内核，ipykernel 执行代码，nbformat 独立校验 Notebook，NumPy/pandas/Matplotlib 用于合成分析验收。无需 Jupyter Server。
+控制程序使用 Bun（版本见 `package.json`），Python 版本见 `.python-version`，依赖由 `bun.lock` 和 `uv.lock` 固定。TypeScript 使用 strict ESM、Biome 和 tsc；Python 使用 Ruff 和 pytest。TypeScript 运行时依赖 Zod 校验基准目录、数据准备配置及其他简单输入结构，Commander 解析命令行参数。Jupyter Client 管理真实内核，ipykernel 执行代码，nbformat 独立校验 Notebook，NumPy/pandas/Matplotlib 用于合成分析验收。无需 Jupyter Server。
 
 macOS 本地需要可用的 Docker Engine Linux 容器环境。启动前检查 Docker 能否应用内存、swap、CPU 和进程数限制；缺少 Docker、镜像或限制支持会明确失败，不退回宿主直接执行。使用本机原生架构构建，Apple Silicon 通常是 `linux/arm64`，服务器可能是 `linux/amd64`；不把模拟运行耗时当作正式实验性能。
 

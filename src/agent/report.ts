@@ -1,6 +1,6 @@
 import { join } from "node:path";
+import * as z from "zod";
 import { imageInfo } from "../models/images";
-import { integer, keys, obj, strings } from "../models/validation";
 import {
   imageReferences,
   normalizeReference,
@@ -14,22 +14,22 @@ export interface ReportSpec {
   max_image_bytes: number;
   max_report_bytes: number;
 }
+const positiveInteger = z
+  .number()
+  .refine((value) => Number.isSafeInteger(value) && value >= 1);
+const reportSpecSchema = z.strictObject({
+  image_types: z
+    .array(z.enum(["png", "jpeg"]))
+    .min(1)
+    .refine((values) => new Set(values).size === values.length),
+  max_images: z
+    .number()
+    .refine((value) => Number.isSafeInteger(value) && value >= 0),
+  max_image_bytes: positiveInteger,
+  max_report_bytes: positiveInteger,
+});
 export function validateReportSpec(value: unknown): ReportSpec {
-  const x = obj(value);
-  keys(x, ["image_types", "max_images", "max_image_bytes", "max_report_bytes"]);
-  const types = strings(x.image_types, "image_types");
-  if (
-    !types.length ||
-    types.some((t) => t !== "png" && t !== "jpeg") ||
-    new Set(types).size !== types.length
-  )
-    throw new Error("Invalid report image types");
-  return {
-    image_types: types as ReportSpec["image_types"],
-    max_images: integer(x.max_images, "max_images", 0),
-    max_image_bytes: integer(x.max_image_bytes, "max_image_bytes"),
-    max_report_bytes: integer(x.max_report_bytes, "max_report_bytes"),
-  };
+  return reportSpecSchema.parse(value);
 }
 export interface AnalysisReport {
   artifact_id: string;

@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import { parseStrictOptions } from "../cli-options";
 import { describeFile } from "../evaluation/files";
 import { selectProfile } from "../models/config";
 import { obj } from "../models/validation";
@@ -17,22 +18,14 @@ import { runModeling } from "./run";
 export function flags(
   args: string[],
   allowed: string[],
+  booleanFlags: string[] = [],
 ): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (let i = 0; i < args.length; i += 2) {
-    const k = args[i],
-      v = args[i + 1];
-    if (
-      !k ||
-      !allowed.includes(k) ||
-      !v ||
-      v.startsWith("--") ||
-      out[k] !== undefined
-    )
-      throw new Error("Invalid or duplicate CLI option");
-    out[k] = v;
-  }
-  return out;
+  return parseStrictOptions(
+    args,
+    allowed,
+    "Invalid or duplicate CLI option",
+    booleanFlags,
+  );
 }
 export async function modelingMain(args: string[]): Promise<unknown> {
   const command = args[0];
@@ -143,11 +136,8 @@ export async function modelingMain(args: string[]): Promise<unknown> {
     throw new Error(
       "Expected protocol/prepare/run/fit/predict/inspect/reproduce/score",
     );
-  const preflight = args.includes("--preflight");
-  if (args.filter((arg) => arg === "--preflight").length > 1)
-    throw new Error("Duplicate preflight option");
   const f = flags(
-    args.slice(1).filter((arg) => arg !== "--preflight"),
+    args.slice(1),
     [
       "--task",
       "--models",
@@ -157,7 +147,9 @@ export async function modelingMain(args: string[]): Promise<unknown> {
       "--resource",
       "--seed",
     ],
+    ["--preflight"],
   );
+  const preflight = f["--preflight"] === "true";
   if (!f["--task"]) throw new Error("run requires --task");
   let taskPath = f["--task"];
   if (command === "develop") {

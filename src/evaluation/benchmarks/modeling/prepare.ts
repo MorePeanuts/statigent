@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { open, realpath, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
+import * as z from "zod";
+import { parseStrictOptions } from "../../../cli-options";
 import { parseDataLimits } from "../../../modeling/data-limits";
 import { parseDatasetV3 } from "../../../modeling/dataset-v3";
 import { canonicalJson } from "../../../modeling/protocol-v2";
@@ -11,52 +13,41 @@ import { parseModelingCatalog } from "./catalog";
 
 export const PREPARE_HELP =
   "evaluate prepare --config FILE (--out NEW_DIRECTORY | --reuse PREPARED_DIRECTORY) [--receipt NEW_FILE]";
+const nonemptyString = z.string().refine((value) => value.trim().length > 0);
+const preparationConfigSchema = z.strictObject({
+  schema_version: z.literal(1),
+  benchmark: z.enum(["dsbench-modeling", "tabarena-lite"]),
+  task_id: nonemptyString,
+  data_root: nonemptyString,
+  catalog: nonemptyString,
+  seed: z.number().refine((value) => Number.isSafeInteger(value) && value >= 0),
+  limits: z.unknown(),
+  timeout_ms: z
+    .number()
+    .refine((value) => Number.isSafeInteger(value) && value >= 1),
+});
 export function parsePreparationConfig(value: unknown) {
-  const raw = obj(value);
-  keys(raw, [
-    "schema_version",
-    "benchmark",
-    "task_id",
-    "data_root",
-    "catalog",
-    "seed",
-    "limits",
-    "timeout_ms",
-  ]);
-  if (
-    raw.schema_version !== 1 ||
-    (raw.benchmark !== "dsbench-modeling" && raw.benchmark !== "tabarena-lite")
-  )
-    throw new Error("Invalid preparation version/benchmark");
+  const raw = preparationConfigSchema.parse(value);
   return {
     schema_version: 1 as const,
     benchmark: raw.benchmark,
-    task_id: str(raw.task_id, "task ID"),
-    data_root: resolve(str(raw.data_root, "data root")),
-    catalog: resolve(str(raw.catalog, "catalog")),
-    seed: integer(raw.seed, "seed", 0),
+    task_id: raw.task_id,
+    data_root: resolve(raw.data_root),
+    catalog: resolve(raw.catalog),
+    seed: raw.seed,
     limits: parseDataLimits(raw.limits),
-    timeout_ms: integer(raw.timeout_ms, "preparation timeout"),
+    timeout_ms: raw.timeout_ms,
   };
 }
 export async function prepareModeling(
   args: string[],
   dependencies: { execute?: typeof command; signal?: AbortSignal } = {},
 ) {
-  const options: Record<string, string> = {};
-  for (let i = 0; i < args.length; i += 2) {
-    const key = args[i],
-      value = args[i + 1];
-    if (
-      !key ||
-      !["--config", "--out", "--reuse", "--receipt"].includes(key) ||
-      !value ||
-      value.startsWith("--") ||
-      options[key] !== undefined
-    )
-      throw new Error(PREPARE_HELP);
-    options[key] = value;
-  }
+  const options = parseStrictOptions(
+    args,
+    ["--config", "--out", "--reuse", "--receipt"],
+    PREPARE_HELP,
+  );
   if (
     !options["--config"] ||
     Boolean(options["--out"]) === Boolean(options["--reuse"]) ||

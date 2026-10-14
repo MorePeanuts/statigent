@@ -1,4 +1,6 @@
 import { join, resolve } from "node:path";
+import { Command, Option } from "commander";
+import { uniqueOptionValue } from "../cli-options";
 import { auditModeling } from "./benchmarks/modeling/audit";
 import { auditPreparations } from "./benchmarks/modeling/preparation-audit";
 import { PREPARE_HELP, prepareModeling } from "./benchmarks/modeling/prepare";
@@ -27,57 +29,57 @@ export function parseArguments(args: string[]) {
     )
   )
     throw new Error(HELP);
-  const values: Record<string, string> = {};
-  let evaluationId: string | undefined;
-  let allowModelCalls = false;
-  for (let i = 0; i < rest.length; i++) {
-    const arg = rest[i];
-    if (!arg) throw new Error(HELP);
-    if (arg === "--allow-model-calls") {
-      if (operation !== "score" || allowModelCalls) throw new Error(HELP);
-      allowModelCalls = true;
-      continue;
-    }
-    if (arg.startsWith("--")) {
-      if (
-        ![
-          "--config",
-          "--models",
-          "--root",
-          "--judge-budget",
-          "--score-id",
-        ].includes(arg) ||
-        (arg === "--judge-budget" && operation !== "score") ||
-        (arg === "--score-id" && operation !== "compare") ||
-        values[arg] !== undefined ||
-        !rest[i + 1] ||
-        rest[i + 1]?.startsWith("--")
-      )
-        throw new Error(HELP);
-      values[arg] = rest[++i] ?? "";
-    } else {
-      if (evaluationId !== undefined) throw new Error(HELP);
-      evaluationId = id(arg);
-    }
+  const cli = new Command()
+    .helpOption(false)
+    .configureOutput({ writeErr: () => {} })
+    .exitOverride()
+    .argument("[evaluationId]");
+  for (const flag of ["--config", "--models", "--root"])
+    cli.addOption(new Option(`${flag} <value>`).argParser(uniqueOptionValue));
+  if (operation === "score") {
+    cli.addOption(
+      new Option("--judge-budget <value>").argParser(uniqueOptionValue),
+    );
+    cli.addOption(new Option("--allow-model-calls"));
   }
+  if (operation === "compare")
+    cli.addOption(
+      new Option("--score-id <value>").argParser(uniqueOptionValue),
+    );
+  try {
+    cli.parse(rest, { from: "user" });
+    if (rest.filter((arg) => arg === "--allow-model-calls").length > 1)
+      throw new Error(HELP);
+  } catch {
+    throw new Error(HELP);
+  }
+  const values = cli.opts<{
+    config?: string;
+    models?: string;
+    root?: string;
+    judgeBudget?: string;
+    scoreId?: string;
+    allowModelCalls?: boolean;
+  }>();
+  const evaluationId = cli.args[0] === undefined ? undefined : id(cli.args[0]);
   const planning = operation === "plan" || operation === "run";
-  if (operation === "compare" && !values["--score-id"])
+  if (operation === "compare" && !values.scoreId)
     throw new Error("compare requires --score-id from an existing report");
   if (
     planning
-      ? !values["--config"] || evaluationId !== undefined
-      : !evaluationId || values["--config"] || values["--models"]
+      ? !values.config || evaluationId !== undefined
+      : !evaluationId || values.config || values.models
   )
     throw new Error(HELP);
   return {
     operation,
     evaluationId,
-    allowModelCalls,
-    judgeBudget: values["--judge-budget"],
-    scoreId: values["--score-id"],
-    config: values["--config"],
-    models: values["--models"] ?? "configs/models.json",
-    root: resolve(values["--root"] ?? "runs/evaluations"),
+    allowModelCalls: values.allowModelCalls === true,
+    judgeBudget: values.judgeBudget,
+    scoreId: values.scoreId,
+    config: values.config,
+    models: values.models ?? "configs/models.json",
+    root: resolve(values.root ?? "runs/evaluations"),
   };
 }
 export async function main(
