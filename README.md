@@ -2,6 +2,8 @@
 
 面向探索性数据分析与预测性建模研究的智能体项目。研究定位见 [课题概览](docs/overview.md)，评测约定见 [Benchmark 协议](docs/benchmark.md)。当前已提供 Docker 持久 Python 执行底座、可配置模型的单智能体 EDA 循环，以及接入 InfiAgent-DABench 的统一评测层。开发验收与正式实验分开，尚未验证论文研究收益。
 
+文献调研入口见 [参考文献库](references/README.md)，包含分类总表、逐篇笔记、原始清单筛选与研究脉络。
+
 本地开发采用 Bun + TypeScript 控制层、uv 管理的 Python 内核桥接，macOS 的 Docker Linux 容器可完成开发和集成验收。大量实验的 Linux 服务器部署另行进行。
 
 ```bash
