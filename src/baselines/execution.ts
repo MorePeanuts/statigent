@@ -109,6 +109,15 @@ export async function baselineExecution(
       return session;
     },
     artifacts,
+    seal() {
+      if (closed || active || !known)
+        throw new Error("Cannot freeze execution in this state");
+      closed = true;
+    },
+    async closeAfterSnapshot() {
+      closed = true;
+      await session.closeAfterSnapshot();
+    },
     usage: () => ({ executions, kernel_epoch: epoch }),
     async restart(
       reason: "post-filter" | "plan-rollback",

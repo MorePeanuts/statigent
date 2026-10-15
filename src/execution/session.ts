@@ -757,7 +757,17 @@ export class DockerSession {
     this.closing = this.closeInternal();
     return this.closing;
   }
-  private async closeInternal() {
+  /** 已暂停并完成外部快照；直接终止容器，不向暂停的内核发送收集请求。 */
+  closeAfterSnapshot(): Promise<void> {
+    if (this.closing) return this.closing;
+    if (this.state !== "ready" || this.active || this.queue.length)
+      return Promise.reject(
+        new Error("Snapshot close requires idle execution"),
+      );
+    this.closing = this.closeInternal(false);
+    return this.closing;
+  }
+  private async closeInternal(collect = true) {
     const begin = performance.now();
     clearTimeout(this.taskTimer);
     const failed = this.state === "failed";
@@ -773,6 +783,7 @@ export class DockerSession {
         await this.waitInactive();
       }
       if (
+        collect &&
         !failed &&
         !this.recordFailed &&
         (this.state as SessionState) !== "failed"
