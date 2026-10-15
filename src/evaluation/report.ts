@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import * as z from "zod";
+import { methodIdSchema } from "../baselines/catalog";
 import type { ModelClient } from "../models/client";
 import type { ModelProfile } from "../models/config";
 import { obj } from "../models/validation";
@@ -60,6 +61,7 @@ function modelingColumns(
     ? obj(details.delivery_identity)
     : null;
   const usage = workflow?.usage ? obj(workflow.usage) : null;
+  const external = methodIdSchema.safeParse(options.method).success;
   return {
     method: options.method ?? "unspecified",
     search_end: workflow?.search_end ?? null,
@@ -68,9 +70,21 @@ function modelingColumns(
     prediction_status:
       workflow?.prediction_status ?? (submission ? "not_delivered" : "not_run"),
     reproduction_status: "not_run",
-    search_best_experiment_id: workflow?.search_best_experiment_id ?? null,
-    selected_experiment_id: workflow?.selected_experiment_id ?? null,
-    confirmation: workflow?.confirmation ?? null,
+    search_best_experiment_id: external
+      ? "not_applicable"
+      : (workflow?.search_best_experiment_id ?? null),
+    selected_experiment_id: external
+      ? "not_applicable"
+      : (workflow?.selected_experiment_id ?? null),
+    confirmation: external
+      ? "not_applicable"
+      : (workflow?.confirmation ?? null),
+    ...(external
+      ? {
+          producer: identity?.producer ?? null,
+          model_bundle: identity?.model_bundle ?? null,
+        }
+      : {}),
     native_metric: metric?.id ?? null,
     native_value: native?.value ?? null,
     native_direction: metric?.direction ?? null,
@@ -97,6 +111,9 @@ export async function createReport(
   const groups = [];
   const rows: Record<string, unknown>[] = [];
   for (const agent of view.plan.config.agents) {
+    const preflight = view.manifest.preflight[agent.id]
+      ? obj(view.manifest.preflight[agent.id])
+      : {};
     const selected = records.filter((r) => r.unit.agent_id === agent.id);
     const totals = {
       attempts: 0,
@@ -146,6 +163,33 @@ export async function createReport(
         dataset_version: view.plan.config.benchmark.version,
         scoring_protocol: r.score?.protocol ?? benchmark.protocol,
         agent_config: agent.id,
+        method: agent.options.method ?? "unspecified",
+        ...(methodIdSchema.safeParse(agent.options.method).success
+          ? {
+              method_source:
+                view.plan.baseline_methods?.[agent.id]?.source ?? "unknown",
+              requested_method_config_hash:
+                view.plan.baseline_methods?.[agent.id]?.config_hash ??
+                "unknown",
+              method_config_hash:
+                typeof preflight.config_hash === "string"
+                  ? preflight.config_hash
+                  : "unknown",
+              execution_conditions: {
+                backend: agent.options.backend,
+                image: preflight.image_id ?? "unknown",
+                requested_image: agent.options.image,
+                limits: agent.options.limits,
+                model_profile: agent.model?.id ?? "not_applicable",
+                internal_validation:
+                  agent.adapter === "autogluon"
+                    ? "five-fold-bagging-and-one-stack-level"
+                    : "method-managed-training-only",
+                delivery_reserve_ms: agent.options.delivery_reserve_ms,
+                cache: "disabled",
+              },
+            }
+          : {}),
         unit_id: r.unit.id,
         task_id: r.unit.task_id,
         repetition: r.unit.repetition,

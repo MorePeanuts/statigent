@@ -6,7 +6,10 @@ import { publishTaskInputs } from "../../src/evaluation/files";
 import { command, commandEnvironment } from "../../src/evaluation/process";
 import { profile } from "./agent";
 
-export async function preparedModelingTask(root: string) {
+export async function preparedModelingTask(
+  root: string,
+  preparationCode?: string,
+) {
   await command(
     [
       "uv",
@@ -16,7 +19,8 @@ export async function preparedModelingTask(root: string) {
       "--no-sync",
       "python",
       "-c",
-      "from pathlib import Path; import sys; from test_modeling_dataset_v3 import prepare; prepare(Path(sys.argv[1]))",
+      preparationCode ??
+        "from pathlib import Path; import sys; from test_modeling_dataset_v3 import prepare; prepare(Path(sys.argv[1]))",
       join(root, "data"),
     ],
     {
@@ -47,8 +51,11 @@ export const modelingSettings = {
   },
 };
 
-export async function modelingInvocation(root: string) {
-  const task = await preparedModelingTask(root),
+export async function modelingInvocation(
+  root: string,
+  preparationCode?: string,
+) {
+  const task = await preparedModelingTask(root, preparationCode),
     inputRoot = join(root, "input");
   const published = await publishTaskInputs(root, task, inputRoot);
   await mkdir(join(root, "native"));

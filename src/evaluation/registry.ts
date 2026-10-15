@@ -18,5 +18,11 @@ export function defaultRegistry(): Registry {
     .agent(statigentAdapter())
     .agent(modelingAdapter())
     .agent(modelingAdapter({ deterministic: true }))
-    .agent(containerCommandAdapter());
+    .agent(containerCommandAdapter())
+    .agent(baselineAdapter("react"))
+    .agent(baselineAdapter("autogen"))
+    .agent(baselineAdapter("datawiseagent"))
+    .agent(baselineAdapter("autogluon"));
 }
+
+import { baselineAdapter } from "../baselines/adapter";

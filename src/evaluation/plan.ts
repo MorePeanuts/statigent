@@ -1,4 +1,10 @@
 import {
+  type MethodManifest,
+  methodConfigIdentity,
+  methodIdSchema,
+  methodManifest,
+} from "../baselines/catalog";
+import {
   type ModelProfile,
   selectProfile,
   validateProfile,
@@ -283,6 +289,10 @@ export interface Plan {
   source_root: string;
   provenance: Record<string, unknown>;
   adapters: Record<string, string>;
+  baseline_methods?: Record<
+    string,
+    { source: MethodManifest; config_hash: string }
+  >;
   /** Task id -> group key for grouped summaries (e.g. DSBench case). */
   groups: Record<string, string>;
   sha256: string;
@@ -345,6 +355,17 @@ export async function buildPlan(
   };
   for (const a of config.agents)
     adapters[`agent:${a.adapter}`] = registry.getAgent(a.adapter).version;
+  const methods = Object.fromEntries(
+    config.agents
+      .filter((a) => methodIdSchema.safeParse(a.adapter).success)
+      .map((a) => [
+        a.id,
+        {
+          source: methodManifest(a.adapter),
+          config_hash: methodConfigIdentity(a.options),
+        },
+      ]),
+  );
   const body = {
     schema_version: 3 as const,
     config,
@@ -353,6 +374,7 @@ export async function buildPlan(
     source_root: catalog.source_root,
     provenance: catalog.provenance,
     adapters,
+    ...(Object.keys(methods).length ? { baseline_methods: methods } : {}),
     groups,
   };
   return { ...body, sha256: sha256(Buffer.from(JSON.stringify(body))) };

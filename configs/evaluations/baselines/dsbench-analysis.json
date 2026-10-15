@@ -1,0 +1,105 @@
+{
+  "schema_version": 2,
+  "purpose": "development",
+  "development_overlap": "dsbench-analysis-development-v1; selected cases are development-exposed; formal experiments must disclose or exclude them",
+  "benchmark": {
+    "adapter": "dsbench-analysis",
+    "version": "4d9335ce3975e5eeca791ab0989a3c5ade3bdaab085f8e9771e90ad73d73e1eb",
+    "options": {
+      "root": "benchmarks/dsbench"
+    },
+    "task_ids": [
+      "00000001-question6",
+      "00000001-question7",
+      "00000005-question20",
+      "00000005-question21",
+      "00000008-question26",
+      "00000008-question27"
+    ]
+  },
+  "agents": [
+    {
+      "id": "eda-deepseek-flash",
+      "adapter": "statigent-eda",
+      "options": {
+        "image": "statigent-runtime:baselines-cpu-v1"
+      },
+      "model_profile": "deepseek-flash",
+      "require_seed": true
+    },
+    {
+      "id": "react",
+      "adapter": "react",
+      "options": {
+        "schema_version": 1,
+        "method": "react",
+        "image": "statigent-runtime:baselines-cpu-v1",
+        "limits": {
+          "cpus": 1,
+          "memory_bytes": 1073741824
+        }
+      },
+      "require_seed": true,
+      "model_profile": "deepseek-flash"
+    },
+    {
+      "id": "autogen",
+      "adapter": "autogen",
+      "options": {
+        "schema_version": 1,
+        "method": "autogen",
+        "image": "statigent-runtime:baselines-cpu-v1",
+        "limits": {
+          "cpus": 1,
+          "memory_bytes": 1073741824
+        }
+      },
+      "require_seed": true,
+      "model_profile": "deepseek-flash"
+    },
+    {
+      "id": "datawiseagent",
+      "adapter": "datawiseagent",
+      "options": {
+        "schema_version": 1,
+        "method": "datawiseagent",
+        "image": "statigent-runtime:baselines-cpu-v1",
+        "limits": {
+          "cpus": 1,
+          "memory_bytes": 1073741824
+        }
+      },
+      "require_seed": true,
+      "model_profile": "deepseek-flash"
+    }
+  ],
+  "repetitions": 1,
+  "seed": 42,
+  "task_budget": {
+    "timeout_ms": 600000,
+    "model_attempts": 12,
+    "total_tokens": 400000
+  },
+  "batch_budget": {
+    "timeout_ms": 14400000,
+    "model_attempts": 288,
+    "total_tokens": 9600000
+  },
+  "scoring": {
+    "judges": {
+      "equivalence": "deepseek-flash-judge"
+    },
+    "unit_budget": {
+      "timeout_ms": 300000,
+      "model_attempts": 3,
+      "total_tokens": 20000
+    },
+    "parse_retries": 2,
+    "options": {},
+    "batch_budget": {
+      "timeout_ms": 7200000,
+      "model_attempts": 72,
+      "total_tokens": 480000
+    }
+  }
+}

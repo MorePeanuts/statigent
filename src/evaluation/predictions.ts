@@ -1,12 +1,56 @@
 import { readFile, stat } from "node:fs/promises";
 import { isDeepStrictEqual } from "node:util";
+import * as z from "zod";
+import { methodIdSchema } from "../baselines/catalog";
 import { validateProtocolV2 } from "../modeling/protocol-v2";
 import { integer, keys, obj } from "../models/validation";
 import { safeRelativePath } from "../records/store";
-import { hash, type InputFile, id, type PublicTask } from "./contracts";
+import {
+  hash,
+  type InputFile,
+  id,
+  type PublicTask,
+  validateUsage,
+} from "./contracts";
 import { regular, verifyFiles } from "./files";
 
-/** 小型公开清单只引用原生模型身份；验证不访问模型目录或评测答案。 */
+const digest = z.string().regex(/^[a-f0-9]{64}$/);
+export const producerSchema = z
+  .strictObject({
+    adapter: methodIdSchema,
+    method: methodIdSchema,
+    version: z.string().min(1),
+    config_hash: digest,
+    run_id: z.string().min(1),
+  })
+  .superRefine((value, ctx) => {
+    if (value.adapter !== value.method)
+      ctx.addIssue({
+        code: "custom",
+        message: "Producer method identity mismatch",
+      });
+  });
+export const modelBundleReferenceSchema = z.strictObject({
+  bundle_id: digest,
+  manifest_sha256: digest,
+  bytes: z.number().int().nonnegative(),
+  file_count: z.number().int().positive(),
+  entrypoint: z
+    .string()
+    .min(1)
+    .refine((p) => {
+      try {
+        return safeRelativePath(p) === p;
+      } catch {
+        return false;
+      }
+    }),
+  image: z.string().regex(/^sha256:[a-f0-9]{64}$/),
+  platform: z.string().min(1),
+  frozen_at: z.iso.datetime(),
+});
+
+/** 公共评分只检查预测和方法身份；不加载模型，旧 v1 保留原校验。 */
 export async function readPredictionManifest(
   root: string,
   task: PublicTask,
@@ -22,6 +66,7 @@ export async function readPredictionManifest(
   )
     throw new Error("Prediction manifest limit");
   const x = obj(JSON.parse(await readFile(path, "utf8")));
+  const external = x.schema_version === 2;
   keys(x, [
     "schema_version",
     "kind",
@@ -36,9 +81,10 @@ export async function readPredictionManifest(
     "native_model",
     "execution_preparation",
     "workflow",
+    ...(external ? ["producer", "model_bundle"] : []),
   ]);
   if (
-    x.schema_version !== 1 ||
+    (x.schema_version !== 1 && !external) ||
     x.kind !== "modeling-predictions" ||
     x.task_id !== task.id ||
     x.task_version !== task.version ||
@@ -74,14 +120,20 @@ export async function readPredictionManifest(
     )
   )
     throw new Error("Prediction features identity mismatch");
-  const native = obj(x.native_model);
-  keys(native, ["run_id", "frozen_id", "sha256", "bytes", "delivery_sha256"]);
-  id(native.run_id);
-  hash(native.frozen_id);
-  hash(native.sha256);
-  hash(native.delivery_sha256);
-  // 模型大小不受预测交付限额控制，模型字节从不加入交付集合。
-  integer(native.bytes, "native model bytes", 1);
+  const native = external ? null : obj(x.native_model);
+  if (native) {
+    keys(native, ["run_id", "frozen_id", "sha256", "bytes", "delivery_sha256"]);
+    id(native.run_id);
+    hash(native.frozen_id);
+    hash(native.sha256);
+    hash(native.delivery_sha256);
+    integer(native.bytes, "native model bytes", 1);
+  } else if (x.native_model !== undefined && x.native_model !== null)
+    throw new Error("External method cannot claim native experiment identity");
+  const producer = external ? producerSchema.parse(x.producer) : null;
+  const modelBundle = external
+    ? modelBundleReferenceSchema.parse(x.model_bundle)
+    : null;
   const datasetHash = hash(x.dataset_sha256);
   if (datasetHash !== task.version) {
     const receipt = obj(x.execution_preparation);
@@ -101,8 +153,9 @@ export async function readPredictionManifest(
     "delivery_status",
     "prediction_status",
     "reproduction_status",
-    "search_best_experiment_id",
-    "selected_experiment_id",
+    ...(external
+      ? []
+      : ["search_best_experiment_id", "selected_experiment_id"]),
     "confirmation",
     "usage",
     "wall_ms",
@@ -115,8 +168,23 @@ export async function readPredictionManifest(
     throw new Error("Incomplete prediction workflow");
   obj(workflow.search_end);
   obj(workflow.usage);
-  id(workflow.search_best_experiment_id);
-  id(workflow.selected_experiment_id);
+  if (external) {
+    if (workflow.confirmation !== "not_applicable")
+      throw new Error("External confirmation must be not_applicable");
+    validateUsage(workflow.usage);
+    const end = obj(workflow.search_end);
+    keys(end, ["status", "reason"]);
+    if (
+      !["completed", "budget_exhausted", "timed_out"].includes(
+        String(end.status),
+      ) ||
+      typeof end.reason !== "string"
+    )
+      throw new Error("Invalid external search end");
+  } else {
+    id(workflow.search_best_experiment_id);
+    id(workflow.selected_experiment_id);
+  }
   if (
     typeof workflow.wall_ms !== "number" ||
     !Number.isFinite(workflow.wall_ms) ||
@@ -133,5 +201,6 @@ export async function readPredictionManifest(
     workflow,
     native_model: native,
     execution_preparation: x.execution_preparation,
+    ...(external ? { producer, model_bundle: modelBundle } : {}),
   };
 }

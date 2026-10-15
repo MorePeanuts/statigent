@@ -334,6 +334,7 @@ export async function inspect(
         "source_root",
         "provenance",
         "adapters",
+        ...(planVersion === 3 ? ["baseline_methods"] : []),
         ...(planVersion !== 1 ? ["groups"] : []),
         "sha256",
       ],
@@ -385,6 +386,13 @@ export async function inspect(
     Object.entries(obj(planValue.groups ?? {})).map(([k, v]) => [id(k), id(v)]),
   );
   const plan: Plan = {
+    ...(planValue.baseline_methods === undefined
+      ? {}
+      : {
+          baseline_methods: baselinePlanMethodsSchema.parse(
+            planValue.baseline_methods,
+          ),
+        }),
     schema_version: planVersion === 3 ? 3 : 2,
     config,
     tasks,
@@ -395,6 +403,15 @@ export async function inspect(
     groups,
     sha256: hash(checksum),
   };
+  for (const [agentId, method] of Object.entries(plan.baseline_methods ?? {})) {
+    const agent = config.agents.find((a) => a.id === agentId);
+    if (
+      !agent ||
+      agent.adapter !== method.source.method ||
+      adapters[`agent:${agent.adapter}`] !== method.source.version
+    )
+      throw new Error("Baseline plan identity mismatch");
+  }
   const manifest: Manifest = {
     schema_version: contractVersion(m) === 3 ? 3 : 2,
     evaluation_id: id(m.evaluation_id),
@@ -525,3 +542,5 @@ export async function inspect(
     records,
   };
 }
+
+import { baselinePlanMethodsSchema } from "../baselines/catalog";

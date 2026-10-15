@@ -245,6 +245,12 @@ export function createModelingBenchmark(
         manifestIdentity = {
           dataset_sha256: manifest.dataset_sha256,
           native_model: manifest.native_model,
+          ...(manifest.producer
+            ? {
+                producer: manifest.producer,
+                model_bundle: manifest.model_bundle,
+              }
+            : {}),
           execution_preparation: manifest.execution_preparation,
         };
         evaluationId = sha256(

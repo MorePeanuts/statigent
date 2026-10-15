@@ -26,7 +26,9 @@
     "test:smoke:modeling": "bun src/modeling/smoke.ts",
     "test:smoke:modeling-benchmarks": "bun src/evaluation/modeling-smoke.ts",
     "test:smoke:classification": "bun src/modeling/classification-smoke.ts",
-    "test:smoke:script": "bun src/agent/script-smoke.ts"
+    "test:smoke:script": "bun src/agent/script-smoke.ts",
+    "test:smoke:baselines": "bun src/baselines/smoke.ts",
+    "test:baselines:integration": "bun test tests/integration/baseline-*.test.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",

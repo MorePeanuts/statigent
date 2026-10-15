@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import { aggregate } from "../../src/evaluation/aggregate";
 import { createModelingBenchmark } from "../../src/evaluation/benchmarks/modeling/adapter";
 import { exportComparison } from "../../src/evaluation/comparison";
+import { emptyUsage } from "../../src/evaluation/contracts";
 import { describeFile } from "../../src/evaluation/files";
 import { buildPlan, Registry } from "../../src/evaluation/plan";
 import { command, commandEnvironment } from "../../src/evaluation/process";
@@ -52,7 +53,7 @@ afterAll(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-async function batch(incomplete: boolean) {
+async function batch(incomplete: boolean, external = false) {
   const benchmark = createModelingBenchmark("dsbench-modeling", {
     references: async (_root, _task, direction, value) => {
       expect(direction).toBe("minimize");
@@ -139,6 +140,38 @@ async function batch(incomplete: boolean) {
             usage: {},
             wall_ms: 10,
           },
+          ...(external
+            ? {
+                schema_version: 2,
+                native_model: null,
+                producer: {
+                  adapter: "autogluon",
+                  method: "autogluon",
+                  version: "autogluon-cpu-v1",
+                  config_hash: "e".repeat(64),
+                  run_id: "external",
+                },
+                model_bundle: {
+                  bundle_id: "b".repeat(64),
+                  manifest_sha256: "c".repeat(64),
+                  bytes: 100,
+                  file_count: 2,
+                  entrypoint: "predict.py",
+                  image: `sha256:${"d".repeat(64)}`,
+                  platform: "linux/arm64",
+                  frozen_at: new Date().toISOString(),
+                },
+                workflow: {
+                  search_end: { status: "completed", reason: "explicit" },
+                  delivery_status: "completed",
+                  prediction_status: "completed",
+                  reproduction_status: "not_run",
+                  confirmation: "not_applicable",
+                  usage: emptyUsage("not_applicable"),
+                  wall_ms: 10,
+                },
+              }
+            : {}),
         }),
       );
       return { ...submission(i.unit_id), schema_version: 3 };
@@ -238,6 +271,20 @@ test("DSBench minimizing native score and RPG > 1 retain failed units in the den
     ]).metrics,
   ).toEqual({ completion: null, rpg: null });
 });
+
+test("v1 and external v2 identical predictions have identical native metrics and RPG without model storage", async () => {
+  const legacy = await batch(false),
+    external = await batch(false, true);
+  const a = await inspect(legacy.directory),
+    b = await inspect(external.directory);
+  expect(b.records[0]?.score?.metrics).toEqual(a.records[0]?.score?.metrics);
+  expect(b.records[0]?.score?.details.native).toEqual(
+    a.records[0]?.score?.details.native,
+  );
+  const report = await createReport(external.directory, external.registry);
+  const pairs = await exportComparison(external.directory, report.score_id);
+  expect(pairs.planned).toBe(2);
+}, 30000);
 
 test("unrun and scoring errors leave complete modeling summaries null and retain all pair rows", async () => {
   const run = await batch(true),

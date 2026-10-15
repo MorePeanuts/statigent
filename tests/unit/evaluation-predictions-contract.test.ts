@@ -3,6 +3,7 @@ import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  emptyUsage,
   validateCapabilities,
   validateScore,
   validateSubmission,
@@ -254,11 +255,56 @@ test("prediction manifest binds files, seed and large model identity without ope
     await save(manifest);
     expect(
       (await readPredictionManifest(root, task, { seed: 17 })).native_model
-        .bytes,
+        ?.bytes,
     ).toBe(8 * 1024 ** 3);
     await expect(
       readPredictionManifest(root, task, { seed: 42 }),
     ).rejects.toThrow("seed");
+    const external = {
+      ...manifest,
+      schema_version: 2,
+      native_model: null,
+      producer: {
+        adapter: "autogluon",
+        method: "autogluon",
+        version: "autogluon-cpu-v1",
+        config_hash: "e".repeat(64),
+        run_id: "external-run",
+      },
+      model_bundle: {
+        bundle_id: "b".repeat(64),
+        manifest_sha256: "c".repeat(64),
+        bytes: 8 * 1024 ** 3,
+        file_count: 1000,
+        entrypoint: "predict.py",
+        image: `sha256:${"d".repeat(64)}`,
+        platform: "linux/arm64",
+        frozen_at: new Date().toISOString(),
+      },
+      workflow: {
+        search_end: { status: "completed", reason: "explicit" },
+        delivery_status: "completed",
+        prediction_status: "completed",
+        reproduction_status: "not_run",
+        confirmation: "not_applicable",
+        usage: emptyUsage("not_applicable"),
+        wall_ms: 10,
+      },
+    };
+    await save(external);
+    const readExternal = await readPredictionManifest(root, task, { seed: 17 });
+    expect(readExternal.predictions).toEqual(manifest.predictions);
+    expect(readExternal.native_model).toBeNull();
+    expect(readExternal.producer?.method).toBe("autogluon");
+    for (const patch of [
+      { native_model: manifest.native_model },
+      { producer: { ...external.producer, method: "react" } },
+      { workflow: { ...external.workflow, selected_experiment_id: "fake" } },
+      { model_bundle: { ...external.model_bundle, entrypoint: "../escape" } },
+    ]) {
+      await save({ ...external, ...patch });
+      await expect(readPredictionManifest(root, task)).rejects.toThrow();
+    }
     for (const patch of [
       { predictions: { ...manifest.predictions, sha256: "f".repeat(64) } },
       { predictions: { ...manifest.predictions, path: "other.csv" } },

@@ -569,7 +569,17 @@ export class ScriptSession {
     this.closing ??= this.closeInternal();
     return this.closing;
   }
-  private async closeInternal() {
+  /** 外部冻结已暂停容器；不再请求进程内收集，定向终止全部进程。 */
+  closeAfterSnapshot(): Promise<void> {
+    if (this.closing) return this.closing;
+    if (this.state !== "ready" || this.active || this.queue.length)
+      return Promise.reject(
+        new Error("Snapshot close requires idle execution"),
+      );
+    this.closing = this.closeInternal(false);
+    return this.closing;
+  }
+  private async closeInternal(collect = true) {
     const begin = performance.now();
     clearTimeout(this.taskTimer);
     const failed = this.state === "failed";
@@ -581,7 +591,7 @@ export class ScriptSession {
       while (this.active)
         await new Promise((resolve) => setTimeout(resolve, 5));
       if (this.failing) await this.failing;
-      if (!failed && this.state !== "failed" && !this.recordFailed) {
+      if (collect && !failed && this.state !== "failed" && !this.recordFailed) {
         await this.control({ ...this.base(), type: "collect" });
         await this.control({ ...this.base(), type: "shutdown" });
       }
