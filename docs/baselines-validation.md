@@ -1,39 +1,51 @@
 # 研究 baseline 开发验收
 
-变更 `add-research-baselines`，实现进行中；本文只记录实际运行结果，不表示四种方法已接入评测。
+变更 `add-research-baselines` 的验收分为软件接入、受控模型与真实依赖、真实模型开发冒烟和正式实验。前两层使用合成任务，不调用付费模型；它们不证明研究效果，也不能替代后两层。
 
-2026-10-15，macOS arm64，Bun 1.4.2、uv 管理的 CPython 3.12.9：
+验收环境为 macOS arm64、Bun 1.4.2、uv 管理的 CPython 3.12.9；实际生成代码、训练和预测运行于 Linux arm64 Docker。按用户确认，当前实现遵循冻结基准的单目标回归和多标签分类协议；多输出回归另列后续协议扩展。
 
-| 层次 | 实际状态 |
+## 实际运行记录
+
+| 层次 | 结果与证据 |
 | --- | --- |
-| 方法来源/严格配置/默认矩阵 | 3 个单元测试通过，29 个断言；TypeScript 检查通过 |
-| AutoGen 0.2.35 无模型导入 | 通过；实际角色、ModelClient 和 CodeExecutor 接口可用 |
-| DatawiseAgent 固定源码导入 | 通过；66 文件身份校验、实际 FST/模型/执行器阶段接口可用 |
-| AutoGluon CPU fit/save/load/predict | Linux arm64 Docker 通过；六类模型、两层模型及 weighted ensemble 实际训练，重新加载预测一致 |
-| DatawiseAgent FST 受控响应 | 通过；固定官方 FST 实际完成规划、执行、修复、过滤、完成；5 次受控模型调用归入父账 |
-| 两个计算镜像资源探针 | 通过；UID 10001、2 CPU、4 GiB、断网、只读根目录及 8 MiB 独立写入额度实际验证 |
-| JSONL 协议与运行记录 | 4 个 TS 协议测试、1 个记录测试、7 个 Python 协议测试通过 |
-| 受信 worker/宿主模型基础层 | 2 个 worker 测试、5 个父账测试通过；供应商历史保留，未知消费停止重试 |
-| 官方 AutoGen 受控响应 | 通过；实际 AssistantAgent/UserProxyAgent 完成错误反馈、代码修复和显式文本交付，3 次调用共 45 个受控 token，未调用付费 API |
-| 执行后端隔离 | 持久内核/新脚本两个实际 Docker 测试通过；宿主凭据、仓库、私有材料、其他运行及网络不可见 |
-| worker 与容器生命周期 | 实际 Docker 测试通过；异常退出/取消/超时均清理所属容器，另一内核的变量状态保留；评测批次停止派发的接入仍未完成 |
-| 冻结预测 | 未运行 |
-| 评测计划/运行/评分/比较/独立复现 | 未完成 |
-| 真实模型开发冒烟 | 未运行，需明确 scope/预算及授权 |
-| 正式实验 | 未运行 |
+| 方法与环境身份 | ReAct 本地版本、AutoGen 0.2.35、DatawiseAgent 固定 commit 的 66 文件校验、AutoGluon 1.4.0；分别锁定可选环境 |
+| 上游真实接口 | `tests/upstream/baseline-{autogen,datawise}.test.ts`：4 测试、21 断言通过；实际 AutoGen 助手/执行代理修复，实际 Datawise FST 规划、调试、过滤、完成；截断响应零执行 |
+| AutoGluon 指标 | 独立 AutoGluon 环境的 `test_baseline_metric_upstream.py`：19 测试通过，覆盖全部 18 个 metric ID 的实际 scorer 与公开核心差分及无效边界 |
+| 资源隔离 | 最终两镜像实际探针均通过：UID 10001、2 CPU、4 GiB、禁网络、只读根目录、8 MiB 写入额度；sklearn/LightGBM/CatBoost/XGBoost 实际训练成功 |
+| 分析完整链路 | 三方法通过注册、计划、运行、报告校验、评分和 compare；读取实际 SQLite 与工作簿、生成图片；父账分别为 30/30/45 个受控 token |
+| 建模完整链路 | 四方法通过实际训练、冻结、独立预测、评分和 compare；外部方法使用 producer/bundle 身份，确认状态为不适用；AutoGluon 零模型调用 |
+| 交付与复现 | 全文件 bundle 哈希、链接/越界/额度/后台写入拒绝；新容器预测零模型/可观测拟合调用；独立复现成功、模型篡改拒绝，移走模型目录后评分相同 |
+| 任务形态 | 合成数据覆盖回归、二分类标签/概率、多分类标签/概率、等级、前三候选和多标签；AutoGluon 使用实际拟合后的模型，无测试特征参与训练 |
+| 停止和失败 | 三 Agent 的无登记预算终止不猜测交付；显式登记后零新增模型调用交付；缺报告、取消、超时保留失败；Datawise 只允许已知 FST 转移重放，未知状态禁止恢复 |
+| 多目标预算 | 剩余时间按剩余目标均分，目标间结余可结转；训练软限预留保存时间，总额度不复制；第二目标失败或总时间用尽不交付部分目标 |
+| 历史兼容 | v1/v2/v3 批次离线检查、重评分后原文件 SHA-256 不变；同预测的清单 v1/v2 指标及 RPG 相同；旧离线入口权限检查通过 |
+| 开发范围 | 五套配置的只读计划可用；最终三个 scope 预检分别为 9 分析、30 Agent 建模、10 AutoML 单元，零模型调用、零训练；缺方法/任务/有限额度或运行开关拒绝 |
+| 真实模型开发冒烟 | **未运行**；已有显式入口、固定 scope 和预算，不将预检计为真实模型成功 |
+| 正式实验 | **未运行**；仍需另行冻结正式任务、重复次数、预算与排除规则 |
 
-DatawiseAgent 首次导入缺 `websockets`，补齐其原始版本后暴露上游模块导入即创建 OpenAI 客户端的问题；通过独立导入边界禁用直连 SDK/dotenv 后复验通过。未使用 API 密钥，未产生模型消费。这些是环境修复记录，不是正式任务失败重跑。
+完整快速检查与 Docker 回归的最终计数见本文末尾。检查命令、环境安装与模型目录说明见 [环境说明](../environments/baselines/README.md) 和 [方法说明](baselines.md)。预测入口的 fit 调用审计只覆盖可观测 Python 调用，不是对任意程序的形式化无训练证明。
 
-AutoGluon macOS 首次缺 libomp；安装 23.1.3 后六家族混合训练卡在 PyTorch `sqrt` 的 OpenMP barrier，采样可见不同 libomp 地址。已定向终止，macOS 原生训练仍未通过；不把修复依赖导入记为训练通过。部署/验收使用 Linux arm64 Docker，全部模型家族保持不变，实际 fit/save/load/predict 约 5.95 秒，含容器启动与清理约 12.90 秒，父进程设置 240 秒硬截止。共同镜像探针约 4.95 秒。探针使用合成数据和缩小参数，不能代表正式任务耗时。
+## 失败与修复记录
 
-首次通过的镜像身份见 [images.json](../environments/baselines/images.json)。原始构建日志、失败诊断和三份 Docker 探针结果位于忽略 Git 的 `runs/baseline-environment-validation/`；未提交模型、数据或完整运行轨迹。后续镜像包含源码更新时必须重新构建并登记新摘要，不能把旧摘要称为新环境。
+DatawiseAgent 首次导入缺 `websockets`，补齐原始版本后暴露上游模块导入即创建 OpenAI 客户端的问题；独立导入边界禁用直连 SDK/dotenv 后复验通过。未使用 API 密钥，未产生模型消费。
 
-安装命令、来源和依赖差异见 [可选环境说明](../environments/baselines/README.md)。上游导入通过不代表边界桥接、完整阶段转换或研究效果已经验收。
+AutoGluon macOS 首次缺 libomp；安装 23.1.3 后六家族混合训练卡在 PyTorch `sqrt` 的 OpenMP barrier，采样可见不同 libomp 地址。已定向终止，**macOS 原生训练未通过**。最终部署与验收使用 Linux arm64 Docker；首次小型探针实际训练六家族、两层模型和 weighted ensemble，fit/save/load/predict 一致。该探针约 5.95 秒，不代表正式任务耗时。
 
-## 已确定的重放边界（2026-10-15）
+接入实际脚本桥时补齐 IPython/Matplotlib 运行依赖；AutoGluon 特殊目标测试最初出现时间额度不足，修正为每目标软限预留保存/清理时间并关闭冗余训练输出，仍保持外层硬截止及原模型家族。前三候选输出首次暴露列顺序错误，改为使用公开协议列顺序。修复后相关真实训练/预测用例通过。开发中的响应夹具缺推理字段、报告完成阶段错误等测试问题另行修正；这些记录不作为正式任务失败重跑或性能提升证据。
 
-固定上游 `datawiseagent/agents/datawise_agent.py` 的 `_self_debug_filter` 调用 `_execute_cells(..., rerun_all=True)`；后者调用 `Session.rerun_cells()`，主动重启内核并重放过滤前保留的历史，再验证筛选代码。这属于核心过滤阶段，不是故障后的自动恢复。
+固定官方 Datawise FST 的过滤阶段和规划回退会主动重启并重放已知历史。宿主保留该算法行为：销毁旧容器、重新发布原输入、清除派生文件并记录 epoch；重放与原执行共享次数、token 和截止时间。真实 Docker 用例验证原状态消失、预算不重置，未知执行/内核丢失/取消/冻结后不重放。
 
-过滤和规划回退阶段的已知历史重放保留；未知执行、状态丢失、取消或关闭后拒绝恢复。宿主销毁旧计算容器后建立新会话，仅重新发布原输入，清除派生文件，记录独立 kernel epoch；重放执行与原执行共享总次数和任务截止时间。官方重放可能包含调试单元，实际每次执行均计账。该调整已获用户授权，并同步到设计、规格与配置。
+## 镜像与证据保留
 
-真实 Docker 检查已通过：官方 FST 完成规划回退、报错修复、过滤及报告交付，共 7 次受控模型调用、两个重放 epoch；另验证旧状态消失、额度不重置、未知内核状态拒绝重放。冻结阶段接入及四方法注册仍未完成。
+[images.json](../environments/baselines/images.json) 同时保留首次环境探针及最终源码镜像摘要。最终共同镜像为 `sha256:63674f744a4286248423ed6b35d954f0d7a98cbdacd40cbb6f6243ea5cfa7df1`，AutoGluon 镜像为 `sha256:bda69954e5c9ab4fe908a7ad1d119e7bad88cfbb029c0186281e032f25952ba7`。计划冻结方法来源与请求配置身份，运行预检再绑定实际镜像摘要和有效配置身份；报告不依赖事后变化的当前方法清单补造历史来源。
+
+本地原始构建日志、失败诊断、探针和验收输出保存在忽略 Git 的 `runs/baseline-environment-validation/`。小型合成测试和复现命令提交 Git；模型、基准数据、凭据及完整轨迹不提交。所有 Python 调用通过 uv，付费冒烟不属于默认检查。
+
+## 最终检查结果（2026-10-15）
+
+- `bun run check`：Biome、Ruff、格式和 TypeScript 类型检查通过；399 个 TypeScript 单元测试及 253 个 Python 测试通过，172 个显式上游/集成等标记测试未纳入默认检查。
+- `bun run test:baselines:integration`：14 个文件、46 个实际 Docker 集成测试、293 个断言全部通过，约 20.5 分钟。覆盖三方法分析与四方法建模、特殊目标、隔离、生命周期、冻结、复现、预算收尾及失败路径。
+- 显式上游：AutoGen/DatawiseAgent 4 个测试通过；AutoGluon 实际指标 19 个测试通过。两份最终镜像资源探针均通过。
+- 完整比较计划的单元数为 InfiAgent 48、DSBench Analysis 24、DAComp 24、DSBench Modeling 35、TabArena Lite 15；包含本方法，不等于三个 baseline 专用冒烟 scope 的 9/30/10 单元。
+- `openspec validate add-research-baselines --strict` 与 `git diff --check` 通过；提交范围不含运行模型、基准数据、凭据或完整轨迹。
+- AutoGluon 多标签冻结 bundle 的额外独立复现复验：1 个测试、9 个断言通过；新容器预测在固定容差内一致，模型调用与可观测拟合调用均为 0。该复验没有追加训练预算或放宽比较容差。

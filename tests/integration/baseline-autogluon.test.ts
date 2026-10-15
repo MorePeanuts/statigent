@@ -10,6 +10,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { baselineAdapter } from "../../src/baselines/adapter";
+import { reproduceBaseline } from "../../src/baselines/reproduce";
 import { readPredictionManifest } from "../../src/evaluation/predictions";
 import { modelingInvocation } from "../helpers/evaluation-modeling";
 
@@ -54,6 +55,14 @@ test("AutoGluon independently trains both targets, freezes and predicts without 
       "EC2",
     ]);
     expect(training.targets[1].allowance_seconds).toBeLessThan(150);
+    const replay = await reproduceBaseline(
+      run,
+      join(root, "reproduction"),
+      45000,
+      new AbortController().signal,
+    );
+    expect(replay.status).toBe("passed");
+    expect(replay.calls).toEqual({ models: 0, fits: 0 });
   } finally {
     for (const run of await readdir(join(root, "native"))) {
       const files = join(root, "native", run, "bundle/files");
