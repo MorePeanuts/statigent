@@ -51,6 +51,10 @@ export class BaselineArtifacts {
   list() {
     return [...this.files.values()].map((x) => ({ ...x }));
   }
+  clearVisible() {
+    // 历史文件保留供审计，但新内核不能读到重放前的产物。
+    this.files.clear();
+  }
   async read(path: string) {
     const ref = this.files.get(relativePathSchema.parse(path));
     if (!ref) throw new Error("Artifact not collected in this run");
@@ -77,6 +81,8 @@ export async function baselineExecution(
     config: SessionConfig;
     artifactDirectory: string;
     event: (type: string, details: Record<string, unknown>) => Promise<void>;
+    allowKnownReplay?: boolean;
+    maxExecutions?: number;
   },
   dependencies: { create?: typeof createSession } = {},
 ) {
@@ -84,19 +90,91 @@ export async function baselineExecution(
     options.artifactDirectory,
     options.config.limits.max_artifacts_bytes,
   );
-  const session = await (dependencies.create ?? createSession)(options.config, {
+  const started = performance.now();
+  const create = dependencies.create ?? createSession;
+  const observer: SessionObserver = {
     onEvent: (event) => options.event("execution_event", { event }),
     onArtifact: (message) => artifacts.capture(message),
-  });
+  };
+  let session = await create(options.config, observer);
   let active = false,
-    closed = false;
+    closed = false,
+    known = true,
+    epoch = 1,
+    executions = 0;
+  const remaining = () =>
+    options.config.limits.task_timeout_ms - (performance.now() - started);
   return {
-    session,
+    get session() {
+      return session;
+    },
     artifacts,
-    async execute(code: string, requestId: string, signal: AbortSignal) {
-      if (closed || active) throw new Error("Execution closed or busy");
+    usage: () => ({ executions, kernel_epoch: epoch }),
+    async restart(
+      reason: "post-filter" | "plan-rollback",
+      signal: AbortSignal,
+    ) {
       signal.throwIfAborted();
+      if (
+        !options.allowKnownReplay ||
+        options.config.backend === "fresh-script" ||
+        closed ||
+        active ||
+        !known ||
+        remaining() <= 0 ||
+        !["post-filter", "plan-rollback"].includes(reason)
+      )
+        throw new Error("Known-history replay not allowed in this state");
       active = true;
+      known = false;
+      try {
+        await options.event("replay_requested", {
+          reason,
+          kernel_epoch: epoch,
+          executions,
+        });
+        await session.close();
+        signal.throwIfAborted();
+        if (remaining() <= 0) throw new Error("Execution deadline reached");
+        artifacts.clearVisible();
+        session = await create(
+          {
+            ...options.config,
+            session_id: undefined,
+            limits: {
+              ...options.config.limits,
+              task_timeout_ms: Math.max(1, Math.floor(remaining())),
+            },
+          },
+          observer,
+        );
+        if (signal.aborted || closed) {
+          await session.close();
+          signal.throwIfAborted();
+          throw new Error("Execution closed during replay");
+        }
+        epoch++;
+        known = true;
+        await options.event("replay_started", {
+          reason,
+          kernel_epoch: epoch,
+          session_id: session.sessionId,
+          executions,
+        });
+        return { kernel_epoch: epoch };
+      } finally {
+        active = false;
+      }
+    },
+    async execute(code: string, requestId: string, signal: AbortSignal) {
+      if (closed || active || !known)
+        throw new Error("Execution closed, busy or unknown");
+      signal.throwIfAborted();
+      if (remaining() <= 0 || executions >= (options.maxExecutions ?? 300))
+        throw new Error("Execution budget exhausted");
+      executions++;
+      active = true;
+      known = false;
       let cancellation: Promise<unknown> | undefined;
       const cancel = () => {
         cancellation ??= session.cancel(requestId);
@@ -106,12 +184,21 @@ export async function baselineExecution(
         await options.event("execution_requested", {
           request_id: requestId,
           code,
+          kernel_epoch: epoch,
+          execution_number: executions,
         });
         signal.throwIfAborted();
         const result = await session.execute(code, { requestId });
+        known =
+          ["ok", "error"].includes(result.status) &&
+          (options.config.backend === "fresh-script" ||
+            ("kernel_available" in result && result.kernel_available)) &&
+          !signal.aborted &&
+          result.persistence_complete;
         await options.event("execution_completed", {
           request_id: requestId,
           result,
+          kernel_epoch: epoch,
         });
         return result;
       } finally {

@@ -207,7 +207,9 @@ export const baselineOptionsSchema = z.discriminatedUnion("method", [
     max_execution_depth: positive.default(6),
     max_debug_depth: positive.default(8),
     max_steps: positive.default(15),
-    kernel_replay: z.literal(false).default(false),
+    kernel_replay: z
+      .literal("known-fst-transitions")
+      .default("known-fst-transitions"),
   }),
   z.strictObject({
     ...common,

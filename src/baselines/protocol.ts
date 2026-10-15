@@ -66,6 +66,17 @@ export const requestSchema = z.discriminatedUnion("type", [
   }),
   z.strictObject({
     ...base,
+    type: z.literal("execution.restart"),
+    reason: z.enum(["post-filter", "plan-rollback"]),
+  }),
+  z.strictObject({ ...base, type: z.literal("workspace.status") }),
+  z.strictObject({
+    ...base,
+    type: z.literal("notebook.record"),
+    notebook: z.record(z.string(), z.unknown()),
+  }),
+  z.strictObject({
+    ...base,
     type: z.literal("artifact.read"),
     path: relativePathSchema,
   }),

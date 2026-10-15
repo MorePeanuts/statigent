@@ -1,7 +1,9 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import * as z from "zod";
 import { type Invocation, validateOutput } from "../evaluation/contracts";
+import { canonicalJson } from "../modeling/protocol-v2";
+import { sha256 } from "../records/store";
 import { baselineOptionsSchema } from "./catalog";
 import {
   BRIDGE_LIMITS,
@@ -14,6 +16,7 @@ import type { BaselineRecorder } from "./records";
 import {
   environmentIdentity,
   repositoryRoot,
+  sourceManifest,
   verifyDatawiseSource,
 } from "./source";
 
@@ -75,7 +78,7 @@ export function workerEnvironment(
 }
 
 /** entry/project 仅为受信测试依赖，既不来自配置也不出现在 worker 请求中。 */
-export async function runTrustedWorker(
+async function runWorker(
   options: {
     view: WorkerView;
     directory: string;
@@ -151,6 +154,40 @@ export async function runTrustedWorker(
     await options.recorder.event("worker_started", {
       method: view.method,
       protocol_version: 1,
+      identity: dependencies.entry
+        ? { fixture: true }
+        : {
+            environment: await environmentIdentity(view.method),
+            source:
+              view.method === "datawiseagent"
+                ? {
+                    commit: sourceManifest.commit,
+                    manifest_sha256: sha256(
+                      Buffer.from(canonicalJson(sourceManifest)),
+                    ),
+                    prompts: sourceManifest.files.filter(
+                      (f) =>
+                        f.path.includes("/prompts/") ||
+                        f.path.startsWith("configs/"),
+                    ),
+                  }
+                : { package: "pyautogen", version: "0.2.35" },
+            boundary: await Promise.all(
+              [
+                "worker.py",
+                "bridge.py",
+                "import_boundary.py",
+                `${view.method === "autogen" ? "autogen" : "datawise"}_worker.py`,
+              ].map(async (file) => ({
+                path: file,
+                sha256: sha256(
+                  await readFile(
+                    join(repositoryRoot, "python/statigent_baselines", file),
+                  ),
+                ),
+              })),
+            ),
+          },
     });
     process.stdin.write(init);
     await process.stdin.flush();
@@ -220,7 +257,6 @@ export async function runTrustedWorker(
     await options.recorder.event("worker_finished", { code });
   } catch (error) {
     stop(error instanceof Error ? error : new Error(String(error)));
-    await options.recorder.event("worker_failed", { error: String(error) });
     throw error;
   } finally {
     clearTimeout(timer);
@@ -229,7 +265,20 @@ export async function runTrustedWorker(
     controller.abort();
     process.kill("SIGKILL");
     await process.exited;
-    // worker 退出不等于执行停止；宿主始终等待实际执行器的定向清理。
+  }
+}
+
+export async function runTrustedWorker(
+  ...args: Parameters<typeof runWorker>
+): Promise<void> {
+  const [options] = args;
+  try {
+    await runWorker(...args);
+  } catch (error) {
+    await options.recorder.event("worker_failed", { error: String(error) });
+    throw error;
+  } finally {
+    // 启动失败同样必须清理；worker 退出不等于实际执行器停止。
     await options.stopExecution();
   }
 }

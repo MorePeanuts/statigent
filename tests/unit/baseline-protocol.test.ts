@@ -126,3 +126,15 @@ test("history preserves supplier reasoning and rejects remote image/path overrid
     }),
   ).toThrow();
 });
+
+test("replay accepts only explicit FST reasons and no permission overrides", () => {
+  for (const reason of ["post-filter", "plan-rollback"]) {
+    const restart = { ...request, type: "execution.restart", reason };
+    const { code: _code, ...frame } = restart;
+    expect(requestSchema.parse(frame).type).toBe("execution.restart");
+    expect(() =>
+      requestSchema.parse({ ...frame, reason: "kernel-recovery" }),
+    ).toThrow();
+    expect(() => requestSchema.parse({ ...frame, keep_files: true })).toThrow();
+  }
+});

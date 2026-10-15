@@ -81,3 +81,32 @@ test("real trusted uv worker routes requests and records abnormal exit", async (
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("worker startup failure is recorded and still cleans the execution session", async () => {
+  const root = await mkdtemp(join(tmpdir(), "baseline-startup-"));
+  const events: string[] = [];
+  let closed = false;
+  try {
+    await expect(
+      runTrustedWorker({
+        view: workerViewSchema.parse(view),
+        directory: root,
+        timeout_ms: 1000,
+        signal: new AbortController().signal,
+        recorder: {
+          event: async (type) => {
+            events.push(type);
+          },
+        },
+        handle: async () => ({}),
+        stopExecution: async () => {
+          closed = true;
+        },
+      }),
+    ).rejects.toThrow();
+    expect(events).toEqual(["worker_failed"]);
+    expect(closed).toBe(true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

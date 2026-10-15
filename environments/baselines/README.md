@@ -54,12 +54,12 @@ macOS 原生六家族混合训练已出现 OpenMP 挂起；原生环境不标为
 ## 受控桥接开发检查
 
 ```bash
-bun test tests/upstream/baseline-autogen.test.ts
-bun test tests/integration/baseline-execution.test.ts tests/integration/baseline-lifecycle.test.ts
+bun test tests/upstream/baseline-autogen.test.ts tests/upstream/baseline-datawise.test.ts
+bun test tests/integration/baseline-execution.test.ts tests/integration/baseline-lifecycle.test.ts tests/integration/baseline-replay.test.ts tests/integration/baseline-datawise.test.ts
 ```
 
 第一条使用锁定的官方 AutoGen 双代理和受控模型/执行反馈，检查真实消息流、自主修复、推理历史、显式交付和父账；执行代理没有 LLM，不接受人工输入。仅启用 Python 代码块，额外命令返回执行错误；SDK 默认客户端不使用，缓存关闭。该检查不是 DSBench 原论文配置逐项复现。
 
 第二条需要共同 CPU 镜像，实际运行持久内核和新脚本执行器；验证输入和产物范围、凭据/私有文件/网络隔离，以及 worker 退出、取消、超时后的定向容器清理。worker 只接收公开任务视图，Python 通过固定 uv 入口启动，环境不继承 API 密钥、代理或 CUSTOM_CONFIG。双向 JSONL 以 run_id/request_id/sequence 拒绝重复、并发、错序及迟到请求；运行事件独立写入 baseline 记录。
 
-当前这些是基础层接口与检查，尚未注册四种 baseline，也未完成冻结预测、统一评分和冒烟命令。DatawiseAgent 的官方过滤阶段需要显式内核重启/历史重放，与提案中笼统的禁重放规则存在冲突，待明确方法边界后实现。不能以其他循环代替它并继续称为 DatawiseAgent。
+当前这些是基础层接口与检查，尚未注册四种 baseline，也未完成冻结预测、统一评分和冒烟命令。DatawiseAgent 保留官方 FST，允许过滤和规划回退发起已知历史重放，销毁旧容器后重建，次数与时限不重置；未知状态不自动恢复。官方目录布局由 /input 和 /workspace 取代，上游安装指令、Conda/GPU 环境描述和 DSBench 专属模块注入被移除，使用明确的 CPU 环境与交付说明；未注入任务答案或评测示例。

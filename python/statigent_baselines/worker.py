@@ -36,9 +36,7 @@ def main():
         if view["method"] == "autogen":
             from statigent_baselines.autogen_worker import run
         else:
-            raise RuntimeError(
-                "DatawiseAgent worker unavailable: post-filter replay contract pending"
-            )
+            from statigent_baselines.datawise_worker import run
         run(view, bridge)
 
 

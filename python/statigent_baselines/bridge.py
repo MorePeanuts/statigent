@@ -12,6 +12,9 @@ ID = re.compile(r"[a-zA-Z0-9_-]{1,128}\Z")
 FIELDS = {
     "model.request": {"stage", "messages"},
     "execution.execute": {"code"},
+    "execution.restart": {"reason"},
+    "workspace.status": set(),
+    "notebook.record": {"notebook"},
     "artifact.read": {"path"},
     "bundle.register": {"bundle", "entrypoint"},
     "submission.finish": {"submission"},
@@ -42,6 +45,12 @@ def validate_payload(kind, payload):
     if kind == "execution.execute":
         if not isinstance(payload["code"], str) or not payload["code"]:
             raise ValueError("Code must be nonempty text")
+    elif kind == "execution.restart":
+        if payload["reason"] not in ("post-filter", "plan-rollback"):
+            raise ValueError("Unknown replay reason")
+    elif kind == "notebook.record":
+        if not isinstance(payload["notebook"], dict):
+            raise ValueError("Invalid notebook record")
     elif kind == "artifact.read":
         relative_path(payload["path"])
     elif kind == "bundle.register":
