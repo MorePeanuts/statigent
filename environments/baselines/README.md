@@ -62,4 +62,13 @@ bun test tests/integration/baseline-execution.test.ts tests/integration/baseline
 
 第二条需要共同 CPU 镜像，实际运行持久内核和新脚本执行器；验证输入和产物范围、凭据/私有文件/网络隔离，以及 worker 退出、取消、超时后的定向容器清理。worker 只接收公开任务视图，Python 通过固定 uv 入口启动，环境不继承 API 密钥、代理或 CUSTOM_CONFIG。双向 JSONL 以 run_id/request_id/sequence 拒绝重复、并发、错序及迟到请求；运行事件独立写入 baseline 记录。
 
-当前这些是基础层接口与检查，尚未注册四种 baseline，也未完成冻结预测、统一评分和冒烟命令。DatawiseAgent 保留官方 FST，允许过滤和规划回退发起已知历史重放，销毁旧容器后重建，次数与时限不重置；未知状态不自动恢复。官方目录布局由 /input 和 /workspace 取代，上游安装指令、Conda/GPU 环境描述和 DSBench 专属模块注入被移除，使用明确的 CPU 环境与交付说明；未注入任务答案或评测示例。
+四种 baseline 已注册，冻结预测、统一评分及显式冒烟入口见 [使用说明](../../docs/baselines.md)。DatawiseAgent 保留官方 FST，允许过滤和规划回退发起已知历史重放，销毁旧容器后重建，次数与时限不重置；未知状态不自动恢复。官方目录布局由 /input 和 /workspace 取代，上游安装指令、Conda/GPU 环境描述和 DSBench 专属模块注入被移除，使用明确的 CPU 环境与交付说明；未注入任务答案或评测示例。
+
+完整 CPU 基线使用独立预测容器，AutoGluon 环境额外固定 IPython 9.6.0 / Matplotlib 3.10.6 满足共同脚本运行时的依赖握手；pytest 仅在可选开发组，镜像设置 `UV_NO_DEV=1`。不使用宿主 AutoGluon 运行模型。
+
+```sh
+bun run test:baselines:integration
+PYTHONPATH=python uv run --project environments/baselines/autogluon --frozen --offline python -m pytest -m upstream tests/python/test_baseline_metric_upstream.py
+```
+
+第二条只验证实际官方 scorer，不训练模型；主项目快速测试不依赖 AutoGluon 安装。Docker 构建可从先前已验证镜像的 `/tmp/.cache/uv` 复用包缓存并 `uv sync --frozen --offline --no-dev --no-install-project`，依赖仍由相同锁文件决定；镜像以实际摘要登记，不把标签当作不可变身份。

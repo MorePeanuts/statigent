@@ -8,6 +8,7 @@ from autogen.coding.base import CodeResult
 from autogen.coding.markdown_code_extractor import MarkdownCodeExtractor
 
 from statigent_baselines.bridge import validate_payload
+from statigent_baselines.registration import register_from_message
 
 FINAL_MARKER = "STATIGENT_FINAL\n"
 
@@ -40,6 +41,7 @@ class HostModelClient:
         message = result["message"]
         if result["finish_reason"] not in ("stop", "tool_calls"):
             raise RuntimeError("Incomplete model output cannot execute")
+        register_from_message(message.get("content"), self.bridge)
         return SimpleNamespace(
             model=result["model"],
             choices=[SimpleNamespace(message=message)],
@@ -134,6 +136,9 @@ def run(view, bridge):
         "never put training data in it. Test features are unavailable until frozen. "
         "The predict.py entry receives --features, --output and --schema paths "
         "and must only load/predict."
+        " After fitting, optionally register the bundle before continuing: send "
+        'STATIGENT_BUNDLE followed by a newline and {"bundle":"selected",'
+        '"entrypoint":"predict.py"}. This allows no-LLM delivery on budget exhaustion.'
     )
     assistant = HistoryAssistant(
         "code_assistant",

@@ -10,8 +10,6 @@ import { csv } from "./report";
 /** 独立配对导出只读既有评分；不派发智能体、裁判或排名计算。 */
 export async function exportComparison(directory: string, scoreId: string) {
   const view = await inspect(directory);
-  if (view.plan.tasks.some((task) => task.output.kind !== "predictions"))
-    throw new Error("Modeling comparison requires prediction tasks");
   const source = await describeFile(
     directory,
     `scores/${id(scoreId)}/report.json`,
@@ -52,7 +50,7 @@ export async function exportComparison(directory: string, scoreId: string) {
       row.agent_config !== unit.agent_id ||
       row.seed !== unit.seed ||
       row.repetition !== unit.repetition ||
-      row.method !== (agent?.options.method ?? "unspecified")
+      (row.method ?? "unspecified") !== (agent?.options.method ?? "unspecified")
     )
       throw new Error("Comparison pair identity mismatch");
     if (storedScore.score !== null) {

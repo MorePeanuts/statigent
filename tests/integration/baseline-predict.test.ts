@@ -118,3 +118,86 @@ test("frozen fitted model predicts in a fresh container without training state o
     await rm(root, { recursive: true, force: true });
   }
 }, 90000);
+
+test("independent prediction rejects fitting, subprocesses and frozen model writes", async () => {
+  const root = await realpath(
+    await mkdtemp(join(tmpdir(), "baseline-predict-denied-")),
+  );
+  await mkdir(join(root, "input"));
+  await writeFile(join(root, "input/features.csv"), "id,x\na,1\n");
+  const image = await inspectImage("statigent-runtime:baselines-cpu-v1");
+  const execution = await baselineExecution({
+    config: {
+      run_id: "denied",
+      image: String(image.image_id),
+      backend: "fresh-script",
+      input_root: join(root, "input"),
+      inputs: [],
+      staging_root: join(root, "staging"),
+      seed: 1,
+      limits: { ...DEFAULT_LIMITS, task_timeout_ms: 60000 },
+    },
+    artifactDirectory: join(root, "artifacts"),
+    event: async () => {},
+  });
+  try {
+    const entry = `import argparse,json\nfrom pathlib import Path\np=argparse.ArgumentParser()\nfor k in ('features','output','schema'):p.add_argument('--'+k)\na=p.parse_args();seed=json.loads(Path(a.schema).read_text())['seed']\nif seed==1:\n from sklearn.dummy import DummyRegressor\n DummyRegressor().fit([[1]],[1])\nelif seed==2:\n import subprocess\n subprocess.run(['true'],check=True)\nelse:\n Path('predict.py').write_text('changed')\n`;
+    expect(
+      (
+        await execution.execute(
+          `from pathlib import Path\np=Path('/tmp/baseline-models/selected');p.mkdir(parents=True);(p/'predict.py').write_text(${JSON.stringify(entry)})`,
+          "prepare",
+          new AbortController().signal,
+        )
+      ).status,
+    ).toBe("ok");
+    execution.seal();
+    const bundle = await freezeContainerBundle({
+      container: execution.session.containerName,
+      bundle: "selected",
+      entrypoint: "predict.py",
+      destination: join(root, "bundle"),
+      image: String(image.image_id),
+      platform: String(image.platform),
+      maxFiles: 10,
+      maxBytes: 1048576,
+      signal: new AbortController().signal,
+      timeout_ms: 30000,
+      stop: () => execution.closeAfterSnapshot(),
+    });
+    const protocol = createProtocolV2({
+      kind: "regression",
+      metric_id: "rmse-v1",
+      id_column: "id",
+      feature_columns: ["x"],
+      targets: [{ name: "y", classes: [], positive_class: null, levels: null }],
+    });
+    for (const [seed, reason] of [
+      [1, "Fitting is forbidden"],
+      [2, "subprocesses are disabled"],
+      [3, "Read-only file system"],
+    ] as const) {
+      await expect(
+        predictBundle({
+          bundleRoot: bundle.root,
+          bundle: bundle.manifest,
+          featuresRoot: join(root, "input"),
+          features: await describeFile(join(root, "input"), "features.csv"),
+          protocol,
+          limits: { ...DEFAULT_DATA_LIMITS, max_file_bytes: 1048576 },
+          seed,
+          directory: join(root, `denied-${seed}`),
+          timeout_ms: 30000,
+          cpus: 1,
+          memory_bytes: 1024 ** 3,
+          signal: new AbortController().signal,
+        }),
+      ).rejects.toThrow(reason);
+    }
+  } finally {
+    await execution.close();
+    if (await Bun.file(join(root, "bundle/files/predict.py")).exists())
+      await chmod(join(root, "bundle/files"), 0o755);
+    await rm(root, { recursive: true, force: true });
+  }
+}, 120000);

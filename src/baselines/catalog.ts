@@ -57,6 +57,13 @@ export const methodManifestSchema = z
       });
   });
 export type MethodManifest = z.infer<typeof methodManifestSchema>;
+export const baselinePlanMethodsSchema = z.record(
+  z.string().min(1),
+  z.strictObject({
+    source: methodManifestSchema,
+    config_hash: z.string().regex(/^[a-f0-9]{64}$/),
+  }),
+);
 
 const sharedDeviations = [
   "统一宿主模型配置、父预算与无网络 CPU 执行；不使用上游独立密钥、重试或缓存。",

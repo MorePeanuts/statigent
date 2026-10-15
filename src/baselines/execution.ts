@@ -108,6 +108,9 @@ export async function baselineExecution(
     get session() {
       return session;
     },
+    get stateKnown() {
+      return known && !active && !closed;
+    },
     artifacts,
     seal() {
       if (closed || active || !known)

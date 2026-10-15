@@ -10,8 +10,10 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+import { buildPlan } from "../../src/evaluation/plan";
 import { inspect } from "../../src/evaluation/records";
 import { rescore } from "../../src/evaluation/report";
+import { runEvaluation } from "../../src/evaluation/run";
 import { sha256 } from "../../src/records/store";
 import { config, fixtureRegistry, task } from "../helpers/evaluation";
 
@@ -168,3 +170,46 @@ test("v1 batches stay inspectable and rescore to the same metrics without rewrit
   await writeFile(artifact, "4");
   await expect(inspect(directory)).rejects.toThrow("integrity");
 });
+
+for (const version of [2, 3] as const) {
+  test(`historical v${version} batch remains immutable through inspection and offline rescoring`, async () => {
+    const root = await realpath(await mkdtemp(join(tmpdir(), "legacy-batch-")));
+    roots.push(root);
+    await writeFile(join(root, "data.csv"), "value\n1\n2\n");
+    const registry = fixtureRegistry(root);
+    const plan = await buildPlan(config(), registry);
+    const run = await runEvaluation(plan, registry, join(root, "runs"), {
+      environment: { synthetic: true },
+    });
+    // 固定旧计划的真实字段集合；旧 v3 不具有新增的 baseline 来源快照。
+    const { sha256: _checksum, ...body } = plan;
+    const legacyBody = { ...body, schema_version: version };
+    const checksum = sha256(Buffer.from(JSON.stringify(legacyBody)));
+    const planPath = join(run.directory, "plan.json");
+    const manifestPath = join(run.directory, "manifest.json");
+    const manifest = await Bun.file(manifestPath).json();
+    await writeFile(
+      planPath,
+      JSON.stringify({ ...legacyBody, sha256: checksum }),
+    );
+    await writeFile(
+      manifestPath,
+      JSON.stringify({
+        ...manifest,
+        schema_version: version,
+        plan_sha256: checksum,
+      }),
+    );
+    const before = await hashes(run.directory);
+    const view = await inspect(run.directory);
+    expect(view.plan.schema_version).toBe(version);
+    expect(view.plan.baseline_methods).toBeUndefined();
+    const rescored = await rescore(run.directory, registry);
+    expect(rescored.report.scores.map((s) => s.score?.metrics)).toEqual(
+      view.records.map((r) => r.score?.metrics),
+    );
+    const after = await hashes(run.directory);
+    for (const [path, hash] of Object.entries(before))
+      expect(after[path]).toBe(hash);
+  });
+}

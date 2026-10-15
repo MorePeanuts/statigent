@@ -22,6 +22,20 @@
       "image": "sha256:e7502bf5af9f322c6a645fdfd5ca56e5b4c814516c97a06320fc6675d9426602",
       "platform": "linux/arm64",
       "status": "passed"
+    },
+    {
+      "method": "compute",
+      "probe": "compute-resources-final",
+      "image": "sha256:63674f744a4286248423ed6b35d954f0d7a98cbdacd40cbb6f6243ea5cfa7df1",
+      "platform": "linux/arm64",
+      "status": "passed"
+    },
+    {
+      "method": "autogluon",
+      "probe": "autogluon-resources-final",
+      "image": "sha256:bda69954e5c9ab4fe908a7ad1d119e7bad88cfbb029c0186281e032f25952ba7",
+      "platform": "linux/arm64",
+      "status": "passed"
     }
   ]
 }

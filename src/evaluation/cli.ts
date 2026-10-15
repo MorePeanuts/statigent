@@ -1,5 +1,6 @@
 import { join, resolve } from "node:path";
 import { Command, Option } from "commander";
+import { reproduceCommand } from "../baselines/reproduce";
 import { uniqueOptionValue } from "../cli-options";
 import { auditModeling } from "./benchmarks/modeling/audit";
 import { auditPreparations } from "./benchmarks/modeling/preparation-audit";
@@ -18,7 +19,7 @@ import {
 } from "./report";
 import { runEvaluation } from "./run";
 
-export const HELP = `bun run evaluate plan|run --config FILE [--models FILE] [--root RUN_ROOT]\nbun run evaluate inspect|cleanup EVALUATION_ID [--root RUN_ROOT]\nbun run evaluate score EVALUATION_ID [--root RUN_ROOT] [--allow-model-calls --judge-budget FILE]\nbun run evaluate compare EVALUATION_ID --score-id SCORE_ID [--root RUN_ROOT]\nbun run evaluate audit [--data-root benchmarks] [--catalog FILE] [--output NEW_FILE]\nbun run evaluate audit-prepare --config FILE --out NEW_DIRECTORY\n${PREPARE_HELP}`;
+export const HELP = `bun run evaluate reproduce --run BASELINE_RUN --out NEW_DIRECTORY --timeout-ms N\nbun run evaluate plan|run --config FILE [--models FILE] [--root RUN_ROOT]\nbun run evaluate inspect|cleanup EVALUATION_ID [--root RUN_ROOT]\nbun run evaluate score EVALUATION_ID [--root RUN_ROOT] [--allow-model-calls --judge-budget FILE]\nbun run evaluate compare EVALUATION_ID --score-id SCORE_ID [--root RUN_ROOT]\nbun run evaluate audit [--data-root benchmarks] [--catalog FILE] [--output NEW_FILE]\nbun run evaluate audit-prepare --config FILE --out NEW_DIRECTORY\n${PREPARE_HELP}`;
 export function parseArguments(args: string[]) {
   if (!args.length || args[0] === "--help") return null;
   const [operation, ...rest] = args;
@@ -88,12 +89,18 @@ export async function main(
   dependencies: Pick<RescoreOptions, "judgeFactory"> = {},
 ): Promise<unknown> {
   if (args[0] === "audit") return auditModeling(args.slice(1));
-  if (args[0] === "prepare" || args[0] === "audit-prepare") {
+  if (
+    args[0] === "prepare" ||
+    args[0] === "audit-prepare" ||
+    args[0] === "reproduce"
+  ) {
     const controller = new AbortController();
     const cancel = () => controller.abort();
     process.on("SIGINT", cancel);
     process.on("SIGTERM", cancel);
     try {
+      if (args[0] === "reproduce")
+        return await reproduceCommand(args.slice(1), controller.signal);
       if (args[0] === "audit-prepare")
         return await auditPreparations(args.slice(1), {
           signal: controller.signal,

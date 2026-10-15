@@ -13,6 +13,7 @@ from pathlib import Path
 
 from statigent_baselines.bridge import validate_payload
 from statigent_baselines.import_boundary import upstream_import_boundary
+from statigent_baselines.registration import register_from_message
 
 STAGE = ContextVar("datawise_stage", default="initialization")
 REPLAY_REASONS = {"post_filter": "post-filter", "planning": "plan-rollback"}
@@ -76,6 +77,7 @@ def run(view, bridge):
             if not isinstance(message.get("content"), str):
                 raise ValueError("Notebook response must be text")
             self._last = message
+            register_from_message(message["content"], bridge, notebook=True)
             usage = result["usage"]
             return LLMResult(
                 role="assistant",
@@ -266,6 +268,9 @@ def run(view, bridge):
         "Save fitted bundles under /tmp/baseline-models/<bundle>. "
         "Test features are withheld until frozen; predict.py accepts "
         "--features, --output, --schema and only loads/predicts."
+        " After fitting, optionally emit a markdown cell beginning with "
+        'STATIGENT_BUNDLE followed by a newline and {"bundle":"selected",'
+        '"entrypoint":"predict.py"} to allow no-LLM delivery on budget exhaustion.'
     )
     session.chat_history.initialize(
         [MarkdownCell(content=bootstrap, role="system", name="System")]

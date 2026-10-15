@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "name": "baseline-modeling-automl-v1",
+  "configs": [
+    "configs/evaluations/baselines/dsbench-modeling.json",
+    "configs/evaluations/baselines/tabarena-lite.json"
+  ],
+  "models": "configs/models.json",
+  "methods": [
+    "autogluon"
+  ],
+  "tasks": [
+    "dsbench-modeling/playground-series-s3e9",
+    "dsbench-modeling/titanic",
+    "dsbench-modeling/playground-series-s4e2",
+    "dsbench-modeling/playground-series-s3e5",
+    "dsbench-modeling/playground-series-s3e13",
+    "dsbench-modeling/playground-series-s3e18",
+    "dsbench-modeling/playground-series-s4e3",
+    "tabarena-lite/363612",
+    "tabarena-lite/363621",
+    "tabarena-lite/363685"
+  ]
+}

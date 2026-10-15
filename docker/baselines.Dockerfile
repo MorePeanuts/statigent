@@ -5,6 +5,7 @@ COPY --from=uv /uv /uvx /usr/local/bin/
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1=12.2.0-14+deb12u1 \
     && rm -rf /var/lib/apt/lists/*
 ENV UV_PYTHON_DOWNLOADS=never UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/opt/runtime/.venv \
+    UV_NO_DEV=1 \
     PYTHONPATH=/opt/runtime/python PYTHONDONTWRITEBYTECODE=1 \
     JUPYTER_RUNTIME_DIR=/tmp/jupyter IPYTHONDIR=/tmp/ipython \
     MPLCONFIGDIR=/tmp/matplotlib HOME=/tmp \

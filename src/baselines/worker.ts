@@ -177,6 +177,7 @@ async function runWorker(
                 "worker.py",
                 "bridge.py",
                 "import_boundary.py",
+                "registration.py",
                 `${view.method === "autogen" ? "autogen" : "datawise"}_worker.py`,
               ].map(async (file) => ({
                 path: file,

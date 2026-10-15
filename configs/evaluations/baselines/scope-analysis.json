@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "name": "baseline-analysis-v1",
+  "configs": [
+    "configs/evaluations/baselines/infiagent.json",
+    "configs/evaluations/baselines/dsbench-analysis.json",
+    "configs/evaluations/baselines/dacomp-da.json"
+  ],
+  "models": "configs/models.json",
+  "methods": [
+    "react",
+    "autogen",
+    "datawiseagent"
+  ],
+  "tasks": [
+    "infiagent-dabench/0",
+    "dsbench-analysis/00000001-question6",
+    "dacomp-da/dacomp-002"
+  ]
+}
