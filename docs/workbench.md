@@ -1,6 +1,6 @@
 # 本机 Web 工作台
 
-工作台把 EDA 智能体做成一个本机网页：上传数据、填写分析目标、实时观察规划与执行轨迹、取消运行、阅读结论与报告、下载 Notebook。它只调用既有的智能体入口、只读既有的运行记录，不改变智能体行为与记录格式。行为契约见 [openspec/changes/agent-workbench](../openspec/changes/agent-workbench/)（归档后为 `openspec/specs/agent-workbench`）。
+工作台把 EDA 智能体做成一个本机网页：上传数据、填写分析目标、实时观察规划与执行轨迹、取消运行、阅读结论与报告、下载 Notebook。它只调用既有的智能体入口、只读既有的运行记录，不改变智能体行为与记录格式。行为契约见 [openspec/specs/agent-workbench](../openspec/specs/agent-workbench/spec.md)，设计取舍见归档的 [变更记录](../openspec/changes/archive/2026-10-20-agent-workbench/design.md)。
 
 当前只接入 EDA 智能体（单智能体或规划—执行，持久内核或独立脚本后端）；建模智能体留待后续接入。工作台面向本机单用户，不提供登录，不面向局域网或服务器部署。
 
