@@ -18,8 +18,8 @@
 
 ## 4. 任务组装与前置检查
 
-- [ ] 4.1 实现 `src/workbench/agents.ts` 注册表与 EDA 的 Zod 载荷 Schema、`buildTask`（固定输入根、按后端选镜像、默认种子、报告限制），最终调用 `validateTask` 与 `preflightInputs`；验证单元测试覆盖合法任务、空目标、负预算、未知 profile、未注册智能体类型、输入区外文件
-- [ ] 4.2 实现前置检查：所选 profile 的密钥环境变量存在、`docker image inspect <image>` 成功；验证单元测试以可注入的命令执行器模拟 Docker 不可用与镜像缺失并返回具体缺失项
+- [x] 4.1 实现 `src/workbench/agents.ts` 注册表与 EDA 的 Zod 载荷 Schema、`buildTask`（固定输入根、按后端选镜像、默认种子、报告限制），最终调用 `validateTask` 与 `preflightInputs`；验证单元测试覆盖合法任务、空目标、负预算、未知 profile、未注册智能体类型、输入区外文件
+- [x] 4.2 实现前置检查：所选 profile 的密钥环境变量存在、`docker image inspect <image>` 成功；验证单元测试以可注入的命令执行器模拟 Docker 不可用与镜像缺失并返回具体缺失项
 
 ## 5. 运行托管
 
