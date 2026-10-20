@@ -10,3 +10,5 @@ runs/
 .env.*
 !.env.example
 .DS_Store
+web/.next/
+web/next-env.d.ts

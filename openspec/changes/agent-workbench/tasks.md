@@ -2,9 +2,9 @@
 
 ## 1. 脚手架与运行时验证
 
-- [ ] 1.1 在根 `package.json` 加入锁定版本的 `next`、`react`、`react-dom`、`@types/react`、`@types/react-dom`、`react-markdown`、`remark-gfm`，并新增 `workbench`（`bun --bun next dev web -H 127.0.0.1 -p ${WORKBENCH_PORT:-3100}`）、`workbench:build`、`workbench:start` 脚本；验证 `bun install` 成功且 `bun.lock` 更新
-- [ ] 1.2 创建 `web/`（`next.config.ts` 设置仓库根为追踪/打包根、`tsconfig.json` 继承根配置、最小 `app/layout.tsx` 与 `app/page.tsx`），更新根 `tsconfig.json`/`biome.json` 纳入 `web/**`；验证 `bun run lint`、`bun run typecheck` 通过
-- [ ] 1.3 最小可行验证：一个 `app/api/health/route.ts` 导入 `src/models/config` 的 `selectProfile` 与 `src/records/store` 的 `readManifest`，在 `bun run workbench` 下返回 200；若 Bun 运行时不可行，按 design D2 退回 Node 并在 design.md 记录结论；验证 `curl http://127.0.0.1:3100/api/health` 成功
+- [x] 1.1 在根 `package.json` 加入锁定版本的 `next`、`react`、`react-dom`、`@types/react`、`@types/react-dom`、`react-markdown`、`remark-gfm`，并新增 `workbench`（`bun --bun next dev web -H 127.0.0.1 -p ${WORKBENCH_PORT:-3100}`）、`workbench:build`、`workbench:start` 脚本；验证 `bun install` 成功且 `bun.lock` 更新
+- [x] 1.2 创建 `web/`（`next.config.ts` 设置仓库根为追踪/打包根、`tsconfig.json` 继承根配置、最小 `app/layout.tsx` 与 `app/page.tsx`），更新根 `tsconfig.json`/`biome.json` 纳入 `web/**`；验证 `bun run lint`、`bun run typecheck` 通过
+- [x] 1.3 最小可行验证：一个 `app/api/health/route.ts` 导入 `src/models/config` 的 `selectProfile` 与 `src/records/store` 的 `readManifest`，在 `bun run workbench` 下返回 200；若 Bun 运行时不可行，按 design D2 退回 Node 并在 design.md 记录结论；验证 `curl http://127.0.0.1:3100/api/health` 成功
 
 ## 2. 本机访问与模型配置
 
