@@ -108,8 +108,13 @@ test("a worker ignoring SIGTERM is killed after the grace period", async () => {
 });
 
 test("the watchdog ends a worker that outlives its task budget", async () => {
-  const s = await supervisor({ watchdogGraceMs: 50 });
+  // The watchdog fires at budget + grace (2 s). The stand-in must have installed its SIGTERM
+  // handler by then, or the default signal ends it and the escalation path is never exercised;
+  // under a loaded test run Bun can take well over 100 ms to start.
+  const s = await supervisor({ watchdogGraceMs: 1_950 });
   const { run_id } = await s.start(launch("ignore-sigterm", 50));
+  await ready(s, run_id);
+  expect(s.isLive(run_id)).toBe(true);
   const ended = await s.waitForExit(run_id);
   expect(ended).toMatchObject({
     exit_signal: "SIGKILL",
