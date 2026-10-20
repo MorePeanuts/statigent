@@ -80,7 +80,8 @@
 
 ### D7 本机访问校验
 
-- 服务以 `-H 127.0.0.1` 启动；另在 `web/middleware.ts` 校验 `Host` 为 `127.0.0.1:<port>`、`localhost:<port>` 或 `[::1]:<port>`（防 DNS rebinding）；非 GET 请求要求 `Origin` 同源（防跨站请求从本机浏览器触发付费运行）。校验逻辑放在 `access.ts` 以便单测。
+- 服务以 `-H 127.0.0.1` 启动；另在 `web/proxy.ts`（Next 16 将 Middleware 更名为 Proxy，默认 Node 运行时）校验 `Host` 的主机名为 `127.0.0.1`、`localhost` 或 `[::1]`（防 DNS rebinding）；非 GET/HEAD/OPTIONS 请求要求 `Origin` 与 `Host` 同源，缺失 `Origin` 视为不可信（防跨站请求从本机浏览器触发付费运行；本地脚本需显式携带 Origin）。校验逻辑放在 `access.ts` 以便单测。
+- Proxy 会把请求体缓冲到内存并在超过上限（默认 10 MB）后截断，大文件上传经过 Proxy 会被静默损坏。因此 matcher 排除恰为 `/api/inputs` 的路径，该路由的处理函数（GET 与 POST）自行调用 `rejectNonLocal`，与 Proxy 使用同一判定；`/api/inputs/[name]` 等其余路径仍由 Proxy 覆盖。
 
 ### D8 任务组装与智能体类型注册
 

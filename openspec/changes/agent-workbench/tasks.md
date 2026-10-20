@@ -8,13 +8,13 @@
 
 ## 2. 本机访问与模型配置
 
-- [ ] 2.1 实现 `src/workbench/access.ts`（Host 白名单、非 GET 请求同源 Origin 校验）与 `web/middleware.ts`；验证单元测试覆盖合法回环 Host、外部 Host、跨站 Origin 被拒
-- [ ] 2.2 实现模型列表服务与 `GET /api/models`，只返回 `id`、`display_name`、`capabilities`、`key_present`；验证单元测试断言响应中不含密钥值与 `api_key_env` 以外的环境内容
+- [x] 2.1 实现 `src/workbench/access.ts`（Host 白名单、非 GET 请求同源 Origin 校验）与 `web/proxy.ts`（Next 16 的 Middleware 新名称）；验证单元测试覆盖合法回环 Host、外部 Host、跨站 Origin 被拒
+- [x] 2.2 实现模型列表服务与 `GET /api/models`，只返回 `id`、`display_name`、`capabilities`、`key_present`；验证单元测试断言响应中不含密钥值与 `api_key_env` 以外的环境内容
 
 ## 3. 输入区
 
 - [ ] 3.1 实现 `src/workbench/inputs.ts`：输入区位于 `runs/workbench/inputs/`，上传校验单层文件名、扩展名白名单（csv/tsv/xlsx/json/parquet）、大小上限（默认 100 MiB，可由环境变量调整）、同名冲突失败，记录大小与 sha256，列出与删除仅限常规文件；验证单元测试覆盖 `..`、分隔符、隐藏前缀、符号链接、超限与冲突
-- [ ] 3.2 实现 `POST/GET /api/inputs` 与 `DELETE /api/inputs/[name]`（流式写入临时文件后原子改名）；验证用 `curl` 上传 `tests/fixtures/synthetic.csv` 后列表可见，非法名称返回 4xx
+- [ ] 3.2 实现 `POST/GET /api/inputs` 与 `DELETE /api/inputs/[name]`（流式写入临时文件后原子改名；`/api/inputs` 不经 Proxy，处理函数自行调用 `rejectNonLocal`，并核对实际接收字节数）；验证用 `curl` 上传 `tests/fixtures/synthetic.csv` 后列表可见，非法名称返回 4xx
 
 ## 4. 任务组装与前置检查
 
