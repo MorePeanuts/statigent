@@ -25,8 +25,8 @@
 
 - [x] 5.1 实现 `src/workbench/worker.ts`：解析参数、以预分配 run ID 调用 `runAgent`、信号接入 `AbortController`、结束输出结果摘要并按状态设置退出码；验证 `tests/integration` 中以替身模型客户端运行一次合成任务的路径可行，或在无法替身时用 `--help`/参数校验测试覆盖入口
 - [x] 5.2 实现 `src/workbench/supervisor.ts`：`globalThis` 单例、环境变量白名单、旁路记录 `runs/workbench/supervisor/<run_id>.json`（任务快照、pid、退出码、stderr 尾部）、并发上限、看门狗、取消（SIGTERM → 宽限 → SIGKILL）、Web 服务退出时转发 SIGTERM；验证集成测试用可控替身 worker 覆盖正常结束、取消、拒绝退出被强杀、崩溃、并发超限
-- [ ] 5.3 实现 `src/workbench/runs.ts` 显示状态判定（design D4 表格）与运行列表（倒序、损坏目录作为错误项、只扫描 `runs/workbench/runs/`）；验证单元测试逐行覆盖判定表与损坏清单
-- [ ] 5.4 实现 `POST /api/runs`（校验 → 前置检查 → 启动 → 返回 run ID）、`GET /api/runs`、`GET /api/runs/[id]`、`POST /api/runs/[id]/cancel`；验证集成测试在替身 worker 下经路由处理器完成提交、查询、取消
+- [x] 5.3 实现 `src/workbench/runs.ts` 显示状态判定（design D4 表格）与运行列表（倒序、损坏目录作为错误项、只扫描 `runs/workbench/runs/`）；验证单元测试逐行覆盖判定表与损坏清单
+- [x] 5.4 实现 `POST /api/runs`（校验 → 前置检查 → 启动 → 返回 run ID）、`GET /api/runs`、`GET /api/runs/[id]`、`POST /api/runs/[id]/cancel`；验证集成测试在替身 worker 下经路由处理器完成提交、查询、取消
 
 ## 6. 实时轨迹
 

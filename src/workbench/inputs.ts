@@ -125,7 +125,8 @@ async function describe(root: string, name: string): Promise<InputFile> {
 export async function listInputs(root = inputRoot()): Promise<InputFile[]> {
   let entries: string[];
   try {
-    entries = await readdir(root);
+    // Runtime data, not code: keep output tracing from including the whole repository.
+    entries = await readdir(/*turbopackIgnore: true*/ root);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
     throw error;

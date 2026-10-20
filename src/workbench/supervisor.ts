@@ -202,10 +202,12 @@ export class Supervisor {
       ],
       {
         cwd: this.options.cwd,
+        // Next augments ProcessEnv with a required NODE_ENV; the worker deliberately gets only the
+        // allow-listed variables, so the narrower record is the intended value here.
         env: workerEnvironment(
           this.options.environment,
           launch.profile.api_key_env,
-        ),
+        ) as NodeJS.ProcessEnv,
         stdio: ["ignore", "pipe", "pipe"],
       },
     );

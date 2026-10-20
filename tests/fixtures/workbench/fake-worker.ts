@@ -1,13 +1,26 @@
 // Stand-in for src/workbench/worker.ts in supervisor tests: same arguments and exit protocol,
-// no model or Docker. The task's `mode` field picks the behaviour under test.
+// no real model or Docker. The behaviour comes from the task's `mode` field, or from a
+// `mode:<name>` marker in its goal when the task was assembled from a form submission.
 import { readFileSync } from "node:fs";
+import { WORKER_EXIT } from "../../../src/workbench/protocol";
+import { workerMain } from "../../../src/workbench/worker";
+import {
+  call,
+  fakeRuntime,
+  finish,
+  lastFeedback,
+  reply,
+  ScriptClient,
+} from "../../helpers/agent";
 
 const args = process.argv.slice(2);
 const flag = (name: string) => args[args.indexOf(name) + 1] ?? "";
 const runId = flag("--run-id");
 const task = JSON.parse(readFileSync(flag("--task"), "utf8")) as {
-  mode: string;
+  mode?: string;
+  goal?: string;
 };
+const mode = task.mode ?? /mode:(\S+)/.exec(task.goal ?? "")?.[1];
 
 function report(status: string, reason: string, code: number): never {
   console.log(
@@ -19,18 +32,47 @@ function report(status: string, reason: string, code: number): never {
 // Keeps the process alive until a signal decides its fate.
 const idle = () => setInterval(() => {}, 1000);
 
-if (task.mode === "complete") report("completed", "analysis_accepted", 0);
-else if (task.mode === "await-signal") {
+/** The real agent loop with a scripted model and an in-memory execution session. */
+async function agent(waitForCancel: boolean) {
+  const controller = new AbortController();
+  process.on("SIGTERM", () => controller.abort());
+  const client = new ScriptClient(async (body, i) => {
+    if (waitForCancel) {
+      console.error("ready");
+      while (!controller.signal.aborted) await Bun.sleep(10);
+      return reply([call("execute_python", { code: "late" })]);
+    }
+    return i === 0
+      ? reply([call("execute_python", { code: "x = 1" })])
+      : reply([finish(String(lastFeedback(body).cell_id))]);
+  });
+  const summary = await workerMain(args, controller.signal, {
+    client,
+    createSession: fakeRuntime().createSession,
+  });
+  report(
+    summary.status,
+    summary.reason,
+    summary.status === "completed"
+      ? WORKER_EXIT.completed
+      : WORKER_EXIT.not_completed,
+  );
+}
+
+if (mode === "complete") report("completed", "analysis_accepted", 0);
+else if (mode === "await-signal") {
   process.on("SIGTERM", () => report("cancelled", "cancelled", 2));
   console.error("ready");
   idle();
-} else if (task.mode === "ignore-sigterm") {
+} else if (mode === "ignore-sigterm") {
   process.on("SIGTERM", () => console.error("ignoring SIGTERM"));
   console.error("ready");
   idle();
-} else if (task.mode === "crash") {
+} else if (mode === "crash") {
   console.error("worker exploded before the agent started");
   process.exit(1);
-} else if (task.mode === "environment")
+} else if (mode === "environment")
   report("completed", JSON.stringify(Object.keys(process.env).sort()), 0);
-else throw new Error(`unknown mode ${task.mode}`);
+else if (mode === "agent-complete") await agent(false);
+else if (mode === "agent-wait") await agent(true);
+else throw new Error(`unknown mode ${mode}`);
