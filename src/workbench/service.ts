@@ -1,12 +1,14 @@
 import { mkdir, readFile } from "node:fs/promises";
 import type { ExecutionBackend } from "../execution/backend";
 import { buildTask, TaskError } from "./agents";
+import { contentResponse, readResultFile, readRunArtifact } from "./artifacts";
 import { errorResponse } from "./http";
 import {
   type CommandRunner,
   checkRunPrerequisites,
   runCommand,
 } from "./preflight";
+import { resultSummary } from "./results";
 import { listRuns, readRun } from "./runs";
 import { parseAfter, traceStream } from "./stream";
 import { NotRunningError, RunLimitError, type Supervisor } from "./supervisor";
@@ -99,6 +101,40 @@ export function createRunHandlers(deps: RunServiceDependencies) {
         if (error instanceof NotRunningError)
           return json({ error: error.message }, 409);
         return errorResponse(error, "Cancelling run");
+      }
+    },
+
+    async artifact(runId: string, artifactId: string): Promise<Response> {
+      try {
+        return contentResponse(
+          await readRunArtifact(supervisor.runsRoot, runId, artifactId),
+        );
+      } catch (error) {
+        return errorResponse(error, "Reading artifact");
+      }
+    },
+
+    async file(
+      runId: string,
+      segments: string[],
+      request: Request,
+    ): Promise<Response> {
+      try {
+        const download = new URL(request.url).searchParams.has("download");
+        return contentResponse(
+          await readResultFile(supervisor.runsRoot, runId, segments.join("/")),
+          download,
+        );
+      } catch (error) {
+        return errorResponse(error, "Reading result file");
+      }
+    },
+
+    async result(runId: string): Promise<Response> {
+      try {
+        return json({ result: await resultSummary(supervisor, runId) });
+      } catch (error) {
+        return errorResponse(error, "Reading run result");
       }
     },
 

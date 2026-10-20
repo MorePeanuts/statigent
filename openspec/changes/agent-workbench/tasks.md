@@ -35,8 +35,8 @@
 
 ## 7. 产物与结果
 
-- [ ] 7.1 实现 `src/workbench/artifacts.ts` 与 `GET /api/runs/[id]/artifacts/[artifactId]`、`GET /api/runs/[id]/files/[name]`（白名单：`analysis.json`、`analysis.md`、manifest 导出项），含 run ID 格式与 `realpath` 边界、`readArtifact` 完整性校验、按内容识别图片类型、`nosniff` 与 CSP 头；验证单元测试覆盖越界 run ID、未登记产物、篡改产物、符号链接、图片与文本类型
-- [ ] 7.2 实现结果摘要接口（终态与原因、结论、证据引用、报告图片映射、导出状态、token 与执行次数）；验证单元测试用已完成、预算耗尽、失败三种合成运行断言字段与“不完整”标记
+- [x] 7.1 实现 `src/workbench/artifacts.ts` 与 `GET /api/runs/[id]/artifacts/[artifactId]`、`GET /api/runs/[id]/files/[...path]`（脚本导出位于多级目录）（白名单：`analysis.json`、`analysis.md`、manifest 导出项），含 run ID 格式与 `realpath` 边界、`readArtifact` 完整性校验、按内容识别图片类型、`nosniff` 与 CSP 头；验证单元测试覆盖越界 run ID、未登记产物、篡改产物、符号链接、图片与文本类型
+- [x] 7.2 实现结果摘要接口（终态与原因、结论、证据引用、报告图片映射、导出状态、token 与执行次数）；验证单元测试用已完成、预算耗尽、失败三种合成运行断言字段与“不完整”标记
 
 ## 8. 前端界面
 

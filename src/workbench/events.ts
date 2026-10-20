@@ -221,6 +221,7 @@ const known = z.discriminatedUnion("type", [
     .object({
       ...base,
       type: z.enum(["analysis_submitted", "analysis_closing", "report_saved"]),
+      artifact: ref.optional(),
     })
     .loose(),
   z
@@ -504,6 +505,7 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
               ? "Closing the analysis"
               : "Final analysis submitted",
         data: scalars(record),
+        refs: e.artifact ? { report: refView(e.artifact) } : {},
       };
     case "agent_finish":
     case "run_finished":

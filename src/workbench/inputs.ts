@@ -10,6 +10,7 @@ import {
   unlink,
 } from "node:fs/promises";
 import { join } from "node:path";
+import { HttpError } from "./http";
 import { workbenchRoot } from "./paths";
 
 export const INPUT_EXTENSIONS = ["csv", "tsv", "xlsx", "json", "parquet"];
@@ -18,14 +19,7 @@ export const DEFAULT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 // the leading dot keeps them out of listings and out of valid input names.
 const STAGING = ".uploading";
 
-export class InputError extends Error {
-  constructor(
-    message: string,
-    readonly status: 400 | 404 | 409 | 413,
-  ) {
-    super(message);
-  }
-}
+export class InputError extends HttpError {}
 
 export interface InputFile {
   name: string;
