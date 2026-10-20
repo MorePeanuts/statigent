@@ -3,7 +3,7 @@ node_modules/
 __pycache__/
 .pytest_cache/
 .ruff_cache/
-runs/
+/runs/
 .runtime-staging/
 .tools/baselines/
 .env
