@@ -3,10 +3,12 @@ node_modules/
 __pycache__/
 .pytest_cache/
 .ruff_cache/
-runs/
+/runs/
 .runtime-staging/
 .tools/baselines/
 .env
 .env.*
 !.env.example
 .DS_Store
+web/.next/
+web/next-env.d.ts

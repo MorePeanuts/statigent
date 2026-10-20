@@ -6,7 +6,7 @@
   "scripts": {
     "format": "biome check --write . && uv run ruff format python tests/python",
     "lint": "biome check . && uv run ruff check python tests/python && uv run ruff format --check python tests/python",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && next typegen web && tsc --noEmit -p web",
     "test": "bun test tests/unit && uv run pytest tests/python",
     "check": "bun run lint && bun run typecheck && bun run test",
     "test:integration": "bun test tests/integration && uv run pytest -m integration tests/python",
@@ -28,15 +28,26 @@
     "test:smoke:classification": "bun src/modeling/classification-smoke.ts",
     "test:smoke:script": "bun src/agent/script-smoke.ts",
     "test:smoke:baselines": "bun src/baselines/smoke.ts",
-    "test:baselines:integration": "bun test tests/integration/baseline-*.test.ts"
+    "test:baselines:integration": "bun test tests/integration/baseline-*.test.ts",
+    "workbench": "NEXT_TELEMETRY_DISABLED=1 bun --bun next dev web -H 127.0.0.1 -p ${WORKBENCH_PORT:-3100}",
+    "workbench:build": "NEXT_TELEMETRY_DISABLED=1 bun --bun next build web",
+    "workbench:start": "NEXT_TELEMETRY_DISABLED=1 bun --bun next start web -H 127.0.0.1 -p ${WORKBENCH_PORT:-3100}",
+    "test:smoke:workbench": "bun src/workbench/smoke.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",
     "@types/bun": "1.3.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
     "typescript": "5.9.3"
   },
   "dependencies": {
     "commander": "15.0.0",
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1",
     "zod": "4.6.7"
   }
 }

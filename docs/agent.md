@@ -106,6 +106,8 @@ DeepSeek 示例请求 `deepseek-flash`，展示 DeepSeek-V4.1-Flash；别名不�
 
 先按 README 构建 `statigent-runtime:dev`，在宿主环境设置 `DEEPSEEK_API_KEY`。密钥不写入仓库，不需要传给 Docker。相对输入根按命令工作目录解析。
 
+不想手写任务 JSON 时，可以用本机 Web 工作台上传数据、提交任务并实时查看轨迹与结果，见 [workbench.md](workbench.md)。
+
 ```sh
 bun run agent run --task configs/tasks/synthetic-eda.json --models configs/models.json --model deepseek-flash
 bun run runtime inspect runs/agent/<run_id>

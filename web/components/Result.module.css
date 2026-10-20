@@ -1,0 +1,101 @@
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary {
+  margin: 0;
+  font-size: 15px;
+  white-space: pre-wrap;
+}
+
+.findings {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.findings p {
+  margin: 0 0 4px;
+}
+
+.value {
+  background: var(--code-bg);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.valueBlock {
+  max-height: 240px;
+  font-size: 12px;
+}
+
+.evidenceRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.evidence {
+  font: inherit;
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: pointer;
+}
+.unresolved {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  cursor: default;
+}
+
+.twoColumns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.report {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.report table {
+  margin: 8px 0;
+}
+.report pre {
+  margin: 8px 0;
+}
+
+.reportImage {
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #fff;
+}
+
+.dropped {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.costGrid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 24px;
+  margin: 0 0 8px;
+}
+.costGrid dt {
+  color: var(--text-muted);
+}
+.costGrid dd {
+  margin: 0;
+}

@@ -1,0 +1,311 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.statusBar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.statusMain {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.goal {
+  margin: 0;
+  flex: 1;
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.mainColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.side {
+  position: sticky;
+  top: 64px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  padding: 8px 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.tabActive {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timelineTools {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rowWarn {
+  border-color: var(--warn);
+}
+.rowFinish {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.rowHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.rowSummary {
+  font-weight: 500;
+}
+
+.seq {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.role {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0 6px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+}
+.planner {
+  color: var(--planner);
+}
+.executor {
+  color: var(--executor);
+}
+
+.subtask {
+  border-left: 3px solid var(--executor);
+  padding-left: 10px;
+}
+.subtask > summary {
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+  font-weight: 600;
+}
+
+.subtaskBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scroll-margin-top: 80px;
+}
+.cellHighlight {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.cellHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.output {
+  background: var(--surface-2);
+  max-height: 320px;
+}
+
+.small {
+  font-size: 12px;
+  max-height: 420px;
+}
+
+.okText {
+  color: var(--ok);
+  font-weight: 600;
+}
+.errorText {
+  color: var(--danger);
+  font-weight: 600;
+}
+.warnText {
+  color: var(--warn);
+}
+
+.images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.thumb {
+  max-height: 180px;
+  max-width: 280px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #fff;
+}
+
+.image {
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #fff;
+}
+
+.fileLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.artifact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.artifactBody {
+  width: 100%;
+}
+
+.modelMessage {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.toolName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.liveHint {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.budget {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.budgetLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 3px;
+}
+
+.meter {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.meterFill {
+  height: 100%;
+  background: var(--accent);
+}
+.meterLow {
+  background: var(--warn);
+}
+
+.budgetNote {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.stats dt {
+  color: var(--text-muted);
+}
+.stats dd {
+  margin: 0;
+  text-align: right;
+}
