@@ -112,7 +112,7 @@ kill -TERM <pid>
 bun run test:smoke:workbench -- --model deepseek-flash
 ```
 
-它在 3199 端口启动服务，经与浏览器相同的 HTTP 接口上传 `tests/fixtures/synthetic.csv`，提交固定的双角色合成报告任务（`configs/tasks/collaboration-report.json` 的目标、约束与预算），订阅事件直到终态，再检查：运行完成、事件按序无缺口、结论被接受且含 A=2、B=4 的分组均值、证据都能解析、报告与其图片可读、Notebook 可下载。结果写入 `runs/workbench/smoke/<run_id>.json`，失败时退出码为 1。每次调用只跑一次，不自动重试；缺少密钥或镜像时在前置检查处停下，不产生模型调用。
+它在 3199 端口启动服务，经与浏览器相同的 HTTP 接口上传 `tests/fixtures/synthetic.csv`，提交固定的双角色合成报告任务（`configs/tasks/collaboration-report.json` 的目标、约束与预算），订阅事件直到终态，再检查：运行完成、事件按序无缺口、结论被接受且含 A=2、B=4 的分组均值、证据都能解析、报告与其图片可读、Notebook 可下载。结果写入 `runs/workbench/smoke/<run_id>.json`，失败时退出码为 1。每次调用只跑一次，不自动重试；缺少密钥或镜像时在前置检查处停下，不产生模型调用。实际检查与真实冒烟结果见 [workbench-validation.md](workbench-validation.md)。
 
 ## 测试
 

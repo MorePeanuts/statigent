@@ -48,8 +48,8 @@
 ## 9. 文档与端到端验证
 
 - [x] 9.1 编写 `docs/workbench.md`（前提：Docker 镜像构建命令、密钥环境变量；启动命令与端口；目录布局；安全边界；孤儿进程手动处理；工作台运行不作为正式实验结果），并在 `docs/agent.md` 链接；验证文档中的启动命令可按原文运行
-- [ ] 9.2 实现显式冒烟入口 `bun run test:smoke:workbench --model <id>`（启动服务、上传 `tests/fixtures/synthetic.csv`、提交小预算 planner-executor 报告任务、订阅事件至终态、校验结果接口与报告图片可读）；验证在有密钥与镜像的本机上实际运行一次并记录 run ID 与结果
-- [ ] 9.3 运行 `bun run check` 与 `bun run test:integration`，确认默认检查在未设置任何模型密钥时通过；如实记录未运行或失败的检查
+- [x] 9.2 实现显式冒烟入口 `bun run test:smoke:workbench --model <id>`（启动服务、上传 `tests/fixtures/synthetic.csv`、提交小预算 planner-executor 报告任务、订阅事件至终态、校验结果接口与报告图片可读）；验证在有密钥与镜像的本机上实际运行一次并记录 run ID 与结果
+- [x] 9.3 运行 `bun run check` 与 `bun run test:integration`，确认默认检查在未设置任何模型密钥时通过；如实记录未运行或失败的检查
 
 ## Workflow follow-up
 
