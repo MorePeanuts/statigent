@@ -65,7 +65,7 @@ export async function checkRunPrerequisites(
   } catch {
     problems.push({
       code: "model_key_missing",
-      message: `Set ${options.profile.api_key_env} in the workbench server's environment for model profile ${options.profile.id}`,
+      message: `请在启动工作台服务的环境中设置 ${options.profile.api_key_env}（模型配置 ${options.profile.id}）`,
     });
   }
   const daemon = await run(
@@ -76,7 +76,7 @@ export async function checkRunPrerequisites(
   if (daemon.code !== 0) {
     problems.push({
       code: "docker_unavailable",
-      message: `Docker is not reachable: ${firstLine(daemon.stderr) || "no server response"}`,
+      message: `无法连接 Docker：${firstLine(daemon.stderr) || "服务端无响应"}`,
     });
     return problems;
   }
@@ -88,7 +88,7 @@ export async function checkRunPrerequisites(
   if (image.code !== 0) {
     problems.push({
       code: "image_missing",
-      message: `Execution image ${options.image} is not available locally; build it as described in docs/execution-runtime.md`,
+      message: `本机没有执行镜像 ${options.image}，请按 docs/execution-runtime.md 构建`,
     });
     return problems;
   }
@@ -97,7 +97,7 @@ export async function checkRunPrerequisites(
   } catch (error) {
     problems.push({
       code: "image_incompatible",
-      message: `Image ${options.image} cannot run the ${options.backend} backend: ${error instanceof Error ? error.message : "invalid labels"}`,
+      message: `镜像 ${options.image} 不支持 ${options.backend} 后端：${error instanceof Error ? error.message : "标签无效"}`,
     });
   }
   return problems;

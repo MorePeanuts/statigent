@@ -1,8 +1,18 @@
+import { DEFAULT_BUDGET } from "../../src/agent/config";
+import { Workbench } from "../components/Workbench";
+
+export const dynamic = "force-dynamic";
+
 export default function HomePage() {
+  // Rendered on the server so the form shows the agent's real defaults, not a copy of them.
   return (
-    <main>
-      <h1>Statigent 工作台</h1>
-      <p>工作台界面在后续任务中实现。</p>
-    </main>
+    <Workbench
+      defaults={{
+        model_attempts: DEFAULT_BUDGET.model_attempts,
+        executions: DEFAULT_BUDGET.executions,
+        total_tokens: DEFAULT_BUDGET.total_tokens,
+        task_timeout_ms: DEFAULT_BUDGET.task_timeout_ms,
+      }}
+    />
   );
 }

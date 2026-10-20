@@ -103,7 +103,7 @@ test("organization, backend, budget overrides and report are passed through", as
 
 test("form mistakes are reported per field before any run exists", async () => {
   expect(await issues({ ...valid, goal: "   " })).toEqual([
-    { field: "goal", message: "Goal is required" },
+    { field: "goal", message: "请填写分析目标" },
   ]);
   expect(
     (await issues({ ...valid, budget: { executions: -1 } })).map(

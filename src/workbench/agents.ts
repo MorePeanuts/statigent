@@ -51,7 +51,11 @@ const REPORT_SPEC = {
   max_report_bytes: 256 * 1024,
 };
 
-const budgetValue = z.number().int().nonnegative();
+// Messages are shown next to form fields, so they are written for the (Chinese) form.
+const budgetValue = z
+  .number("必须是数字")
+  .int("必须是整数")
+  .nonnegative("不能为负数");
 const budgetSchema = z
   .object(
     Object.fromEntries(
@@ -63,13 +67,13 @@ const budgetSchema = z
 export const edaPayloadSchema = z
   .object({
     agent_type: z.literal("eda"),
-    goal: z.string().trim().min(1, "Goal is required").max(20000),
+    goal: z.string().trim().min(1, "请填写分析目标").max(20000, "分析目标过长"),
     constraints: z
       .array(z.string().trim().min(1).max(2000))
       .max(20)
       .default([]),
     inputs: z.array(z.string()).max(50).default([]),
-    model_profile: z.string().min(1, "Model profile is required"),
+    model_profile: z.string().min(1, "请选择模型"),
     organization: z.enum(["single", "planner-executor"]).default("single"),
     backend: z
       .enum(["persistent-kernel", "fresh-script"])
