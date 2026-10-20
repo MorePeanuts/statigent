@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { afterEach, expect, test } from "bun:test";
 import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -13,9 +13,15 @@ import {
 
 const FAKE_WORKER = resolve("tests/fixtures/workbench/fake-worker.ts");
 
+// A failing test must not leave stand-in workers running (some wait forever for a signal).
+const created: Supervisor[] = [];
+afterEach(() => {
+  for (const s of created.splice(0)) s.shutdown("SIGKILL");
+});
+
 async function supervisor(overrides: Partial<SupervisorOptions> = {}) {
   const root = await mkdtemp(join(tmpdir(), "workbench-supervisor-"));
-  return new Supervisor({
+  const s = new Supervisor({
     root,
     cwd: process.cwd(),
     modelsPath: join(root, "models.json"),
@@ -26,6 +32,8 @@ async function supervisor(overrides: Partial<SupervisorOptions> = {}) {
     environment: { PATH: process.env.PATH, HOME: process.env.HOME },
     ...overrides,
   });
+  created.push(s);
+  return s;
 }
 
 function launch(mode: string, timeoutMs = 60_000) {

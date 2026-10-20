@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { afterEach, expect, test } from "bun:test";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -9,6 +9,12 @@ import { Supervisor } from "../../src/workbench/supervisor";
 import { profile } from "../helpers/agent";
 
 const FAKE_WORKER = resolve("tests/fixtures/workbench/fake-worker.ts");
+
+// A failing test must not leave stand-in workers running (some wait forever for a signal).
+const created: Supervisor[] = [];
+afterEach(() => {
+  for (const s of created.splice(0)) s.shutdown("SIGKILL");
+});
 const KEY = { [profile.api_key_env]: "sk-test" };
 
 // Docker answers as if the daemon and image were present; no container is ever started.
@@ -39,6 +45,7 @@ async function service(environment: Record<string, string | undefined> = KEY) {
       ...environment,
     },
   });
+  created.push(supervisor);
   const handlers = createRunHandlers({
     supervisor,
     inputRoot,
