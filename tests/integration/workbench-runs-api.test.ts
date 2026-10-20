@@ -46,6 +46,7 @@ async function service(environment: Record<string, string | undefined> = KEY) {
     images: imagesFromEnvironment({}),
     environment,
     runCommand: dockerReady,
+    pollMs: 20,
   });
   return { supervisor, handlers };
 }
@@ -161,4 +162,149 @@ test("unknown runs answer 404 and are not cancellable", async () => {
   expect((await handlers.get("missing")).status).toBe(404);
   expect((await handlers.get("../escape")).status).toBe(404);
   expect((await handlers.cancel("missing")).status).toBe(409);
+});
+
+interface Frame {
+  id?: string;
+  event: string;
+  data: Record<string, unknown>;
+}
+
+/** Reads SSE frames until an `end` frame (or the stream closes); `onFrame` may act mid-stream. */
+async function frames(
+  response: Response,
+  onFrame: (frame: Frame) => void | Promise<void> = () => {},
+): Promise<Frame[]> {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("No body");
+  const decoder = new TextDecoder();
+  const seen: Frame[] = [];
+  let buffer = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) return seen;
+    buffer += decoder.decode(value, { stream: true });
+    let split = buffer.indexOf("\n\n");
+    while (split !== -1) {
+      const block = buffer.slice(0, split);
+      buffer = buffer.slice(split + 2);
+      split = buffer.indexOf("\n\n");
+      if (block.startsWith(":")) continue;
+      const fields = Object.fromEntries(
+        block.split("\n").map((line) => {
+          const at = line.indexOf(": ");
+          return [line.slice(0, at), line.slice(at + 2)];
+        }),
+      );
+      const frame: Frame = {
+        id: fields.id,
+        event: fields.event ?? "message",
+        data: JSON.parse(fields.data ?? "null"),
+      };
+      seen.push(frame);
+      await onFrame(frame);
+      if (frame.event === "end") {
+        await reader.cancel();
+        return seen;
+      }
+    }
+  }
+}
+
+const eventsRequest = (runId: string, headers: Record<string, string> = {}) =>
+  new Request(`http://127.0.0.1:3100/api/runs/${runId}/events`, { headers });
+
+test("the trace streams live and ends with the run's final status", async () => {
+  const { supervisor, handlers } = await service();
+  const { run_id } = (await (
+    await handlers.submit(submit(payload("mode:agent-wait")))
+  ).json()) as { run_id: string };
+  const response = await handlers.events(run_id, eventsRequest(run_id));
+  expect(response.headers.get("content-type")).toContain("text/event-stream");
+  let cancelled = false;
+  const seen = await frames(response, async (frame) => {
+    // Cancel once the model call is visibly in flight.
+    if (
+      !cancelled &&
+      frame.event === "trace" &&
+      frame.data.type === "model_request"
+    ) {
+      cancelled = true;
+      await handlers.cancel(run_id);
+    }
+  });
+  const traces = seen.filter((f) => f.event === "trace");
+  expect(traces.map((f) => Number(f.id))).toEqual(traces.map((_, i) => i + 1));
+  expect(traces.map((f) => f.data.seq)).toEqual(traces.map((_, i) => i + 1));
+  expect(traces.at(-1)?.data).toMatchObject({
+    type: "run_finished",
+    data: { status: "cancelled" },
+  });
+  const statuses = seen
+    .filter((f) => f.event === "status")
+    .map((f) => f.data.status);
+  expect(["starting", "running"]).toContain(statuses[0] as string);
+  expect(seen.at(-1)).toMatchObject({
+    event: "end",
+    data: { status: "cancelled", cancellable: false },
+  });
+  await supervisor.waitForExit(run_id);
+});
+
+test("reconnecting resumes after the last received event", async () => {
+  const { supervisor, handlers } = await service();
+  const { run_id } = (await (
+    await handlers.submit(submit(payload("mode:agent-complete")))
+  ).json()) as { run_id: string };
+  await supervisor.waitForExit(run_id);
+  const all = (
+    await frames(await handlers.events(run_id, eventsRequest(run_id)))
+  ).filter((f) => f.event === "trace");
+  expect(all.length).toBeGreaterThan(4);
+  const resumed = await frames(
+    await handlers.events(
+      run_id,
+      eventsRequest(run_id, { "last-event-id": "3" }),
+    ),
+  );
+  expect(resumed.filter((f) => f.event === "trace").map((f) => f.id)).toEqual(
+    all.slice(3).map((f) => f.id),
+  );
+  const viaQuery = await frames(
+    await handlers.events(
+      run_id,
+      new Request(
+        `http://127.0.0.1:3100/api/runs/${run_id}/events?after=${all.length}`,
+      ),
+    ),
+  );
+  expect(viaQuery.map((f) => f.event)).toEqual(["status", "end"]);
+});
+
+test("stream requests are validated before streaming", async () => {
+  const { handlers } = await service();
+  expect(
+    (await handlers.events("missing", eventsRequest("missing"))).status,
+  ).toBe(404);
+  expect(
+    (await handlers.events("x", eventsRequest("x", { "last-event-id": "-1" })))
+      .status,
+  ).toBe(400);
+});
+
+test("a client that disconnects stops the stream without disturbing the run", async () => {
+  const { supervisor, handlers } = await service();
+  const { run_id } = (await (
+    await handlers.submit(submit(payload("mode:agent-wait")))
+  ).json()) as { run_id: string };
+  const response = await handlers.events(run_id, eventsRequest(run_id));
+  const reader = response.body?.getReader();
+  await reader?.read();
+  await reader?.cancel();
+  expect(supervisor.isLive(run_id)).toBe(true);
+  await ready(supervisor, run_id);
+  await handlers.cancel(run_id);
+  expect((await supervisor.waitForExit(run_id))?.summary?.status).toBe(
+    "cancelled",
+  );
 });

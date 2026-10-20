@@ -8,6 +8,7 @@ import {
   runCommand,
 } from "./preflight";
 import { listRuns, readRun } from "./runs";
+import { parseAfter, traceStream } from "./stream";
 import { NotRunningError, RunLimitError, type Supervisor } from "./supervisor";
 
 export interface RunServiceDependencies {
@@ -17,6 +18,8 @@ export interface RunServiceDependencies {
   images: Record<ExecutionBackend, string>;
   environment: Record<string, string | undefined>;
   runCommand?: CommandRunner;
+  /** Trace polling interval; tests shorten it. */
+  pollMs?: number;
 }
 
 const json = (body: unknown, status = 200) => Response.json(body, { status });
@@ -97,6 +100,38 @@ export function createRunHandlers(deps: RunServiceDependencies) {
           return json({ error: error.message }, 409);
         return errorResponse(error, "Cancelling run");
       }
+    },
+
+    async events(runId: string, request: Request): Promise<Response> {
+      const after = parseAfter(request);
+      if (after === null)
+        return json(
+          { error: "Last-Event-ID / after must be a sequence number" },
+          400,
+        );
+      try {
+        if (!(await readRun(supervisor, runId)))
+          return json({ error: "Run not found" }, 404);
+      } catch (error) {
+        return errorResponse(error, "Reading run");
+      }
+      return new Response(
+        traceStream({
+          source: supervisor,
+          runId,
+          after,
+          pollMs: deps.pollMs,
+          signal: request.signal,
+        }),
+        {
+          headers: {
+            "content-type": "text/event-stream; charset=utf-8",
+            "cache-control": "no-cache, no-transform",
+            connection: "keep-alive",
+            "x-accel-buffering": "no",
+          },
+        },
+      );
     },
   };
 }

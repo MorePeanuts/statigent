@@ -30,8 +30,8 @@
 
 ## 6. 实时轨迹
 
-- [ ] 6.1 实现 `src/workbench/events.ts`：字节偏移增量读取、只切完整行、行号游标、Zod 判别联合规范化已知事件、未知或解析失败降级为 generic、大内容只保留引用；验证单元测试覆盖未完成末行、断点续读、persistent-kernel 与 fresh-script 及 planner-executor 合成轨迹、未知类型
-- [ ] 6.2 实现 `GET /api/runs/[id]/events` SSE（`Last-Event-ID`/`?after=` 续传、500 ms 轮询、终态读尽后发送 `end`、客户端断开即停止）；验证集成测试在替身 worker 追加事件时依次收到事件、断线后从指定序号续传
+- [x] 6.1 实现 `src/workbench/events.ts`：字节偏移增量读取、只切完整行、行号游标、Zod 判别联合规范化已知事件、未知或解析失败降级为 generic、大内容只保留引用；验证单元测试覆盖未完成末行、断点续读、persistent-kernel 与 fresh-script 及 planner-executor 合成轨迹、未知类型
+- [x] 6.2 实现 `GET /api/runs/[id]/events` SSE（`Last-Event-ID`/`?after=` 续传、500 ms 轮询、终态读尽后发送 `end`、客户端断开即停止）；验证集成测试在替身 worker 追加事件时依次收到事件、断线后从指定序号续传
 
 ## 7. 产物与结果
 
