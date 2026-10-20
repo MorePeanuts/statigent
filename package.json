@@ -31,7 +31,8 @@
     "test:baselines:integration": "bun test tests/integration/baseline-*.test.ts",
     "workbench": "NEXT_TELEMETRY_DISABLED=1 bun --bun next dev web -H 127.0.0.1 -p ${WORKBENCH_PORT:-3100}",
     "workbench:build": "NEXT_TELEMETRY_DISABLED=1 bun --bun next build web",
-    "workbench:start": "NEXT_TELEMETRY_DISABLED=1 bun --bun next start web -H 127.0.0.1 -p ${WORKBENCH_PORT:-3100}"
+    "workbench:start": "NEXT_TELEMETRY_DISABLED=1 bun --bun next start web -H 127.0.0.1 -p ${WORKBENCH_PORT:-3100}",
+    "test:smoke:workbench": "bun src/workbench/smoke.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.4",

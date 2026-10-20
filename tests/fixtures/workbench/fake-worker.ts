@@ -20,7 +20,11 @@ const task = JSON.parse(readFileSync(flag("--task"), "utf8")) as {
   mode?: string;
   goal?: string;
 };
-const mode = task.mode ?? /mode:(\S+)/.exec(task.goal ?? "")?.[1];
+// FAKE_WORKER_MODE lets a wrapper drive fixed tasks (e.g. the workbench smoke) through the stand-in.
+const mode =
+  task.mode ??
+  /mode:(\S+)/.exec(task.goal ?? "")?.[1] ??
+  process.env.FAKE_WORKER_MODE;
 
 function report(status: string, reason: string, code: number): never {
   console.log(
