@@ -295,7 +295,7 @@ function generic(
     subtask_id: text("subtask_id"),
     execution_id: text("cell_id") ?? text("execution_id"),
     attempt_id: text("attempt_id"),
-    summary: summary ?? `Event ${text("type") ?? "without type"}`,
+    summary: summary ?? `事件 ${text("type") ?? "（无类型）"}`,
     data: scalars(raw),
     refs: {},
   };
@@ -303,7 +303,7 @@ function generic(
 
 export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
   if (!raw || typeof raw !== "object" || Array.isArray(raw))
-    return generic(seq, {}, "diagnostic", "Trace line is not a JSON object");
+    return generic(seq, {}, "diagnostic", "轨迹行不是 JSON 对象");
   const record = raw as Record<string, unknown>;
   const parsed = known.safeParse(record);
   if (!parsed.success) return generic(seq, record);
@@ -326,7 +326,7 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
       return {
         ...view,
         kind: "session",
-        summary: "Execution session starting",
+        summary: "执行会话启动",
         data: {
           backend: e.config.backend ?? "persistent-kernel",
           image: e.config.image,
@@ -336,14 +336,14 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
       return {
         ...view,
         kind: "session",
-        summary: "Execution environment ready",
+        summary: "执行环境就绪",
         data: { kernel_epoch: e.kernel_epoch ?? null },
       };
     case "agent_budget":
       return {
         ...view,
         kind: "budget",
-        summary: "Budget checked before model call",
+        summary: "模型调用前检查预算",
         data: {
           remaining: e.remaining,
           max_output_tokens: e.max_output_tokens ?? null,
@@ -353,7 +353,7 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
       return {
         ...view,
         kind: "model",
-        summary: `Model request to ${e.requested_model ?? "model"}`,
+        summary: `请求模型 ${e.requested_model ?? ""}`.trim(),
         data: { input_estimate: e.input_estimate ?? null },
         refs: e.content_ref ? { content: refView(e.content_ref) } : {},
       };
@@ -361,7 +361,7 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
       return {
         ...view,
         kind: "model",
-        summary: `Model response from ${e.returned_model ?? "model"}`,
+        summary: `模型响应 ${e.returned_model ?? ""}`.trim(),
         data: {
           usage: e.usage
             ? {
@@ -379,7 +379,7 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
       return {
         ...view,
         kind: "model",
-        summary: "Model call failed",
+        summary: "模型调用失败",
         data: scalars(record),
       };
     case "tool_validation":
@@ -390,11 +390,11 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
         summary:
           e.valid !== undefined
             ? e.valid
-              ? "Tool call accepted"
-              : "Tool call rejected"
+              ? "工具调用通过校验"
+              : "工具调用被拒绝"
             : e.dispatched
-              ? "Execution dispatch recorded"
-              : "Execution feedback returned to the model",
+              ? "已记录执行派发"
+              : "执行反馈已返回模型",
         data: {
           valid: e.valid ?? null,
           dispatched: e.dispatched ?? false,
@@ -413,8 +413,8 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
         kind: "delegation",
         summary:
           e.type === "subtask_delegated"
-            ? "Planner delegated a subtask"
-            : "Executor returned the subtask",
+            ? "规划者委派子任务"
+            : "执行者返回子任务",
         refs: e.content_ref ? { content: refView(e.content_ref) } : {},
       };
     case "dispatch": {
@@ -423,7 +423,7 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
         ...view,
         kind: "code",
         execution_id: e.request.cell_id ?? e.request.execution_id ?? null,
-        summary: `Code dispatched (execution ${e.request.execution_seq ?? "?"})`,
+        summary: `派发代码（执行 ${e.request.execution_seq ?? "?"}）`,
         data: {
           request_id: e.request.request_id,
           execution_seq: e.request.execution_seq ?? null,
@@ -442,7 +442,7 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
         ...view,
         kind: "output",
         execution_id: e.message.cell_id ?? e.message.execution_id ?? null,
-        summary: "Execution output",
+        summary: "执行输出",
         data: {
           request_id: e.message.request_id ?? null,
           output_type: e.message.output_type ?? null,
@@ -459,7 +459,7 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
         ...view,
         kind: "result",
         execution_id: e.result.cell_id ?? e.result.execution_id ?? null,
-        summary: `Execution ${e.result.status}`,
+        summary: `执行结束：${e.result.status}`,
         data: {
           request_id: e.result.request_id,
           status: e.result.status,
@@ -489,7 +489,7 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
       return {
         ...view,
         kind: "artifact",
-        summary: `Artifact saved${e.artifact.source_path ? `: ${e.artifact.source_path}` : ""}`,
+        summary: `保存产物${e.artifact.source_path ? `：${e.artifact.source_path}` : ""}`,
         refs: { artifact: refView(e.artifact) },
       };
     case "analysis_submitted":
@@ -500,10 +500,10 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
         kind: "analysis",
         summary:
           e.type === "report_saved"
-            ? "Report saved"
+            ? "报告已保存"
             : e.type === "analysis_closing"
-              ? "Closing the analysis"
-              : "Final analysis submitted",
+              ? "进入收尾"
+              : "提交最终分析",
         data: scalars(record),
         refs: e.artifact ? { report: refView(e.artifact) } : {},
       };
@@ -514,15 +514,15 @@ export function normalizeEvent(seq: number, raw: unknown): TraceEvent {
         kind: "finish",
         summary:
           e.type === "agent_finish"
-            ? `Agent finished: ${e.status}${e.reason ? ` (${e.reason})` : ""}`
-            : `Run finished: ${e.status}`,
+            ? `智能体结束：${e.status}${e.reason ? `（${e.reason}）` : ""}`
+            : `运行结束：${e.status}`,
         data: { status: e.status, reason: e.reason ?? null },
       };
     default:
       return {
         ...view,
         kind: "diagnostic",
-        summary: `Session ${e.type.replaceAll("_", " ")}`,
+        summary: `会话事件 ${e.type}`,
         data: scalars(record),
       };
   }
@@ -585,9 +585,7 @@ export async function readNewEvents(
         try {
           value = JSON.parse(line);
         } catch {
-          events.push(
-            generic(seq, {}, "diagnostic", "Trace line is not valid JSON"),
-          );
+          events.push(generic(seq, {}, "diagnostic", "轨迹行不是合法 JSON"));
           continue;
         }
         events.push(normalizeEvent(seq, value));

@@ -127,7 +127,8 @@ export function traceStream(
         `[workbench] trace stream for ${options.runId} failed`,
         error,
       );
-      send(frame("error", { error: "Reading the run trace failed" }));
+      // Not "error": that name is EventSource's own connection-failure event.
+      send(frame("stream_error", { error: "Reading the run trace failed" }));
     } finally {
       options.signal?.removeEventListener("abort", stop);
       stopped = true;

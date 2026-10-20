@@ -158,7 +158,7 @@ test("planner-executor events keep role and subtask identity", () => {
   expect(feedback).toMatchObject({
     kind: "tool",
     execution_id: "cell-9",
-    summary: "Execution feedback returned to the model",
+    summary: "执行反馈已返回模型",
     refs: { feedback: { artifact_id: "f1" } },
   });
 });
@@ -216,7 +216,7 @@ test("fresh-script executions are identified by execution ID", () => {
   });
   expect(result).toMatchObject({
     kind: "result",
-    summary: "Execution error",
+    summary: "执行结束：error",
     data: { status: "error", error: { ename: "ValueError", evalue: "bad" } },
     refs: { artifact_0: { artifact_id: "png1", mime_type: "image/png" } },
   });

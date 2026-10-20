@@ -10,8 +10,9 @@ export function formatDuration(ms: number | null | undefined): string {
   if (ms < 1000) return `${Math.round(ms)} ms`;
   const seconds = ms / 1000;
   if (seconds < 60) return `${seconds.toFixed(1)} s`;
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes} 分 ${Math.round(seconds % 60)} 秒`;
+  // Round once, then split, so 299.6 s reads "5 分 0 秒" rather than "4 分 60 秒".
+  const total = Math.round(seconds);
+  return `${Math.floor(total / 60)} 分 ${total % 60} 秒`;
 }
 
 export function formatTime(iso: string | null | undefined): string {
