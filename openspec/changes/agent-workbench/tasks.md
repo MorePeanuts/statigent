@@ -13,8 +13,8 @@
 
 ## 3. 输入区
 
-- [ ] 3.1 实现 `src/workbench/inputs.ts`：输入区位于 `runs/workbench/inputs/`，上传校验单层文件名、扩展名白名单（csv/tsv/xlsx/json/parquet）、大小上限（默认 100 MiB，可由环境变量调整）、同名冲突失败，记录大小与 sha256，列出与删除仅限常规文件；验证单元测试覆盖 `..`、分隔符、隐藏前缀、符号链接、超限与冲突
-- [ ] 3.2 实现 `POST/GET /api/inputs` 与 `DELETE /api/inputs/[name]`（流式写入临时文件后原子改名；`/api/inputs` 不经 Proxy，处理函数自行调用 `rejectNonLocal`，并核对实际接收字节数）；验证用 `curl` 上传 `tests/fixtures/synthetic.csv` 后列表可见，非法名称返回 4xx
+- [x] 3.1 实现 `src/workbench/inputs.ts`：输入区位于 `runs/workbench/inputs/`，上传校验单层文件名、扩展名白名单（csv/tsv/xlsx/json/parquet）、大小上限（默认 100 MiB，可由环境变量调整）、同名冲突失败，记录大小与 sha256，列出与删除仅限常规文件；验证单元测试覆盖 `..`、分隔符、隐藏前缀、符号链接、超限与冲突
+- [x] 3.2 实现 `POST/GET /api/inputs` 与 `DELETE /api/inputs/[name]`（流式写入临时文件后原子改名；`/api/inputs` 不经 Proxy，处理函数自行调用 `rejectNonLocal`，并核对实际接收字节数）；验证用 `curl` 上传 `tests/fixtures/synthetic.csv` 后列表可见，非法名称返回 4xx
 
 ## 4. 任务组装与前置检查
 
